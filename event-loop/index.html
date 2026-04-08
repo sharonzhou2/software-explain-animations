@@ -334,6 +334,7 @@ function App() {
       )
     ),
 
+    e("div", { style:{ minHeight:480 } },
     e("div", { style:{ fontSize:9,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:T.text3,textAlign:"center",marginBottom:8,paddingBottom:8,borderBottom:`1px solid ${T.border}` } }, "javascript runtime"),
 
     e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1.45fr", gap:10, marginBottom:10 } },
@@ -397,6 +398,8 @@ function App() {
         )
       )
     ),
+
+    ), /* close minHeight wrapper */
 
     e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginTop:16 } },
       e("button", { onClick:()=>go(-1), disabled:si===0,
