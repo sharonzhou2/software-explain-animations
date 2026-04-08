@@ -15,7 +15,7 @@
     padding: 24px 16px;
     font-family: system-ui, -apple-system, sans-serif;
   }
-  #root { width: 100%; max-width: 760px; }
+  #root { width: 100%; max-width: 1120px; }
   .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: system-ui, sans-serif; }
   .topnav a { text-decoration: none; color: #8888aa; font-size: 13px; transition: color 0.2s; }
   .topnav a:hover { color: #e8e8f0; }
@@ -164,14 +164,115 @@ const LoopRing = ({ active }) => {
   );
 };
 
-const Panel = ({ label, children, style={}, focused=false }) =>
+const DETAILS = {
+  stack: {
+    title: "Call Stack",
+    color: T.blue,
+    sections: [
+      { heading: "What is it?", body: "A LIFO (last-in, first-out) data structure that tracks which function is currently executing. JavaScript has exactly one call stack — this is why it's called single-threaded." },
+      { heading: "How it works", body: "When a function is invoked, a new frame is pushed onto the stack. When the function returns, its frame is popped off. If the stack is empty, the engine is idle and the event loop can push new work onto it." },
+      { heading: "Stack overflow", body: "If a function calls itself recursively without a base case, frames pile up until the browser's stack size limit is hit — causing a \"Maximum call stack size exceeded\" error." },
+      { heading: "Key insight", body: "The call stack must be empty before any queued async callback can execute. This is why a long-running synchronous function blocks the entire UI." },
+    ]
+  },
+  webapis: {
+    title: "Web APIs",
+    color: T.teal,
+    sections: [
+      { heading: "What are they?", body: "Browser-provided interfaces that live outside the JS engine. They handle async operations like timers, network requests, DOM events, and storage — all in separate threads managed by the browser." },
+      { heading: "How they work", body: "When you call setTimeout() or fetch(), the JS engine hands the work off to the browser's C++ layer. The call stack is immediately freed. When the operation completes, the browser pushes the callback into the appropriate queue." },
+      { heading: "Common Web APIs", body: "setTimeout / setInterval (Timer API), fetch / XMLHttpRequest (Network), addEventListener (DOM Events), localStorage / indexedDB (Storage), requestAnimationFrame (Rendering), Geolocation, Web Workers." },
+      { heading: "Key insight", body: "Web APIs are NOT part of JavaScript itself — they're provided by the host environment (browser or Node.js). This is how JS achieves concurrency without multiple threads." },
+    ]
+  },
+  loop: {
+    title: "Event Loop",
+    color: T.purple,
+    sections: [
+      { heading: "What is it?", body: "A continuously running process that monitors the call stack and the task queues. Its job: when the stack is empty, move the next task from a queue onto the stack for execution." },
+      { heading: "The algorithm", body: "1) Check if the call stack is empty.\n2) Drain ALL microtasks (promises, queueMicrotask, MutationObserver).\n3) Pick ONE macrotask (setTimeout, setInterval, I/O).\n4) Run rendering steps if needed (requestAnimationFrame, layout, paint).\n5) Repeat." },
+      { heading: "Microtasks vs Macrotasks", body: "Microtasks always have priority. The entire microtask queue is drained before the loop picks a single macrotask. New microtasks added during draining are also processed in the same cycle." },
+      { heading: "Key insight", body: "The event loop is what makes async JavaScript possible on a single thread. It's not part of the V8 engine — it's implemented by the embedding environment (browser's libuv in Node, or the browser's event loop)." },
+    ]
+  },
+  macro: {
+    title: "Task Queue (Macrotask)",
+    color: T.teal,
+    sections: [
+      { heading: "What is it?", body: "A FIFO queue holding callbacks from completed Web API operations — setTimeout, setInterval, I/O events, UI rendering events, and MessageChannel." },
+      { heading: "How it works", body: "When a Web API operation finishes (e.g., a timer expires), it places its callback into the task queue. The event loop picks one task per iteration — only after the microtask queue is completely empty." },
+      { heading: "One at a time", body: "Unlike microtasks, the event loop only dequeues one macrotask per tick. This gives the browser a chance to render between tasks, keeping the UI responsive." },
+      { heading: "Key insight", body: "setTimeout(fn, 0) doesn't mean \"run immediately\" — it means \"run as soon as possible after the current script finishes AND all microtasks are drained.\" The 0ms is a minimum delay, not a guarantee." },
+    ]
+  },
+  micro: {
+    title: "Microtask Queue",
+    color: T.coral,
+    sections: [
+      { heading: "What is it?", body: "A high-priority FIFO queue for callbacks from Promises (.then, .catch, .finally), queueMicrotask(), MutationObserver, and process.nextTick() in Node.js." },
+      { heading: "How it works", body: "When a promise resolves, its .then() callback is placed into the microtask queue — not the task queue. The event loop drains this queue completely before moving to any macrotask." },
+      { heading: "Starvation risk", body: "Because the entire microtask queue is drained before any macrotask runs, a microtask that keeps scheduling more microtasks can starve the task queue and block rendering indefinitely." },
+      { heading: "Key insight", body: "This is why Promise.resolve().then(cb) always runs before setTimeout(cb, 0) — microtasks have strictly higher priority. The spec guarantees this ordering." },
+    ]
+  },
+  code: {
+    title: "Source Code",
+    color: T.purpleL,
+    sections: [
+      { heading: "This example", body: "This code demonstrates the three execution phases: synchronous code runs first, then microtasks (promises), then macrotasks (setTimeout). The output order is always: 'start', 'end', 'promise', 'timeout'." },
+      { heading: "Why this order?", body: "1) console.log('start') — sync, runs immediately.\n2) setTimeout — registers callback with Timer API, moves on.\n3) Promise.resolve().then() — already resolved, callback goes to microtask queue.\n4) console.log('end') — sync, runs immediately.\n5) Stack empty → microtasks drain → 'promise'.\n6) Macrotask runs → 'timeout'." },
+      { heading: "Common mistake", body: "Developers often expect setTimeout(fn, 0) to run \"next\" — but promises always jump the queue. Understanding this prevents subtle race conditions in async code." },
+    ]
+  },
+  console: {
+    title: "Console Output",
+    color: T.tealL,
+    sections: [
+      { heading: "What it shows", body: "The console displays output in the exact order statements execute — making it the ultimate proof of JavaScript's execution model." },
+      { heading: "The guaranteed order", body: "1) \"start\" — first synchronous statement.\n2) \"end\" — second synchronous statement (setTimeout and Promise.then are just registrations, not executions).\n3) \"promise\" — microtask, runs before any macrotask.\n4) \"timeout\" — macrotask, runs last." },
+      { heading: "Key insight", body: "If you ever see this order wrong, something unusual is happening — like a polyfill implementing promises with setTimeout, or running in a non-standard environment." },
+    ]
+  },
+};
+
+const DetailPanel = ({ detailKey, onClose }) => {
+  const d = DETAILS[detailKey];
+  if (!d) return null;
+  return e(M.div, {
+    key: detailKey,
+    initial: { opacity:0, x:40 },
+    animate: { opacity:1, x:0 },
+    exit: { opacity:0, x:40 },
+    transition: { duration:0.3, ease:[0.22,1,0.36,1] },
+    style: { width:340, flexShrink:0, background:T.surface, borderRadius:14, border:`1.5px solid ${d.color}44`, overflow:"hidden", alignSelf:"flex-start", position:"sticky", top:56 }
+  },
+    e("div", { style:{ padding:"14px 18px 12px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:8 } },
+        e("div", { style:{ width:8, height:8, borderRadius:"50%", background:d.color } }),
+        e("span", { style:{ fontSize:14, fontWeight:600, color:T.text1 } }, d.title)
+      ),
+      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6, transition:"color 0.2s" }, onMouseEnter:ev=>ev.target.style.color=T.text1, onMouseLeave:ev=>ev.target.style.color=T.text3 }, "✕")
+    ),
+    e("div", { style:{ padding:"16px 18px 20px", maxHeight:"calc(100vh - 140px)", overflowY:"auto" } },
+      d.sections.map((s, i) =>
+        e(M.div, { key:i, initial:{opacity:0,y:10}, animate:{opacity:1,y:0}, transition:{delay:i*0.06, duration:0.3}, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
+          e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
+        )
+      )
+    )
+  );
+};
+
+const Panel = ({ label, children, style={}, focused=false, onClick }) =>
   e(M.div, {
+    onClick,
     animate:{
       borderColor: focused ? T.purple : T.border2,
       boxShadow: focused ? `0 0 16px ${T.purple}30, inset 0 0 12px ${T.purple}08` : "0 0 0px transparent"
     },
     transition:{ duration:0.4 },
-    style:{ borderRadius:12, border:"1.5px solid", background:T.surface, overflow:"hidden", ...style }
+    style:{ borderRadius:12, border:"1.5px solid", background:T.surface, overflow:"hidden", cursor:onClick?"pointer":"default", ...style }
   },
     label && e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
       e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, label)
@@ -182,6 +283,7 @@ const Panel = ({ label, children, style={}, focused=false }) =>
 function App() {
   const [si, setSi] = useState(0);
   const [playing, setPlaying] = useState(false);
+  const [detail, setDetail] = useState(null);
   const timer = useRef(null);
   const sc = SCENES[si];
 
@@ -197,8 +299,10 @@ function App() {
   const go = d => { clearTimeout(timer.current); setPlaying(false); setSi(i=>Math.max(0,Math.min(SCENES.length-1,i+d))); };
   const jump = i => { clearTimeout(timer.current); setPlaying(false); setSi(i); };
   const togglePlay = () => { if(si===SCENES.length-1){setSi(0);setPlaying(true);}else setPlaying(p=>!p); };
+  const toggleDetail = key => { setDetail(d => d===key ? null : key); clearTimeout(timer.current); setPlaying(false); };
 
-  return e("div", { style:{ background:T.bg, fontFamily:"system-ui,sans-serif", padding:20, borderRadius:16 } },
+  return e("div", { style:{ display:"flex", gap:16, alignItems:"flex-start" } },
+  e(M.div, { animate:{ flex: detail ? "1 1 0%" : "1 1 100%" }, transition:{ duration:0.35, ease:[0.22,1,0.36,1] }, style:{ minWidth:0, background:T.bg, fontFamily:"system-ui,sans-serif", padding:20, borderRadius:16 } },
 
     e("div", { style:{ marginBottom:18 } },
       e("div", { style:{ display:"flex", alignItems:"center", gap:10, marginBottom:11 } },
@@ -227,13 +331,13 @@ function App() {
     e("div", { style:{ fontSize:9,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:T.text3,textAlign:"center",marginBottom:8,paddingBottom:8,borderBottom:`1px solid ${T.border}` } }, "javascript runtime"),
 
     e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1.45fr", gap:10, marginBottom:10 } },
-      e(Panel, { label:"Call Stack", focused:(sc.focus||[]).includes("stack") },
+      e(Panel, { label:"Call Stack", focused:(sc.focus||[]).includes("stack"), onClick:()=>toggleDetail("stack") },
         e("div", { style:{ minHeight:130, display:"flex", flexDirection:"column", justifyContent:"flex-end", position:"relative" } },
           sc.stack.length===0 && e("div", { style:{ position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:T.text3 } }, "empty"),
           e(AP, null, [...sc.stack].reverse().map(item => e(Frame, { key:item.id, item })))
         )
       ),
-      e(Panel, { label:"Web APIs", focused:(sc.focus||[]).includes("webapis") },
+      e(Panel, { label:"Web APIs", focused:(sc.focus||[]).includes("webapis"), onClick:()=>toggleDetail("webapis") },
         e("div", { style:{ display:"flex", flexWrap:"wrap", gap:6 } },
           WEB_APIS.map(a => e(ApiTag, { key:a, label:a, active:(sc.apis||[]).includes(a) }))
         ),
@@ -252,18 +356,18 @@ function App() {
     ),
 
     e("div", { style:{ display:"grid", gridTemplateColumns:"88px 1fr 1fr", gap:10, marginBottom:10 } },
-      e(M.div, { animate:{ borderColor:(sc.focus||[]).includes("loop")?T.purple:T.border, boxShadow:(sc.focus||[]).includes("loop")?`0 0 16px ${T.purple}30, inset 0 0 12px ${T.purple}08`:"0 0 0px transparent" }, transition:{duration:0.4}, style:{ borderRadius:12, border:"1.5px solid", background:T.surface, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"space-between", padding:"10px 0" } },
+      e(M.div, { onClick:()=>toggleDetail("loop"), animate:{ borderColor:(sc.focus||[]).includes("loop")?T.purple:T.border, boxShadow:(sc.focus||[]).includes("loop")?`0 0 16px ${T.purple}30, inset 0 0 12px ${T.purple}08`:"0 0 0px transparent" }, transition:{duration:0.4}, style:{ borderRadius:12, border:"1.5px solid", background:T.surface, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"space-between", padding:"10px 0", cursor:"pointer" } },
         e("div", { style:{ fontSize:9,fontWeight:600,letterSpacing:"0.08em",textTransform:"uppercase",color:T.text3,paddingTop:2 } }, "Event Loop"),
         e(LoopRing, { active:sc.loop }),
         e("div", { style:{ height:1 } })
       ),
-      e(Panel, { label:"Task Queue", focused:(sc.focus||[]).includes("macro") },
+      e(Panel, { label:"Task Queue", focused:(sc.focus||[]).includes("macro"), onClick:()=>toggleDetail("macro") },
         e("div", { style:{ display:"flex", flexWrap:"wrap", gap:6, minHeight:36, alignItems:"flex-start", position:"relative" } },
           sc.macro.length===0 && e("div", { style:{ fontSize:10,color:T.text3 } }, "empty"),
           e(AP, null, sc.macro.map(item => e(Chip, { key:item.id, item, color:"teal" })))
         )
       ),
-      e(Panel, { label:"Microtask Queue", focused:(sc.focus||[]).includes("micro") },
+      e(Panel, { label:"Microtask Queue", focused:(sc.focus||[]).includes("micro"), onClick:()=>toggleDetail("micro") },
         e("div", { style:{ display:"flex", flexWrap:"wrap", gap:6, minHeight:36, alignItems:"flex-start", position:"relative" } },
           sc.micro.length===0 && e("div", { style:{ fontSize:10,color:T.text3 } }, "empty"),
           e(AP, null, sc.micro.map(item => e(Chip, { key:item.id, item, color:"coral" })))
@@ -272,8 +376,8 @@ function App() {
     ),
 
     e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 } },
-      e(CodePanel, { highlighted: sc.hl || [] }),
-      e(Panel, { label:"Console output", focused:(sc.focus||[]).includes("console") },
+      e("div", { onClick:()=>toggleDetail("code"), style:{cursor:"pointer"} }, e(CodePanel, { highlighted: sc.hl || [] })),
+      e(Panel, { label:"Console output", focused:(sc.focus||[]).includes("console"), onClick:()=>toggleDetail("console") },
         e("div", { style:{ fontFamily:"'SF Mono','Fira Code',monospace", minHeight:60 } },
           sc.out.length===0
             ? e("div", { style:{ fontSize:11,color:T.text3 } }, "—")
@@ -307,6 +411,8 @@ function App() {
         )
       )
     )
+  ),
+  e(AP, null, detail && e(DetailPanel, { key:detail, detailKey:detail, onClose:()=>setDetail(null) }))
   );
 }
 
