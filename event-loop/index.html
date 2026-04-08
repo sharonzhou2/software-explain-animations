@@ -301,8 +301,8 @@ function App() {
   const togglePlay = () => { if(si===SCENES.length-1){setSi(0);setPlaying(true);}else setPlaying(p=>!p); };
   const toggleDetail = key => { setDetail(d => d===key ? null : key); clearTimeout(timer.current); setPlaying(false); };
 
-  return e("div", { style:{ display:"flex", gap:16, alignItems:"flex-start" } },
-  e(M.div, { animate:{ flex: detail ? "1 1 0%" : "1 1 100%" }, transition:{ duration:0.35, ease:[0.22,1,0.36,1] }, style:{ minWidth:0, background:T.bg, fontFamily:"system-ui,sans-serif", padding:20, borderRadius:16 } },
+  return e("div", { style:{ display:"flex", gap:16, alignItems:"flex-start", justifyContent: detail ? "flex-start" : "center" } },
+  e("div", { style:{ width:760, flexShrink:0, background:T.bg, fontFamily:"system-ui,sans-serif", padding:20, borderRadius:16 } },
 
     e("div", { style:{ marginBottom:18 } },
       e("div", { style:{ display:"flex", alignItems:"center", gap:10, marginBottom:11 } },
