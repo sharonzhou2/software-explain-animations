@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Software Explain Animations</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111118;
+    color: #e8e8f0;
+    font-family: system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 60px 24px;
+  }
+  .container { width: 100%; max-width: 640px; }
+  h1 {
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    margin-bottom: 8px;
+  }
+  .subtitle {
+    color: #8888aa;
+    font-size: 14px;
+    margin-bottom: 48px;
+    line-height: 1.6;
+  }
+  .grid { display: flex; flex-direction: column; gap: 12px; }
+  a.card {
+    display: block;
+    text-decoration: none;
+    padding: 20px 24px;
+    border-radius: 12px;
+    border: 1.5px solid #2a2a38;
+    background: #18181f;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  a.card:hover {
+    border-color: #7c6fcd;
+    background: #1e1e28;
+  }
+  .card-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #e8e8f0;
+    margin-bottom: 4px;
+  }
+  .card-desc {
+    font-size: 13px;
+    color: #8888aa;
+    line-height: 1.5;
+  }
+  .tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: #7c6fcd;
+    background: rgba(124,111,205,0.1);
+    border: 1px solid rgba(124,111,205,0.2);
+    padding: 2px 8px;
+    border-radius: 12px;
+    margin-bottom: 8px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Software Explain Animations</h1>
+  <p class="subtitle">Interactive visual explanations of software engineering concepts.</p>
+  <div class="grid">
+    <a class="card" href="event-loop/">
+      <span class="tag">JavaScript</span>
+      <div class="card-title">The Event Loop</div>
+      <div class="card-desc">Step through how the call stack, Web APIs, microtask queue, and task queue work together to make async JS possible.</div>
+    </a>
+  </div>
+</div>
+</body>
+</html>
