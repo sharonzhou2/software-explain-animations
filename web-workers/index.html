@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Web Workers</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111118;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px 16px;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  #root { width: 100%; max-width: 1120px; }
+  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: system-ui, sans-serif; }
+  .topnav a { text-decoration: none; color: #8888aa; font-size: 13px; transition: color 0.2s; }
+  .topnav a:hover { color: #e8e8f0; }
+  .topnav .name { font-weight: 600; color: #e8e8f0; font-size: 13px; }
+  .topnav .sep { color: #38384a; font-size: 12px; }
+  .topnav .current { color: #7c6fcd; font-size: 13px; font-weight: 500; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="../" class="name">Sharon Zhou</a>
+  <span class="sep">/</span>
+  <a href="../">Animations</a>
+  <span class="sep">/</span>
+  <span class="current">Web Workers</span>
+</nav>
+<div id="root" style="margin-top: 36px;"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/framer-motion@11/dist/framer-motion.js"></script>
+<script>
+const { useState, useEffect, useRef } = React;
+const { motion, AnimatePresence, useMotionValue, animate } = window.Motion;
+const e = React.createElement;
+const M = motion;
+const AP = AnimatePresence;
+const sp = (s=380,d=28) => ({ type:"spring", stiffness:s, damping:d });
+const ez = { duration:0.32, ease:[0.22,1,0.36,1] };
+
+const T = {
+  bg:"#111118", surface:"#18181f", surface2:"#1e1e28",
+  border:"#2a2a38", border2:"#38384a",
+  text1:"#e8e8f0", text2:"#8888aa", text3:"#44445a",
+  purple:"#7c6fcd", purpleL:"#a99cf0",
+  teal:"#3db89a", tealL:"#6dd4b8",
+  coral:"#c4694a", coralL:"#e08a6a",
+  blue:"#4a8fd4", blueL:"#82b4e8",
+  amber:"#d4a84a", amberL:"#e8c86a",
+  pink:"#c45a8a", pinkL:"#e87aaa",
+  codeBase:"#141428",
+};
+
+const TS = {
+  fn:    { color:"#82aaff" },
+  meth:  { color:"#89ddff" },
+  str:   { color:"#c3e88d" },
+  kw:    { color:"#c792ea" },
+  num:   { color:"#f78c6c" },
+  punc:  { color:"#89ddff" },
+  plain: { color:"#a6accd" },
+  cls:   { color:"#ffcb6b", fontWeight:"bold" },
+  cmt:   { color:"#546e7a", fontStyle:"italic" },
+  prop:  { color:"#f07178" },
+};
+
+/* ─── SCENES ─── */
+const SCENES = [
+  {
+    id:0, act:"01",
+    title:"JavaScript is single-threaded",
+    sub:"JS runs on one thread with one call stack. But what if you need real parallelism — heavy computation without freezing the UI?",
+    code:[
+      [["cmt","// JavaScript has a single thread"]],
+      [["cmt","// one call stack, one task at a time"]],
+      [["cmt","// but what about CPU-heavy work?"]],
+    ],
+    viz:"intro",
+    detail_hint:"concept",
+  },
+  {
+    id:1, act:"02",
+    title:"The problem: blocking the main thread",
+    sub:"Heavy computation — like processing millions of records — blocks the event loop. The UI freezes, clicks go unhandled, animations stutter.",
+    code:[
+      [["cmt","// This blocks the entire UI"]],
+      [["kw","function"],["plain"," "],["fn","heavyWork"],["punc","() {"]],
+      [["plain","  "],["kw","for"],["punc"," ("],["kw","let"],["plain"," i"],["punc","="],["num","0"],["punc","; i<"],["num","1e9"],["punc","; i++) {"]],
+      [["plain","    "],["cmt","// crunch numbers..."]],
+      [["plain","  "],["punc","}"]],
+      [["punc","}"]],
+      [["fn","heavyWork"],["punc","()"],["plain"," "],["cmt","// UI frozen!"]],
+    ],
+    viz:"blocking",
+    detail_hint:"concept",
+  },
+  {
+    id:2, act:"03",
+    title:"Web Workers: a separate thread",
+    sub:"A Web Worker runs JavaScript in a background thread with its own event loop. The main thread stays free to handle UI, events, and rendering.",
+    code:[
+      [["cmt","// Main thread          Worker thread"]],
+      [["cmt","// ┌──────────┐        ┌──────────┐"]],
+      [["cmt","// │ UI, DOM  │  msg   │ heavy    │"]],
+      [["cmt","// │ events   │ ←────→ │ compute  │"]],
+      [["cmt","// │ render   │        │ own loop │"]],
+      [["cmt","// └──────────┘        └──────────┘"]],
+    ],
+    viz:"two-threads",
+    detail_hint:"concept",
+  },
+  {
+    id:3, act:"04",
+    title:"Creating a worker",
+    sub:"Use the Worker constructor with a path to a separate JS file. The browser spins up a new thread and executes that file.",
+    code:[
+      [["cmt","// main.js"]],
+      [["kw","const"],["plain"," "],["plain","worker"],["plain"," "],["punc","= "],["kw","new"],["plain"," "],["cls","Worker"],["punc","("],["str","'worker.js'"],["punc",")"]],
+      [],
+      [["cmt","// worker.js runs in its own thread"]],
+      [["cmt","// with its own global scope (self)"]],
+    ],
+    viz:"create",
+    detail_hint:"api",
+  },
+  {
+    id:4, act:"05",
+    title:"postMessage / onmessage",
+    sub:"Main thread and worker communicate by sending messages. postMessage sends data, onmessage receives it. Neither can access the other's variables.",
+    code:[
+      [["cmt","// main.js"]],
+      [["plain","worker"],["punc","."],["meth","postMessage"],["punc","("],["str","'start'"],["punc",")"]],
+      [["plain","worker"],["punc","."],["prop","onmessage"],["plain"," "],["punc","= ("],["plain","e"],["punc",") => {"]],
+      [["plain","  "],["fn","console"],["punc","."],["meth","log"],["punc","("],["plain","e"],["punc",".data)"]],
+      [["punc","}"]],
+      [],
+      [["cmt","// worker.js"]],
+      [["prop","onmessage"],["plain"," "],["punc","= ("],["plain","e"],["punc",") => {"]],
+      [["plain","  "],["meth","postMessage"],["punc","("],["plain","result"],["punc",")"]],
+      [["punc","}"]],
+    ],
+    viz:"messaging",
+    detail_hint:"api",
+  },
+  {
+    id:5, act:"06",
+    title:"Message passing: structured clone",
+    sub:"Data sent via postMessage is copied using the structured clone algorithm. It's a deep copy — changes on one side don't affect the other.",
+    code:[
+      [["cmt","// Data is deep-copied, not shared"]],
+      [["kw","const"],["plain"," data "],["punc","= { "],["plain","items"],["punc",": ["],["num","1"],["punc",","],["num","2"],["punc",","],["num","3"],["punc","] }"]],
+      [["plain","worker"],["punc","."],["meth","postMessage"],["punc","("],["plain","data"],["punc",")"]],
+      [],
+      [["cmt","// worker gets a COPY"]],
+      [["cmt","// modifying it won't affect main"]],
+      [["cmt","// Functions & DOM nodes can't be cloned"]],
+    ],
+    viz:"clone",
+    detail_hint:"concept",
+  },
+  {
+    id:6, act:"07",
+    title:"No shared memory (by default)",
+    sub:"Workers cannot access the DOM, window, document, or parent scope. This isolation is what makes them thread-safe — no race conditions.",
+    code:[
+      [["cmt","// Inside a worker — these all fail:"]],
+      [["plain","document"],["punc","."],["fn","getElementById"],["punc","()"],["plain"," "],["cmt","// error"]],
+      [["plain","window"],["punc","."],["fn","alert"],["punc","()"],["plain","       "],["cmt","// error"]],
+      [["plain","localStorage"],["punc","."],["fn","getItem"],["punc","()"],["plain","  "],["cmt","// error"]],
+      [],
+      [["cmt","// Workers have their own global: self"]],
+      [["fn","console"],["punc","."],["meth","log"],["punc","("],["kw","self"],["punc",")"],["plain"," "],["cmt","// WorkerGlobalScope"]],
+    ],
+    viz:"no-dom",
+    detail_hint:"concept",
+  },
+  {
+    id:7, act:"08",
+    title:"What workers CAN access",
+    sub:"Workers have access to many APIs: fetch, WebSocket, IndexedDB, timers, crypto, and more. They just can't touch the DOM.",
+    code:[
+      [["cmt","// Workers CAN use:"]],
+      [["meth","fetch"],["punc","("],["str","'/api/data'"],["punc",")"],["plain","      "],["cmt","// network"]],
+      [["meth","setTimeout"],["punc","("],["plain","fn"],["punc",", "],["num","1000"],["punc",")"],["plain","   "],["cmt","// timers"]],
+      [["kw","new"],["plain"," "],["cls","WebSocket"],["punc","("],["plain","url"],["punc",")"],["plain","      "],["cmt","// real-time"]],
+      [["kw","new"],["plain"," "],["cls","XMLHttpRequest"],["punc","()"],["plain","    "],["cmt","// XHR"]],
+      [["plain","indexedDB"],["punc","."],["fn","open"],["punc","()"],["plain","       "],["cmt","// storage"]],
+      [["plain","crypto"],["punc","."],["fn","getRandomValues"],["punc","()"],["cmt","// crypto"]],
+    ],
+    viz:"can-access",
+    detail_hint:"api",
+  },
+  {
+    id:8, act:"09",
+    title:"Transferable objects",
+    sub:"For large binary data, you can transfer ownership instead of copying. The ArrayBuffer becomes empty in the sender — zero-copy, instant transfer.",
+    code:[
+      [["kw","const"],["plain"," buf "],["punc","= "],["kw","new"],["plain"," "],["cls","ArrayBuffer"],["punc","("],["num","1024"],["punc",")"]],
+      [],
+      [["cmt","// Transfer ownership (not copy)"]],
+      [["plain","worker"],["punc","."],["meth","postMessage"],["punc","("],["plain","buf"],["punc",", ["],["plain","buf"],["punc","])"]],
+      [],
+      [["cmt","// buf.byteLength === 0 now!"]],
+      [["cmt","// Worker owns it — zero-copy transfer"]],
+    ],
+    viz:"transfer",
+    detail_hint:"api",
+  },
+  {
+    id:9, act:"10",
+    title:"SharedArrayBuffer + Atomics",
+    sub:"For true shared memory, use SharedArrayBuffer. Both threads see the same memory. Atomics provides thread-safe operations to prevent races.",
+    code:[
+      [["kw","const"],["plain"," sab "],["punc","= "],["kw","new"],["plain"," "],["cls","SharedArrayBuffer"],["punc","("],["num","1024"],["punc",")"]],
+      [["kw","const"],["plain"," view "],["punc","= "],["kw","new"],["plain"," "],["cls","Int32Array"],["punc","("],["plain","sab"],["punc",")"]],
+      [],
+      [["cmt","// Thread-safe operations"]],
+      [["cls","Atomics"],["punc","."],["meth","store"],["punc","("],["plain","view"],["punc",", "],["num","0"],["punc",", "],["num","42"],["punc",")"]],
+      [["cls","Atomics"],["punc","."],["meth","load"],["punc","("],["plain","view"],["punc",", "],["num","0"],["punc",")"],["plain"," "],["cmt","// 42"]],
+      [["cls","Atomics"],["punc","."],["meth","wait"],["punc","("],["plain","view"],["punc",", "],["num","0"],["punc",", "],["num","0"],["punc",")"]],
+    ],
+    viz:"shared",
+    detail_hint:"api",
+  },
+  {
+    id:10, act:"11",
+    title:"Types of workers",
+    sub:"Dedicated Workers serve one page. Shared Workers serve multiple pages. Service Workers act as a network proxy for caching and offline support.",
+    code:[
+      [["cmt","// Dedicated — one page, one worker"]],
+      [["kw","new"],["plain"," "],["cls","Worker"],["punc","("],["str","'w.js'"],["punc",")"]],
+      [],
+      [["cmt","// Shared — multiple pages share one"]],
+      [["kw","new"],["plain"," "],["cls","SharedWorker"],["punc","("],["str","'sw.js'"],["punc",")"]],
+      [],
+      [["cmt","// Service — network proxy + cache"]],
+      [["plain","navigator"],["punc","."],["plain","serviceWorker"]],
+      [["plain","  "],["punc","."],["meth","register"],["punc","("],["str","'service-w.js'"],["punc",")"]],
+    ],
+    viz:"types",
+    detail_hint:"concept",
+  },
+  {
+    id:11, act:"12",
+    title:"Service Workers",
+    sub:"Service Workers sit between your app and the network. They intercept fetch requests, enabling caching strategies, offline support, and push notifications.",
+    code:[
+      [["cmt","// service-worker.js"]],
+      [["kw","self"],["punc","."],["fn","addEventListener"],["punc","("],["str","'fetch'"],["punc",","]],
+      [["plain","  ("],["plain","event"],["punc",") => {"]],
+      [["plain","    event"],["punc","."],["fn","respondWith"],["punc","("]],
+      [["plain","      caches"],["punc","."],["fn","match"],["punc","("],["plain","event"],["punc",".request)"]],
+      [["plain","        "],["punc","."],["fn","then"],["punc","("],["plain","r"],["punc"," => "],["plain","r"],["punc"," || "],["fn","fetch"],["punc","("],["plain","event"],["punc",".request))"]],
+      [["plain","    "],["punc",")"]],
+      [["punc","})"]],
+    ],
+    viz:"service",
+    detail_hint:"api",
+  },
+  {
+    id:12, act:"13",
+    title:"Practical use cases",
+    sub:"Web Workers shine for CPU-intensive tasks: image/video processing, cryptography, data parsing, search indexing, physics simulations, and more.",
+    code:[
+      [["cmt","// Common worker use cases:"]],
+      [["cmt","// - Image processing (filters, resize)"]],
+      [["cmt","// - CSV/JSON parsing (large datasets)"]],
+      [["cmt","// - Encryption / hashing"]],
+      [["cmt","// - Search indexing"]],
+      [["cmt","// - Physics / game logic"]],
+      [["cmt","// - Prefetching & caching data"]],
+      [["cmt","// - WebAssembly execution"]],
+    ],
+    viz:"usecases",
+    detail_hint:"concept",
+  },
+  {
+    id:13, act:"14",
+    title:"Web Workers summary",
+    sub:"True parallelism in the browser. Workers run on separate threads, communicate via messages, and keep your UI fast and responsive.",
+    code:[
+      [["cmt","// Web Workers in a nutshell:"]],
+      [["num","1."],["plain"," Separate thread — real parallelism"]],
+      [["num","2."],["plain"," postMessage — safe communication"]],
+      [["num","3."],["plain"," No DOM access — isolation by design"]],
+      [["num","4."],["plain"," Transferable — zero-copy for perf"]],
+      [["num","5."],["plain"," Service Workers — offline + caching"]],
+    ],
+    viz:"finale",
+    finale:true,
+    detail_hint:"concept",
+  },
+];
+
+/* ─── DETAIL CONTENT ─── */
+const DETAILS = {
+  code: {
+    title:"Source Code",
+    color:T.purpleL,
+    sections:[
+      {heading:"What to watch for",body:"Each scene shows different aspects of the Web Workers API. Watch how the main thread and worker thread communicate through messages, never sharing memory directly."},
+      {heading:"Key patterns",body:"- new Worker('file.js') creates a worker\n- postMessage() sends data\n- onmessage receives data\n- Data is cloned, not shared\n- Workers can't touch the DOM"},
+    ]
+  },
+  concept: {
+    title:"Core Concepts",
+    color:T.tealL,
+    sections:[
+      {heading:"Why workers exist",body:"JavaScript is single-threaded by design. The main thread handles UI rendering, event handling, and JS execution all on one thread. Heavy computation blocks everything.\n\nWeb Workers solve this by running code in a separate OS-level thread."},
+      {heading:"Thread safety",body:"Workers achieve thread safety through isolation. They can't access:\n- DOM (document, window)\n- Main thread variables\n- Parent scope\n\nCommunication happens only via message passing, which copies data rather than sharing it."},
+      {heading:"Performance tradeoff",body:"Creating a worker has overhead — spinning up a thread, loading a script. For quick tasks, the overhead isn't worth it. Workers shine for tasks taking >50ms."},
+    ]
+  },
+  api: {
+    title:"API Reference",
+    color:T.amberL,
+    sections:[
+      {heading:"Worker constructor",body:"new Worker(scriptURL, options?)\n\nCreates a dedicated worker. The script is loaded and executed in a new thread. Options can specify { type: 'module' } for ES modules."},
+      {heading:"Communication API",body:"worker.postMessage(data, transfer?)\n- Sends data to the worker\n- Data is cloned via structured clone\n- Optional transferables for zero-copy\n\nworker.onmessage = (event) => {}\n- Receives messages from worker\n- event.data contains the payload"},
+      {heading:"Lifecycle",body:"worker.terminate()\n- Immediately stops the worker\n- Cannot be restarted\n\nInside worker:\nself.close()\n- Worker terminates itself"},
+      {heading:"Error handling",body:"worker.onerror = (event) => {}\n- Catches uncaught errors from worker\n- event.message, event.filename, event.lineno"},
+    ]
+  },
+  threads: {
+    title:"Thread Model",
+    color:T.blueL,
+    sections:[
+      {heading:"Main thread",body:"The main thread handles:\n- DOM manipulation & rendering\n- User event handling (click, scroll, etc.)\n- CSS animations & transitions\n- JavaScript execution\n- Network callbacks\n\nAll on a single thread sharing one event loop."},
+      {heading:"Worker thread",body:"Each worker gets:\n- Its own JavaScript engine instance\n- Its own event loop\n- Its own global scope (self)\n- Its own memory space\n\nMultiple workers = multiple real OS threads."},
+      {heading:"Message channel",body:"Messages between threads use a structured clone of the data. This is a deep copy that handles:\n- Objects, arrays, maps, sets\n- Dates, RegExps, Blobs, Files\n- ArrayBuffers, typed arrays\n\nCannot clone: Functions, DOM nodes, Errors"},
+    ]
+  },
+};
+
+/* ─── COMPONENTS ─── */
+const CodePanel = ({ tokens }) =>
+  e("div", { style:{ background:T.codeBase, borderRadius:12, overflow:"hidden", border:`1px solid ${T.border}` } },
+    e("div", { style:{ padding:"10px 14px 8px", borderBottom:`1px solid ${T.border}`, display:"flex", gap:7 } },
+      ...["#ff5f57","#febc2e","#28c840"].map((c,i) =>
+        e("div", { key:i, style:{ width:11, height:11, borderRadius:"50%", background:c } })
+      )
+    ),
+    e("div", { style:{ padding:"18px 22px 22px", fontFamily:"'SF Mono','Fira Code','Consolas',monospace", fontSize:12, lineHeight:1.95 } },
+      tokens.map((line, li) =>
+        e("div", { key:li, style:{ paddingLeft:0, borderRadius:3, display:"block", minHeight:line.length===0?19:undefined } },
+          line.map(([cls, txt], ti) =>
+            e("span", { key:ti, style:{ ...TS[cls], whiteSpace:"pre" } }, txt)
+          )
+        )
+      )
+    )
+  );
+
+const Panel = ({ label, children, style={}, focused=false, onClick }) =>
+  e(M.div, {
+    onClick,
+    animate:{
+      borderColor: focused ? T.purple : T.border2,
+      boxShadow: focused ? `0 0 16px ${T.purple}30, inset 0 0 12px ${T.purple}08` : "0 0 0px transparent"
+    },
+    transition:{ duration:0.4 },
+    style:{ borderRadius:12, border:"1.5px solid", background:T.surface, overflow:"hidden", cursor:onClick?"pointer":"default", ...style }
+  },
+    label && e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, label)
+    ),
+    e("div", { style:{ padding:12 } }, children)
+  );
+
+/* ─── THREAD LANE VIZ ─── */
+const ThreadLane = ({ label, color, items, y }) =>
+  e("div", { style:{ position:"relative", marginBottom:y||0 } },
+    e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginBottom:6 } },
+      e("div", { style:{ width:8, height:8, borderRadius:"50%", background:color } }),
+      e("span", { style:{ fontSize:10, fontWeight:600, color, letterSpacing:"0.05em", textTransform:"uppercase" } }, label)
+    ),
+    e("div", { style:{ display:"flex", gap:6, flexWrap:"wrap", padding:"8px 12px", borderRadius:8, border:`1px solid ${color}22`, background:`${color}08`, minHeight:40, alignItems:"center" } },
+      items.map((item,i) =>
+        e(M.div, { key:item.key||i, initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, transition:{delay:i*0.08,...ez},
+          style:{ padding:"4px 10px", borderRadius:6, background:`${item.c||color}18`, border:`1px solid ${item.c||color}33`, fontSize:11, color:item.c||color, fontFamily:"monospace", whiteSpace:"nowrap" }
+        }, item.t)
+      )
+    )
+  );
+
+const MessageArrow = ({ direction, label, color, delay }) =>
+  e(M.div, { initial:{opacity:0,x:direction==="right"?-20:20}, animate:{opacity:1,x:0}, transition:{delay:delay||0,...ez},
+    style:{ display:"flex", alignItems:"center", justifyContent:"center", gap:6, padding:"6px 0" }
+  },
+    direction==="right" && e("span", { style:{ fontSize:10, color:T.text3 } }, "main"),
+    e("div", { style:{ display:"flex", alignItems:"center", gap:4 } },
+      direction==="right" && e("div", { style:{ width:30, height:1, background:color||T.purple } }),
+      e("div", { style:{ padding:"3px 10px", borderRadius:12, background:`${color||T.purple}18`, border:`1px solid ${color||T.purple}44`, fontSize:10, fontWeight:600, color:color||T.purpleL, fontFamily:"monospace" } }, label),
+      e("div", { style:{ width:30, height:1, background:color||T.purple } }),
+      e("span", { style:{ fontSize:14, color:color||T.purpleL } }, direction==="right"? "\u2192" : "\u2190"),
+    ),
+    direction==="left" && e("span", { style:{ fontSize:10, color:T.text3 } }, "worker"),
+    direction==="right" && e("span", { style:{ fontSize:10, color:T.text3 } }, "worker"),
+    direction==="left" && e("span", { style:{ fontSize:10, color:T.text3 } }, "main"),
+  );
+
+/* ─── SCENE VISUALIZATIONS ─── */
+const SceneViz = ({ scene }) => {
+  const v = scene.viz;
+
+  if (v==="intro") {
+    return e("div", { style:{ padding:"12px 0" } },
+      e(ThreadLane, { label:"Main Thread", color:T.blue, items:[
+        {t:"UI render"}, {t:"click handler"}, {t:"fetch callback"}, {t:"setTimeout"}, {t:"animation frame"}
+      ]}),
+      e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.5},
+        style:{ textAlign:"center", padding:"14px 0", fontSize:12, color:T.text3, fontStyle:"italic" }
+      }, "Everything runs on a single thread..."),
+    );
+  }
+
+  if (v==="blocking") {
+    return e("div", { style:{ padding:"12px 0" } },
+      e(ThreadLane, { label:"Main Thread", color:T.coral, items:[
+        {t:"heavyWork()", c:T.coral},
+      ]}),
+      e(M.div, { initial:{opacity:0}, animate:{opacity:[0,1,0.5,1]}, transition:{delay:0.3, duration:1.5, repeat:Infinity},
+        style:{ display:"flex", gap:8, padding:"10px 12px", marginTop:8, borderRadius:8, border:`1px solid ${T.coral}33`, background:`${T.coral}08` }
+      },
+        e("span", { style:{ fontSize:20 } }, "\u26a0\ufe0f"),
+        e("div", null,
+          e("div", { style:{ fontSize:12, fontWeight:600, color:T.coralL } }, "UI Frozen!"),
+          e("div", { style:{ fontSize:11, color:T.text2 } }, "Clicks unresponsive, animations stuck, scroll jank")
+        )
+      )
+    );
+  }
+
+  if (v==="two-threads") {
+    return e("div", { style:{ padding:"12px 0" } },
+      e(ThreadLane, { label:"Main Thread", color:T.blue, items:[
+        {t:"UI render"}, {t:"events"}, {t:"DOM updates"}
+      ]}),
+      e(MessageArrow, { direction:"right", label:"postMessage", color:T.purple, delay:0.3 }),
+      e(MessageArrow, { direction:"left", label:"result", color:T.teal, delay:0.6 }),
+      e(ThreadLane, { label:"Worker Thread", color:T.teal, items:[
+        {t:"heavy compute"}, {t:"own event loop"}, {t:"isolated scope"}
+      ]}),
+    );
+  }
+
+  if (v==="create") {
+    return e("div", { style:{ padding:"12px 0" } },
+      e(ThreadLane, { label:"Main Thread", color:T.blue, items:[
+        {t:"new Worker('worker.js')", c:T.purple},
+      ]}),
+      e(M.div, { initial:{opacity:0,y:10}, animate:{opacity:1,y:0}, transition:{delay:0.4,...ez},
+        style:{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, padding:"8px 0" }
+      },
+        e("div", { style:{ width:1, height:24, background:T.purple } }),
+        e("span", { style:{ fontSize:11, color:T.purpleL, fontFamily:"monospace" } }, "spawns new thread"),
+        e("div", { style:{ width:1, height:24, background:T.purple } }),
+      ),
+      e(ThreadLane, { label:"Worker Thread", color:T.teal, items:[
+        {t:"worker.js loaded"}, {t:"self = WorkerGlobalScope"}
+      ]}),
+    );
+  }
+
+  if (v==="messaging") {
+    return e("div", { style:{ padding:"12px 0" } },
+      e(ThreadLane, { label:"Main Thread", color:T.blue, items:[
+        {t:"postMessage('start')", c:T.purple}
+      ]}),
+      e(MessageArrow, { direction:"right", label:"'start'", color:T.purple, delay:0.2 }),
+      e(ThreadLane, { label:"Worker Thread", color:T.teal, items:[
+        {t:"onmessage: e.data", c:T.teal}, {t:"postMessage(result)", c:T.amber}
+      ]}),
+      e(MessageArrow, { direction:"left", label:"result", color:T.amber, delay:0.5 }),
+      e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.7},
+        style:{ padding:"6px 12px", borderRadius:6, background:`${T.blue}10`, border:`1px solid ${T.blue}22`, marginTop:4 }
+      },
+        e("span", { style:{ fontSize:11, color:T.blueL, fontFamily:"monospace" } }, "main.onmessage: e.data = result")
+      )
+    );
+  }
+
+  if (v==="clone") {
+    const items = ["{items:[1,2,3]}"];
+    return e("div", { style:{ padding:"12px 0" } },
+      e(ThreadLane, { label:"Main Thread", color:T.blue, items:[
+        {t:"data = {items:[1,2,3]}", c:T.blue}
+      ]}),
+      e("div", { style:{ display:"flex", alignItems:"center", justifyContent:"center", gap:6, padding:"8px 0" } },
+        e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.2},
+          style:{ padding:"4px 12px", borderRadius:8, border:`1px dashed ${T.amber}66`, background:`${T.amber}10`, fontSize:11, color:T.amberL, fontFamily:"monospace" }
+        }, "structured clone (deep copy)")
+      ),
+      e(ThreadLane, { label:"Worker Thread", color:T.teal, items:[
+        {t:"copy = {items:[1,2,3]}", c:T.teal}
+      ]}),
+      e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.5},
+        style:{ textAlign:"center", fontSize:11, color:T.text3, padding:"6px 0", fontStyle:"italic" }
+      }, "Two separate copies. Modifying one doesn't affect the other.")
+    );
+  }
+
+  if (v==="no-dom") {
+    const blocked = ["document","window","localStorage","DOM","parent"];
+    return e("div", { style:{ padding:"12px 0" } },
+      e(ThreadLane, { label:"Worker Thread", color:T.teal, items:[
+        {t:"self (WorkerGlobalScope)", c:T.teal}
+      ]}),
+      e("div", { style:{ display:"flex", flexWrap:"wrap", gap:6, padding:"10px 0", justifyContent:"center" } },
+        blocked.map((b,i) =>
+          e(M.div, { key:b, initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, transition:{delay:i*0.1,...ez},
+            style:{ padding:"5px 12px", borderRadius:6, border:`1px solid ${T.coral}44`, background:`${T.coral}10`, fontSize:11, color:T.coralL, fontFamily:"monospace", textDecoration:"line-through" }
+          }, b)
+        )
+      ),
+      e("div", { style:{ textAlign:"center", fontSize:11, color:T.text3, padding:"4px 0" } }, "Workers are isolated from the DOM for thread safety")
+    );
+  }
+
+  if (v==="can-access") {
+    const apis = [
+      {t:"fetch()",c:T.teal}, {t:"setTimeout()",c:T.teal}, {t:"WebSocket",c:T.teal},
+      {t:"indexedDB",c:T.blue}, {t:"crypto",c:T.blue}, {t:"XMLHttpRequest",c:T.blue},
+      {t:"importScripts()",c:T.amber}, {t:"URL",c:T.amber}, {t:"Blob",c:T.amber}
+    ];
+    return e("div", { style:{ padding:"12px 0" } },
+      e(ThreadLane, { label:"Worker Thread - Available APIs", color:T.teal, items:apis }),
+      e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.5},
+        style:{ textAlign:"center", fontSize:11, color:T.text3, padding:"8px 0", fontStyle:"italic" }
+      }, "Full network access, timers, and storage. Just no DOM.")
+    );
+  }
+
+  if (v==="transfer") {
+    return e("div", { style:{ padding:"12px 0" } },
+      e(ThreadLane, { label:"Main Thread", color:T.blue, items:[
+        {t:"ArrayBuffer(1024)", c:T.amber}
+      ]}),
+      e("div", { style:{ display:"flex", alignItems:"center", justifyContent:"center", gap:6, padding:"8px 0" } },
+        e(M.div, {
+          animate:{x:[0,80], opacity:[1,0.6,1]},
+          transition:{duration:1.5, repeat:Infinity, ease:"easeInOut"},
+          style:{ padding:"4px 12px", borderRadius:8, border:`1px solid ${T.amber}66`, background:`${T.amber}18`, fontSize:11, color:T.amberL, fontFamily:"monospace", fontWeight:600 }
+        }, "transfer ownership \u2192")
+      ),
+      e(ThreadLane, { label:"Worker Thread", color:T.teal, items:[
+        {t:"ArrayBuffer(1024) \u2713", c:T.teal}
+      ]}),
+      e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.6},
+        style:{ display:"flex", gap:16, justifyContent:"center", padding:"8px 0" }
+      },
+        e("div", { style:{ padding:"4px 10px", borderRadius:6, border:`1px solid ${T.coral}44`, background:`${T.coral}10`, fontSize:11, color:T.coralL, fontFamily:"monospace" } }, "main: buf.byteLength = 0"),
+        e("div", { style:{ padding:"4px 10px", borderRadius:6, border:`1px solid ${T.teal}44`, background:`${T.teal}10`, fontSize:11, color:T.tealL, fontFamily:"monospace" } }, "worker: buf.byteLength = 1024"),
+      )
+    );
+  }
+
+  if (v==="shared") {
+    return e("div", { style:{ padding:"12px 0" } },
+      e(ThreadLane, { label:"Main Thread", color:T.blue, items:[
+        {t:"Int32Array(sab)", c:T.blue}
+      ]}),
+      e("div", { style:{ display:"flex", alignItems:"center", justifyContent:"center", gap:6, padding:"6px 0" } },
+        e(M.div, {
+          animate:{ boxShadow:[`0 0 8px ${T.pink}40`,`0 0 16px ${T.pink}60`,`0 0 8px ${T.pink}40`] },
+          transition:{ duration:2, repeat:Infinity },
+          style:{ padding:"6px 14px", borderRadius:8, border:`1px solid ${T.pink}66`, background:`${T.pink}18`, fontSize:11, color:T.pinkL, fontFamily:"monospace", fontWeight:600 }
+        }, "SharedArrayBuffer (same memory)")
+      ),
+      e(ThreadLane, { label:"Worker Thread", color:T.teal, items:[
+        {t:"Int32Array(sab)", c:T.teal}
+      ]}),
+      e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.5},
+        style:{ display:"flex", gap:8, justifyContent:"center", padding:"6px 0", flexWrap:"wrap" }
+      },
+        ["Atomics.store()","Atomics.load()","Atomics.wait()","Atomics.notify()"].map((a,i) =>
+          e(M.div, { key:a, initial:{opacity:0,y:5}, animate:{opacity:1,y:0}, transition:{delay:0.6+i*0.1,...ez},
+            style:{ padding:"3px 8px", borderRadius:5, border:`1px solid ${T.pink}33`, fontSize:10, color:T.pinkL, fontFamily:"monospace" }
+          }, a)
+        )
+      )
+    );
+  }
+
+  if (v==="types") {
+    const types = [
+      {label:"Dedicated Worker", desc:"1 page \u2194 1 worker", color:T.blue, icon:"\ud83d\udc64"},
+      {label:"Shared Worker", desc:"N pages \u2194 1 worker", color:T.amber, icon:"\ud83d\udc65"},
+      {label:"Service Worker", desc:"Network proxy + cache", color:T.teal, icon:"\ud83c\udf10"},
+    ];
+    return e("div", { style:{ padding:"12px 0", display:"flex", flexDirection:"column", gap:8 } },
+      types.map((t,i) =>
+        e(M.div, { key:t.label, initial:{opacity:0,x:-15}, animate:{opacity:1,x:0}, transition:{delay:i*0.15,...ez},
+          style:{ display:"flex", alignItems:"center", gap:12, padding:"10px 14px", borderRadius:10, border:`1px solid ${t.color}33`, background:`${t.color}08` }
+        },
+          e("div", { style:{ fontSize:22 } }, t.icon),
+          e("div", null,
+            e("div", { style:{ fontSize:13, fontWeight:600, color:t.color, marginBottom:2 } }, t.label),
+            e("div", { style:{ fontSize:11, color:T.text2 } }, t.desc)
+          )
+        )
+      )
+    );
+  }
+
+  if (v==="service") {
+    return e("div", { style:{ padding:"12px 0" } },
+      e(ThreadLane, { label:"Your App", color:T.blue, items:[
+        {t:"fetch('/api/data')", c:T.blue}
+      ]}),
+      e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.2},
+        style:{ display:"flex", alignItems:"center", justifyContent:"center", gap:6, padding:"6px 0" }
+      },
+        e("span", { style:{ fontSize:12, color:T.text3 } }, "\u2193 intercept")
+      ),
+      e(M.div, { initial:{opacity:0,scale:0.95}, animate:{opacity:1,scale:1}, transition:{delay:0.3,...ez},
+        style:{ padding:"10px 14px", borderRadius:10, border:`1px solid ${T.teal}44`, background:`${T.teal}10`, marginBottom:8 }
+      },
+        e("div", { style:{ fontSize:12, fontWeight:600, color:T.tealL, marginBottom:4 } }, "Service Worker"),
+        e("div", { style:{ display:"flex", gap:8, flexWrap:"wrap" } },
+          ["Cache hit?","Fetch from network","Cache response","Return to app"].map((s,i) =>
+            e(M.div, { key:s, initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.5+i*0.12},
+              style:{ padding:"3px 8px", borderRadius:5, border:`1px solid ${T.teal}33`, fontSize:10, color:T.tealL, fontFamily:"monospace" }
+            }, `${i+1}. ${s}`)
+          )
+        )
+      ),
+      e(ThreadLane, { label:"Network", color:T.amber, items:[
+        {t:"server response", c:T.amber}
+      ]}),
+    );
+  }
+
+  if (v==="usecases") {
+    const cases = [
+      {t:"Image processing",icon:"\ud83d\uddbc\ufe0f",c:T.blue},
+      {t:"CSV/JSON parsing",icon:"\ud83d\udcc4",c:T.teal},
+      {t:"Encryption",icon:"\ud83d\udd10",c:T.amber},
+      {t:"Search indexing",icon:"\ud83d\udd0d",c:T.purple},
+      {t:"Physics sims",icon:"\u2699\ufe0f",c:T.pink},
+      {t:"Prefetching",icon:"\ud83d\udce6",c:T.coral},
+    ];
+    return e("div", { style:{ padding:"12px 0", display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 } },
+      cases.map((c,i) =>
+        e(M.div, { key:c.t, initial:{opacity:0,scale:0.85}, animate:{opacity:1,scale:1}, transition:{delay:i*0.1,...ez},
+          style:{ display:"flex", alignItems:"center", gap:10, padding:"10px 12px", borderRadius:8, border:`1px solid ${c.c}33`, background:`${c.c}08` }
+        },
+          e("span", { style:{ fontSize:18 } }, c.icon),
+          e("div", { style:{ fontSize:12, fontWeight:500, color:c.c } }, c.t)
+        )
+      )
+    );
+  }
+
+  return null;
+};
+
+/* ─── FINALE ─── */
+const Finale = () => {
+  const rows = [
+    { n:1, label:"Separate thread", sub:"Workers run in real OS threads with their own event loop", c:T.blue },
+    { n:2, label:"Message passing", sub:"postMessage + onmessage for safe thread communication", c:T.purple },
+    { n:3, label:"DOM isolation", sub:"Workers can't access DOM, window, or document — by design", c:T.teal },
+    { n:4, label:"Transferable objects", sub:"Zero-copy transfer of ArrayBuffers for maximum performance", c:T.amber },
+    { n:5, label:"Service Workers", sub:"Network proxy layer enabling offline support and caching", c:T.pink },
+  ];
+  return e("div", { style:{ padding:"8px 0" } },
+    rows.map((r,i) => e(M.div, { key:i, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.12,...ez},
+      style:{ display:"flex", alignItems:"flex-start", gap:12, padding:"11px 14px", marginBottom:8, borderRadius:10, border:`1px solid ${r.c}28`, background:`${r.c}08` }
+    },
+      e("div", { style:{ width:26, height:26, borderRadius:"50%", border:`1.5px solid ${r.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:12, fontWeight:700, color:r.c } }, r.n),
+      e("div", null,
+        e("div", { style:{ fontSize:13, fontWeight:600, color:r.c, marginBottom:2 } }, r.label),
+        e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.5 } }, r.sub)
+      )
+    ))
+  );
+};
+
+const DetailPanel = ({ detailKey, onClose }) => {
+  const d = DETAILS[detailKey];
+  if (!d) return null;
+  return e("div", {
+    style:{ width:340, flexShrink:0, background:T.surface, borderRadius:14, border:`1.5px solid ${d.color}44`, overflow:"hidden", alignSelf:"flex-start", position:"sticky", top:56 }
+  },
+    e("div", { style:{ padding:"14px 18px 12px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:8 } },
+        e("div", { style:{ width:8, height:8, borderRadius:"50%", background:d.color } }),
+        e("span", { style:{ fontSize:14, fontWeight:600, color:T.text1 } }, d.title)
+      ),
+      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6, transition:"color 0.2s" }, onMouseEnter:ev=>ev.target.style.color=T.text1, onMouseLeave:ev=>ev.target.style.color=T.text3 }, "\u2715")
+    ),
+    e("div", { style:{ padding:"16px 18px 20px", maxHeight:"calc(100vh - 140px)", overflowY:"auto" } },
+      d.sections.map((s, i) =>
+        e("div", { key:i, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
+          e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
+        )
+      )
+    )
+  );
+};
+
+/* ─── APP ─── */
+function App() {
+  const [si, setSi] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [detail, setDetail] = useState(null);
+  const timer = useRef(null);
+  const sc = SCENES[si];
+
+  useEffect(() => { setPlaying(true); }, []);
+
+  useEffect(() => {
+    if (!playing) return;
+    const d = si===0 ? 3000 : sc.finale ? 99999 : 3200;
+    timer.current = setTimeout(() => { si < SCENES.length-1 ? setSi(i=>i+1) : setPlaying(false); }, d);
+    return () => clearTimeout(timer.current);
+  }, [playing, si]);
+
+  const go = d => { clearTimeout(timer.current); setPlaying(false); setSi(i=>Math.max(0,Math.min(SCENES.length-1,i+d))); };
+  const jump = i => { clearTimeout(timer.current); setPlaying(false); setSi(i); };
+  const togglePlay = () => { if(si===SCENES.length-1){setSi(0);setPlaying(true);}else setPlaying(p=>!p); };
+  const toggleDetail = key => { setDetail(d => d===key ? null : key); clearTimeout(timer.current); setPlaying(false); };
+
+  return e("div", { style:{ display:"flex", gap:16, alignItems:"flex-start", justifyContent: detail ? "flex-start" : "center" } },
+  e("div", { style:{ width:760, flexShrink:0, background:T.bg, fontFamily:"system-ui,sans-serif", padding:20, borderRadius:16 } },
+
+    /* header */
+    e("div", { style:{ marginBottom:18 } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:10, marginBottom:11 } },
+        e(AP, { mode:"wait" },
+          e(M.div, { key:sc.act, initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, exit:{opacity:0}, transition:sp(400,28),
+            style:{ fontSize:9,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:T.purple,background:`${T.purple}14`,padding:"3px 10px",borderRadius:20,border:`1px solid ${T.purple}30`,flexShrink:0 }
+          }, sc.act)
+        ),
+        e("div", { style:{ flex:1, height:1, background:T.border, borderRadius:99, overflow:"hidden" } },
+          e(M.div, { animate:{width:`${si/(SCENES.length-1)*100}%`}, transition:{duration:0.5}, style:{height:"100%",background:T.purple,borderRadius:99} })
+        ),
+        e("span", { style:{ fontSize:10, color:T.text3 } }, `${si+1} / ${SCENES.length}`)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.title, initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, exit:{opacity:0,y:-8}, transition:ez,
+          style:{ fontSize:20,fontWeight:600,color:T.text1,marginBottom:4,letterSpacing:"-0.02em" }
+        }, sc.title)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
+          style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
+        }, sc.sub)
+      )
+    ),
+
+    e("div", { style:{ minHeight:460 } },
+    /* finale */
+    sc.finale && e(Finale),
+
+    /* main grid */
+    !sc.finale && e("div", null,
+
+      /* row 1: code panel */
+      e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:10 } },
+        e("div", { onClick:()=>toggleDetail("code"), style:{cursor:"pointer"} },
+          e(CodePanel, { tokens: sc.code })
+        ),
+        e(Panel, { label:"Thread Visualization", onClick:()=>toggleDetail("threads") },
+          e(AP, { mode:"wait" },
+            e(M.div, { key:sc.id, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.15} },
+              e(SceneViz, { scene:sc })
+            )
+          )
+        )
+      ),
+
+      /* row 2: detail panels */
+      e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 } },
+        e(Panel, { label:"Concept", onClick:()=>toggleDetail("concept") },
+          e("div", { style:{ minHeight:52 } },
+            e(AP, { mode:"wait" },
+              e(M.div, { key:sc.id, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.15} },
+                e("div", { style:{ fontSize:13, fontWeight:600, color:T.tealL, marginBottom:4 } },
+                  sc.title
+                ),
+                e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.6 } },
+                  sc.sub.length > 100 ? sc.sub.slice(0,100)+"..." : sc.sub
+                )
+              )
+            )
+          )
+        ),
+        e(Panel, { label:"API Reference", onClick:()=>toggleDetail("api") },
+          e("div", { style:{ minHeight:52 } },
+            e(AP, { mode:"wait" },
+              e(M.div, { key:sc.id, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.15} },
+                sc.detail_hint==="api"
+                  ? e("div", null,
+                      e("div", { style:{ fontSize:12, color:T.amberL, fontFamily:"monospace", marginBottom:2 } },
+                        sc.id===3?"new Worker(url)":sc.id===4?"postMessage(data)":sc.id===7?"Worker APIs":sc.id===8?"postMessage(data,[transfer])":sc.id===9?"SharedArrayBuffer":sc.id===11?"self.addEventListener('fetch',...)":"Worker API"
+                      ),
+                      e("div", { style:{ fontSize:11, color:T.text2 } }, "Click to explore the full API")
+                    )
+                  : e("div", { style:{ fontSize:11, color:T.text3 } }, "Click for API details")
+              )
+            )
+          )
+        )
+      )
+    ),
+    ), /* close minHeight wrapper */
+
+    /* controls */
+    e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginTop:16 } },
+      e("button", { onClick:()=>go(-1), disabled:si===0,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===0?T.text3:T.text2,cursor:si===0?"not-allowed":"pointer",fontSize:11,transition:"color 0.2s" }
+      }, "\u2190 Back"),
+      e("button", { onClick:togglePlay,
+        style:{ padding:"6px 18px",borderRadius:8,border:`1px solid ${playing?T.coral:T.purple}44`,background:playing?`${T.coral}14`:`${T.purple}14`,color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all 0.2s" }
+      }, playing ? "\u23f8  Pause" : si===SCENES.length-1 ? "\u21ba  Replay" : "\u25b6  Play"),
+      e("button", { onClick:()=>go(1), disabled:si===SCENES.length-1,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
+      }, "Next \u2192"),
+      e("div", { style:{ flex:1 } }),
+      e("div", { style:{ display:"flex", gap:4, alignItems:"center" } },
+        SCENES.map((_,i) =>
+          e("button", { key:i, onClick:()=>jump(i),
+            style:{ width:i===si?16:5,height:5,borderRadius:99,border:"none",padding:0,background:i===si?T.purple:i<si?`${T.purple}55`:T.border,cursor:"pointer",transition:"all 0.25s" }
+          })
+        )
+      )
+    )
+  ),
+  detail && e(DetailPanel, { detailKey:detail, onClose:()=>setDetail(null) })
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(e(App));
+</script>
+</body>
+</html>

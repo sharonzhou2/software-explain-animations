@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Error Propagation in JS</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111118;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px 16px;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  #root { width: 100%; max-width: 1120px; }
+  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: system-ui, sans-serif; }
+  .topnav a { text-decoration: none; color: #8888aa; font-size: 13px; transition: color 0.2s; }
+  .topnav a:hover { color: #e8e8f0; }
+  .topnav .name { font-weight: 600; color: #e8e8f0; font-size: 13px; }
+  .topnav .sep { color: #38384a; font-size: 12px; }
+  .topnav .current { color: #7c6fcd; font-size: 13px; font-weight: 500; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="../" class="name">Sharon Zhou</a>
+  <span class="sep">/</span>
+  <a href="../">Animations</a>
+  <span class="sep">/</span>
+  <span class="current">Error Propagation</span>
+</nav>
+<div id="root" style="margin-top: 36px;"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/framer-motion@11/dist/framer-motion.js"></script>
+<script>
+const { useState, useEffect, useRef } = React;
+const { motion, AnimatePresence } = window.Motion;
+const e = React.createElement;
+const M = motion;
+const AP = AnimatePresence;
+const sp = (s=380,d=28) => ({ type:"spring", stiffness:s, damping:d });
+const ez = { duration:0.32, ease:[0.22,1,0.36,1] };
+
+const T = {
+  bg:"#111118", surface:"#18181f", surface2:"#1e1e28",
+  border:"#2a2a38", border2:"#38384a",
+  text1:"#e8e8f0", text2:"#8888aa", text3:"#44445a",
+  purple:"#7c6fcd", purpleL:"#a99cf0",
+  teal:"#3db89a", tealL:"#6dd4b8",
+  coral:"#c4694a", coralL:"#e08a6a",
+  blue:"#4a8fd4", codeBase:"#141428",
+  red:"#d94452", redL:"#f06070", redBg:"#221418",
+};
+
+const TS = {
+  fn:    { color:"#82aaff" },
+  meth:  { color:"#89ddff" },
+  str:   { color:"#c3e88d" },
+  kw:    { color:"#c792ea" },
+  num:   { color:"#f78c6c" },
+  punc:  { color:"#89ddff" },
+  plain: { color:"#a6accd" },
+  err:   { color:"#f07178" },
+  cmt:   { color:"#546e7a", fontStyle:"italic" },
+  type:  { color:"#ffcb6b" },
+};
+
+/* ── Scene code blocks (each scene has its own code) ── */
+const CODES = {
+  intro: [
+    [ ["kw","function"], ["plain"," "], ["fn","processOrder"], ["punc","("], ["plain","order"], ["punc",") {"] ],
+    [ ["plain","  "], ["kw","const"], ["plain"," total = "], ["fn","calculateTotal"], ["punc","("], ["plain","order"], ["punc",")"] ],
+    [ ["plain","  "], ["kw","return"], ["plain"," "], ["fn","chargeCard"], ["punc","("], ["plain","total"], ["punc",")"] ],
+    [ ["punc","}"] ],
+    [],
+    [ ["cmt","// What if calculateTotal gets bad data?"] ],
+    [ ["cmt","// The error needs to find a handler..."] ],
+  ],
+  throw_kw: [
+    [ ["kw","function"], ["plain"," "], ["fn","validateAge"], ["punc","("], ["plain","age"], ["punc",") {"] ],
+    [ ["plain","  "], ["kw","if"], ["plain"," (age < "], ["num","0"], ["punc",") {"] ],
+    [ ["plain","    "], ["kw","throw"], ["plain"," "], ["kw","new"], ["plain"," "], ["type","Error"], ["punc","("], ["str","'Age cannot be negative'"], ["punc",")"] ],
+    [ ["plain","  "], ["punc","}"] ],
+    [ ["plain","  "], ["kw","if"], ["plain"," (age > "], ["num","150"], ["punc",") {"] ],
+    [ ["plain","    "], ["kw","throw"], ["plain"," "], ["kw","new"], ["plain"," "], ["type","RangeError"], ["punc","("], ["str","'Unrealistic age'"], ["punc",")"] ],
+    [ ["plain","  "], ["punc","}"] ],
+    [ ["plain","  "], ["kw","return"], ["plain"," age"] ],
+    [ ["punc","}"] ],
+  ],
+  error_types: [
+    [ ["type","TypeError"], ["plain","     "], ["cmt","// wrong type operation"] ],
+    [ ["plain","  "], ["plain","null"], ["punc","."], ["fn","toString"], ["punc","()"], ["plain","  "], ["cmt","// Cannot read props of null"] ],
+    [],
+    [ ["type","ReferenceError"], ["plain"," "], ["cmt","// undeclared variable"] ],
+    [ ["plain","  "], ["fn","console"], ["punc","."], ["meth","log"], ["punc","("], ["plain","x"], ["punc",")"], ["plain"," "], ["cmt","// x is not defined"] ],
+    [],
+    [ ["type","SyntaxError"], ["plain","   "], ["cmt","// invalid syntax (parse time)"] ],
+    [],
+    [ ["type","RangeError"], ["plain","     "], ["cmt","// value out of range"] ],
+    [ ["plain","  "], ["kw","new"], ["plain"," "], ["type","Array"], ["punc","("], ["num","-1"], ["punc",")"] ],
+    [],
+    [ ["kw","class"], ["plain"," "], ["type","HttpError"], ["plain"," "], ["kw","extends"], ["plain"," "], ["type","Error"], ["plain"," "], ["punc","{"], ["cmt"," // custom"] ],
+    [ ["plain","  "], ["fn","constructor"], ["punc","("], ["plain","status, msg"], ["punc",") { "], ["kw","super"], ["punc","("], ["plain","msg"], ["punc","); "], ["kw","this"], ["punc","."], ["plain","status = status "], ["punc","}"] ],
+    [ ["punc","}"] ],
+  ],
+  callstack_unwind: [
+    [ ["kw","function"], ["plain"," "], ["fn","main"], ["punc","() {"] ],
+    [ ["plain","  "], ["fn","handleRequest"], ["punc","()"] ],
+    [ ["punc","}"] ],
+    [],
+    [ ["kw","function"], ["plain"," "], ["fn","handleRequest"], ["punc","() {"] ],
+    [ ["plain","  "], ["fn","parseInput"], ["punc","("], ["str","'bad data'"], ["punc",")"] ],
+    [ ["punc","}"] ],
+    [],
+    [ ["kw","function"], ["plain"," "], ["fn","parseInput"], ["punc","("], ["plain","data"], ["punc",") {"] ],
+    [ ["plain","  "], ["kw","throw"], ["plain"," "], ["kw","new"], ["plain"," "], ["type","Error"], ["punc","("], ["str","'Parse failed'"], ["punc",")"] ],
+    [ ["punc","}"] ],
+  ],
+  try_catch: [
+    [ ["kw","try"], ["plain"," "], ["punc","{"] ],
+    [ ["plain","  "], ["kw","const"], ["plain"," data = "], ["fn","JSON"], ["punc","."], ["meth","parse"], ["punc","("], ["plain","input"], ["punc",")"] ],
+    [ ["plain","  "], ["fn","processData"], ["punc","("], ["plain","data"], ["punc",")"] ],
+    [ ["punc","}"], ["plain"," "], ["kw","catch"], ["plain"," "], ["punc","("], ["plain","err"], ["punc",") {"] ],
+    [ ["plain","  "], ["fn","console"], ["punc","."], ["meth","error"], ["punc","("], ["str","'Failed:'"], ["punc",","], ["plain"," err"], ["punc","."], ["plain","message"], ["punc",")"] ],
+    [ ["punc","}"], ["plain"," "], ["kw","finally"], ["plain"," "], ["punc","{"] ],
+    [ ["plain","  "], ["fn","cleanup"], ["punc","()"], ["plain","  "], ["cmt","// always runs"] ],
+    [ ["punc","}"] ],
+  ],
+  propagation_step: [
+    [ ["kw","function"], ["plain"," "], ["fn","app"], ["punc","() {"] ],
+    [ ["plain","  "], ["kw","try"], ["plain"," "], ["punc","{"] ],
+    [ ["plain","    "], ["fn","controller"], ["punc","()"], ["plain","   "], ["cmt","// 5. caught here!"] ],
+    [ ["plain","  "], ["punc","}"], ["plain"," "], ["kw","catch"], ["plain"," "], ["punc","("], ["plain","e"], ["punc",") {"] ],
+    [ ["plain","    "], ["fn","console"], ["punc","."], ["meth","log"], ["punc","("], ["str","'Handled:'"], ["punc",","], ["plain"," e"], ["punc","."], ["plain","message"], ["punc",")"] ],
+    [ ["plain","  "], ["punc","}"] ],
+    [ ["punc","}"] ],
+    [],
+    [ ["kw","function"], ["plain"," "], ["fn","controller"], ["punc","() {"] ],
+    [ ["plain","  "], ["fn","service"], ["punc","()"], ["plain","           "], ["cmt","// 4. no catch, unwinds"] ],
+    [ ["punc","}"] ],
+    [],
+    [ ["kw","function"], ["plain"," "], ["fn","service"], ["punc","() {"] ],
+    [ ["plain","  "], ["fn","repository"], ["punc","()"], ["plain","        "], ["cmt","// 3. no catch, unwinds"] ],
+    [ ["punc","}"] ],
+    [],
+    [ ["kw","function"], ["plain"," "], ["fn","repository"], ["punc","() {"] ],
+    [ ["plain","  "], ["kw","throw"], ["plain"," "], ["kw","new"], ["plain"," "], ["type","Error"], ["punc","("], ["str","'DB down'"], ["punc",")"], ["plain"," "], ["cmt","// 1. thrown here"] ],
+    [ ["punc","}"], ["plain","                       "], ["cmt","// 2. no catch, unwinds"] ],
+  ],
+  uncaught: [
+    [ ["cmt","// Browser: last resort handler"] ],
+    [ ["fn","window"], ["punc","."], ["meth","onerror"], ["plain"," = "], ["kw","function"], ["punc","("], ["plain","msg, src, line"], ["punc",") {"] ],
+    [ ["plain","  "], ["fn","logToService"], ["punc","("], ["punc","{"], ["plain"," msg, src, line "], ["punc","}"], ["punc",")"] ],
+    [ ["punc","}"] ],
+    [],
+    [ ["cmt","// Node.js: last resort handler"] ],
+    [ ["fn","process"], ["punc","."], ["meth","on"], ["punc","("], ["str","'uncaughtException'"], ["punc",","], ["plain"," "], ["punc","("], ["plain","err"], ["punc",") =>"], ["plain"," "], ["punc","{"] ],
+    [ ["plain","  "], ["fn","logger"], ["punc","."], ["meth","fatal"], ["punc","("], ["plain","err"], ["punc",")"] ],
+    [ ["plain","  "], ["fn","process"], ["punc","."], ["meth","exit"], ["punc","("], ["num","1"], ["punc",")"], ["plain","  "], ["cmt","// must exit!"] ],
+    [ ["punc","})"] ],
+  ],
+  callback_err: [
+    [ ["cmt","// Error-first callback pattern (Node.js)"] ],
+    [ ["fn","fs"], ["punc","."], ["meth","readFile"], ["punc","("], ["str","'data.json'"], ["punc",","], ["plain"," "], ["punc","("], ["plain","err, data"], ["punc",") =>"], ["plain"," "], ["punc","{"] ],
+    [ ["plain","  "], ["kw","if"], ["plain"," "], ["punc","("], ["plain","err"], ["punc",") {"] ],
+    [ ["plain","    "], ["fn","console"], ["punc","."], ["meth","error"], ["punc","("], ["str","'Read failed:'"], ["punc",","], ["plain"," err"], ["punc",")"] ],
+    [ ["plain","    "], ["kw","return"], ["plain","  "], ["cmt","// must return to stop execution"] ],
+    [ ["plain","  "], ["punc","}"] ],
+    [ ["plain","  "], ["fn","processData"], ["punc","("], ["plain","data"], ["punc",")"] ],
+    [ ["punc","})"] ],
+    [],
+    [ ["cmt","// throw inside callback? Can't catch outside!"] ],
+    [ ["cmt","// try/catch won't work across async boundary"] ],
+  ],
+  promise_catch: [
+    [ ["fn","fetch"], ["punc","("], ["str","'/api/users'"], ["punc",")"] ],
+    [ ["plain","  "], ["punc","."], ["meth","then"], ["punc","("], ["plain","res"], ["plain"," => "], ["plain","res"], ["punc","."], ["meth","json"], ["punc","()"], ["punc",")"] ],
+    [ ["plain","  "], ["punc","."], ["meth","then"], ["punc","("], ["plain","data"], ["plain"," => "], ["fn","render"], ["punc","("], ["plain","data"], ["punc",")"], ["punc",")"] ],
+    [ ["plain","  "], ["punc","."], ["meth","catch"], ["punc","("], ["plain","err"], ["plain"," => "], ["fn","showError"], ["punc","("], ["plain","err"], ["punc",")"], ["punc",")"] ],
+    [],
+    [ ["cmt","// Unhandled rejection — dangerous!"] ],
+    [ ["fn","fetch"], ["punc","("], ["str","'/api'"], ["punc",")"], ["punc","."], ["meth","then"], ["punc","("], ["plain","r => r"], ["punc","."], ["meth","json"], ["punc","()"], ["punc",")"] ],
+    [ ["cmt","// no .catch() — UnhandledPromiseRejection"] ],
+    [],
+    [ ["fn","window"], ["punc","."], ["meth","addEventListener"], ["punc","("] ],
+    [ ["plain","  "], ["str","'unhandledrejection'"], ["punc",","], ["plain"," e => "], ["fn","log"], ["punc","("], ["plain","e"], ["punc","."], ["plain","reason"], ["punc",")"] ],
+    [ ["punc",")"] ],
+  ],
+  async_await: [
+    [ ["kw","async"], ["plain"," "], ["kw","function"], ["plain"," "], ["fn","loadUser"], ["punc","("], ["plain","id"], ["punc",") {"] ],
+    [ ["plain","  "], ["kw","try"], ["plain"," "], ["punc","{"] ],
+    [ ["plain","    "], ["kw","const"], ["plain"," res = "], ["kw","await"], ["plain"," "], ["fn","fetch"], ["punc","("], ["str","`/api/users/${id}`"], ["punc",")"] ],
+    [ ["plain","    "], ["kw","if"], ["plain"," "], ["punc","("], ["plain","!res"], ["punc","."], ["plain","ok"], ["punc",")"], ["plain"," "], ["kw","throw"], ["plain"," "], ["kw","new"], ["plain"," "], ["type","Error"], ["punc","("], ["str","`HTTP ${res.status}`"], ["punc",")"] ],
+    [ ["plain","    "], ["kw","const"], ["plain"," user = "], ["kw","await"], ["plain"," res"], ["punc","."], ["meth","json"], ["punc","()"] ],
+    [ ["plain","    "], ["kw","return"], ["plain"," user"] ],
+    [ ["plain","  "], ["punc","}"], ["plain"," "], ["kw","catch"], ["plain"," "], ["punc","("], ["plain","err"], ["punc",") {"] ],
+    [ ["plain","    "], ["fn","console"], ["punc","."], ["meth","error"], ["punc","("], ["str","'Load failed:'"], ["punc",","], ["plain"," err"] , ["punc",")"] ],
+    [ ["plain","    "], ["kw","throw"], ["plain"," err"], ["plain","  "], ["cmt","// re-throw to caller"] ],
+    [ ["plain","  "], ["punc","}"] ],
+    [ ["punc","}"] ],
+  ],
+  chain_catch: [
+    [ ["fn","fetch"], ["punc","("], ["str","'/api'"], ["punc",")"] ],
+    [ ["plain","  "], ["punc","."], ["meth","then"], ["punc","("], ["plain","r => r"], ["punc","."], ["meth","json"], ["punc","()"], ["punc",")"] ],
+    [ ["plain","  "], ["punc","."], ["meth","then"], ["punc","("], ["plain","data"], ["plain"," => "], ["punc","{"] ],
+    [ ["plain","    "], ["kw","if"], ["plain"," "], ["punc","("], ["plain","!data"], ["punc","."], ["plain","valid"], ["punc",")"], ["plain"," "], ["kw","throw"], ["plain"," "], ["kw","new"], ["plain"," "], ["type","Error"], ["punc","("], ["str","'Invalid'"], ["punc",")"] ],
+    [ ["plain","    "], ["kw","return"], ["plain"," "], ["fn","transform"], ["punc","("], ["plain","data"], ["punc",")"] ],
+    [ ["plain","  "], ["punc","})"] ],
+    [ ["plain","  "], ["punc","."], ["meth","catch"], ["punc","("], ["plain","err"], ["plain"," => "], ["punc","{"], ["plain"," "], ["cmt","// catches ANY above"] ],
+    [ ["plain","    "], ["fn","console"], ["punc","."], ["meth","error"], ["punc","("], ["plain","err"], ["punc",")"] ],
+    [ ["plain","    "], ["kw","return"], ["plain"," "], ["plain","fallbackData"], ["plain","  "], ["cmt","// recovery!"] ],
+    [ ["plain","  "], ["punc","})"] ],
+    [ ["plain","  "], ["punc","."], ["meth","then"], ["punc","("], ["plain","d"], ["plain"," => "], ["fn","render"], ["punc","("], ["plain","d"], ["punc",")"], ["punc",")"], ["plain","  "], ["cmt","// continues!"] ],
+  ],
+  finally_return: [
+    [ ["kw","function"], ["plain"," "], ["fn","getData"], ["punc","() {"] ],
+    [ ["plain","  "], ["kw","try"], ["plain"," "], ["punc","{"] ],
+    [ ["plain","    "], ["kw","return"], ["plain"," "], ["str","'from try'"], ["plain","     "], ["cmt","// 1. sets return"] ],
+    [ ["plain","  "], ["punc","}"], ["plain"," "], ["kw","finally"], ["plain"," "], ["punc","{"] ],
+    [ ["plain","    "], ["fn","console"], ["punc","."], ["meth","log"], ["punc","("], ["str","'cleanup!'"], ["punc",")"], ["plain"," "], ["cmt","// 2. runs anyway!"] ],
+    [ ["plain","  "], ["punc","}"] ],
+    [ ["punc","}"] ],
+    [],
+    [ ["fn","console"], ["punc","."], ["meth","log"], ["punc","("], ["fn","getData"], ["punc","()"], ["punc",")"] ],
+    [ ["cmt","// logs: 'cleanup!'"] ],
+    [ ["cmt","// logs: 'from try'"] ],
+    [],
+    [ ["cmt","// finally even runs after throw!"] ],
+    [ ["cmt","// Use for: closing files, DB connections,"] ],
+    [ ["cmt","// clearing timers, releasing locks"] ],
+  ],
+  best_practices: [
+    [ ["cmt","// 1. Catch at the right level"] ],
+    [ ["cmt","// 2. Don't swallow errors silently"] ],
+    [ ["kw","catch"], ["plain"," "], ["punc","("], ["plain","e"], ["punc",") {"], ["plain"," "], ["fn","console"], ["punc","."], ["meth","log"], ["punc","("], ["plain","e"], ["punc",")"], ["plain"," "], ["punc","}"], ["plain"," "], ["cmt","// bad: too generic"] ],
+    [],
+    [ ["cmt","// 3. Use specific error types"] ],
+    [ ["kw","if"], ["plain"," "], ["punc","("], ["plain","err"], ["plain"," "], ["kw","instanceof"], ["plain"," "], ["type","TypeError"], ["punc",") { ... }"] ],
+    [],
+    [ ["cmt","// 4. Always handle promise rejections"] ],
+    [ ["plain","promise"], ["punc","."], ["meth","catch"], ["punc","("], ["plain","handleError"], ["punc",")"] ],
+    [],
+    [ ["cmt","// 5. Re-throw if you can't handle it"] ],
+    [ ["kw","catch"], ["plain"," "], ["punc","("], ["plain","e"], ["punc",") {"] ],
+    [ ["plain","  "], ["fn","log"], ["punc","("], ["plain","e"], ["punc",")"] ],
+    [ ["plain","  "], ["kw","throw"], ["plain"," e"], ["plain","  "], ["cmt","// let caller deal with it"] ],
+    [ ["punc","}"] ],
+  ],
+  summary: [
+    [ ["kw","throw"], ["plain"," "], ["cmt","          // create an error"] ],
+    [ ["kw","try"], ["punc","/"], ["kw","catch"], ["punc","/"], ["kw","finally"], ["plain"," "], ["cmt","// handle errors"] ],
+    [],
+    [ ["cmt","// Sync: error walks up the call stack"] ],
+    [ ["cmt","// Async callbacks: error-first pattern"] ],
+    [ ["cmt","// Promises: .catch() in the chain"] ],
+    [ ["cmt","// async/await: try/catch just works"] ],
+    [],
+    [ ["cmt","// Golden rules:"] ],
+    [ ["cmt","//   Catch where you can recover"] ],
+    [ ["cmt","//   Log where you can't"] ],
+    [ ["cmt","//   Never silently swallow errors"] ],
+    [ ["cmt","//   Always handle promise rejections"] ],
+  ],
+};
+
+/* ── Call stack visualization data ── */
+const SCENES = [
+  {
+    id:0, act:"01", title:"When things go wrong",
+    sub:"JavaScript errors don't just vanish. When a function throws, the error propagates up the call stack looking for someone to catch it. Understanding this flow is essential.",
+    code:"intro", hl:[], stack:[], errorAt:null, errorTravel:null, focus:[],
+    vis:"intro"
+  },
+  {
+    id:1, act:"02", title:"The throw keyword",
+    sub:"throw creates an error and immediately stops the current function. Execution transfers to the nearest catch block, or crashes if there isn't one.",
+    code:"throw_kw", hl:[2,5], stack:[], errorAt:null, errorTravel:null, focus:["code"],
+    vis:"throw"
+  },
+  {
+    id:2, act:"03", title:"Built-in error types",
+    sub:"JavaScript has several built-in error constructors. Each signals a different kind of problem. You can also extend Error to create your own types.",
+    code:"error_types", hl:[], stack:[], errorAt:null, errorTravel:null, focus:["code"],
+    vis:"types"
+  },
+  {
+    id:3, act:"04", title:"The call stack before the throw",
+    sub:"When parseInput() is called, three frames are on the stack: main -> handleRequest -> parseInput. The throw happens in the deepest frame.",
+    code:"callstack_unwind", hl:[0,1,2,3,4,5,6,7,8,9,10], stack:[
+      {id:"s-main",label:"main()",tier:"base"},
+      {id:"s-handle",label:"handleRequest()",tier:"sync"},
+      {id:"s-parse",label:"parseInput()",tier:"sync"},
+    ], errorAt:null, errorTravel:null, focus:["stack"],
+    vis:"stack"
+  },
+  {
+    id:4, act:"05", title:"Error thrown! Stack unwinds",
+    sub:"parseInput() has no try/catch, so its frame is popped and the error moves to handleRequest(). No catch there either. It keeps going up.",
+    code:"callstack_unwind", hl:[9], stack:[
+      {id:"s-main",label:"main()",tier:"base"},
+      {id:"s-handle",label:"handleRequest()",tier:"sync"},
+      {id:"s-parse",label:"parseInput()",tier:"error"},
+    ], errorAt:"s-parse", errorTravel:["s-parse","s-handle","s-main"], focus:["stack"],
+    vis:"unwind"
+  },
+  {
+    id:5, act:"06", title:"try / catch / finally",
+    sub:"try wraps risky code. catch receives the error object if one is thrown. finally always runs — whether there was an error or not — perfect for cleanup.",
+    code:"try_catch", hl:[0,1,2,3,4,5,6,7], stack:[], errorAt:null, errorTravel:null, focus:["code"],
+    vis:"trycatch"
+  },
+  {
+    id:6, act:"07", title:"Step-by-step propagation",
+    sub:"repository() throws. No catch in repository, service, or controller. The error unwinds all the way up to app(), where try/catch finally handles it.",
+    code:"propagation_step", hl:[17], stack:[
+      {id:"p-app",label:"app()",tier:"catch"},
+      {id:"p-ctrl",label:"controller()",tier:"sync"},
+      {id:"p-svc",label:"service()",tier:"sync"},
+      {id:"p-repo",label:"repository()",tier:"error"},
+    ], errorAt:"p-repo", errorTravel:["p-repo","p-svc","p-ctrl","p-app"], focus:["stack"],
+    vis:"propagation"
+  },
+  {
+    id:7, act:"08", title:"Uncaught errors",
+    sub:"If no function catches the error, it reaches the runtime. In browsers: window.onerror. In Node.js: process 'uncaughtException'. Both are last resorts.",
+    code:"uncaught", hl:[1,2,3,6,7,8], stack:[
+      {id:"u-global",label:"(global)",tier:"base"},
+    ], errorAt:"u-global", errorTravel:null, focus:["stack","code"],
+    vis:"uncaught"
+  },
+  {
+    id:8, act:"09", title:"Async errors: callbacks",
+    sub:"In callbacks, throw doesn't propagate to the caller. Node.js uses the error-first pattern: callback(err, data). You must check err manually.",
+    code:"callback_err", hl:[2,3,4], stack:[], errorAt:null, errorTravel:null, focus:["code"],
+    vis:"callback"
+  },
+  {
+    id:9, act:"10", title:"Promise rejection",
+    sub:"When a promise rejects or throws inside .then(), the error skips to the next .catch() in the chain. No .catch()? UnhandledPromiseRejection.",
+    code:"promise_catch", hl:[3,6,7], stack:[], errorAt:null, errorTravel:null, focus:["code"],
+    vis:"promise"
+  },
+  {
+    id:10, act:"11", title:"async/await: try/catch returns",
+    sub:"async/await lets you use try/catch for async errors just like synchronous code. await turns a rejection into a throw. Re-throw to propagate up.",
+    code:"async_await", hl:[2,3,6,7,8], stack:[], errorAt:null, errorTravel:null, focus:["code"],
+    vis:"asyncawait"
+  },
+  {
+    id:11, act:"12", title:"Promise chain: where .catch() goes",
+    sub:".catch() handles errors from any .then() above it. After .catch() returns a value, the chain continues normally. Position matters!",
+    code:"chain_catch", hl:[6,7,8,9,10], stack:[], errorAt:null, errorTravel:null, focus:["code"],
+    vis:"chain"
+  },
+  {
+    id:12, act:"13", title:"finally always runs",
+    sub:"finally executes after try (and catch if present), even after a return or throw. Use it for cleanup: closing connections, clearing timers, releasing resources.",
+    code:"finally_return", hl:[2,3,4], stack:[], errorAt:null, errorTravel:null, focus:["code"],
+    vis:"finally"
+  },
+  {
+    id:13, act:"14", title:"Best practices",
+    sub:"Catch at the level where you can meaningfully recover. Log what you can't handle. Never silently swallow errors. Always handle promise rejections.",
+    code:"best_practices", hl:[], stack:[], errorAt:null, errorTravel:null, focus:["code"],
+    vis:"bestpractices"
+  },
+  {
+    id:14, act:"\u2713", title:"Errors are signals, not failures",
+    sub:"throw creates errors. try/catch handles them. Errors unwind the call stack seeking a handler. In async code, use .catch() or try/catch with await. Always handle, never ignore.",
+    code:"summary", hl:[], stack:[], errorAt:null, errorTravel:null, focus:[],
+    vis:"summary", finale:true
+  },
+];
+
+/* ── Tier colors ── */
+const TIER = {
+  base:  { bg:"#1a1a28", bd:T.border2, tx:T.text2 },
+  sync:  { bg:"#141e2e", bd:T.blue,    tx:"#82b4e8" },
+  error: { bg:T.redBg,   bd:T.red,     tx:T.redL },
+  catch: { bg:"#142218", bd:T.teal,    tx:T.tealL },
+};
+
+/* ── Detail sidebar content ── */
+const DETAILS = {
+  stack: {
+    title:"Call Stack",
+    color:T.blue,
+    sections:[
+      { heading:"What is it?", body:"A LIFO (last-in, first-out) data structure tracking which function is executing. When a function is called, a frame is pushed. When it returns (or throws), the frame is popped." },
+      { heading:"How errors unwind", body:"When throw executes, the engine pops the current frame and checks the caller for a catch. If none, it pops again. This continues up the stack until a catch is found — or the stack is empty (uncaught error)." },
+      { heading:"Stack trace", body:"The error object captures the call stack at the moment of the throw. This 'stack trace' shows every function frame from the throw site to the entry point — invaluable for debugging." },
+      { heading:"Key insight", body:"The call stack unwind is synchronous and immediate. Every frame without a catch is destroyed, and its local variables are lost. You cannot resume from where the error was thrown." },
+    ]
+  },
+  code: {
+    title:"Source Code",
+    color:T.purpleL,
+    sections:[
+      { heading:"Code examples", body:"Each scene shows a different aspect of error propagation with syntax-highlighted code. Highlighted lines indicate the key statements for the current concept." },
+      { heading:"Token types", body:"Functions (blue), methods (cyan), strings (green), keywords (purple), numbers (orange), punctuation (cyan), comments (gray italic), error types (yellow)." },
+    ]
+  },
+  throw: {
+    title:"throw Statement",
+    color:T.red,
+    sections:[
+      { heading:"What it does", body:"throw immediately stops the current function and begins the stack unwinding process. You can throw any value, but Error objects are best because they capture a stack trace." },
+      { heading:"Syntax", body:"throw expression;\n\nThe expression can be an Error object, a string, a number, or any value. Best practice: always throw Error instances for proper stack traces." },
+      { heading:"throw vs return", body:"return exits the function normally and passes a value to the caller. throw exits abnormally — the caller never receives a return value. Instead, the engine searches for a catch block." },
+    ]
+  },
+  types: {
+    title:"Error Types",
+    color:"#ffcb6b",
+    sections:[
+      { heading:"TypeError", body:"Occurs when a value is not the expected type. Common: calling non-functions, accessing properties of null/undefined, using operators on wrong types." },
+      { heading:"ReferenceError", body:"Occurs when referencing a variable that doesn't exist in scope. Common with misspelled variable names or accessing variables before declaration (TDZ)." },
+      { heading:"SyntaxError", body:"Occurs at parse time (before execution) when the code structure is invalid. Cannot be caught at runtime in the same script — the script fails to load entirely." },
+      { heading:"RangeError", body:"Occurs when a value is outside its allowed range. Examples: invalid array length, too much recursion (stack overflow), invalid Date." },
+      { heading:"Custom errors", body:"Extend the Error class to create domain-specific error types. Add properties like statusCode, errorCode, or isOperational. Enables instanceof checks for targeted handling." },
+    ]
+  },
+  trycatch: {
+    title:"try / catch / finally",
+    color:T.teal,
+    sections:[
+      { heading:"try block", body:"Wraps code that might throw. If no error occurs, catch is skipped entirely. The try block creates its own scope for let/const declarations." },
+      { heading:"catch block", body:"Receives the thrown error object as its parameter. Only runs if an error was thrown in the try block. You can inspect err.message, err.name, err.stack, and any custom properties." },
+      { heading:"finally block", body:"Always runs — after try succeeds, after catch handles an error, even after a return or throw. Use for cleanup: closing connections, releasing resources, clearing timers." },
+      { heading:"Nesting", body:"try/catch can be nested. An inner catch handles its own errors. If the inner catch re-throws, the outer catch receives it. This enables layered error handling strategies." },
+    ]
+  },
+  promise: {
+    title:"Promise Errors",
+    color:T.coral,
+    sections:[
+      { heading:"Rejection", body:"A promise rejects when: reject() is called, throw happens inside a .then() handler, or an async operation fails. Rejections propagate down the chain until a .catch() handles them." },
+      { heading:".catch() placement", body:".catch() handles rejections from ALL .then() handlers above it in the chain. After .catch() returns a value, the chain continues with .then() handlers below it." },
+      { heading:"Unhandled rejection", body:"If a promise rejects with no .catch() anywhere in the chain, the runtime emits an 'unhandledrejection' event. In Node.js, this can crash the process." },
+      { heading:"Promise.allSettled", body:"Unlike Promise.all (which rejects on first failure), Promise.allSettled waits for all promises and reports each result — useful when you need all outcomes regardless of errors." },
+    ]
+  },
+  asyncawait: {
+    title:"async/await Errors",
+    color:T.purple,
+    sections:[
+      { heading:"How it works", body:"await pauses until the promise settles. If the promise rejects, await throws the rejection reason — converting it into a synchronous-style throw that try/catch can handle." },
+      { heading:"Re-throwing", body:"catch the error, log it, then re-throw to let callers handle it too. This creates an error handling chain similar to synchronous propagation." },
+      { heading:"Common mistake", body:"Forgetting try/catch around await. The unhandled rejection becomes an UnhandledPromiseRejection warning/error. Every await should be in a try/catch or the returned promise should have .catch()." },
+      { heading:"Top-level await", body:"In modules, you can use top-level await. Errors propagate to the module loader. In scripts, wrap in an async IIFE with .catch() on the returned promise." },
+    ]
+  },
+  finally_detail: {
+    title:"finally Behavior",
+    color:"#ffcb6b",
+    sections:[
+      { heading:"Always runs", body:"finally executes no matter what: after normal completion, after catch, after return, after throw. The only exceptions: process.exit() or an infinite loop." },
+      { heading:"With return", body:"If try has a return statement, the value is set aside. finally runs, then the saved return value is used. If finally also has a return, it overrides the try's return." },
+      { heading:"Use cases", body:"Close database connections, release file handles, clear intervals/timeouts, hide loading spinners, release locks, restore state. Anything that must happen regardless of success or failure." },
+    ]
+  },
+};
+
+/* ── Components ── */
+const CodePanel = ({ tokens, highlighted }) =>
+  e(M.div, { animate:{ borderColor:highlighted.length>0?T.purple:T.border, boxShadow:highlighted.length>0?"0 0 16px "+T.purple+"30":"0 0 0px transparent" }, transition:{duration:0.4}, style:{ background:T.codeBase, borderRadius:12, overflow:"hidden", border:"1px solid" } },
+    e("div", { style:{ padding:"10px 14px 8px", borderBottom:"1px solid "+T.border, display:"flex", gap:7 } },
+      ...["#ff5f57","#febc2e","#28c840"].map((c,i) =>
+        e("div", { key:i, style:{ width:11, height:11, borderRadius:"50%", background:c } })
+      )
+    ),
+    e("div", { style:{ padding:"18px 22px 22px", fontFamily:"'SF Mono','Fira Code','Consolas',monospace", fontSize:11.5, lineHeight:1.9 } },
+      tokens.map((line, li) => {
+        const hot = highlighted.includes(li);
+        return e(M.div, {
+          key:li,
+          animate:{ background: hot ? "rgba(124,111,205,0.13)" : "transparent" },
+          transition:{ duration:0.22 },
+          style:{ borderLeft: hot ? "2px solid "+T.purple : "2px solid transparent", paddingLeft:8, borderRadius:3, display:"block", minHeight:19 }
+        },
+          line.map(([cls, txt], ti) =>
+            e("span", { key:ti, style:{ ...TS[cls], whiteSpace:"pre" } }, txt)
+          )
+        );
+      })
+    )
+  );
+
+const StackFrame = ({ item, isError, isErrorSource }) => {
+  const s = TIER[item.tier] || TIER.sync;
+  return e(M.div, {
+    key:item.id, layout:true,
+    initial:{opacity:0,y:22,scale:0.84}, animate:{opacity:1,y:0,scale:1}, exit:{opacity:0,y:-18,scale:0.82},
+    transition:sp(360,24),
+    style:{ padding:"8px 13px", borderRadius:8, border:"1px solid "+s.bd, background:s.bg, color:s.tx, fontSize:11, fontWeight:500, fontFamily:"'SF Mono','Fira Code',monospace", marginBottom:5, position:"relative", overflow:"hidden" }
+  },
+    item.label,
+    isErrorSource && e(M.div, {
+      initial:{opacity:0,x:20}, animate:{opacity:1,x:0}, transition:{delay:0.2,...ez},
+      style:{ position:"absolute", right:8, top:"50%", transform:"translateY(-50%)", fontSize:9, color:T.redL, fontWeight:700, letterSpacing:"0.05em" }
+    }, "THROW")
+  );
+};
+
+const ErrorBubble = ({ traveling, frameCount }) => {
+  if (!traveling || traveling.length === 0) return null;
+  return e(M.div, {
+    initial:{ y:0, opacity:0 },
+    animate:{ y: [0, -(frameCount * 42)], opacity:[1,1,1,0.8] },
+    transition:{ duration:1.8, ease:"easeInOut" },
+    style:{ position:"absolute", right:12, bottom:8, zIndex:10, display:"flex", alignItems:"center", gap:4 }
+  },
+    e(M.div, {
+      animate:{ scale:[1,1.15,1] },
+      transition:{ duration:0.8, repeat:Infinity },
+      style:{ background:T.red, color:"#fff", fontSize:9, fontWeight:700, padding:"3px 8px", borderRadius:12, whiteSpace:"nowrap" }
+    }, "Error"),
+    e("div", { style:{ fontSize:12 } }, "\u2191")
+  );
+};
+
+const Panel = ({ label, children, style, focused, onClick }) =>
+  e(M.div, {
+    onClick:onClick,
+    animate:{
+      borderColor: focused ? T.purple : T.border2,
+      boxShadow: focused ? "0 0 16px "+T.purple+"30, inset 0 0 12px "+T.purple+"08" : "0 0 0px transparent"
+    },
+    transition:{ duration:0.4 },
+    style:{ borderRadius:12, border:"1.5px solid", background:T.surface, overflow:"hidden", cursor:onClick?"pointer":"default", ...(style||{}) }
+  },
+    label && e("div", { style:{ padding:"8px 13px", borderBottom:"1px solid "+T.border } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, label)
+    ),
+    e("div", { style:{ padding:12 } }, children)
+  );
+
+const DetailPanel = ({ detailKey, onClose }) => {
+  const d = DETAILS[detailKey];
+  if (!d) return null;
+  return e("div", {
+    style: { width:340, flexShrink:0, background:T.surface, borderRadius:14, border:"1.5px solid "+d.color+"44", overflow:"hidden", alignSelf:"flex-start", position:"sticky", top:56 }
+  },
+    e("div", { style:{ padding:"14px 18px 12px", borderBottom:"1px solid "+T.border, display:"flex", alignItems:"center", justifyContent:"space-between" } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:8 } },
+        e("div", { style:{ width:8, height:8, borderRadius:"50%", background:d.color } }),
+        e("span", { style:{ fontSize:14, fontWeight:600, color:T.text1 } }, d.title)
+      ),
+      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6, transition:"color 0.2s" }, onMouseEnter:function(ev){ev.target.style.color=T.text1}, onMouseLeave:function(ev){ev.target.style.color=T.text3} }, "\u2715")
+    ),
+    e("div", { style:{ padding:"16px 18px 20px", maxHeight:"calc(100vh - 140px)", overflowY:"auto" } },
+      d.sections.map(function(s, i) {
+        return e("div", { key:i, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
+          e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
+        );
+      })
+    )
+  );
+};
+
+/* ── Visualization panels ── */
+const ErrorTypeBadge = ({ name, color, desc }) =>
+  e(M.div, {
+    initial:{opacity:0,scale:0.85}, animate:{opacity:1,scale:1}, transition:sp(400,26),
+    style:{ padding:"6px 12px", borderRadius:8, border:"1px solid "+color+"55", background:color+"14", marginBottom:6 }
+  },
+    e("span", { style:{ fontSize:11, fontWeight:600, color:color, fontFamily:"monospace" } }, name),
+    e("span", { style:{ fontSize:10, color:T.text2, marginLeft:8 } }, desc)
+  );
+
+const PromiseChainVis = ({ catchPos }) => {
+  const steps = [".then()", ".then()", ".catch()", ".then()"];
+  return e("div", { style:{ display:"flex", flexDirection:"column", gap:4, padding:8 } },
+    steps.map(function(s, i) {
+      var isCatch = s === ".catch()";
+      return e(M.div, { key:i, initial:{opacity:0,x:-10}, animate:{opacity:1,x:0}, transition:{delay:i*0.15,...ez},
+        style:{ display:"flex", alignItems:"center", gap:8 }
+      },
+        e("div", { style:{ width:20, textAlign:"center" } },
+          i > 0 ? e("div", { style:{ fontSize:10, color: isCatch ? T.tealL : T.text3 } }, i < 3 ? "\u2193" : "\u2193") : null
+        ),
+        e("div", { style:{
+          padding:"5px 12px", borderRadius:6, fontSize:11, fontWeight:600, fontFamily:"monospace",
+          background: isCatch ? T.teal+"22" : T.surface2,
+          border: "1px solid "+(isCatch ? T.teal : T.border),
+          color: isCatch ? T.tealL : T.text2
+        }}, s),
+        isCatch && e(M.div, {
+          animate:{opacity:[0.4,1,0.4]}, transition:{duration:1.5,repeat:Infinity},
+          style:{ fontSize:9, color:T.tealL, marginLeft:4, fontWeight:600 }
+        }, "\u2190 catches errors from above")
+      );
+    })
+  );
+};
+
+const FinallyVis = () =>
+  e("div", { style:{ display:"flex", flexDirection:"column", gap:6, padding:8 } },
+    [
+      { label:"try block runs", icon:"\u25b6", color:T.blue },
+      { label:"return value saved", icon:"\ud83d\udce6", color:T.purple },
+      { label:"finally runs (always!)", icon:"\u2705", color:T.teal },
+      { label:"saved value returned", icon:"\u21a9", color:T.blue },
+    ].map(function(s, i) {
+      return e(M.div, { key:i, initial:{opacity:0,x:-10}, animate:{opacity:1,x:0}, transition:{delay:i*0.2,...ez},
+        style:{ display:"flex", alignItems:"center", gap:10, padding:"5px 10px", borderRadius:8, background:T.surface2, border:"1px solid "+T.border }
+      },
+        e("span", { style:{ fontSize:14 } }, s.icon),
+        e("span", { style:{ fontSize:11, color:s.color, fontWeight:500 } }, (i+1)+". "+s.label)
+      );
+    })
+  );
+
+const CallbackVis = () =>
+  e("div", { style:{ display:"flex", flexDirection:"column", gap:6, padding:8 } },
+    e("div", { style:{ display:"flex", gap:8, alignItems:"stretch" } },
+      e("div", { style:{ padding:"8px 12px", borderRadius:8, border:"1px solid "+T.red+"55", background:T.redBg, flex:1 } },
+        e("div", { style:{ fontSize:10, fontWeight:700, color:T.red, marginBottom:4 } }, "CAN'T DO"),
+        e("div", { style:{ fontSize:10, color:T.text2, fontFamily:"monospace" } }, "try { setTimeout(fn) }\ncatch(e) { /* nope */ }")
+      ),
+      e("div", { style:{ padding:"8px 12px", borderRadius:8, border:"1px solid "+T.teal+"55", background:"#0e1e18", flex:1 } },
+        e("div", { style:{ fontSize:10, fontWeight:700, color:T.teal, marginBottom:4 } }, "DO THIS"),
+        e("div", { style:{ fontSize:10, color:T.text2, fontFamily:"monospace" } }, "fs.readFile(f, (err, d) => {\n  if (err) handle(err)\n})")
+      )
+    )
+  );
+
+const AsyncAwaitVis = () =>
+  e("div", { style:{ display:"flex", flexDirection:"column", gap:6, padding:8 } },
+    [
+      { label:"await pauses execution", color:T.purple },
+      { label:"Promise rejects \u2192 throw", color:T.red },
+      { label:"catch block handles it", color:T.teal },
+      { label:"Feels like sync code!", color:T.blue },
+    ].map(function(s, i) {
+      return e(M.div, { key:i, initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, transition:{delay:i*0.15,...ez},
+        style:{ padding:"5px 12px", borderRadius:8, background:T.surface2, border:"1px solid "+T.border, fontSize:11, color:s.color, fontWeight:500 }
+      }, (i+1)+". "+s.label);
+    })
+  );
+
+const BestPracticesVis = () =>
+  e("div", { style:{ display:"flex", flexDirection:"column", gap:5, padding:8 } },
+    [
+      { label:"Catch where you can recover", icon:"\u2705" },
+      { label:"Log what you can't handle", icon:"\ud83d\udcdd" },
+      { label:"Use specific error types", icon:"\ud83c\udfaf" },
+      { label:"Handle promise rejections", icon:"\ud83d\udd17" },
+      { label:"Re-throw if not your concern", icon:"\u21a9" },
+    ].map(function(s, i) {
+      return e(M.div, { key:i, initial:{opacity:0,x:-8}, animate:{opacity:1,x:0}, transition:{delay:i*0.12,...ez},
+        style:{ display:"flex", alignItems:"center", gap:8, padding:"5px 10px", borderRadius:6, background:T.surface2, border:"1px solid "+T.border }
+      },
+        e("span", { style:{ fontSize:13 } }, s.icon),
+        e("span", { style:{ fontSize:11, color:T.text2 } }, s.label)
+      );
+    })
+  );
+
+function VisPanel({ sc, toggleDetail }) {
+  var vis = sc.vis;
+  var stack = sc.stack || [];
+
+  /* Stack visualization (used in several scenes) */
+  if (stack.length > 0) {
+    return e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 } },
+      e(Panel, { label:"Call Stack", focused:(sc.focus||[]).includes("stack"), onClick:function(){toggleDetail("stack")} },
+        e("div", { style:{ minHeight:160, display:"flex", flexDirection:"column", justifyContent:"flex-end", position:"relative" } },
+          e(AP, null, stack.slice().reverse().map(function(item) {
+            return e(StackFrame, { key:item.id, item:item, isError:item.tier==="error", isErrorSource:sc.errorAt===item.id });
+          })),
+          sc.errorTravel && e(ErrorBubble, { traveling:sc.errorTravel, frameCount:sc.errorTravel.length })
+        )
+      ),
+      e("div", { style:{ display:"flex", flexDirection:"column", gap:10 } },
+        vis === "unwind" && e(Panel, { label:"Error Propagation" },
+          e("div", { style:{ padding:4 } },
+            sc.errorTravel && sc.errorTravel.map(function(frameId, i) {
+              var isLast = i === sc.errorTravel.length - 1;
+              var labels = { "s-parse":"parseInput()", "s-handle":"handleRequest()", "s-main":"main()", "p-repo":"repository()", "p-svc":"service()", "p-ctrl":"controller()", "p-app":"app() [catch]" };
+              return e(M.div, { key:frameId, initial:{opacity:0,x:-10}, animate:{opacity:1,x:0}, transition:{delay:i*0.3,...ez},
+                style:{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }
+              },
+                e(M.div, {
+                  animate:i===0?{scale:[1,1.2,1]}:{},
+                  transition:{duration:1,repeat:Infinity},
+                  style:{ width:18, height:18, borderRadius:"50%", background:isLast?T.teal+"33":T.red+"33", border:"1.5px solid "+(isLast?T.teal:T.red), display:"flex", alignItems:"center", justifyContent:"center", fontSize:8, color:isLast?T.tealL:T.redL, fontWeight:700 }
+                }, i===0?"\u2716":isLast?"\u2714":"\u2191"),
+                e("span", { style:{ fontSize:10, color:isLast?T.tealL:i===0?T.redL:T.text2, fontFamily:"monospace" } }, labels[frameId]||frameId),
+                !isLast && i > 0 && e("span", { style:{ fontSize:9, color:T.text3 } }, "no catch")
+              );
+            })
+          )
+        ),
+        vis === "propagation" && e(Panel, { label:"Error Journey" },
+          e("div", { style:{ padding:4 } },
+            ["repository() \u2192 THROW", "service() \u2192 no catch \u2191", "controller() \u2192 no catch \u2191", "app() \u2192 catch! \u2714"].map(function(step, i) {
+              var isThrow = i === 0;
+              var isCatch = i === 3;
+              return e(M.div, { key:i, initial:{opacity:0,x:-10}, animate:{opacity:1,x:0}, transition:{delay:i*0.25,...ez},
+                style:{ padding:"5px 10px", borderRadius:6, marginBottom:4, fontSize:10, fontFamily:"monospace",
+                  background: isThrow ? T.redBg : isCatch ? T.teal+"14" : T.surface2,
+                  border: "1px solid "+(isThrow ? T.red+"55" : isCatch ? T.teal+"55" : T.border),
+                  color: isThrow ? T.redL : isCatch ? T.tealL : T.text2
+                }
+              }, step);
+            })
+          )
+        ),
+        (vis === "stack" || vis === "uncaught") && e(Panel, { label:"Stack Info" },
+          e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.7, padding:4 } },
+            vis === "stack" ? "Frames stack up as functions call each other. The deepest frame (top of stack) is the currently executing function."
+            : "The error has reached the global scope with no handler. The runtime's last-resort error handler fires."
+          )
+        )
+      )
+    );
+  }
+
+  /* Non-stack visualizations */
+  if (vis === "intro") {
+    return e(Panel, { label:"Error Propagation" },
+      e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:12, padding:"20px 10px" } },
+        e(M.div, { animate:{y:[0,-6,0]}, transition:{duration:2,repeat:Infinity},
+          style:{ fontSize:32 } }, "\u26a0\ufe0f"),
+        e("div", { style:{ fontSize:12, color:T.text2, textAlign:"center", lineHeight:1.7 } },
+          "When a function throws an error, JavaScript searches up the call stack for a catch block. This journey is called ",
+          e("span", { style:{ color:T.redL, fontWeight:600 } }, "error propagation"),
+          "."
+        ),
+        e("div", { style:{ display:"flex", gap:8, marginTop:8 } },
+          ["throw","try/catch","unwind"].map(function(w) {
+            return e("div", { key:w, style:{ padding:"4px 10px", borderRadius:16, border:"1px solid "+T.purple+"44", background:T.purple+"14", fontSize:10, color:T.purpleL, fontWeight:600 } }, w);
+          })
+        )
+      )
+    );
+  }
+
+  if (vis === "throw") {
+    return e(Panel, { label:"throw in action", onClick:function(){toggleDetail("throw")} },
+      e("div", { style:{ display:"flex", flexDirection:"column", gap:8, padding:8 } },
+        e("div", { style:{ display:"flex", alignItems:"center", gap:10 } },
+          e(M.div, {
+            animate:{x:[0,8,0], opacity:[1,0.6,1]}, transition:{duration:1.2,repeat:Infinity},
+            style:{ padding:"6px 14px", borderRadius:8, background:T.redBg, border:"1px solid "+T.red, color:T.redL, fontSize:12, fontWeight:700, fontFamily:"monospace" }
+          }, "throw new Error()"),
+          e(M.div, {
+            animate:{opacity:[0,1,0]}, transition:{duration:1.2,repeat:Infinity},
+            style:{ fontSize:16, color:T.red }
+          }, "\u2192"),
+          e("div", { style:{ padding:"6px 14px", borderRadius:8, background:T.surface2, border:"1px solid "+T.border, color:T.text2, fontSize:11 } }, "Stops execution")
+        ),
+        e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.6, marginTop:8 } },
+          "throw creates an Error with a message and stack trace, then immediately exits the function."
+        )
+      )
+    );
+  }
+
+  if (vis === "types") {
+    return e(Panel, { label:"Error types", onClick:function(){toggleDetail("types")} },
+      e("div", null,
+        e(ErrorTypeBadge, { name:"TypeError", color:T.red, desc:"wrong type" }),
+        e(ErrorTypeBadge, { name:"ReferenceError", color:T.coral, desc:"missing variable" }),
+        e(ErrorTypeBadge, { name:"SyntaxError", color:"#ffcb6b", desc:"parse error" }),
+        e(ErrorTypeBadge, { name:"RangeError", color:T.blue, desc:"out of range" }),
+        e(ErrorTypeBadge, { name:"Custom Error", color:T.purple, desc:"your own type" })
+      )
+    );
+  }
+
+  if (vis === "trycatch") {
+    return e(Panel, { label:"try / catch / finally", onClick:function(){toggleDetail("trycatch")} },
+      e("div", { style:{ display:"flex", flexDirection:"column", gap:6, padding:8 } },
+        [
+          { label:"try", desc:"Wrap risky code", color:T.blue, bg:T.blue+"14" },
+          { label:"catch (err)", desc:"Handle the error", color:T.red, bg:T.redBg },
+          { label:"finally", desc:"Always runs (cleanup)", color:T.teal, bg:T.teal+"14" },
+        ].map(function(b, i) {
+          return e(M.div, { key:i, initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, transition:{delay:i*0.15,...ez},
+            style:{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"8px 14px", borderRadius:8, background:b.bg, border:"1px solid "+b.color+"55" }
+          },
+            e("span", { style:{ fontSize:12, fontWeight:700, color:b.color, fontFamily:"monospace" } }, b.label),
+            e("span", { style:{ fontSize:10, color:T.text2 } }, b.desc)
+          );
+        })
+      )
+    );
+  }
+
+  if (vis === "callback") {
+    return e("div", null, e(CallbackVis));
+  }
+
+  if (vis === "promise") {
+    return e(Panel, { label:"Promise error flow", onClick:function(){toggleDetail("promise")} },
+      e(PromiseChainVis, { catchPos:2 })
+    );
+  }
+
+  if (vis === "asyncawait") {
+    return e(Panel, { label:"async/await", onClick:function(){toggleDetail("asyncawait")} },
+      e(AsyncAwaitVis)
+    );
+  }
+
+  if (vis === "chain") {
+    return e(Panel, { label:"Promise chain flow", onClick:function(){toggleDetail("promise")} },
+      e("div", { style:{ padding:8 } },
+        [".then(r => r.json())", ".then(data => { ... })", ".catch(err => fallback)", ".then(d => render(d))"].map(function(s, i) {
+          var isCatch = i === 2;
+          var isError = i === 1;
+          return e(M.div, { key:i, initial:{opacity:0,x:-10}, animate:{opacity:1,x:0}, transition:{delay:i*0.15,...ez},
+            style:{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }
+          },
+            e("div", { style:{ width:16, fontSize:10, color:T.text3, textAlign:"center" } }, i > 0 ? (isCatch ? e(M.span, { animate:{color:[T.red,T.tealL]}, transition:{duration:1,repeat:Infinity} }, "\u2193") : "\u2193") : null),
+            e("div", { style:{
+              padding:"5px 10px", borderRadius:6, fontSize:10, fontFamily:"monospace", flex:1,
+              background: isCatch ? T.teal+"22" : isError ? T.redBg : T.surface2,
+              border: "1px solid "+(isCatch ? T.teal : isError ? T.red+"55" : T.border),
+              color: isCatch ? T.tealL : isError ? T.redL : T.text2
+            }}, s),
+            isCatch && e("span", { style:{ fontSize:8, color:T.tealL, fontWeight:600 } }, "RECOVER"),
+            isError && e("span", { style:{ fontSize:8, color:T.redL, fontWeight:600 } }, "THROW")
+          );
+        }),
+        e("div", { style:{ fontSize:10, color:T.text2, marginTop:8, lineHeight:1.6 } },
+          "After .catch() returns a value, the chain continues normally. Errors skip .then() and jump to the next .catch()."
+        )
+      )
+    );
+  }
+
+  if (vis === "finally") {
+    return e(Panel, { label:"finally behavior", onClick:function(){toggleDetail("finally_detail")} },
+      e(FinallyVis)
+    );
+  }
+
+  if (vis === "bestpractices") {
+    return e(Panel, { label:"Best Practices" },
+      e(BestPracticesVis)
+    );
+  }
+
+  if (vis === "summary") {
+    return e(Panel, { label:"Summary" },
+      e("div", { style:{ display:"flex", flexDirection:"column", gap:8, padding:8 } },
+        [
+          { label:"Sync errors", desc:"Unwind the call stack", color:T.blue },
+          { label:"Callbacks", desc:"Error-first pattern", color:T.coral },
+          { label:"Promises", desc:".catch() in the chain", color:T.teal },
+          { label:"async/await", desc:"try/catch just works", color:T.purple },
+        ].map(function(item, i) {
+          return e(M.div, { key:i, initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, transition:{delay:i*0.15,...ez},
+            style:{ display:"flex", justifyContent:"space-between", padding:"8px 14px", borderRadius:8, background:T.surface2, border:"1px solid "+T.border }
+          },
+            e("span", { style:{ fontSize:12, fontWeight:600, color:item.color } }, item.label),
+            e("span", { style:{ fontSize:11, color:T.text2 } }, item.desc)
+          );
+        })
+      )
+    );
+  }
+
+  return null;
+}
+
+/* ── Main App ── */
+function App() {
+  var _s = useState(0), si = _s[0], setSi = _s[1];
+  var _p = useState(false), playing = _p[0], setPlaying = _p[1];
+  var _d = useState(null), detail = _d[0], setDetail = _d[1];
+  var timer = useRef(null);
+  var sc = SCENES[si];
+  var codeTokens = CODES[sc.code] || [];
+
+  useEffect(function() { setPlaying(true); }, []);
+
+  useEffect(function() {
+    if (!playing) return;
+    var d = si===0 ? 3000 : si===SCENES.length-1 ? 99999 : 3200;
+    timer.current = setTimeout(function() { si < SCENES.length-1 ? setSi(function(i){return i+1}) : setPlaying(false); }, d);
+    return function() { clearTimeout(timer.current); };
+  }, [playing, si]);
+
+  var go = function(d) { clearTimeout(timer.current); setPlaying(false); setSi(function(i){return Math.max(0,Math.min(SCENES.length-1,i+d))}); };
+  var jump = function(i) { clearTimeout(timer.current); setPlaying(false); setSi(i); };
+  var togglePlay = function() { if(si===SCENES.length-1){setSi(0);setPlaying(true);}else setPlaying(function(p){return !p}); };
+  var toggleDetail = function(key) { setDetail(function(d){return d===key?null:key}); clearTimeout(timer.current); setPlaying(false); };
+
+  return e("div", { style:{ display:"flex", gap:16, alignItems:"flex-start", justifyContent: detail ? "flex-start" : "center" } },
+    e("div", { style:{ width:760, flexShrink:0, background:T.bg, fontFamily:"system-ui,sans-serif", padding:20, borderRadius:16 } },
+
+      /* Header */
+      e("div", { style:{ marginBottom:18 } },
+        e("div", { style:{ display:"flex", alignItems:"center", gap:10, marginBottom:11 } },
+          e(AP, { mode:"wait" },
+            e(M.div, { key:sc.act, initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, exit:{opacity:0}, transition:sp(400,28),
+              style:{ fontSize:9,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:T.purple,background:T.purple+"14",padding:"3px 10px",borderRadius:20,border:"1px solid "+T.purple+"30",flexShrink:0 }
+            }, sc.act)
+          ),
+          e("div", { style:{ flex:1, height:1, background:T.border, borderRadius:99, overflow:"hidden" } },
+            e(M.div, { animate:{width:si/(SCENES.length-1)*100+"%"}, transition:{duration:0.5}, style:{height:"100%",background:T.purple,borderRadius:99} })
+          ),
+          e("span", { style:{ fontSize:10, color:T.text3 } }, (si+1)+" / "+SCENES.length)
+        ),
+        e(AP, { mode:"wait" },
+          e(M.div, { key:sc.title, initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, exit:{opacity:0,y:-8}, transition:ez,
+            style:{ fontSize:20,fontWeight:600,color:T.text1,marginBottom:4,letterSpacing:"-0.02em" }
+          }, sc.title)
+        ),
+        e(AP, { mode:"wait" },
+          e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
+            style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
+          }, sc.sub)
+        )
+      ),
+
+      /* Main content area */
+      e("div", { style:{ minHeight:460 } },
+
+        e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 } },
+          /* Left: code */
+          e("div", { onClick:function(){toggleDetail("code")}, style:{cursor:"pointer"} },
+            e(CodePanel, { tokens:codeTokens, highlighted:sc.hl||[] })
+          ),
+          /* Right: visualization */
+          e(VisPanel, { sc:sc, toggleDetail:toggleDetail })
+        )
+
+      ),
+
+      /* Controls */
+      e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginTop:16 } },
+        e("button", { onClick:function(){go(-1)}, disabled:si===0,
+          style:{ padding:"6px 14px",borderRadius:8,border:"1px solid "+T.border,background:"transparent",color:si===0?T.text3:T.text2,cursor:si===0?"not-allowed":"pointer",fontSize:11,transition:"color 0.2s" }
+        }, "\u2190 Back"),
+        e("button", { onClick:togglePlay,
+          style:{ padding:"6px 18px",borderRadius:8,border:"1px solid "+(playing?T.coral:T.purple)+"44",background:(playing?T.coral:T.purple)+"14",color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all 0.2s" }
+        }, playing ? "\u23f8  Pause" : si===SCENES.length-1 ? "\u21ba  Replay" : "\u25b6  Play"),
+        e("button", { onClick:function(){go(1)}, disabled:si===SCENES.length-1,
+          style:{ padding:"6px 14px",borderRadius:8,border:"1px solid "+T.border,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
+        }, "Next \u2192"),
+        e("div", { style:{ flex:1 } }),
+        e("div", { style:{ display:"flex", gap:4, alignItems:"center" } },
+          SCENES.map(function(_, i) {
+            return e("button", { key:i, onClick:function(){jump(i)},
+              style:{ width:i===si?16:5,height:5,borderRadius:99,border:"none",padding:0,background:i===si?T.purple:i<si?T.purple+"55":T.border,cursor:"pointer",transition:"all 0.25s" }
+            });
+          })
+        )
+      )
+    ),
+    detail && e(DetailPanel, { detailKey:detail, onClose:function(){setDetail(null)} })
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(e(App));
+</script>
+</body>
+</html>
