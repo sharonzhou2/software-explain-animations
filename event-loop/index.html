@@ -240,10 +240,10 @@ const DetailPanel = ({ detailKey, onClose }) => {
   if (!d) return null;
   return e(M.div, {
     key: detailKey,
-    initial: { opacity:0, x:40 },
-    animate: { opacity:1, x:0 },
-    exit: { opacity:0, x:40 },
-    transition: { duration:0.3, ease:[0.22,1,0.36,1] },
+    initial: { opacity:0 },
+    animate: { opacity:1 },
+    exit: { opacity:0 },
+    transition: { duration:0.15 },
     style: { width:340, flexShrink:0, background:T.surface, borderRadius:14, border:`1.5px solid ${d.color}44`, overflow:"hidden", alignSelf:"flex-start", position:"sticky", top:56 }
   },
     e("div", { style:{ padding:"14px 18px 12px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" } },
