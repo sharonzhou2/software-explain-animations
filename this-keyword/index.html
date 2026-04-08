@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JS this Keyword</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111118;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px 16px;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  #root { width: 100%; max-width: 1120px; }
+  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: system-ui, sans-serif; }
+  .topnav a { text-decoration: none; color: #8888aa; font-size: 13px; transition: color 0.2s; }
+  .topnav a:hover { color: #e8e8f0; }
+  .topnav .name { font-weight: 600; color: #e8e8f0; font-size: 13px; }
+  .topnav .sep { color: #38384a; font-size: 12px; }
+  .topnav .current { color: #7c6fcd; font-size: 13px; font-weight: 500; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="../" class="name">Sharon Zhou</a>
+  <span class="sep">/</span>
+  <a href="../">Animations</a>
+  <span class="sep">/</span>
+  <span class="current">this Keyword</span>
+</nav>
+<div id="root" style="margin-top: 36px;"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/framer-motion@11/dist/framer-motion.js"></script>
+<script>
+const { useState, useEffect, useRef } = React;
+const { motion, AnimatePresence, useMotionValue, animate } = window.Motion;
+const e = React.createElement;
+const M = motion;
+const AP = AnimatePresence;
+const sp = (s=380,d=28) => ({ type:"spring", stiffness:s, damping:d });
+const ez = { duration:0.32, ease:[0.22,1,0.36,1] };
+
+const T = {
+  bg:"#111118", surface:"#18181f", surface2:"#1e1e28",
+  border:"#2a2a38", border2:"#38384a",
+  text1:"#e8e8f0", text2:"#8888aa", text3:"#44445a",
+  purple:"#7c6fcd", purpleL:"#a99cf0",
+  teal:"#3db89a", tealL:"#6dd4b8",
+  coral:"#c4694a", coralL:"#e08a6a",
+  blue:"#4a8fd4", blueL:"#82b4e8",
+  amber:"#d4a84a", amberL:"#e8c86a",
+  pink:"#c45a8a", pinkL:"#e87aaa",
+  codeBase:"#141428",
+};
+
+const TS = {
+  fn:    { color:"#82aaff" },
+  meth:  { color:"#89ddff" },
+  str:   { color:"#c3e88d" },
+  kw:    { color:"#c792ea" },
+  num:   { color:"#f78c6c" },
+  punc:  { color:"#89ddff" },
+  plain: { color:"#a6accd" },
+  this:  { color:"#ff5370", fontWeight:"bold" },
+  cmt:   { color:"#546e7a", fontStyle:"italic" },
+};
+
+/* ─── SCENES ─── */
+const SCENES = [
+  {
+    id:0, act:"01",
+    title:"The this keyword",
+    sub:"In JavaScript, this is determined by how a function is called — not where it's defined. This single rule explains every behavior.",
+    code:[
+      [["cmt","// this changes based on context"]],
+      [["cmt","// let's explore each one"]],
+    ],
+    binding:{ label:"???", color:T.text3, target:"unknown" },
+    rule:null,
+    out:[],
+  },
+  {
+    id:1, act:"02",
+    title:"Global scope",
+    sub:"At the top level — outside any function — this refers to the global object. In browsers, that's window.",
+    code:[
+      [["fn","console"],["punc","."],["meth","log"],["punc","("],["this","this"],["punc",")"]],
+      [["cmt","// → Window {…}"]],
+    ],
+    binding:{ label:"window", color:T.blue, target:"global" },
+    rule:{ name:"Default binding", desc:"Outside any function, this = global object" },
+    out:[{id:"o1",t:"Window {…}",c:T.blueL}],
+  },
+  {
+    id:2, act:"03",
+    title:"Regular function call",
+    sub:"When you call a plain function (not a method), this defaults to the global object. In strict mode, it would be undefined.",
+    code:[
+      [["kw","function"],["plain"," "],["fn","greet"],["punc","() {"]],
+      [["plain","  "],["fn","console"],["punc","."],["meth","log"],["punc","("],["this","this"],["punc",")"]],
+      [["punc","}"]],
+      [["fn","greet"],["punc","()"]],
+    ],
+    binding:{ label:"window", color:T.blue, target:"global" },
+    rule:{ name:"Default binding", desc:"Plain function call → this = global (or undefined in strict mode)" },
+    out:[{id:"o1",t:"Window {…}",c:T.blueL}],
+  },
+  {
+    id:3, act:"04",
+    title:"Object method",
+    sub:"When a function is called as a method of an object, this refers to the object before the dot.",
+    code:[
+      [["kw","const"],["plain"," user "],["punc","= {"]],
+      [["plain","  name"],["punc",": "],["str","'Alice'"],["punc",","]],
+      [["plain","  "],["fn","greet"],["punc","() {"]],
+      [["plain","    "],["fn","console"],["punc","."],["meth","log"],["punc","("],["this","this"],["punc",".name)"]],
+      [["plain","  "],["punc","}"]],
+      [["punc","}"]],
+      [["plain","user"],["punc","."],["fn","greet"],["punc","()"]],
+    ],
+    binding:{ label:"user", color:T.teal, target:"object" },
+    rule:{ name:"Implicit binding", desc:"Method call → this = the object before the dot" },
+    out:[{id:"o1",t:'"Alice"',c:T.tealL}],
+  },
+  {
+    id:4, act:"05",
+    title:"Lost binding — method extraction",
+    sub:"If you extract a method and call it standalone, the object context is lost. this falls back to the default.",
+    code:[
+      [["kw","const"],["plain"," user "],["punc","= {"]],
+      [["plain","  name"],["punc",": "],["str","'Alice'"],["punc",","]],
+      [["plain","  "],["fn","greet"],["punc","() { "],["fn","console"],["punc","."],["meth","log"],["punc","("],["this","this"],["punc",".name) }"]],
+      [["punc","}"]],
+      [["kw","const"],["plain"," fn "],["punc","= "],["plain","user"],["punc","."],["plain","greet"]],
+      [["fn","fn"],["punc","()"],["plain","  "],["cmt","// no dot → lost binding"]],
+    ],
+    binding:{ label:"window", color:T.coral, target:"global" },
+    rule:{ name:"Default binding (lost)", desc:"Extracted method → no dot → this = global" },
+    out:[{id:"o1",t:"undefined",c:T.coralL}],
+  },
+  {
+    id:5, act:"06",
+    title:"Arrow function",
+    sub:"Arrow functions don't have their own this. They inherit this from the enclosing lexical scope — where they were defined.",
+    code:[
+      [["kw","const"],["plain"," user "],["punc","= {"]],
+      [["plain","  name"],["punc",": "],["str","'Alice'"],["punc",","]],
+      [["plain","  "],["fn","greet"],["punc","() {"]],
+      [["plain","    "],["kw","const"],["plain"," inner "],["punc","= "],["punc","() => {"]],
+      [["plain","      "],["fn","console"],["punc","."],["meth","log"],["punc","("],["this","this"],["punc",".name)"]],
+      [["plain","    "],["punc","}"]],
+      [["plain","    "],["fn","inner"],["punc","()"]],
+      [["plain","  "],["punc","}"]],
+      [["punc","}"]],
+      [["plain","user"],["punc","."],["fn","greet"],["punc","()"]],
+    ],
+    binding:{ label:"user", color:T.teal, target:"object" },
+    rule:{ name:"Lexical binding", desc:"Arrow function → this = enclosing scope's this (user)" },
+    out:[{id:"o1",t:'"Alice"',c:T.tealL}],
+  },
+  {
+    id:6, act:"07",
+    title:"Arrow function gotcha",
+    sub:"An arrow function as an object method inherits this from the outer scope — which is the global scope, not the object.",
+    code:[
+      [["kw","const"],["plain"," user "],["punc","= {"]],
+      [["plain","  name"],["punc",": "],["str","'Alice'"],["punc",","]],
+      [["plain","  "],["plain","greet"],["punc",": "],["punc","() => {"]],
+      [["plain","    "],["fn","console"],["punc","."],["meth","log"],["punc","("],["this","this"],["punc",".name)"]],
+      [["plain","  "],["punc","}"]],
+      [["punc","}"]],
+      [["plain","user"],["punc","."],["fn","greet"],["punc","()"]],
+    ],
+    binding:{ label:"window", color:T.coral, target:"global" },
+    rule:{ name:"Lexical binding (gotcha)", desc:"Arrow as method → outer scope is global → this = window" },
+    out:[{id:"o1",t:"undefined",c:T.coralL}],
+  },
+  {
+    id:7, act:"08",
+    title:"new keyword",
+    sub:"When a function is called with new, a brand-new object is created and this is bound to it.",
+    code:[
+      [["kw","function"],["plain"," "],["fn","User"],["punc","(name) {"]],
+      [["plain","  "],["this","this"],["punc",".name = name"]],
+      [["punc","}"]],
+      [["kw","const"],["plain"," u "],["punc","= "],["kw","new"],["plain"," "],["fn","User"],["punc","("],["str","'Alice'"],["punc",")"]],
+      [["fn","console"],["punc","."],["meth","log"],["punc","("],["plain","u"],["punc",".name)"]],
+    ],
+    binding:{ label:"new User{}", color:T.amber, target:"instance" },
+    rule:{ name:"new binding", desc:"new creates a fresh object → this = that new object" },
+    out:[{id:"o1",t:'"Alice"',c:T.amberL}],
+  },
+  {
+    id:8, act:"09",
+    title:"Explicit binding — call & apply",
+    sub:"call() and apply() let you explicitly set this to any object you want. The function runs immediately with that binding.",
+    code:[
+      [["kw","function"],["plain"," "],["fn","greet"],["punc","() {"]],
+      [["plain","  "],["fn","console"],["punc","."],["meth","log"],["punc","("],["this","this"],["punc",".name)"]],
+      [["punc","}"]],
+      [["kw","const"],["plain"," bob "],["punc","= { name"],["punc",": "],["str","'Bob'"],["punc"," }"]],
+      [["fn","greet"],["punc","."],["meth","call"],["punc","(bob)"]],
+    ],
+    binding:{ label:"bob", color:T.pink, target:"explicit" },
+    rule:{ name:"Explicit binding", desc:"call/apply → this = the object you pass in" },
+    out:[{id:"o1",t:'"Bob"',c:T.pinkL}],
+  },
+  {
+    id:9, act:"10",
+    title:"Explicit binding — bind",
+    sub:"bind() creates a new function with this permanently set. Unlike call/apply, it doesn't execute immediately — it returns a new function.",
+    code:[
+      [["kw","function"],["plain"," "],["fn","greet"],["punc","() {"]],
+      [["plain","  "],["fn","console"],["punc","."],["meth","log"],["punc","("],["this","this"],["punc",".name)"]],
+      [["punc","}"]],
+      [["kw","const"],["plain"," bob "],["punc","= { name"],["punc",": "],["str","'Bob'"],["punc"," }"]],
+      [["kw","const"],["plain"," bound "],["punc","= "],["fn","greet"],["punc","."],["meth","bind"],["punc","(bob)"]],
+      [["fn","bound"],["punc","()"],["plain","  "],["cmt","// permanently bound"]],
+    ],
+    binding:{ label:"bob", color:T.pink, target:"explicit" },
+    rule:{ name:"Hard binding", desc:"bind() → returns new function with this locked permanently" },
+    out:[{id:"o1",t:'"Bob"',c:T.pinkL}],
+  },
+  {
+    id:10, act:"11",
+    title:"Class method",
+    sub:"In a class, this inside a method refers to the instance — just like implicit binding. But watch out for extraction.",
+    code:[
+      [["kw","class"],["plain"," "],["fn","User"],["punc"," {"]],
+      [["plain","  "],["fn","constructor"],["punc","(name) { "],["this","this"],["punc",".name = name }"]],
+      [["plain","  "],["fn","greet"],["punc","() {"]],
+      [["plain","    "],["fn","console"],["punc","."],["meth","log"],["punc","("],["this","this"],["punc",".name)"]],
+      [["plain","  "],["punc","}"]],
+      [["punc","}"]],
+      [["kw","const"],["plain"," u "],["punc","= "],["kw","new"],["plain"," "],["fn","User"],["punc","("],["str","'Alice'"],["punc",")"]],
+      [["plain","u"],["punc","."],["fn","greet"],["punc","()"]],
+    ],
+    binding:{ label:"User instance", color:T.amber, target:"instance" },
+    rule:{ name:"Implicit binding (class)", desc:"instance.method() → this = the instance" },
+    out:[{id:"o1",t:'"Alice"',c:T.amberL}],
+  },
+  {
+    id:11, act:"12",
+    title:"Event handler",
+    sub:"In a DOM event handler, this refers to the element that the listener is attached to. Arrow functions break this — they use lexical this instead.",
+    code:[
+      [["plain","button"],["punc","."],["fn","addEventListener"],["punc","("],["str","'click'"],["punc",","]],
+      [["plain","  "],["kw","function"],["punc","() {"]],
+      [["plain","    "],["fn","console"],["punc","."],["meth","log"],["punc","("],["this","this"],["punc",")"]],
+      [["plain","    "],["cmt","// → <button> element"]],
+      [["plain","  "],["punc","}"]],
+      [["punc",")"]],
+    ],
+    binding:{ label:"<button>", color:T.teal, target:"element" },
+    rule:{ name:"Implicit binding (DOM)", desc:"Event handler → this = the element with the listener" },
+    out:[{id:"o1",t:"<button>…</button>",c:T.tealL}],
+  },
+  {
+    id:12, act:"✓",
+    title:"The this binding rules",
+    sub:"Four rules, in priority order. When in doubt, ask: \"How was this function called?\"",
+    code:[
+      [["cmt","// Priority order:"]],
+      [["num","1."],["plain"," "],["kw","new"],["plain","       → new object"]],
+      [["num","2."],["plain"," "],["meth","call"],["punc","/"],["meth","apply"],["punc","/"],["meth","bind"],["plain"," → explicit obj"]],
+      [["num","3."],["plain"," obj"],["punc","."],["fn","method"],["punc","()"],["plain"," → obj"]],
+      [["num","4."],["plain"," "],["fn","plain"],["punc","()"],["plain","     → global/undef"]],
+      [["cmt","// Arrow fn: ignores all above,"]],
+      [["cmt","// always uses enclosing this"]],
+    ],
+    binding:{ label:"it depends", color:T.purple, target:"rules" },
+    rule:{ name:"Priority: new > explicit > implicit > default", desc:"Arrow functions opt out entirely — always lexical" },
+    out:[],
+    finale:true,
+  },
+];
+
+/* ─── DETAIL CONTENT ─── */
+const DETAILS = {
+  code: {
+    title:"Source Code",
+    color:T.purpleL,
+    sections:[
+      {heading:"What to watch for",body:"Each scene shows a different way this gets bound. Pay attention to how the function is called — that's what determines this, not where the code is written."},
+      {heading:"Common patterns",body:"• obj.method() → this = obj\n• func() → this = global\n• new Func() → this = new object\n• func.call(x) → this = x\n• () => {} → this = outer scope"},
+    ]
+  },
+  binding: {
+    title:"this Binding",
+    color:T.amber,
+    sections:[
+      {heading:"How this is determined",body:"JavaScript uses 4 rules (in priority order) to determine what this refers to:\n\n1. new binding — called with new?\n2. Explicit binding — called with call/apply/bind?\n3. Implicit binding — called as a method (obj.fn)?\n4. Default binding — plain function call"},
+      {heading:"Arrow functions",body:"Arrow functions are special — they completely ignore the 4 rules above. Instead, they capture this from whatever scope they were defined in. This makes them great for callbacks but dangerous as methods."},
+      {heading:"Strict mode",body:"In strict mode ('use strict'), the default binding gives undefined instead of the global object. This catches bugs where you accidentally use global this."},
+    ]
+  },
+  rule: {
+    title:"Binding Rules",
+    color:T.teal,
+    sections:[
+      {heading:"Default binding",body:"A plain function call: greet(). No dot, no new, no call/apply. this defaults to the global object (window in browsers), or undefined in strict mode."},
+      {heading:"Implicit binding",body:"A method call: obj.greet(). The object before the dot becomes this. But beware — if you extract the method (const fn = obj.greet), the binding is lost."},
+      {heading:"Explicit binding",body:"Using call(), apply(), or bind() to manually set this. call and apply invoke immediately; bind returns a new permanently-bound function."},
+      {heading:"new binding",body:"Calling with new: new User(). JavaScript creates a fresh empty object, sets this to it, runs the constructor, and returns the object."},
+    ]
+  },
+  console: {
+    title:"Console Output",
+    color:T.tealL,
+    sections:[
+      {heading:"What it shows",body:"The console output proves what this resolved to in each context. Watch how the same function can produce different results depending on how it's called."},
+      {heading:"Debugging this",body:"If this isn't what you expect, ask:\n1. Is it an arrow function? → check the enclosing scope\n2. Was it called with new? → this = new object\n3. Was call/apply/bind used? → this = that argument\n4. Was it called as obj.method()? → this = obj\n5. None of the above? → this = global or undefined"},
+    ]
+  },
+};
+
+/* ─── COMPONENTS ─── */
+const CodePanel = ({ tokens }) =>
+  e("div", { style:{ background:T.codeBase, borderRadius:12, overflow:"hidden", border:`1px solid ${T.border}` } },
+    e("div", { style:{ padding:"10px 14px 8px", borderBottom:`1px solid ${T.border}`, display:"flex", gap:7 } },
+      ...["#ff5f57","#febc2e","#28c840"].map((c,i) =>
+        e("div", { key:i, style:{ width:11, height:11, borderRadius:"50%", background:c } })
+      )
+    ),
+    e("div", { style:{ padding:"18px 22px 22px", fontFamily:"'SF Mono','Fira Code','Consolas',monospace", fontSize:12, lineHeight:1.95 } },
+      tokens.map((line, li) =>
+        e("div", { key:li, style:{ paddingLeft:0, borderRadius:3, display:"block" } },
+          line.map(([cls, txt], ti) =>
+            e("span", { key:ti, style:{ ...TS[cls], whiteSpace:"pre" } }, txt)
+          )
+        )
+      )
+    )
+  );
+
+const Panel = ({ label, children, style={}, focused=false, onClick }) =>
+  e(M.div, {
+    onClick,
+    animate:{
+      borderColor: focused ? T.purple : T.border2,
+      boxShadow: focused ? `0 0 16px ${T.purple}30, inset 0 0 12px ${T.purple}08` : "0 0 0px transparent"
+    },
+    transition:{ duration:0.4 },
+    style:{ borderRadius:12, border:"1.5px solid", background:T.surface, overflow:"hidden", cursor:onClick?"pointer":"default", ...style }
+  },
+    label && e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, label)
+    ),
+    e("div", { style:{ padding:12 } }, children)
+  );
+
+const BindingViz = ({ binding, focused, onClick }) => {
+  const targets = [
+    { key:"global",   label:"window",        x:0,   y:0,   color:T.blue },
+    { key:"object",   label:"{ object }",     x:1,   y:0,   color:T.teal },
+    { key:"instance", label:"new Instance",   x:0,   y:1,   color:T.amber },
+    { key:"explicit", label:"call/apply obj", x:1,   y:1,   color:T.pink },
+    { key:"element",  label:"<element>",      x:0.5, y:0,   color:T.teal },
+    { key:"rules",    label:"see rules →",    x:0.5, y:0.5, color:T.purple },
+    { key:"unknown",  label:"???",            x:0.5, y:0.5, color:T.text3 },
+  ];
+  const active = targets.find(t => t.key === binding.target);
+
+  return e(M.div, {
+    onClick,
+    animate:{
+      borderColor: focused ? T.purple : T.border2,
+      boxShadow: focused ? `0 0 16px ${T.purple}30, inset 0 0 12px ${T.purple}08` : "0 0 0px transparent"
+    },
+    transition:{ duration:0.4 },
+    style:{ borderRadius:12, border:"1.5px solid", background:T.surface, overflow:"hidden", cursor:"pointer" }
+  },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, "this →")
+    ),
+    e("div", { style:{ padding:16, display:"flex", flexDirection:"column", alignItems:"center", gap:12, minHeight:100 } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:10 } },
+        e(M.div, {
+          animate:{ scale:[1,1.08,1] },
+          transition:{ duration:1.5, repeat:Infinity },
+          style:{ padding:"6px 14px", borderRadius:8, background:"#ff537018", border:"1px solid #ff537044", fontFamily:"'SF Mono',monospace", fontSize:13, fontWeight:700, color:"#ff5370" }
+        }, "this"),
+        e("div", { style:{ fontSize:18, color:T.text3 } }, "→"),
+        e(AP, { mode:"wait" },
+          e(M.div, {
+            key: binding.label,
+            initial:{opacity:0,scale:0.85},
+            animate:{opacity:1,scale:1},
+            exit:{opacity:0,scale:0.85},
+            transition:sp(400,28),
+            style:{ padding:"6px 14px", borderRadius:8, background:`${binding.color}18`, border:`1px solid ${binding.color}44`, fontFamily:"'SF Mono',monospace", fontSize:13, fontWeight:600, color:binding.color }
+          }, binding.label)
+        )
+      ),
+      active && binding.target !== "unknown" && binding.target !== "rules" &&
+        e("div", { style:{ display:"flex", flexWrap:"wrap", gap:6, justifyContent:"center", marginTop:4 } },
+          targets.filter(t => t.key !== "unknown" && t.key !== "rules").map(t =>
+            e(M.div, {
+              key:t.key,
+              animate:{ opacity: t.key === binding.target ? 1 : 0.3, scale: t.key === binding.target ? 1 : 0.9 },
+              transition:{ duration:0.3 },
+              style:{ padding:"3px 8px", borderRadius:6, border:`1px solid ${t.color}${t.key===binding.target?"66":"22"}`, background:t.key===binding.target?`${t.color}14`:"transparent", fontSize:10, fontFamily:"monospace", color:t.key===binding.target?t.color:T.text3 }
+            }, t.label)
+          )
+        )
+    )
+  );
+};
+
+const RulePanel = ({ rule, focused, onClick }) =>
+  e(M.div, {
+    onClick,
+    animate:{
+      borderColor: focused ? T.purple : T.border2,
+      boxShadow: focused ? `0 0 16px ${T.purple}30, inset 0 0 12px ${T.purple}08` : "0 0 0px transparent"
+    },
+    transition:{ duration:0.4 },
+    style:{ borderRadius:12, border:"1.5px solid", background:T.surface, overflow:"hidden", cursor:"pointer" }
+  },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, "Active Rule")
+    ),
+    e("div", { style:{ padding:12, minHeight:52 } },
+      rule
+        ? e(AP, { mode:"wait" },
+            e(M.div, { key:rule.name, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.15} },
+              e("div", { style:{ fontSize:13, fontWeight:600, color:T.purpleL, marginBottom:4 } }, rule.name),
+              e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.6 } }, rule.desc)
+            )
+          )
+        : e("div", { style:{ fontSize:11, color:T.text3 } }, "—")
+    )
+  );
+
+const Finale = () => {
+  const rows = [
+    { n:1, label:"new binding", sub:"new Func() → this = brand new object", c:T.amber },
+    { n:2, label:"Explicit binding", sub:"call / apply / bind → this = specified object", c:T.pink },
+    { n:3, label:"Implicit binding", sub:"obj.method() → this = the object before the dot", c:T.teal },
+    { n:4, label:"Default binding", sub:"plain func() → this = global (or undefined in strict)", c:T.blue },
+    { n:"⤷", label:"Arrow functions", sub:"No own this — always inherits from enclosing lexical scope", c:T.coral },
+  ];
+  return e("div", { style:{ padding:"8px 0" } },
+    rows.map((r,i) => e(M.div, { key:i, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.12,...ez},
+      style:{ display:"flex", alignItems:"flex-start", gap:12, padding:"11px 14px", marginBottom:8, borderRadius:10, border:`1px solid ${r.c}28`, background:`${r.c}08` }
+    },
+      e("div", { style:{ width:26, height:26, borderRadius:"50%", border:`1.5px solid ${r.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:12, fontWeight:700, color:r.c } }, r.n),
+      e("div", null,
+        e("div", { style:{ fontSize:13, fontWeight:600, color:r.c, marginBottom:2 } }, r.label),
+        e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.5 } }, r.sub)
+      )
+    ))
+  );
+};
+
+const DetailPanel = ({ detailKey, onClose }) => {
+  const d = DETAILS[detailKey];
+  if (!d) return null;
+  return e("div", {
+    style:{ width:340, flexShrink:0, background:T.surface, borderRadius:14, border:`1.5px solid ${d.color}44`, overflow:"hidden", alignSelf:"flex-start", position:"sticky", top:56 }
+  },
+    e("div", { style:{ padding:"14px 18px 12px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:8 } },
+        e("div", { style:{ width:8, height:8, borderRadius:"50%", background:d.color } }),
+        e("span", { style:{ fontSize:14, fontWeight:600, color:T.text1 } }, d.title)
+      ),
+      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6, transition:"color 0.2s" }, onMouseEnter:ev=>ev.target.style.color=T.text1, onMouseLeave:ev=>ev.target.style.color=T.text3 }, "✕")
+    ),
+    e("div", { style:{ padding:"16px 18px 20px", maxHeight:"calc(100vh - 140px)", overflowY:"auto" } },
+      d.sections.map((s, i) =>
+        e("div", { key:i, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
+          e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
+        )
+      )
+    )
+  );
+};
+
+/* ─── APP ─── */
+function App() {
+  const [si, setSi] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [detail, setDetail] = useState(null);
+  const timer = useRef(null);
+  const sc = SCENES[si];
+
+  useEffect(() => { setPlaying(true); }, []);
+
+  useEffect(() => {
+    if (!playing) return;
+    const d = si===0 ? 3000 : sc.finale ? 99999 : 3200;
+    timer.current = setTimeout(() => { si < SCENES.length-1 ? setSi(i=>i+1) : setPlaying(false); }, d);
+    return () => clearTimeout(timer.current);
+  }, [playing, si]);
+
+  const go = d => { clearTimeout(timer.current); setPlaying(false); setSi(i=>Math.max(0,Math.min(SCENES.length-1,i+d))); };
+  const jump = i => { clearTimeout(timer.current); setPlaying(false); setSi(i); };
+  const togglePlay = () => { if(si===SCENES.length-1){setSi(0);setPlaying(true);}else setPlaying(p=>!p); };
+  const toggleDetail = key => { setDetail(d => d===key ? null : key); clearTimeout(timer.current); setPlaying(false); };
+
+  return e("div", { style:{ display:"flex", gap:16, alignItems:"flex-start", justifyContent: detail ? "flex-start" : "center" } },
+  e("div", { style:{ width:760, flexShrink:0, background:T.bg, fontFamily:"system-ui,sans-serif", padding:20, borderRadius:16 } },
+
+    /* header */
+    e("div", { style:{ marginBottom:18 } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:10, marginBottom:11 } },
+        e(AP, { mode:"wait" },
+          e(M.div, { key:sc.act, initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, exit:{opacity:0}, transition:sp(400,28),
+            style:{ fontSize:9,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:T.purple,background:`${T.purple}14`,padding:"3px 10px",borderRadius:20,border:`1px solid ${T.purple}30`,flexShrink:0 }
+          }, sc.act)
+        ),
+        e("div", { style:{ flex:1, height:1, background:T.border, borderRadius:99, overflow:"hidden" } },
+          e(M.div, { animate:{width:`${si/(SCENES.length-1)*100}%`}, transition:{duration:0.5}, style:{height:"100%",background:T.purple,borderRadius:99} })
+        ),
+        e("span", { style:{ fontSize:10, color:T.text3 } }, `${si+1} / ${SCENES.length}`)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.title, initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, exit:{opacity:0,y:-8}, transition:ez,
+          style:{ fontSize:20,fontWeight:600,color:T.text1,marginBottom:4,letterSpacing:"-0.02em" }
+        }, sc.title)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
+          style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
+        }, sc.sub)
+      )
+    ),
+
+    /* finale */
+    sc.finale && e(Finale),
+
+    /* main grid */
+    !sc.finale && e("div", null,
+
+      /* row 1: code + binding viz */
+      e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:10 } },
+        e("div", { onClick:()=>toggleDetail("code"), style:{cursor:"pointer"} },
+          e(CodePanel, { tokens: sc.code })
+        ),
+        e(BindingViz, { binding:sc.binding, focused:false, onClick:()=>toggleDetail("binding") })
+      ),
+
+      /* row 2: rule + console */
+      e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 } },
+        e(RulePanel, { rule:sc.rule, focused:false, onClick:()=>toggleDetail("rule") }),
+        e(Panel, { label:"Console output", onClick:()=>toggleDetail("console") },
+          e("div", { style:{ fontFamily:"'SF Mono','Fira Code',monospace", minHeight:40 } },
+            sc.out.length===0
+              ? e("div", { style:{ fontSize:11,color:T.text3 } }, "—")
+              : e(AP, null, sc.out.map(item =>
+                  e(M.div, { key:item.id, initial:{opacity:0,x:-10}, animate:{opacity:1,x:0}, transition:ez,
+                    style:{ fontSize:12,color:item.c,padding:"2px 0",borderBottom:`1px solid ${T.border}` }
+                  },
+                    e("span", { style:{ color:T.text3,marginRight:7,fontSize:10 } }, "›"), item.t
+                  )
+                ))
+          )
+        )
+      )
+    ),
+
+    /* controls */
+    e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginTop:16 } },
+      e("button", { onClick:()=>go(-1), disabled:si===0,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===0?T.text3:T.text2,cursor:si===0?"not-allowed":"pointer",fontSize:11,transition:"color 0.2s" }
+      }, "← Back"),
+      e("button", { onClick:togglePlay,
+        style:{ padding:"6px 18px",borderRadius:8,border:`1px solid ${playing?T.coral:T.purple}44`,background:playing?`${T.coral}14`:`${T.purple}14`,color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all 0.2s" }
+      }, playing ? "⏸  Pause" : si===SCENES.length-1 ? "↺  Replay" : "▶  Play"),
+      e("button", { onClick:()=>go(1), disabled:si===SCENES.length-1,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
+      }, "Next →"),
+      e("div", { style:{ flex:1 } }),
+      e("div", { style:{ display:"flex", gap:4, alignItems:"center" } },
+        SCENES.map((_,i) =>
+          e("button", { key:i, onClick:()=>jump(i),
+            style:{ width:i===si?16:5,height:5,borderRadius:99,border:"none",padding:0,background:i===si?T.purple:i<si?`${T.purple}55`:T.border,cursor:"pointer",transition:"all 0.25s" }
+          })
+        )
+      )
+    )
+  ),
+  detail && e(DetailPanel, { detailKey:detail, onClose:()=>setDetail(null) })
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(e(App));
+</script>
+</body>
+</html>
