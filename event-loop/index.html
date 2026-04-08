@@ -249,12 +249,7 @@ const DETAILS = {
 const DetailPanel = ({ detailKey, onClose }) => {
   const d = DETAILS[detailKey];
   if (!d) return null;
-  return e(M.div, {
-    key: detailKey,
-    initial: { opacity:0 },
-    animate: { opacity:1 },
-    exit: { opacity:0 },
-    transition: { duration:0.15 },
+  return e("div", {
     style: { width:340, flexShrink:0, background:T.surface, borderRadius:14, border:`1.5px solid ${d.color}44`, overflow:"hidden", alignSelf:"flex-start", position:"sticky", top:56 }
   },
     e("div", { style:{ padding:"14px 18px 12px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" } },
@@ -266,7 +261,7 @@ const DetailPanel = ({ detailKey, onClose }) => {
     ),
     e("div", { style:{ padding:"16px 18px 20px", maxHeight:"calc(100vh - 140px)", overflowY:"auto" } },
       d.sections.map((s, i) =>
-        e(M.div, { key:i, initial:{opacity:0,y:10}, animate:{opacity:1,y:0}, transition:{delay:i*0.06, duration:0.3}, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
+        e("div", { key:i, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
           e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
           e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
         )
@@ -423,7 +418,7 @@ function App() {
       )
     )
   ),
-  e(AP, null, detail && e(DetailPanel, { key:detail, detailKey:detail, onClose:()=>setDetail(null) }))
+  detail && e(DetailPanel, { detailKey:detail, onClose:()=>setDetail(null) })
   );
 }
 
