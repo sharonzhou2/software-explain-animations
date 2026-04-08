@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Iterators &amp; Generators</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111118;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px 16px;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  #root { width: 100%; max-width: 1120px; }
+  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: system-ui, sans-serif; }
+  .topnav a { text-decoration: none; color: #8888aa; font-size: 13px; transition: color 0.2s; }
+  .topnav a:hover { color: #e8e8f0; }
+  .topnav .name { font-weight: 600; color: #e8e8f0; font-size: 13px; }
+  .topnav .sep { color: #38384a; font-size: 12px; }
+  .topnav .current { color: #7c6fcd; font-size: 13px; font-weight: 500; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="../" class="name">Sharon Zhou</a>
+  <span class="sep">/</span>
+  <a href="../">Animations</a>
+  <span class="sep">/</span>
+  <span class="current">Iterators &amp; Generators</span>
+</nav>
+<div id="root" style="margin-top: 36px;"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/framer-motion@11/dist/framer-motion.js"></script>
+<script>
+const { useState, useEffect, useRef } = React;
+const { motion, AnimatePresence } = window.Motion;
+const e = React.createElement;
+const M = motion;
+const AP = AnimatePresence;
+const sp = (s=380,d=28) => ({ type:"spring", stiffness:s, damping:d });
+const ez = { duration:0.32, ease:[0.22,1,0.36,1] };
+
+const T = {
+  bg:"#111118", surface:"#18181f", surface2:"#1e1e28",
+  border:"#2a2a38", border2:"#38384a",
+  text1:"#e8e8f0", text2:"#8888aa", text3:"#44445a",
+  purple:"#7c6fcd", purpleL:"#a99cf0",
+  teal:"#3db89a", tealL:"#6dd4b8",
+  coral:"#c4694a", coralL:"#e08a6a",
+  blue:"#4a8fd4", codeBase:"#141428",
+};
+
+const TS = {
+  fn:    { color:"#82aaff" },
+  meth:  { color:"#89ddff" },
+  str:   { color:"#c3e88d" },
+  kw:    { color:"#c792ea" },
+  num:   { color:"#f78c6c" },
+  punc:  { color:"#89ddff" },
+  plain: { color:"#a6accd" },
+  cmt:   { color:"#546e7a" },
+  prop:  { color:"#f07178" },
+  op:    { color:"#89ddff" },
+};
+
+/* ─── SCENES ─── */
+
+const SCENES = [
+  /* 0 — Intro */
+  {
+    id:0, act:"01", title:"The problem iterators solve",
+    sub:"How do you loop over arrays, strings, maps, sets, and custom data structures with one unified pattern? JavaScript's iteration protocol is the answer.",
+    code:[
+      [["cmt","// Without iterators — each collection is different"]],
+      [["kw","for"], ["punc","("], ["kw","let"], ["plain"," i"], ["op","="], ["num","0"], ["punc","; i"], ["op","<"], ["plain","arr.length"], ["punc","; i"], ["op","++"], ["punc",")"]],
+      [["kw","for"], ["punc","("], ["kw","let"], ["plain"," key "], ["kw","in"], ["plain"," obj"], ["punc",")"]],
+      [["plain","map."], ["meth","forEach"], ["punc","("], ["plain","callback"], ["punc",")"]],
+      [["plain",""]],
+      [["cmt","// With iterators — one pattern for everything"]],
+      [["kw","for"], ["punc","("], ["kw","const"], ["plain"," item "], ["kw","of"], ["plain"," anything"], ["punc",") {"]],
+      [["plain","  "], ["fn","console"], ["punc","."], ["meth","log"], ["punc","("], ["plain","item"], ["punc",")"]],
+      [["punc","}"]],
+    ],
+    hl:[1,2,3], iterState:null, genState:null, focus:["code"],
+    viz:"intro"
+  },
+  /* 1 — The iteration protocol */
+  {
+    id:1, act:"02", title:"The iteration protocol",
+    sub:"Any object is iterable if it has a [Symbol.iterator]() method that returns an iterator — an object with a next() method returning { value, done }.",
+    code:[
+      [["cmt","// The contract"]],
+      [["kw","const"], ["plain"," iterable "], ["op","="], ["punc"," {"]],
+      [["plain","  "], ["punc","["], ["fn","Symbol"], ["punc","."], ["prop","iterator"], ["punc","]"], ["punc","() {"]],
+      [["plain","    "], ["kw","return"], ["punc"," {"]],
+      [["plain","      "], ["meth","next"], ["punc","() {"]],
+      [["plain","        "], ["kw","return"], ["punc"," { "], ["prop","value"], ["punc",":"], ["plain"," any"], ["punc",","], ["plain"," "], ["prop","done"], ["punc",":"], ["plain"," bool"], ["punc"," }"]],
+      [["plain","      "], ["punc","}"]],
+      [["plain","    "], ["punc","}"]],
+      [["plain","  "], ["punc","}"]],
+      [["punc","}"]],
+    ],
+    hl:[2,3,4,5], iterState:{ value:"—", done:"—" }, genState:null, focus:["iter"],
+    viz:"protocol"
+  },
+  /* 2 — Built-in iterables */
+  {
+    id:2, act:"03", title:"Built-in iterables",
+    sub:"Arrays, strings, Maps, Sets, TypedArrays, NodeLists, and arguments are all iterable out of the box — they implement [Symbol.iterator].",
+    code:[
+      [["cmt","// All of these are iterable"]],
+      [["punc","["], ["num","1"], ["punc",","], ["num","2"], ["punc",","], ["num","3"], ["punc","]"], ["punc","["], ["fn","Symbol"], ["punc","."], ["prop","iterator"], ["punc","]"]],
+      [["str","'hello'"], ["punc","["], ["fn","Symbol"], ["punc","."], ["prop","iterator"], ["punc","]"]],
+      [["kw","new"], ["plain"," "], ["fn","Map"], ["punc","()"], ["punc","["], ["fn","Symbol"], ["punc","."], ["prop","iterator"], ["punc","]"]],
+      [["kw","new"], ["plain"," "], ["fn","Set"], ["punc","()"], ["punc","["], ["fn","Symbol"], ["punc","."], ["prop","iterator"], ["punc","]"]],
+      [["plain",""]],
+      [["cmt","// Spread also uses the protocol"]],
+      [["kw","const"], ["plain"," chars "], ["op","="], ["plain"," "], ["punc","[..."], ["str","'hi'"], ["punc","]"]],
+      [["cmt","// → ['h', 'i']"]],
+    ],
+    hl:[1,2,3,4], iterState:null, genState:null, focus:["code"],
+    viz:"builtins"
+  },
+  /* 3 — for...of under the hood */
+  {
+    id:3, act:"04", title:"for...of under the hood",
+    sub:"for...of is syntactic sugar: it calls [Symbol.iterator]() once, then calls next() repeatedly until done is true.",
+    code:[
+      [["cmt","// What for...of actually does:"]],
+      [["kw","const"], ["plain"," arr "], ["op","="], ["punc"," ["], ["num","10"], ["punc",","], ["num","20"], ["punc",","], ["num","30"], ["punc","]"]],
+      [["kw","const"], ["plain"," iter "], ["op","="], ["plain"," arr"], ["punc","["], ["fn","Symbol"], ["punc","."], ["prop","iterator"], ["punc","]()"]],
+      [["plain",""]],
+      [["plain","iter."], ["meth","next"], ["punc","()"], ["cmt","  // { value: 10, done: false }"]],
+      [["plain","iter."], ["meth","next"], ["punc","()"], ["cmt","  // { value: 20, done: false }"]],
+      [["plain","iter."], ["meth","next"], ["punc","()"], ["cmt","  // { value: 30, done: false }"]],
+      [["plain","iter."], ["meth","next"], ["punc","()"], ["cmt","  // { value: undefined, done: true }"]],
+    ],
+    hl:[4,5,6,7], iterState:{ value:10, done:false }, genState:null, focus:["iter"],
+    viz:"forof",
+    iterSteps:[
+      { value:10, done:false, line:4 },
+      { value:20, done:false, line:5 },
+      { value:30, done:false, line:6 },
+      { value:undefined, done:true, line:7 },
+    ]
+  },
+  /* 4 — Custom iterator */
+  {
+    id:4, act:"05", title:"Custom iterator",
+    sub:"You can make any object iterable by implementing the protocol yourself. Here's a range iterator built from scratch.",
+    code:[
+      [["kw","function"], ["plain"," "], ["fn","range"], ["punc","("], ["plain","start"], ["punc",","], ["plain"," end"], ["punc",") {"]],
+      [["plain","  "], ["kw","let"], ["plain"," current "], ["op","="], ["plain"," start"]],
+      [["plain","  "], ["kw","return"], ["punc"," {"]],
+      [["plain","    "], ["punc","["], ["fn","Symbol"], ["punc","."], ["prop","iterator"], ["punc","]"], ["punc","() { "], ["kw","return"], ["plain"," "], ["kw","this"], ["punc"," }"], ["punc",","]],
+      [["plain","    "], ["meth","next"], ["punc","() {"]],
+      [["plain","      "], ["kw","if"], ["punc","("], ["plain","current "], ["op","<="], ["plain"," end"], ["punc",")"]],
+      [["plain","        "], ["kw","return"], ["punc"," {"], ["prop","value"], ["punc",":"], ["plain"," current"], ["op","++"], ["punc",","], ["plain"," "], ["prop","done"], ["punc",":"], ["kw","false"], ["punc"," }"]],
+      [["plain","      "], ["kw","return"], ["punc"," { "], ["prop","value"], ["punc",":"], ["plain"," "], ["kw","undefined"], ["punc",","], ["plain"," "], ["prop","done"], ["punc",":"], ["kw","true"], ["punc"," }"]],
+      [["plain","    "], ["punc","}"]],
+      [["plain","  "], ["punc","}"]],
+      [["punc","}"]],
+    ],
+    hl:[3,4,5,6,7], iterState:{ value:1, done:false }, genState:null, focus:["iter","code"],
+    viz:"custom"
+  },
+  /* 5 — Generator functions */
+  {
+    id:5, act:"06", title:"Generator functions",
+    sub:"function* declares a generator — a function that can pause its execution and resume later. Calling it returns a generator object (which is both iterable and an iterator).",
+    code:[
+      [["kw","function"], ["op","*"], ["plain"," "], ["fn","myGen"], ["punc","() {"]],
+      [["plain","  "], ["kw","yield"], ["plain"," "], ["num","1"]],
+      [["plain","  "], ["kw","yield"], ["plain"," "], ["num","2"]],
+      [["plain","  "], ["kw","yield"], ["plain"," "], ["num","3"]],
+      [["punc","}"]],
+      [["plain",""]],
+      [["kw","const"], ["plain"," gen "], ["op","="], ["plain"," "], ["fn","myGen"], ["punc","()"]],
+      [["plain","gen."], ["meth","next"], ["punc","()"], ["cmt","  // { value: 1, done: false }"]],
+      [["plain","gen."], ["meth","next"], ["punc","()"], ["cmt","  // { value: 2, done: false }"]],
+      [["plain","gen."], ["meth","next"], ["punc","()"], ["cmt","  // { value: 3, done: false }"]],
+      [["plain","gen."], ["meth","next"], ["punc","()"], ["cmt","  // { value: undefined, done: true }"]],
+    ],
+    hl:[0,1,2,3], iterState:null, genState:{ status:"created", yieldLine:null }, focus:["gen"],
+    viz:"genfunc"
+  },
+  /* 6 — yield keyword */
+  {
+    id:6, act:"07", title:"The yield keyword",
+    sub:"yield pauses the generator and sends a value out. The function's execution context is saved — local variables, position — everything frozen until next() is called again.",
+    code:[
+      [["kw","function"], ["op","*"], ["plain"," "], ["fn","counter"], ["punc","() {"]],
+      [["plain","  "], ["fn","console"], ["punc","."], ["meth","log"], ["punc","("], ["str","'Start'"], ["punc",")"]],
+      [["plain","  "], ["kw","yield"], ["plain"," "], ["num","1"], ["cmt","   // ⏸ pause here"]],
+      [["plain","  "], ["fn","console"], ["punc","."], ["meth","log"], ["punc","("], ["str","'Resume'"], ["punc",")"]],
+      [["plain","  "], ["kw","yield"], ["plain"," "], ["num","2"], ["cmt","   // ⏸ pause again"]],
+      [["plain","  "], ["fn","console"], ["punc","."], ["meth","log"], ["punc","("], ["str","'Done'"], ["punc",")"]],
+      [["punc","}"]],
+    ],
+    hl:[2,4], iterState:null,
+    genState:{ status:"paused", yieldLine:2, value:1 }, focus:["gen"],
+    viz:"yield"
+  },
+  /* 7 — yield step-by-step */
+  {
+    id:7, act:"08", title:"Yield step-by-step",
+    sub:"Watch the execution pointer move through the generator. Each next() call runs code from the last yield to the next yield, then pauses.",
+    code:[
+      [["kw","function"], ["op","*"], ["plain"," "], ["fn","steps"], ["punc","() {"]],
+      [["plain","  "], ["kw","const"], ["plain"," a "], ["op","="], ["plain"," "], ["kw","yield"], ["plain"," "], ["str","'first'"]],
+      [["plain","  "], ["kw","const"], ["plain"," b "], ["op","="], ["plain"," "], ["kw","yield"], ["plain"," "], ["str","'second'"]],
+      [["plain","  "], ["kw","return"], ["plain"," "], ["str","'final'"]],
+      [["punc","}"]],
+      [["plain",""]],
+      [["kw","const"], ["plain"," g "], ["op","="], ["plain"," "], ["fn","steps"], ["punc","()"]],
+      [["plain","g."], ["meth","next"], ["punc","()    "], ["cmt","// { value: 'first', done: false }"]],
+      [["plain","g."], ["meth","next"], ["punc","()    "], ["cmt","// { value: 'second', done: false }"]],
+      [["plain","g."], ["meth","next"], ["punc","()    "], ["cmt","// { value: 'final', done: true }"]],
+    ],
+    hl:[], iterState:null,
+    genState:{ status:"stepping", yieldLine:null, value:null }, focus:["gen","code"],
+    viz:"stepbystep",
+    genSteps:[
+      { hl:[7], line:1, status:"running", value:"first", done:false, label:"next() #1 → runs to first yield" },
+      { hl:[8], line:2, status:"paused", value:"second", done:false, label:"next() #2 → resumes, pauses at second yield" },
+      { hl:[9], line:3, status:"done", value:"final", done:true, label:"next() #3 → resumes, hits return, done" },
+    ]
+  },
+  /* 8 — Lazy evaluation */
+  {
+    id:8, act:"09", title:"Lazy evaluation — infinite sequences",
+    sub:"Generators compute values on demand. This infinite fibonacci generator never runs out of memory because it only produces values when asked.",
+    code:[
+      [["kw","function"], ["op","*"], ["plain"," "], ["fn","fibonacci"], ["punc","() {"]],
+      [["plain","  "], ["kw","let"], ["plain"," a "], ["op","="], ["num","0"], ["punc",","], ["plain"," b "], ["op","="], ["num","1"]],
+      [["plain","  "], ["kw","while"], ["punc","("], ["kw","true"], ["punc",") {"]],
+      [["plain","    "], ["kw","yield"], ["plain"," a"]],
+      [["plain","    "], ["punc","["], ["plain","a"], ["punc",","], ["plain"," b"], ["punc","]"], ["plain"," "], ["op","="], ["plain"," "], ["punc","["], ["plain","b"], ["punc",","], ["plain"," a "], ["op","+"], ["plain"," b"], ["punc","]"]],
+      [["plain","  "], ["punc","}"]],
+      [["punc","}"]],
+      [["plain",""]],
+      [["kw","const"], ["plain"," fib "], ["op","="], ["plain"," "], ["fn","fibonacci"], ["punc","()"]],
+      [["plain","fib."], ["meth","next"], ["punc","()."], ["prop","value"], ["cmt","  // 0"]],
+      [["plain","fib."], ["meth","next"], ["punc","()."], ["prop","value"], ["cmt","  // 1"]],
+      [["plain","fib."], ["meth","next"], ["punc","()."], ["prop","value"], ["cmt","  // 1"]],
+      [["plain","fib."], ["meth","next"], ["punc","()."], ["prop","value"], ["cmt","  // 2"]],
+    ],
+    hl:[2,3,4], iterState:null,
+    genState:{ status:"infinite", yieldLine:3 }, focus:["gen"],
+    viz:"lazy",
+    lazyValues:[0,1,1,2,3,5,8,13]
+  },
+  /* 9 — yield* delegation */
+  {
+    id:9, act:"10", title:"yield* — delegation",
+    sub:"yield* delegates to another iterable or generator, flattening its values into the outer generator's sequence. It's like inlining another generator.",
+    code:[
+      [["kw","function"], ["op","*"], ["plain"," "], ["fn","inner"], ["punc","() {"]],
+      [["plain","  "], ["kw","yield"], ["plain"," "], ["str","'b'"]],
+      [["plain","  "], ["kw","yield"], ["plain"," "], ["str","'c'"]],
+      [["punc","}"]],
+      [["plain",""]],
+      [["kw","function"], ["op","*"], ["plain"," "], ["fn","outer"], ["punc","() {"]],
+      [["plain","  "], ["kw","yield"], ["plain"," "], ["str","'a'"]],
+      [["plain","  "], ["kw","yield"], ["op","*"], ["plain"," "], ["fn","inner"], ["punc","()"]],
+      [["plain","  "], ["kw","yield"], ["plain"," "], ["str","'d'"]],
+      [["punc","}"]],
+      [["plain",""]],
+      [["punc","[..."], ["fn","outer"], ["punc","()]"], ["cmt","  // ['a','b','c','d']"]],
+    ],
+    hl:[6,7,8], iterState:null,
+    genState:{ status:"delegating", yieldLine:7 }, focus:["gen"],
+    viz:"delegation",
+    delegationSteps:["a","b","c","d"]
+  },
+  /* 10 — Async flow */
+  {
+    id:10, act:"11", title:"Generators for async flow",
+    sub:"Before async/await, generators powered libraries like co and redux-saga. yield pauses execution, the runner resolves the promise, then resumes the generator with the result.",
+    code:[
+      [["cmt","// co-style async (historical)"]],
+      [["kw","function"], ["op","*"], ["plain"," "], ["fn","fetchUser"], ["punc","() {"]],
+      [["plain","  "], ["kw","const"], ["plain"," res "], ["op","="], ["kw","yield"], ["plain"," "], ["fn","fetch"], ["punc","("], ["str","'/api/user'"], ["punc",")"]],
+      [["plain","  "], ["kw","const"], ["plain"," data "], ["op","="], ["kw","yield"], ["plain"," res."], ["meth","json"], ["punc","()"]],
+      [["plain","  "], ["kw","return"], ["plain"," data"]],
+      [["punc","}"]],
+      [["plain",""]],
+      [["cmt","// Modern equivalent:"]],
+      [["kw","async"], ["plain"," "], ["kw","function"], ["plain"," "], ["fn","fetchUser"], ["punc","() {"]],
+      [["plain","  "], ["kw","const"], ["plain"," res "], ["op","="], ["kw","await"], ["plain"," "], ["fn","fetch"], ["punc","("], ["str","'/api/user'"], ["punc",")"]],
+      [["plain","  "], ["kw","const"], ["plain"," data "], ["op","="], ["kw","await"], ["plain"," res."], ["meth","json"], ["punc","()"]],
+      [["plain","  "], ["kw","return"], ["plain"," data"]],
+      [["punc","}"]],
+    ],
+    hl:[1,2,3,4,5], iterState:null,
+    genState:{ status:"async", yieldLine:2 }, focus:["gen","code"],
+    viz:"async"
+  },
+  /* 11 — Practical use cases */
+  {
+    id:11, act:"12", title:"Practical use cases",
+    sub:"Iterators and generators shine for pagination, tree traversal, data pipelines, and any scenario where you need lazy, pull-based data processing.",
+    code:[
+      [["cmt","// Pagination"]],
+      [["kw","function"], ["op","*"], ["plain"," "], ["fn","paginate"], ["punc","("], ["plain","items"], ["punc",","], ["plain"," size"], ["punc",") {"]],
+      [["plain","  "], ["kw","for"], ["punc","("], ["kw","let"], ["plain"," i"], ["op","="], ["num","0"], ["punc","; i"], ["op","<"], ["plain","items.length"], ["punc","; i"], ["op","+="], ["plain","size"], ["punc",")"]],
+      [["plain","    "], ["kw","yield"], ["plain"," items."], ["meth","slice"], ["punc","("], ["plain","i"], ["punc",","], ["plain"," i"], ["op","+"], ["plain","size"], ["punc",")"]],
+      [["punc","}"]],
+      [["plain",""]],
+      [["cmt","// Tree traversal (in-order)"]],
+      [["kw","function"], ["op","*"], ["plain"," "], ["fn","traverse"], ["punc","("], ["plain","node"], ["punc",") {"]],
+      [["plain","  "], ["kw","if"], ["punc","("], ["plain","node.left"], ["punc",")  "], ["kw","yield"], ["op","*"], ["plain"," "], ["fn","traverse"], ["punc","("], ["plain","node.left"], ["punc",")"]],
+      [["plain","  "], ["kw","yield"], ["plain"," node."], ["prop","value"]],
+      [["plain","  "], ["kw","if"], ["punc","("], ["plain","node.right"], ["punc",") "], ["kw","yield"], ["op","*"], ["plain"," "], ["fn","traverse"], ["punc","("], ["plain","node.right"], ["punc",")"]],
+      [["punc","}"]],
+    ],
+    hl:[1,2,3,4], iterState:null,
+    genState:null, focus:["code"],
+    viz:"usecases"
+  },
+  /* 12 — Summary */
+  {
+    id:12, act:"✓", title:"Iterators + Generators — the full picture",
+    sub:"Iterators provide a universal traversal protocol. Generators make writing iterators effortless with function* and yield. Together they enable lazy evaluation, infinite sequences, and elegant data pipelines.",
+    code:[
+      [["cmt","// Iterator protocol"]],
+      [["punc","{ "], ["meth","next"], ["punc","()"], ["plain"," → "], ["punc","{ "], ["prop","value"], ["punc",","], ["plain"," "], ["prop","done"], ["punc"," }"], ["plain"," }"]],
+      [["plain",""]],
+      [["cmt","// Generator = easy iterator"]],
+      [["kw","function"], ["op","*"], ["plain"," "], ["fn","gen"], ["punc","() { "], ["kw","yield"], ["plain"," value "], ["punc","}"]],
+      [["plain",""]],
+      [["cmt","// Lazy, pull-based, composable"]],
+      [["kw","for"], ["punc","("], ["kw","const"], ["plain"," item "], ["kw","of"], ["plain"," "], ["fn","gen"], ["punc","())"], ["plain"," "], ["punc","{ ... }"]],
+    ],
+    hl:[], iterState:null, genState:null, focus:[],
+    viz:"summary",
+    finale:true
+  },
+];
+
+/* ─── DETAILS (sidebar) ─── */
+
+const DETAILS = {
+  iter: {
+    title: "Iterator Protocol",
+    color: T.teal,
+    sections: [
+      { heading: "What is it?", body: "The iterator protocol defines a standard way to produce a sequence of values. An object is an iterator when it implements a next() method that returns { value, done }." },
+      { heading: "How it works", body: "Call next() to get the next value. When done is true, the sequence is exhausted. The iterator maintains its internal state between calls — it remembers where it left off." },
+      { heading: "Iterable vs Iterator", body: "An iterable is an object with a [Symbol.iterator]() method that returns an iterator. An iterator is an object with a next() method. A generator object is both — it has [Symbol.iterator]() returning itself." },
+      { heading: "Key insight", body: "The protocol decouples consumers (for...of, spread, destructuring) from producers (arrays, generators, custom objects). Any object that follows the contract works everywhere." },
+    ]
+  },
+  gen: {
+    title: "Generator Functions",
+    color: T.coral,
+    sections: [
+      { heading: "What are they?", body: "Functions declared with function* that can pause execution at yield points. Calling a generator function doesn't run its body — it returns a generator object that you step through with next()." },
+      { heading: "How yield works", body: "yield pauses the function and sends a value to the caller via next(). The function's entire execution context (local variables, instruction pointer) is preserved. Calling next() resumes from exactly where it paused." },
+      { heading: "Two-way communication", body: "gen.next(value) can send a value INTO the generator. The value becomes the result of the yield expression: const x = yield 'out'. First next() starts execution, subsequent next(val) passes val back in." },
+      { heading: "Key insight", body: "Generators are lazy — they compute values only when asked. An infinite generator like fibonacci() uses constant memory because it only ever holds the current state, not the entire sequence." },
+    ]
+  },
+  code: {
+    title: "Source Code",
+    color: T.purpleL,
+    sections: [
+      { heading: "About this example", body: "Each scene shows a different aspect of iterators and generators with real, runnable code. The highlighted lines indicate the key concept for that scene." },
+      { heading: "Token highlighting", body: "Keywords (purple), functions (blue), methods (cyan), strings (green), numbers (orange), comments (gray) — matching VS Code's dark theme." },
+    ]
+  },
+  protocol: {
+    title: "The Contract",
+    color: T.blue,
+    sections: [
+      { heading: "Symbol.iterator", body: "A well-known symbol that specifies the default iterator for an object. When for...of starts, it calls obj[Symbol.iterator]() to get an iterator." },
+      { heading: "next() method", body: "Must return an object with two properties:\n• value — the current element\n• done — boolean, true if the sequence is finished\nAfter done is true, subsequent calls should also return done: true." },
+      { heading: "Optional: return() and throw()", body: "Iterators can optionally implement return() (for early termination, like break) and throw() (to inject an error). Generators implement both automatically." },
+      { heading: "Well-known iterables", body: "Array, String, Map, Set, TypedArray, arguments, NodeList, and generator objects all implement [Symbol.iterator] natively." },
+    ]
+  },
+  delegation: {
+    title: "yield* Delegation",
+    color: T.teal,
+    sections: [
+      { heading: "What is yield*?", body: "yield* expression delegates iteration to another iterable or generator. It yields each value from the delegate, one at a time, as if the outer generator had those yields itself." },
+      { heading: "Return values", body: "The value of the yield* expression itself is the return value of the delegated generator (the value when done: true). This enables generators to compose and communicate results." },
+      { heading: "Use cases", body: "Recursive generators (tree traversal), composing generators into pipelines, and flattening nested iterables are the most common uses of yield*." },
+    ]
+  },
+  async: {
+    title: "Async Generators",
+    color: T.coral,
+    sections: [
+      { heading: "Historical context", body: "Before async/await (ES2017), generators + runner libraries (co, bluebird.coroutine) were the best way to write synchronous-looking async code. Redux-saga still uses this pattern." },
+      { heading: "How it works", body: "The runner calls gen.next(), gets a promise, awaits it, then calls gen.next(resolvedValue) to send the result back into the generator. Each yield point is like an await." },
+      { heading: "Modern async generators", body: "ES2018 added async function* and for await...of, combining generators with native async/await for streaming async data like paginated APIs or WebSocket messages." },
+    ]
+  },
+  usecases: {
+    title: "Use Cases",
+    color: T.blue,
+    sections: [
+      { heading: "Pagination", body: "Generators naturally model paginated data. yield each page on demand, fetch the next page only when the consumer asks for it. Memory-efficient for large datasets." },
+      { heading: "Tree traversal", body: "Recursive yield* makes tree traversal elegant. In-order, pre-order, post-order — each is a simple recursive generator. No need to build a flat array first." },
+      { heading: "Data pipelines", body: "Chain generators: filter(map(source)). Each step is lazy — values flow through the pipeline one at a time, never materializing the full intermediate arrays." },
+      { heading: "State machines", body: "Generators can model state machines where each yield represents a state transition. The generator's natural pause/resume maps perfectly to state changes." },
+    ]
+  },
+};
+
+/* ─── COMPONENTS ─── */
+
+const CodePanel = ({ code, highlighted }) =>
+  e(M.div, { animate:{ borderColor:highlighted.length>0?T.purple:T.border, boxShadow:highlighted.length>0?`0 0 16px ${T.purple}30`:"0 0 0px transparent" }, transition:{duration:0.4}, style:{ background:T.codeBase, borderRadius:12, overflow:"hidden", border:"1px solid" } },
+    e("div", { style:{ padding:"10px 14px 8px", borderBottom:`1px solid ${T.border}`, display:"flex", gap:7 } },
+      ...["#ff5f57","#febc2e","#28c840"].map((c,i) =>
+        e("div", { key:i, style:{ width:11, height:11, borderRadius:"50%", background:c } })
+      )
+    ),
+    e("div", { style:{ padding:"18px 22px 22px", fontFamily:"'SF Mono','Fira Code','Consolas',monospace", fontSize:12, lineHeight:1.95 } },
+      code.map((tokens, li) => {
+        const hot = highlighted.includes(li);
+        return e(M.div, {
+          key:li,
+          animate:{ background: hot ? "rgba(124,111,205,0.13)" : "transparent" },
+          transition:{ duration:0.22 },
+          style:{ borderLeft: hot ? `2px solid ${T.purple}` : "2px solid transparent", paddingLeft:8, borderRadius:3, display:"block" }
+        },
+          tokens.map(([cls, txt], ti) =>
+            e("span", { key:ti, style:{ ...TS[cls], whiteSpace:"pre" } }, txt)
+          )
+        );
+      })
+    )
+  );
+
+const DetailPanel = ({ detailKey, onClose }) => {
+  const d = DETAILS[detailKey];
+  if (!d) return null;
+  return e("div", {
+    style: { width:340, flexShrink:0, background:T.surface, borderRadius:14, border:`1.5px solid ${d.color}44`, overflow:"hidden", alignSelf:"flex-start", position:"sticky", top:56 }
+  },
+    e("div", { style:{ padding:"14px 18px 12px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:8 } },
+        e("div", { style:{ width:8, height:8, borderRadius:"50%", background:d.color } }),
+        e("span", { style:{ fontSize:14, fontWeight:600, color:T.text1 } }, d.title)
+      ),
+      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6, transition:"color 0.2s" }, onMouseEnter:ev=>ev.target.style.color=T.text1, onMouseLeave:ev=>ev.target.style.color=T.text3 }, "✕")
+    ),
+    e("div", { style:{ padding:"16px 18px 20px", maxHeight:"calc(100vh - 140px)", overflowY:"auto" } },
+      d.sections.map((s, i) =>
+        e("div", { key:i, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
+          e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
+        )
+      )
+    )
+  );
+};
+
+const Panel = ({ label, children, style={}, focused=false, onClick }) =>
+  e(M.div, {
+    onClick,
+    animate:{
+      borderColor: focused ? T.purple : T.border2,
+      boxShadow: focused ? `0 0 16px ${T.purple}30, inset 0 0 12px ${T.purple}08` : "0 0 0px transparent"
+    },
+    transition:{ duration:0.4 },
+    style:{ borderRadius:12, border:"1.5px solid", background:T.surface, overflow:"hidden", cursor:onClick?"pointer":"default", ...style }
+  },
+    label && e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, label)
+    ),
+    e("div", { style:{ padding:12 } }, children)
+  );
+
+/* ─── Iterator State Panel ─── */
+
+const IteratorStatePanel = ({ iterState, focused, onClick }) => {
+  if (!iterState) return e(Panel, { label:"Iterator State", focused, onClick },
+    e("div", { style:{ minHeight:60, display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, color:T.text3 } }, "No active iterator")
+  );
+  return e(Panel, { label:"Iterator State", focused, onClick },
+    e("div", { style:{ minHeight:60 } },
+      e("div", { style:{ display:"flex", gap:12, alignItems:"center" } },
+        e(M.div, {
+          key:String(iterState.value),
+          initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, transition:sp(400,26),
+          style:{ padding:"8px 14px", borderRadius:8, border:`1px solid ${T.teal}`, background:"#0e1e18", fontFamily:"'SF Mono',monospace", fontSize:13 }
+        },
+          e("span", { style:{ color:T.text3, fontSize:10, marginRight:6 } }, "value:"),
+          e("span", { style:{ color:T.tealL, fontWeight:600 } }, String(iterState.value))
+        ),
+        e(M.div, {
+          key:String(iterState.done),
+          initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, transition:sp(400,26),
+          style:{ padding:"8px 14px", borderRadius:8, border:`1px solid ${iterState.done === true ? T.coral : T.teal}`, background: iterState.done === true ? "#1e120e" : "#0e1e18", fontFamily:"'SF Mono',monospace", fontSize:13 }
+        },
+          e("span", { style:{ color:T.text3, fontSize:10, marginRight:6 } }, "done:"),
+          e("span", { style:{ color: iterState.done === true ? T.coralL : T.tealL, fontWeight:600 } }, String(iterState.done))
+        )
+      )
+    )
+  );
+};
+
+/* ─── Generator State Panel ─── */
+
+const GenStatePanel = ({ genState, focused, onClick }) => {
+  if (!genState) return e(Panel, { label:"Generator State", focused, onClick },
+    e("div", { style:{ minHeight:60, display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, color:T.text3 } }, "No active generator")
+  );
+  const statusColors = { created:T.blue, running:T.teal, paused:T.coral, done:T.text3, stepping:T.purple, infinite:T.teal, delegating:T.teal, async:T.coral };
+  const sc = statusColors[genState.status] || T.text2;
+  return e(Panel, { label:"Generator State", focused, onClick },
+    e("div", { style:{ minHeight:60 } },
+      e("div", { style:{ display:"flex", gap:12, alignItems:"center", flexWrap:"wrap" } },
+        e(M.div, {
+          key:genState.status,
+          initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, transition:sp(400,26),
+          style:{ padding:"6px 14px", borderRadius:20, border:`1px solid ${sc}`, background:`${sc}14`, fontSize:11, fontWeight:600, color:sc, fontFamily:"'SF Mono',monospace", textTransform:"uppercase", letterSpacing:"0.06em" }
+        }, genState.status),
+        genState.yieldLine !== null && genState.yieldLine !== undefined && e(M.div, {
+          initial:{opacity:0,x:10}, animate:{opacity:1,x:0}, transition:ez,
+          style:{ padding:"6px 12px", borderRadius:8, border:`1px solid ${T.border2}`, background:T.surface2, fontSize:11, fontFamily:"'SF Mono',monospace" }
+        },
+          e("span", { style:{ color:T.text3 } }, "yield @ line "),
+          e("span", { style:{ color:T.purpleL, fontWeight:600 } }, String(genState.yieldLine + 1))
+        ),
+        genState.value !== null && genState.value !== undefined && e(M.div, {
+          key:String(genState.value),
+          initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, transition:sp(400,26),
+          style:{ padding:"6px 12px", borderRadius:8, border:`1px solid ${T.teal}`, background:"#0e1e18", fontSize:11, fontFamily:"'SF Mono',monospace" }
+        },
+          e("span", { style:{ color:T.text3 } }, "value: "),
+          e("span", { style:{ color:T.tealL, fontWeight:600 } }, String(genState.value))
+        )
+      )
+    )
+  );
+};
+
+/* ─── Visualization panels per scene ─── */
+
+const VizIntro = () =>
+  e("div", { style:{ display:"flex", flexDirection:"column", gap:8, padding:8 } },
+    ["Array","String","Map","Set","Generator","Custom"].map((name,i) =>
+      e(M.div, {
+        key:name, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{...ez,delay:i*0.08},
+        style:{ display:"flex", alignItems:"center", gap:10 }
+      },
+        e("div", { style:{ width:80, padding:"5px 10px", borderRadius:6, background:T.surface2, border:`1px solid ${T.border2}`, fontSize:11, fontWeight:600, color:T.text1, textAlign:"center", fontFamily:"'SF Mono',monospace" } }, name),
+        e("div", { style:{ color:T.text3, fontSize:18 } }, "→"),
+        e("div", { style:{ padding:"5px 10px", borderRadius:6, background:`${T.purple}14`, border:`1px solid ${T.purple}44`, fontSize:11, color:T.purpleL, fontFamily:"'SF Mono',monospace" } }, "for...of")
+      )
+    )
+  );
+
+const VizProtocol = () =>
+  e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:14, padding:12 } },
+    e(M.div, { initial:{opacity:0,y:-10}, animate:{opacity:1,y:0}, transition:ez,
+      style:{ padding:"10px 20px", borderRadius:10, border:`1px solid ${T.purple}`, background:`${T.purple}14`, fontSize:13, fontWeight:600, color:T.purpleL, fontFamily:"'SF Mono',monospace" }
+    }, "[Symbol.iterator]()"),
+    e("div", { style:{ width:2, height:24, background:T.border2 } }),
+    e("div", { style:{ fontSize:11, color:T.text3 } }, "returns"),
+    e("div", { style:{ width:2, height:24, background:T.border2 } }),
+    e(M.div, { initial:{opacity:0,y:10}, animate:{opacity:1,y:0}, transition:{...ez,delay:0.15},
+      style:{ padding:"10px 20px", borderRadius:10, border:`1px solid ${T.teal}`, background:"#0e1e18", fontSize:13, fontWeight:600, color:T.tealL, fontFamily:"'SF Mono',monospace" }
+    }, "{ next() }"),
+    e("div", { style:{ width:2, height:24, background:T.border2 } }),
+    e("div", { style:{ fontSize:11, color:T.text3 } }, "returns"),
+    e("div", { style:{ width:2, height:24, background:T.border2 } }),
+    e(M.div, { initial:{opacity:0,y:10}, animate:{opacity:1,y:0}, transition:{...ez,delay:0.3},
+      style:{ padding:"10px 20px", borderRadius:10, border:`1px solid ${T.coral}`, background:"#1e120e", fontSize:13, fontWeight:600, color:T.coralL, fontFamily:"'SF Mono',monospace" }
+    }, "{ value, done }")
+  );
+
+const VizBuiltins = () => {
+  const items = [
+    { name:"Array", example:"[1, 2, 3]", color:T.teal },
+    { name:"String", example:"'hello'", color:T.teal },
+    { name:"Map", example:"new Map()", color:T.blue },
+    { name:"Set", example:"new Set()", color:T.blue },
+    { name:"TypedArray", example:"Uint8Array", color:T.coral },
+    { name:"arguments", example:"arguments", color:T.coral },
+  ];
+  return e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, padding:8 } },
+    items.map((it,i) =>
+      e(M.div, { key:it.name, initial:{opacity:0,scale:0.85}, animate:{opacity:1,scale:1}, transition:{...ez,delay:i*0.06},
+        style:{ padding:"10px 12px", borderRadius:8, border:`1px solid ${it.color}44`, background:`${it.color}08`, display:"flex", flexDirection:"column", gap:3 }
+      },
+        e("div", { style:{ fontSize:12, fontWeight:600, color:T.text1 } }, it.name),
+        e("div", { style:{ fontSize:10, color:it.color, fontFamily:"'SF Mono',monospace" } }, it.example)
+      )
+    )
+  );
+};
+
+const VizForOf = ({ sc }) => {
+  const [step, setStep] = useState(0);
+  const steps = sc.iterSteps || [];
+  useEffect(() => { setStep(0); }, [sc.id]);
+  useEffect(() => {
+    if (steps.length === 0) return;
+    const t = setInterval(() => setStep(s => (s+1) % steps.length), 1200);
+    return () => clearInterval(t);
+  }, [sc.id]);
+  const cur = steps[step] || steps[0];
+  if (!cur) return null;
+  return e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:10, padding:12 } },
+    e("div", { style:{ fontSize:11, color:T.text3, marginBottom:4 } }, "for...of loop iteration:"),
+    steps.map((s,i) =>
+      e(M.div, { key:i,
+        animate:{ borderColor: i===step ? T.purple : T.border, background: i===step ? `${T.purple}14` : "transparent", scale: i===step ? 1.05 : 1 },
+        transition:{ duration:0.3 },
+        style:{ display:"flex", alignItems:"center", gap:12, padding:"8px 14px", borderRadius:8, border:"1px solid", marginBottom:4, width:"100%" }
+      },
+        e("span", { style:{ fontSize:11, color:T.text3, fontFamily:"'SF Mono',monospace", width:60 } }, `next()`),
+        e("span", { style:{ color:T.text3, fontSize:10 } }, "→"),
+        e("span", { style:{ fontSize:12, fontWeight:600, color: s.done ? T.coralL : T.tealL, fontFamily:"'SF Mono',monospace" } },
+          `{ value: ${s.value === undefined ? "undefined" : s.value}, done: ${s.done} }`
+        )
+      )
+    )
+  );
+};
+
+const VizCustom = () =>
+  e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:8, padding:8 } },
+    e("div", { style:{ fontSize:12, color:T.text2, marginBottom:4 } }, "range(1, 3) produces:"),
+    [1,2,3].map((v,i) =>
+      e(M.div, { key:v, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{...ez,delay:i*0.15},
+        style:{ display:"flex", alignItems:"center", gap:10, padding:"6px 14px", borderRadius:8, border:`1px solid ${T.teal}44`, background:"#0e1e18" }
+      },
+        e("span", { style:{ color:T.text3, fontSize:10, fontFamily:"'SF Mono',monospace" } }, `next() #${i+1}`),
+        e("span", { style:{ color:T.text3 } }, "→"),
+        e("span", { style:{ color:T.tealL, fontSize:12, fontWeight:600, fontFamily:"'SF Mono',monospace" } }, `{ value: ${v}, done: false }`)
+      )
+    ),
+    e(M.div, { initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{...ez,delay:0.45},
+      style:{ display:"flex", alignItems:"center", gap:10, padding:"6px 14px", borderRadius:8, border:`1px solid ${T.coral}44`, background:"#1e120e" }
+    },
+      e("span", { style:{ color:T.text3, fontSize:10, fontFamily:"'SF Mono',monospace" } }, `next() #4`),
+      e("span", { style:{ color:T.text3 } }, "→"),
+      e("span", { style:{ color:T.coralL, fontSize:12, fontWeight:600, fontFamily:"'SF Mono',monospace" } }, `{ value: undefined, done: true }`)
+    )
+  );
+
+const VizGenFunc = () =>
+  e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:10, padding:8 } },
+    e("div", { style:{ fontSize:12, color:T.text2, marginBottom:2 } }, "Calling myGen() returns a generator object:"),
+    e(M.div, { initial:{opacity:0,scale:0.9}, animate:{opacity:1,scale:1}, transition:sp(400,26),
+      style:{ padding:"12px 20px", borderRadius:10, border:`1px solid ${T.coral}`, background:"#1e120e", display:"flex", flexDirection:"column", gap:6 }
+    },
+      e("div", { style:{ fontSize:11, color:T.coralL, fontWeight:600, fontFamily:"'SF Mono',monospace" } }, "Generator { }"),
+      e("div", { style:{ display:"flex", gap:8, marginTop:4 } },
+        ["next()","return()","throw()","[Symbol.iterator]()"].map(m =>
+          e("div", { key:m, style:{ padding:"3px 8px", borderRadius:4, background:`${T.coral}14`, border:`1px solid ${T.coral}33`, fontSize:9, color:T.coralL, fontFamily:"'SF Mono',monospace" } }, m)
+        )
+      )
+    ),
+    e("div", { style:{ fontSize:10, color:T.text3, marginTop:6 } }, "Both an iterator AND an iterable")
+  );
+
+const VizYield = () => {
+  const [phase, setPhase] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setPhase(p => (p+1) % 4), 1500);
+    return () => clearInterval(t);
+  }, []);
+  const phases = [
+    { label:"next() called", line:"Start", status:"running", color:T.teal },
+    { label:"yield 1 — paused", line:"yield 1", status:"suspended", color:T.coral },
+    { label:"next() called again", line:"Resume", status:"running", color:T.teal },
+    { label:"yield 2 — paused", line:"yield 2", status:"suspended", color:T.coral },
+  ];
+  const p = phases[phase];
+  return e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:10, padding:8 } },
+    e("div", { style:{ fontSize:12, color:T.text2, marginBottom:4 } }, "Execution flow:"),
+    e(AP, { mode:"wait" },
+      e(M.div, { key:phase, initial:{opacity:0,y:10}, animate:{opacity:1,y:0}, exit:{opacity:0,y:-10}, transition:ez,
+        style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:8 }
+      },
+        e("div", { style:{ padding:"8px 16px", borderRadius:8, border:`1px solid ${p.color}`, background:`${p.color}14`, fontSize:13, fontWeight:600, color:p.color, fontFamily:"'SF Mono',monospace" } }, p.label),
+        e("div", { style:{ display:"flex", alignItems:"center", gap:8 } },
+          e("div", { style:{ width:8, height:8, borderRadius:"50%", background: p.status==="running" ? T.teal : T.coral, boxShadow:`0 0 8px ${p.status==="running" ? T.teal : T.coral}` } }),
+          e("span", { style:{ fontSize:11, color:T.text2 } }, p.status)
+        )
+      )
+    )
+  );
+};
+
+const VizStepByStep = ({ sc }) => {
+  const steps = sc.genSteps || [];
+  const [step, setStep] = useState(0);
+  useEffect(() => { setStep(0); }, [sc.id]);
+  useEffect(() => {
+    if (steps.length === 0) return;
+    const t = setInterval(() => setStep(s => (s+1) % steps.length), 2000);
+    return () => clearInterval(t);
+  }, [sc.id]);
+  const cur = steps[step];
+  if (!cur) return null;
+  return e("div", { style:{ display:"flex", flexDirection:"column", gap:8, padding:8 } },
+    steps.map((s,i) =>
+      e(M.div, { key:i,
+        animate:{ borderColor: i===step ? T.purple : T.border, background: i===step ? `${T.purple}10` : "transparent" },
+        transition:{ duration:0.3 },
+        style:{ display:"flex", alignItems:"center", gap:10, padding:"8px 12px", borderRadius:8, border:"1px solid" }
+      },
+        e("div", { style:{ width:8, height:8, borderRadius:"50%", background: i<step ? T.teal : i===step ? T.purple : T.border2, transition:"background 0.3s" } }),
+        e("div", { style:{ flex:1 } },
+          e("div", { style:{ fontSize:11, fontWeight:600, color: i===step ? T.text1 : T.text3, fontFamily:"'SF Mono',monospace" } }, s.label),
+          e("div", { style:{ fontSize:10, color: i===step ? T.tealL : T.text3, marginTop:2 } }, `→ { value: ${s.value === undefined ? "undefined" : `"${s.value}"`}, done: ${s.done} }`)
+        ),
+        e("div", { style:{ padding:"3px 8px", borderRadius:4, border:`1px solid ${s.done ? T.coral : T.teal}44`, fontSize:9, color: s.done ? T.coralL : T.tealL, fontFamily:"'SF Mono',monospace" } }, s.status)
+      )
+    )
+  );
+};
+
+const VizLazy = ({ sc }) => {
+  const vals = sc.lazyValues || [];
+  const [count, setCount] = useState(1);
+  useEffect(() => { setCount(1); }, [sc.id]);
+  useEffect(() => {
+    const t = setInterval(() => setCount(c => c < vals.length ? c+1 : 1), 900);
+    return () => clearInterval(t);
+  }, [sc.id]);
+  return e("div", { style:{ display:"flex", flexDirection:"column", gap:8, padding:8 } },
+    e("div", { style:{ fontSize:11, color:T.text3, marginBottom:4 } }, "Fibonacci — infinite, computed on demand:"),
+    e("div", { style:{ display:"flex", gap:6, flexWrap:"wrap" } },
+      vals.slice(0, count).map((v,i) =>
+        e(M.div, { key:i, initial:{opacity:0,scale:0.7}, animate:{opacity:1,scale:1}, transition:sp(400,26),
+          style:{ width:40, height:40, display:"flex", alignItems:"center", justifyContent:"center", borderRadius:8, border:`1px solid ${T.teal}`, background:"#0e1e18", fontSize:14, fontWeight:700, color:T.tealL, fontFamily:"'SF Mono',monospace" }
+        }, String(v))
+      ),
+      count < vals.length && e(M.div, { key:"more",
+        animate:{opacity:[0.3,1,0.3]}, transition:{duration:1.5,repeat:Infinity},
+        style:{ width:40, height:40, display:"flex", alignItems:"center", justifyContent:"center", borderRadius:8, border:`1px dashed ${T.border2}`, fontSize:16, color:T.text3 }
+      }, "…")
+    ),
+    e("div", { style:{ fontSize:10, color:T.text3, marginTop:6 } }, `${count} value${count>1?"s":""} computed — infinite more available`)
+  );
+};
+
+const VizDelegation = ({ sc }) => {
+  const steps = sc.delegationSteps || [];
+  const [step, setStep] = useState(0);
+  useEffect(() => { setStep(0); }, [sc.id]);
+  useEffect(() => {
+    const t = setInterval(() => setStep(s => (s+1) % steps.length), 1000);
+    return () => clearInterval(t);
+  }, [sc.id]);
+  const isInner = step === 1 || step === 2;
+  return e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:10, padding:8 } },
+    e("div", { style:{ display:"flex", gap:12 } },
+      e(M.div, { animate:{ borderColor: !isInner ? T.purple : T.border2 }, transition:{duration:0.3},
+        style:{ padding:"10px 16px", borderRadius:10, border:"2px solid", background:T.surface2 }
+      },
+        e("div", { style:{ fontSize:11, fontWeight:600, color:T.purpleL, marginBottom:6 } }, "outer()"),
+        e("div", { style:{ display:"flex", gap:4 } },
+          ["a","yield*","d"].map((t,i) =>
+            e("div", { key:i, style:{ padding:"3px 8px", borderRadius:4, background: (i===0&&step===0)||(i===2&&step===3) ? `${T.purple}22` : "transparent", border:`1px solid ${(i===0&&step===0)||(i===2&&step===3) ? T.purple : T.border}44`, fontSize:10, color: (i===0&&step===0)||(i===2&&step===3) ? T.purpleL : T.text3, fontFamily:"'SF Mono',monospace" } }, t)
+          )
+        )
+      ),
+      e(M.div, { animate:{ borderColor: isInner ? T.coral : T.border2 }, transition:{duration:0.3},
+        style:{ padding:"10px 16px", borderRadius:10, border:"2px solid", background:T.surface2 }
+      },
+        e("div", { style:{ fontSize:11, fontWeight:600, color:T.coralL, marginBottom:6 } }, "inner()"),
+        e("div", { style:{ display:"flex", gap:4 } },
+          ["b","c"].map((t,i) =>
+            e("div", { key:i, style:{ padding:"3px 8px", borderRadius:4, background: (i===0&&step===1)||(i===1&&step===2) ? `${T.coral}22` : "transparent", border:`1px solid ${(i===0&&step===1)||(i===1&&step===2) ? T.coral : T.border}44`, fontSize:10, color: (i===0&&step===1)||(i===1&&step===2) ? T.coralL : T.text3, fontFamily:"'SF Mono',monospace" } }, t)
+          )
+        )
+      )
+    ),
+    e("div", { style:{ display:"flex", gap:4, marginTop:8 } },
+      steps.map((v,i) =>
+        e(M.div, { key:i, animate:{ scale: i<=step ? 1 : 0.8, opacity: i<=step ? 1 : 0.3 }, transition:sp(400,26),
+          style:{ width:32, height:32, display:"flex", alignItems:"center", justifyContent:"center", borderRadius:6, border:`1px solid ${i<=step ? (i===1||i===2?T.coral:T.purple) : T.border}`, background: i<=step ? (i===1||i===2?"#1e120e":`${T.purple}14`) : "transparent", fontSize:13, fontWeight:700, color: i<=step ? (i===1||i===2?T.coralL:T.purpleL) : T.text3, fontFamily:"'SF Mono',monospace" }
+        }, `'${v}'`)
+      )
+    ),
+    e("div", { style:{ fontSize:10, color:T.text3, marginTop:4 } }, `Output: [${steps.slice(0,step+1).map(v=>`'${v}'`).join(", ")}]`)
+  );
+};
+
+const VizAsync = () =>
+  e("div", { style:{ display:"flex", flexDirection:"column", gap:10, padding:8 } },
+    e("div", { style:{ fontSize:11, color:T.text3, marginBottom:4 } }, "Generator-based async flow:"),
+    [
+      { label:"1. Runner calls gen.next()", color:T.teal },
+      { label:"2. Generator yields a Promise", color:T.coral },
+      { label:"3. Runner awaits the Promise", color:T.blue },
+      { label:"4. Runner calls gen.next(result)", color:T.teal },
+      { label:"5. Generator receives resolved value", color:T.purple },
+    ].map((s,i) =>
+      e(M.div, { key:i, initial:{opacity:0,x:-15}, animate:{opacity:1,x:0}, transition:{...ez,delay:i*0.1},
+        style:{ display:"flex", alignItems:"center", gap:8, padding:"6px 10px" }
+      },
+        e("div", { style:{ width:6, height:6, borderRadius:"50%", background:s.color } }),
+        e("span", { style:{ fontSize:11, color:T.text2, fontFamily:"'SF Mono',monospace" } }, s.label)
+      )
+    ),
+    e("div", { style:{ marginTop:8, padding:"8px 12px", borderRadius:8, border:`1px solid ${T.purple}44`, background:`${T.purple}08`, fontSize:11, color:T.purpleL } },
+      "async/await is syntactic sugar built on this same idea"
+    )
+  );
+
+const VizUseCases = () => {
+  const cases = [
+    { icon:"📄", title:"Pagination", desc:"Fetch pages on demand, not all at once" },
+    { icon:"🌳", title:"Tree Traversal", desc:"Recursive yield* for elegant tree walking" },
+    { icon:"🔗", title:"Data Pipelines", desc:"Chain lazy transformations" },
+    { icon:"⚙️", title:"State Machines", desc:"yield = state transition point" },
+  ];
+  return e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, padding:8 } },
+    cases.map((c,i) =>
+      e(M.div, { key:i, initial:{opacity:0,y:10}, animate:{opacity:1,y:0}, transition:{...ez,delay:i*0.1},
+        style:{ padding:"12px", borderRadius:10, border:`1px solid ${T.border2}`, background:T.surface2 }
+      },
+        e("div", { style:{ fontSize:18, marginBottom:4 } }, c.icon),
+        e("div", { style:{ fontSize:12, fontWeight:600, color:T.text1, marginBottom:2 } }, c.title),
+        e("div", { style:{ fontSize:10, color:T.text3, lineHeight:1.5 } }, c.desc)
+      )
+    )
+  );
+};
+
+const VizSummary = () =>
+  e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:14, padding:12 } },
+    e(M.div, { initial:{opacity:0,scale:0.9}, animate:{opacity:1,scale:1}, transition:sp(400,26),
+      style:{ display:"flex", gap:20, alignItems:"center" }
+    },
+      e("div", { style:{ textAlign:"center" } },
+        e("div", { style:{ padding:"12px 20px", borderRadius:12, border:`1px solid ${T.teal}`, background:"#0e1e18", fontSize:14, fontWeight:700, color:T.tealL, fontFamily:"'SF Mono',monospace", marginBottom:6 } }, "Iterator"),
+        e("div", { style:{ fontSize:10, color:T.text3 } }, "{ next() }")
+      ),
+      e("div", { style:{ fontSize:20, color:T.text3 } }, "+"),
+      e("div", { style:{ textAlign:"center" } },
+        e("div", { style:{ padding:"12px 20px", borderRadius:12, border:`1px solid ${T.coral}`, background:"#1e120e", fontSize:14, fontWeight:700, color:T.coralL, fontFamily:"'SF Mono',monospace", marginBottom:6 } }, "Generator"),
+        e("div", { style:{ fontSize:10, color:T.text3 } }, "function* + yield")
+      ),
+      e("div", { style:{ fontSize:20, color:T.text3 } }, "="),
+      e("div", { style:{ textAlign:"center" } },
+        e("div", { style:{ padding:"12px 20px", borderRadius:12, border:`1px solid ${T.purple}`, background:`${T.purple}14`, fontSize:14, fontWeight:700, color:T.purpleL, fontFamily:"'SF Mono',monospace", marginBottom:6 } }, "Lazy Power"),
+        e("div", { style:{ fontSize:10, color:T.text3 } }, "pull-based data")
+      )
+    ),
+    e("div", { style:{ fontSize:11, color:T.text2, textAlign:"center", lineHeight:1.7, maxWidth:400, marginTop:8 } },
+      "One protocol to rule all iteration. Generators make it effortless."
+    )
+  );
+
+const VIZ_MAP = { intro:VizIntro, protocol:VizProtocol, builtins:VizBuiltins, forof:VizForOf, custom:VizCustom, genfunc:VizGenFunc, yield:VizYield, stepbystep:VizStepByStep, lazy:VizLazy, delegation:VizDelegation, async:VizAsync, usecases:VizUseCases, summary:VizSummary };
+
+/* ─── APP ─── */
+
+function App() {
+  const [si, setSi] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [detail, setDetail] = useState(null);
+  const timer = useRef(null);
+  const sc = SCENES[si];
+
+  useEffect(() => { setPlaying(true); }, []);
+
+  useEffect(() => {
+    if (!playing) return;
+    const d = si===0 ? 3000 : si===SCENES.length-1 ? 99999 : 3200;
+    timer.current = setTimeout(() => { si < SCENES.length-1 ? setSi(i=>i+1) : setPlaying(false); }, d);
+    return () => clearTimeout(timer.current);
+  }, [playing, si]);
+
+  const go = d => { clearTimeout(timer.current); setPlaying(false); setSi(i=>Math.max(0,Math.min(SCENES.length-1,i+d))); };
+  const jump = i => { clearTimeout(timer.current); setPlaying(false); setSi(i); };
+  const togglePlay = () => { if(si===SCENES.length-1){setSi(0);setPlaying(true);}else setPlaying(p=>!p); };
+  const toggleDetail = key => { setDetail(d => d===key ? null : key); clearTimeout(timer.current); setPlaying(false); };
+
+  const VizComp = VIZ_MAP[sc.viz];
+
+  return e("div", { style:{ display:"flex", gap:16, alignItems:"flex-start", justifyContent: detail ? "flex-start" : "center" } },
+  e("div", { style:{ width:760, flexShrink:0, background:T.bg, fontFamily:"system-ui,sans-serif", padding:20, borderRadius:16 } },
+
+    /* Header */
+    e("div", { style:{ marginBottom:18 } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:10, marginBottom:11 } },
+        e(AP, { mode:"wait" },
+          e(M.div, { key:sc.act, initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, exit:{opacity:0}, transition:sp(400,28),
+            style:{ fontSize:9,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:T.purple,background:`${T.purple}14`,padding:"3px 10px",borderRadius:20,border:`1px solid ${T.purple}30`,flexShrink:0 }
+          }, sc.act)
+        ),
+        e("div", { style:{ flex:1, height:1, background:T.border, borderRadius:99, overflow:"hidden" } },
+          e(M.div, { animate:{width:`${si/(SCENES.length-1)*100}%`}, transition:{duration:0.5}, style:{height:"100%",background:T.purple,borderRadius:99} })
+        ),
+        e("span", { style:{ fontSize:10, color:T.text3 } }, `${si+1} / ${SCENES.length}`)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.title, initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, exit:{opacity:0,y:-8}, transition:ez,
+          style:{ fontSize:20,fontWeight:600,color:T.text1,marginBottom:4,letterSpacing:"-0.02em" }
+        }, sc.title)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
+          style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
+        }, sc.sub)
+      )
+    ),
+
+    /* Main content area with minHeight */
+    e("div", { style:{ minHeight:460 } },
+
+      /* Two-column: Code + Viz */
+      e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:10 } },
+        e("div", { onClick:()=>toggleDetail("code"), style:{cursor:"pointer"} },
+          e(CodePanel, { code:sc.code, highlighted: sc.hl || [] })
+        ),
+        e(Panel, { label:"Visualization", focused:false, style:{} },
+          VizComp && e(VizComp, { sc })
+        )
+      ),
+
+      /* Iterator State + Generator State */
+      e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 } },
+        e(IteratorStatePanel, {
+          iterState:sc.iterState,
+          focused:(sc.focus||[]).includes("iter"),
+          onClick:()=>toggleDetail("iter")
+        }),
+        e(GenStatePanel, {
+          genState:sc.genState,
+          focused:(sc.focus||[]).includes("gen"),
+          onClick:()=>toggleDetail("gen")
+        })
+      )
+
+    ), /* close minHeight wrapper */
+
+    /* Controls */
+    e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginTop:16 } },
+      e("button", { onClick:()=>go(-1), disabled:si===0,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===0?T.text3:T.text2,cursor:si===0?"not-allowed":"pointer",fontSize:11,transition:"color 0.2s" }
+      }, "\u2190 Back"),
+      e("button", { onClick:togglePlay,
+        style:{ padding:"6px 18px",borderRadius:8,border:`1px solid ${playing?T.coral:T.purple}44`,background:playing?`${T.coral}14`:`${T.purple}14`,color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all 0.2s" }
+      }, playing ? "\u23F8  Pause" : si===SCENES.length-1 ? "\u21BA  Replay" : "\u25B6  Play"),
+      e("button", { onClick:()=>go(1), disabled:si===SCENES.length-1,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
+      }, "Next \u2192"),
+      e("div", { style:{ flex:1 } }),
+      e("div", { style:{ display:"flex", gap:4, alignItems:"center" } },
+        SCENES.map((_,i) =>
+          e("button", { key:i, onClick:()=>jump(i),
+            style:{ width:i===si?16:5,height:5,borderRadius:99,border:"none",padding:0,background:i===si?T.purple:i<si?`${T.purple}55`:T.border,cursor:"pointer",transition:"all 0.25s" }
+          })
+        )
+      )
+    )
+  ),
+  detail && e(DetailPanel, { detailKey:detail, onClose:()=>setDetail(null) })
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(e(App));
+</script>
+</body>
+</html>

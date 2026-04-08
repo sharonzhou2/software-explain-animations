@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>XHR vs fetch()</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111118;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px 16px;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  #root { width: 100%; max-width: 1120px; }
+  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: system-ui, sans-serif; }
+  .topnav a { text-decoration: none; color: #8888aa; font-size: 13px; transition: color 0.2s; }
+  .topnav a:hover { color: #e8e8f0; }
+  .topnav .name { font-weight: 600; color: #e8e8f0; font-size: 13px; }
+  .topnav .sep { color: #38384a; font-size: 12px; }
+  .topnav .current { color: #7c6fcd; font-size: 13px; font-weight: 500; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="../" class="name">Sharon Zhou</a>
+  <span class="sep">/</span>
+  <a href="../">Animations</a>
+  <span class="sep">/</span>
+  <span class="current">XHR vs fetch()</span>
+</nav>
+<div id="root" style="margin-top: 36px;"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/framer-motion@11/dist/framer-motion.js"></script>
+<script>
+const { useState, useEffect, useRef } = React;
+const { motion, AnimatePresence } = window.Motion;
+const e = React.createElement;
+const M = motion;
+const AP = AnimatePresence;
+const sp = (s=380,d=28) => ({ type:"spring", stiffness:s, damping:d });
+const ez = { duration:0.32, ease:[0.22,1,0.36,1] };
+
+const T = {
+  bg:"#111118", surface:"#18181f", surface2:"#1e1e28",
+  border:"#2a2a38", border2:"#38384a",
+  text1:"#e8e8f0", text2:"#8888aa", text3:"#44445a",
+  purple:"#7c6fcd", purpleL:"#a99cf0",
+  teal:"#3db89a", tealL:"#6dd4b8",
+  coral:"#c4694a", coralL:"#e08a6a",
+  blue:"#4a8fd4", codeBase:"#141428",
+};
+
+const TS = {
+  fn:    { color:"#82aaff" },
+  meth:  { color:"#89ddff" },
+  str:   { color:"#c3e88d" },
+  kw:    { color:"#c792ea" },
+  num:   { color:"#f78c6c" },
+  punc:  { color:"#89ddff" },
+  plain: { color:"#a6accd" },
+  cmt:   { color:"#546e7a" },
+  prop:  { color:"#f07178" },
+};
+
+/* ─── SCENES ─── */
+
+const SCENES = [
+  {
+    id:0, act:"01",
+    title:"XMLHttpRequest vs fetch()",
+    sub:"Two ways to make HTTP requests in JavaScript. One is from 1999, the other from 2015. Both still work — but they differ in philosophy, API design, and capability.",
+    code:[
+      [["cmt","// XMLHttpRequest (1999)"]],
+      [["kw","const"],["plain"," xhr "],["punc","="],["plain"," "],["kw","new"],["plain"," "],["fn","XMLHttpRequest"],["punc","()"]],
+      [],
+      [["cmt","// fetch() (2015)"]],
+      [["fn","fetch"],["punc","("],["str","'/api'"],["punc",")"]],
+    ],
+    hl:[], panels:["xhr","fetch"], tag:"intro",
+  },
+  {
+    id:1, act:"02",
+    title:"XHR: Creating a request",
+    sub:"XMLHttpRequest requires three steps: create the object, open a connection with method and URL, then send the request. State changes are tracked through readyState.",
+    code:[
+      [["kw","const"],["plain"," xhr "],["punc","="],["plain"," "],["kw","new"],["plain"," "],["fn","XMLHttpRequest"],["punc","()"]],
+      [["plain","xhr"],["punc","."],["meth","open"],["punc","("],["str","'GET'"],["punc",","],["plain"," "],["str","'/api/data'"],["punc",")"]],
+      [["plain","xhr"],["punc","."],["meth","send"],["punc","()"]],
+    ],
+    hl:[0,1,2], panels:["xhr"], tag:"xhr-basics",
+  },
+  {
+    id:2, act:"03",
+    title:"XHR: Handling responses",
+    sub:"XHR uses the onreadystatechange callback. readyState cycles through 0-4 (UNSENT → DONE). You must check both readyState === 4 AND status === 200 manually.",
+    code:[
+      [["plain","xhr"],["punc","."],["prop","onreadystatechange"],["plain"," "],["punc","="],["plain"," "],["kw","function"],["punc","() {"]],
+      [["plain","  "],["kw","if"],["plain"," "],["punc","("],["plain","xhr"],["punc","."],["prop","readyState"],["plain"," "],["punc","==="],["plain"," "],["num","4"],["punc",") {"]],
+      [["plain","    "],["kw","if"],["plain"," "],["punc","("],["plain","xhr"],["punc","."],["prop","status"],["plain"," "],["punc","==="],["plain"," "],["num","200"],["punc",") {"]],
+      [["plain","      "],["fn","console"],["punc","."],["meth","log"],["punc","("],["plain","xhr"],["punc","."],["prop","responseText"],["punc",")"]],
+      [["plain","    "],["punc","} "],["kw","else"],["punc"," {"]],
+      [["plain","      "],["fn","console"],["punc","."],["meth","error"],["punc","("],["str","'Error:'"],["punc",","],["plain"," xhr"],["punc","."],["prop","status"],["punc",")"]],
+      [["plain","    "],["punc","}"]],
+      [["plain","  "],["punc","}"]],
+      [["punc","}"]],
+    ],
+    hl:[0,1,2,3], panels:["xhr"], tag:"xhr-response",
+  },
+  {
+    id:3, act:"04",
+    title:"XHR: Callback hell",
+    sub:"Sequential XHR requests lead to deeply nested callbacks. Each request must wait inside the previous one's handler, creating the infamous 'pyramid of doom'.",
+    code:[
+      [["kw","const"],["plain"," x1 "],["punc","="],["plain"," "],["kw","new"],["plain"," "],["fn","XMLHttpRequest"],["punc","()"]],
+      [["plain","x1"],["punc","."],["meth","open"],["punc","("],["str","'GET'"],["punc",","],["plain"," "],["str","'/users'"],["punc",")"]],
+      [["plain","x1"],["punc","."],["prop","onload"],["plain"," "],["punc","="],["plain"," "],["kw","function"],["punc","() {"]],
+      [["plain","  "],["kw","const"],["plain"," x2 "],["punc","="],["plain"," "],["kw","new"],["plain"," "],["fn","XMLHttpRequest"],["punc","()"]],
+      [["plain","  x2"],["punc","."],["meth","open"],["punc","("],["str","'GET'"],["punc",","],["plain"," "],["str","'/posts'"],["punc",")"]],
+      [["plain","  x2"],["punc","."],["prop","onload"],["plain"," "],["punc","="],["plain"," "],["kw","function"],["punc","() {"]],
+      [["plain","    "],["kw","const"],["plain"," x3 "],["punc","="],["plain"," "],["kw","new"],["plain"," "],["fn","XMLHttpRequest"],["punc","()"]],
+      [["plain","    x3"],["punc","."],["meth","open"],["punc","("],["str","'GET'"],["punc",","],["plain"," "],["str","'/comments'"],["punc",")"]],
+      [["plain","    x3"],["punc","."],["meth","send"],["punc","()"]],
+      [["plain","  "],["punc","}"]],
+      [["plain","  x2"],["punc","."],["meth","send"],["punc","()"]],
+      [["punc","}"]],
+      [["plain","x1"],["punc","."],["meth","send"],["punc","()"]],
+    ],
+    hl:[2,3,4,5,6,7], panels:["xhr"], tag:"xhr-callback-hell",
+  },
+  {
+    id:4, act:"05",
+    title:"fetch(): Promise-based",
+    sub:"fetch() returns a Promise. Chaining with .then() keeps sequential requests flat and readable. async/await makes it even cleaner.",
+    code:[
+      [["fn","fetch"],["punc","("],["str","'/users'"],["punc",")"]],
+      [["plain","  "],["punc","."],["meth","then"],["punc","("],["plain","r"],["plain"," "],["punc","=>"],["plain"," r"],["punc","."],["meth","json"],["punc","()"],["punc",")"]],
+      [["plain","  "],["punc","."],["meth","then"],["punc","("],["plain","users"],["plain"," "],["punc","=>"],["plain"," "],["fn","fetch"],["punc","("],["str","'/posts'"],["punc",")"],["punc",")"]],
+      [["plain","  "],["punc","."],["meth","then"],["punc","("],["plain","r"],["plain"," "],["punc","=>"],["plain"," r"],["punc","."],["meth","json"],["punc","()"],["punc",")"]],
+      [["plain","  "],["punc","."],["meth","then"],["punc","("],["plain","posts"],["plain"," "],["punc","=>"],["plain"," "],["fn","console"],["punc","."],["meth","log"],["punc","("],["plain","posts"],["punc",")"],["punc",")"]],
+      [],
+      [["cmt","// Or with async/await:"]],
+      [["kw","const"],["plain"," users "],["punc","="],["plain"," "],["kw","await"],["plain"," "],["punc","("],["kw","await"],["plain"," "],["fn","fetch"],["punc","("],["str","'/users'"],["punc",")"],["punc",")"],["punc","."],["meth","json"],["punc","()"]],
+      [["kw","const"],["plain"," posts "],["punc","="],["plain"," "],["kw","await"],["plain"," "],["punc","("],["kw","await"],["plain"," "],["fn","fetch"],["punc","("],["str","'/posts'"],["punc",")"],["punc",")"],["punc","."],["meth","json"],["punc","()"]],
+    ],
+    hl:[0,1,2,3,4], panels:["fetch"], tag:"fetch-basics",
+  },
+  {
+    id:5, act:"06",
+    title:"Response handling",
+    sub:"XHR auto-populates responseText and responseXML. fetch() returns a Response object — you must explicitly call .json(), .text(), or .blob() to parse the body.",
+    code:[
+      [["cmt","// XHR — auto-parsed"]],
+      [["plain","xhr"],["punc","."],["prop","responseText"],["plain","   "],["cmt","// string, ready to use"]],
+      [["plain","xhr"],["punc","."],["prop","responseXML"],["plain","    "],["cmt","// parsed DOM if XML"]],
+      [["plain","xhr"],["punc","."],["prop","responseType"],["plain"," "],["punc","="],["plain"," "],["str","'json'"],["plain","  "],["cmt","// opt-in JSON"]],
+      [],
+      [["cmt","// fetch — explicit parsing"]],
+      [["kw","const"],["plain"," res "],["punc","="],["plain"," "],["kw","await"],["plain"," "],["fn","fetch"],["punc","("],["str","'/api'"],["punc",")"]],
+      [["kw","const"],["plain"," data "],["punc","="],["plain"," "],["kw","await"],["plain"," res"],["punc","."],["meth","json"],["punc","()"],["plain","  "],["cmt","// must call"]],
+      [["kw","const"],["plain"," html "],["punc","="],["plain"," "],["kw","await"],["plain"," res"],["punc","."],["meth","text"],["punc","()"]],
+      [["kw","const"],["plain"," file "],["punc","="],["plain"," "],["kw","await"],["plain"," res"],["punc","."],["meth","blob"],["punc","()"]],
+    ],
+    hl:[1,2,3,7,8,9], panels:["xhr","fetch"], tag:"response",
+  },
+  {
+    id:6, act:"07",
+    title:"Error handling",
+    sub:"Critical difference: fetch() only rejects on network failure. A 404 or 500 response resolves successfully — you must check response.ok. XHR fires onerror only on network errors too, but status checking feels more natural in its callback model.",
+    code:[
+      [["cmt","// XHR"]],
+      [["plain","xhr"],["punc","."],["prop","onerror"],["plain"," "],["punc","="],["plain"," "],["punc","()"],["plain"," "],["punc","=>"],["plain"," "],["fn","console"],["punc","."],["meth","error"],["punc","("],["str","'Network!'"],["punc",")"]],
+      [["cmt","// status 404 still reaches onload"]],
+      [],
+      [["cmt","// fetch — gotcha!"]],
+      [["fn","fetch"],["punc","("],["str","'/missing'"],["punc",")"]],
+      [["plain","  "],["punc","."],["meth","then"],["punc","("],["plain","r"],["plain"," "],["punc","=> {"]],
+      [["plain","    "],["kw","if"],["plain"," "],["punc","(!"],["plain","r"],["punc","."],["prop","ok"],["punc",")"],["plain"," "],["kw","throw"],["plain"," "],["kw","new"],["plain"," "],["fn","Error"],["punc","("],["plain","r"],["punc","."],["prop","status"],["punc",")"]],
+      [["plain","    "],["kw","return"],["plain"," r"],["punc","."],["meth","json"],["punc","()"]],
+      [["plain","  "],["punc","})"]],
+      [["plain","  "],["punc","."],["meth","catch"],["punc","("],["plain","err"],["plain"," "],["punc","=>"],["plain"," "],["fn","console"],["punc","."],["meth","error"],["punc","("],["plain","err"],["punc",")"],["punc",")"]],
+    ],
+    hl:[1,5,6,7], panels:["xhr","fetch"], tag:"errors",
+  },
+  {
+    id:7, act:"08",
+    title:"Progress tracking",
+    sub:"XHR has built-in progress events for both upload and download. fetch() has no native progress API for uploads. Download progress requires manually reading the ReadableStream.",
+    code:[
+      [["cmt","// XHR — built-in progress"]],
+      [["plain","xhr"],["punc","."],["prop","onprogress"],["plain"," "],["punc","="],["plain"," "],["punc","("],["plain","e"],["punc",")"],["plain"," "],["punc","=> {"]],
+      [["plain","  "],["kw","const"],["plain"," pct "],["punc","="],["plain"," "],["punc","("],["plain","e"],["punc","."],["prop","loaded"],["plain"," "],["punc","/"],["plain"," e"],["punc","."],["prop","total"],["punc",")"],["plain"," "],["punc","*"],["plain"," "],["num","100"]],
+      [["punc","}"]],
+      [["plain","xhr"],["punc","."],["prop","upload"],["punc","."],["prop","onprogress"],["plain"," "],["punc","="],["plain"," "],["punc","("],["plain","e"],["punc",")"],["plain"," "],["punc","=> {"]],
+      [["plain","  "],["cmt","// upload progress too!"]],
+      [["punc","}"]],
+      [],
+      [["cmt","// fetch — no upload progress"]],
+      [["cmt","// download: read stream manually"]],
+    ],
+    hl:[1,2,3,4,5,6], panels:["xhr"], tag:"progress",
+  },
+  {
+    id:8, act:"09",
+    title:"Streaming with fetch",
+    sub:"fetch() returns a ReadableStream via response.body. You can process data chunk by chunk as it arrives — ideal for large files, Server-Sent Events, or real-time data.",
+    code:[
+      [["kw","const"],["plain"," res "],["punc","="],["plain"," "],["kw","await"],["plain"," "],["fn","fetch"],["punc","("],["str","'/large-file'"],["punc",")"]],
+      [["kw","const"],["plain"," reader "],["punc","="],["plain"," res"],["punc","."],["prop","body"],["punc","."],["meth","getReader"],["punc","()"]],
+      [],
+      [["kw","while"],["plain"," "],["punc","("],["kw","true"],["punc",") {"]],
+      [["plain","  "],["kw","const"],["plain"," "],["punc","{"],["plain"," done"],["punc",","],["plain"," value "],["punc","}"],["plain"," "],["punc","="]],
+      [["plain","    "],["kw","await"],["plain"," reader"],["punc","."],["meth","read"],["punc","()"]],
+      [["plain","  "],["kw","if"],["plain"," "],["punc","("],["plain","done"],["punc",")"],["plain"," "],["kw","break"]],
+      [["plain","  "],["fn","processChunk"],["punc","("],["plain","value"],["punc",")"]],
+      [["punc","}"]],
+    ],
+    hl:[1,4,5,7], panels:["fetch"], tag:"streaming",
+  },
+  {
+    id:9, act:"10",
+    title:"Aborting requests",
+    sub:"XHR has a simple .abort() method. fetch() uses the AbortController API — more flexible (one controller can cancel multiple fetches) but more verbose.",
+    code:[
+      [["cmt","// XHR — simple"]],
+      [["plain","xhr"],["punc","."],["meth","abort"],["punc","()"]],
+      [],
+      [["cmt","// fetch — AbortController"]],
+      [["kw","const"],["plain"," ctrl "],["punc","="],["plain"," "],["kw","new"],["plain"," "],["fn","AbortController"],["punc","()"]],
+      [["fn","fetch"],["punc","("],["str","'/api'"],["punc",","],["plain"," "],["punc","{"]],
+      [["plain","  "],["prop","signal"],["punc",":"],["plain"," ctrl"],["punc","."],["prop","signal"]],
+      [["punc","}"],["punc",")"]],
+      [],
+      [["cmt","// cancel the request:"]],
+      [["plain","ctrl"],["punc","."],["meth","abort"],["punc","()"]],
+    ],
+    hl:[1,4,5,6,10], panels:["xhr","fetch"], tag:"abort",
+  },
+  {
+    id:10, act:"11",
+    title:"Request/Response objects",
+    sub:"fetch() introduces first-class Request and Response objects. You can clone, inspect, redirect, and cache them — something XHR never had. Headers are a proper iterable Map.",
+    code:[
+      [["cmt","// fetch — rich object model"]],
+      [["kw","const"],["plain"," req "],["punc","="],["plain"," "],["kw","new"],["plain"," "],["fn","Request"],["punc","("],["str","'/api'"],["punc",","],["plain"," "],["punc","{"]],
+      [["plain","  "],["prop","method"],["punc",":"],["plain"," "],["str","'POST'"],["punc",","]],
+      [["plain","  "],["prop","headers"],["punc",":"],["plain"," "],["kw","new"],["plain"," "],["fn","Headers"],["punc","({"]],
+      [["plain","    "],["str","'Content-Type'"],["punc",":"],["plain"," "],["str","'application/json'"]],
+      [["plain","  "],["punc","})"],["punc",","]],
+      [["plain","  "],["prop","body"],["punc",":"],["plain"," "],["fn","JSON"],["punc","."],["meth","stringify"],["punc","("],["plain","data"],["punc",")"]],
+      [["punc","})"]],
+      [],
+      [["kw","const"],["plain"," res "],["punc","="],["plain"," "],["kw","await"],["plain"," "],["fn","fetch"],["punc","("],["plain","req"],["punc",")"]],
+      [["plain","res"],["punc","."],["prop","ok"],["plain","  res"],["punc","."],["prop","status"],["plain","  res"],["punc","."],["prop","headers"]],
+    ],
+    hl:[1,2,3,4,5,6,7,9,10], panels:["fetch"], tag:"request-response",
+  },
+  {
+    id:11, act:"12",
+    title:"CORS handling",
+    sub:"Both follow the same-origin policy, but fetch() gives you explicit control with the 'mode' option. XHR relies on the browser's default behavior and withCredentials for cookies.",
+    code:[
+      [["cmt","// XHR — limited CORS control"]],
+      [["plain","xhr"],["punc","."],["prop","withCredentials"],["plain"," "],["punc","="],["plain"," "],["kw","true"]],
+      [],
+      [["cmt","// fetch — explicit modes"]],
+      [["fn","fetch"],["punc","("],["str","'/api'"],["punc",","],["plain"," "],["punc","{"]],
+      [["plain","  "],["prop","mode"],["punc",":"],["plain"," "],["str","'cors'"],["punc",","],["plain","       "],["cmt","// default"]],
+      [["plain","  "],["prop","credentials"],["punc",":"],["plain"," "],["str","'include'"],["punc",","]],
+      [["plain","  "],["prop","redirect"],["punc",":"],["plain"," "],["str","'follow'"],["punc",","],["plain","   "],["cmt","// or 'error'"]],
+      [["punc","})"]],
+    ],
+    hl:[1,4,5,6,7], panels:["xhr","fetch"], tag:"cors",
+  },
+  {
+    id:12, act:"13",
+    title:"When to use which",
+    sub:"Use fetch() for almost everything — it's the modern standard. Use XHR only when you need upload progress events or must support ancient browsers without polyfills.",
+    code:[
+      [["cmt","// Use fetch() when:"]],
+      [["cmt","//   Modern codebase"]],
+      [["cmt","//   Promise / async-await patterns"]],
+      [["cmt","//   Streaming responses"]],
+      [["cmt","//   Service Workers (XHR not available)"]],
+      [],
+      [["cmt","// Use XHR when:"]],
+      [["cmt","//   Upload progress tracking needed"]],
+      [["cmt","//   Legacy browser support required"]],
+      [["cmt","//   Synchronous requests (xhr.open(..., false))"]],
+    ],
+    hl:[0,1,2,3,4,6,7,8,9], panels:["xhr","fetch"], tag:"when-to-use",
+  },
+  {
+    id:13, act:"✓",
+    title:"fetch() is the future",
+    sub:"fetch() replaced XHR as the standard HTTP API. It's Promise-based, has streaming support, first-class Request/Response objects, and works in Service Workers. XHR remains for legacy code and upload progress — but fetch is what you should reach for.",
+    code:[
+      [["cmt","// ✓ Modern JavaScript HTTP"]],
+      [["kw","const"],["plain"," data "],["punc","="],["plain"," "],["kw","await"],["plain"," "],["punc","("]],
+      [["plain","  "],["kw","await"],["plain"," "],["fn","fetch"],["punc","("],["str","'/api'"],["punc",","],["plain"," "],["punc","{"]],
+      [["plain","    "],["prop","method"],["punc",":"],["plain"," "],["str","'POST'"],["punc",","]],
+      [["plain","    "],["prop","headers"],["punc",":"],["plain"," "],["punc","{"],["plain"," "],["str","'Content-Type'"],["punc",":"],["plain"," "],["str","'application/json'"],["plain"," "],["punc","}"],["punc",","]],
+      [["plain","    "],["prop","body"],["punc",":"],["plain"," "],["fn","JSON"],["punc","."],["meth","stringify"],["punc","("],["punc","{"],["plain"," "],["prop","msg"],["punc",":"],["plain"," "],["str","'hello'"],["plain"," "],["punc","}"],["punc",")"]],
+      [["plain","  "],["punc","})"]],
+      [["punc",")"],["punc","."],["meth","json"],["punc","()"]],
+    ],
+    hl:[], panels:["xhr","fetch"], tag:"summary", finale:true,
+  },
+];
+
+/* ─── COMPARISON DATA ─── */
+
+const FEATURES = [
+  { label:"API Style",       xhr:"Callback-based",        fetch:"Promise-based" },
+  { label:"Response",        xhr:"Auto-parsed text/XML",   fetch:"Must call .json()/.text()" },
+  { label:"Error on 404",    xhr:"Reaches onload",         fetch:"Resolves (check .ok)" },
+  { label:"Upload Progress", xhr:"Built-in events",        fetch:"Not available" },
+  { label:"Streaming",       xhr:"No",                     fetch:"ReadableStream" },
+  { label:"Abort",           xhr:".abort()",               fetch:"AbortController" },
+  { label:"CORS Control",    xhr:"withCredentials",        fetch:"mode / credentials opts" },
+  { label:"Service Workers", xhr:"Not available",          fetch:"Full support" },
+  { label:"Request Object",  xhr:"No",                     fetch:"new Request()" },
+  { label:"Caching",         xhr:"Manual",                 fetch:"cache option" },
+];
+
+/* ─── DETAILS ─── */
+
+const DETAILS = {
+  xhr: {
+    title: "XMLHttpRequest",
+    color: T.coral,
+    sections: [
+      { heading: "What is it?", body: "The original browser API for making HTTP requests from JavaScript, introduced by Microsoft in IE5 (1999) and later standardized. Despite its name, it works with any data format, not just XML." },
+      { heading: "How it works", body: "1) Create a new XMLHttpRequest object.\n2) Call .open(method, url) to configure the request.\n3) Set event handlers (onreadystatechange, onload, onerror).\n4) Call .send(body) to dispatch the request.\n5) Handle the response in the callback." },
+      { heading: "readyState values", body: "0 = UNSENT — object created, open() not called.\n1 = OPENED — open() called.\n2 = HEADERS_RECEIVED — send() called, headers received.\n3 = LOADING — downloading, partial data available.\n4 = DONE — operation complete." },
+      { heading: "Key insight", body: "XHR's callback-based API predates Promises. While functional, it leads to deeply nested code for sequential requests. It remains the only browser API with built-in upload progress events." },
+    ]
+  },
+  fetch: {
+    title: "fetch() API",
+    color: T.teal,
+    sections: [
+      { heading: "What is it?", body: "The modern browser API for HTTP requests, introduced in 2015 as part of the Fetch Standard. Returns Promises, supports streaming, and works with Service Workers." },
+      { heading: "How it works", body: "1) Call fetch(url, options) — returns a Promise.\n2) The Promise resolves to a Response object.\n3) Call response.json(), .text(), .blob(), etc. to parse the body.\n4) Each parsing method also returns a Promise.\n5) Use .then() chains or async/await." },
+      { heading: "Important gotchas", body: "fetch() only rejects on network failures (DNS error, offline). HTTP errors like 404 or 500 still resolve successfully — you must check response.ok or response.status manually. The response body can only be consumed once unless you clone it." },
+      { heading: "Key insight", body: "fetch() was designed to be a low-level primitive. It gives you building blocks (Request, Response, Headers, ReadableStream) rather than a high-level convenient API. Libraries like axios build convenience on top of it." },
+    ]
+  },
+  response: {
+    title: "Response Handling",
+    color: T.blue,
+    sections: [
+      { heading: "XHR approach", body: "XHR auto-populates several properties: responseText (always a string), responseXML (parsed DOM for XML responses), and response (depends on responseType setting). You can set responseType to 'json', 'blob', 'arraybuffer', or 'document' before sending." },
+      { heading: "fetch approach", body: "fetch() returns a Response object. The body is a ReadableStream that must be explicitly consumed via one of: .json(), .text(), .blob(), .arrayBuffer(), .formData(). Each returns a Promise. The body can only be read once." },
+      { heading: "Cloning responses", body: "fetch's Response has a .clone() method — useful when you need to read the body multiple times (e.g., cache one copy and return another). XHR has no equivalent; you just read responseText multiple times since it's a plain string." },
+      { heading: "Key insight", body: "fetch's explicit parsing is a design feature, not a limitation. It allows the browser to start streaming the response before you decide how to parse it, and it enables piping to other streams." },
+    ]
+  },
+  errors: {
+    title: "Error Handling",
+    color: T.coralL,
+    sections: [
+      { heading: "The fetch() gotcha", body: "This is the #1 mistake developers make with fetch(): assuming that a 404 or 500 response will reject the Promise. It won't. fetch() resolves for any HTTP response — only network-level failures (DNS errors, no connection) cause rejection." },
+      { heading: "The pattern", body: "Always check response.ok (which is true for status 200-299) or response.status before consuming the body:\n\nconst res = await fetch(url)\nif (!res.ok) throw new Error(res.status)\nconst data = await res.json()" },
+      { heading: "XHR comparison", body: "XHR's onerror only fires on network failures too. But because you're already checking readyState and status in your callback, HTTP errors feel more naturally handled. The explicit two-step check in fetch trips up beginners." },
+      { heading: "Key insight", body: "fetch() treats the HTTP protocol as a transport — any valid HTTP response is a 'success' at the transport level. This is technically correct but pragmatically surprising." },
+    ]
+  },
+  progress: {
+    title: "Progress Events",
+    color: T.purple,
+    sections: [
+      { heading: "XHR progress", body: "XHR has two progress event sources:\n• xhr.onprogress — download progress, fires periodically with loaded/total bytes.\n• xhr.upload.onprogress — upload progress, same loaded/total interface.\nBoth provide ProgressEvent objects with lengthComputable, loaded, and total." },
+      { heading: "fetch limitation", body: "fetch() has NO upload progress API at all. For download progress, you can read response.body as a ReadableStream and track bytes yourself — but it's significantly more code than XHR's onprogress." },
+      { heading: "Workaround for fetch", body: "To track download progress with fetch:\n1) Get Content-Length from response headers.\n2) Get a reader from response.body.getReader().\n3) In a loop, read chunks and sum their byteLength.\n4) Calculate percentage from total." },
+      { heading: "Key insight", body: "Upload progress is the main reason XHR is still used in 2024+. If you're building a file upload component with a progress bar, XHR (or a library wrapping it) remains the pragmatic choice." },
+    ]
+  },
+  streaming: {
+    title: "Streaming",
+    color: T.tealL,
+    sections: [
+      { heading: "fetch's advantage", body: "fetch() exposes response.body as a ReadableStream — a Web Streams API object. You can process data incrementally as it arrives without waiting for the full response. This is powerful for large files, Server-Sent Events, or AI chat completions." },
+      { heading: "How it works", body: "const reader = response.body.getReader()\nwhile (true) {\n  const { done, value } = await reader.read()\n  if (done) break\n  // value is a Uint8Array chunk\n  processChunk(value)\n}" },
+      { heading: "XHR comparison", body: "XHR has responseType = 'arraybuffer' or 'blob' but processes the entire response at once. During readyState 3 (LOADING), you can read partial responseText, but this is unreliable and not designed for streaming." },
+      { heading: "Key insight", body: "ReadableStream is composable — you can pipe it through TransformStreams, tee it to multiple consumers, and cancel it partway through. This makes fetch fundamentally more capable for streaming use cases." },
+    ]
+  },
+  abort: {
+    title: "Aborting Requests",
+    color: T.purpleL,
+    sections: [
+      { heading: "XHR abort", body: "Simply call xhr.abort(). The request is cancelled, the readyState is set to 0, and the onabort event fires. Clean and simple." },
+      { heading: "fetch abort", body: "fetch() uses the AbortController API:\n1) Create: const ctrl = new AbortController()\n2) Pass: fetch(url, { signal: ctrl.signal })\n3) Cancel: ctrl.abort()\n4) Catch the AbortError in your .catch() handler." },
+      { heading: "AbortController advantages", body: "One AbortController can cancel multiple fetch requests by passing the same signal to each. You can also pass an abort reason: ctrl.abort('User navigated away'). The signal is reusable across any API that supports AbortSignal." },
+      { heading: "Key insight", body: "AbortController is more verbose but more powerful. It's also used with addEventListener, ReadableStream, and other async APIs — making it a general-purpose cancellation mechanism, not just for fetch." },
+    ]
+  },
+  "request-response": {
+    title: "Request / Response",
+    color: T.blue,
+    sections: [
+      { heading: "First-class objects", body: "fetch() introduced Request and Response as proper JavaScript objects. You can construct them manually, pass them around, clone them, and inspect their properties. XHR has no equivalent — the request configuration is spread across method calls." },
+      { heading: "Request object", body: "new Request(url, {\n  method, headers, body,\n  mode, credentials, cache,\n  redirect, referrer, integrity\n})\nYou can pass a Request directly to fetch() or to Cache API methods." },
+      { heading: "Response object", body: "Properties: status, statusText, ok, headers, url, type, redirected, body (ReadableStream).\nMethods: json(), text(), blob(), arrayBuffer(), formData(), clone().\nYou can also construct Response objects for mocking or Service Worker responses." },
+      { heading: "Key insight", body: "These objects are the foundation of the Service Worker Cache API. When you cache.put(request, response), you're storing real Request and Response objects. This is why fetch works in Service Workers and XHR doesn't." },
+    ]
+  },
+  cors: {
+    title: "CORS Handling",
+    color: T.coral,
+    sections: [
+      { heading: "Same rules, different API", body: "Both XHR and fetch follow the same CORS protocol — preflight OPTIONS requests, Access-Control-Allow-Origin headers, etc. The difference is in how you configure the request." },
+      { heading: "XHR CORS", body: "Set xhr.withCredentials = true to send cookies cross-origin. The browser handles preflight automatically. You can't change the CORS mode — it's always 'cors' for cross-origin requests." },
+      { heading: "fetch CORS", body: "fetch provides explicit options:\n• mode: 'cors' (default), 'no-cors', 'same-origin'\n• credentials: 'omit', 'same-origin' (default), 'include'\n• 'no-cors' mode allows opaque responses from cross-origin servers without CORS headers." },
+      { heading: "Key insight", body: "fetch's 'no-cors' mode is unique — it lets you make requests to servers that don't set CORS headers, but you get an opaque response you can't read. Useful for pinging endpoints or loading resources into cache." },
+    ]
+  },
+  "when-to-use": {
+    title: "Decision Guide",
+    color: T.purple,
+    sections: [
+      { heading: "Choose fetch() when", body: "• Starting a new project (it's the modern standard).\n• Using async/await patterns.\n• Working with Service Workers (XHR is not available).\n• Streaming large responses.\n• Building apps with proper Request/Response models.\n• You want cleaner, more maintainable code." },
+      { heading: "Choose XHR when", body: "• You need upload progress events (file upload with progress bar).\n• Supporting very old browsers without polyfills.\n• Using synchronous requests (rare, but XHR supports xhr.open(method, url, false)).\n• Working with legacy codebases that already use XHR extensively." },
+      { heading: "Libraries", body: "axios uses XHR in the browser (for progress support) but can use fetch in newer versions.\nky is a thin wrapper around fetch with better defaults.\nNode.js 18+ has a built-in fetch() global.\nAll major browsers support both APIs." },
+      { heading: "Key insight", body: "fetch() is the future — the platform is built around it (Service Workers, Cache API, Streams). XHR is effectively frozen and won't receive new features. Even upload progress may eventually come to fetch via a future spec extension." },
+    ]
+  },
+  code: {
+    title: "Code Examples",
+    color: T.purpleL,
+    sections: [
+      { heading: "This animation", body: "Each scene shows side-by-side code examples comparing XHR and fetch approaches for the same task. The code is syntax-highlighted using the same token system as other animations in this series." },
+      { heading: "Running the examples", body: "All code examples work in any modern browser's developer console. For fetch examples with await, wrap in an async function or use the console's top-level await support." },
+      { heading: "Key patterns", body: "Notice how XHR code tends to be imperative (create, configure, set handlers, send) while fetch code is declarative (call function, chain transformations). This reflects the broader shift in JavaScript from callbacks to Promises." },
+    ]
+  },
+};
+
+/* ─── COMPONENTS ─── */
+
+const CodePanel = ({ code, highlighted }) =>
+  e(M.div, { animate:{ borderColor:highlighted.length>0?T.purple:T.border, boxShadow:highlighted.length>0?"0 0 16px "+T.purple+"30":"0 0 0px transparent" }, transition:{duration:0.4}, style:{ background:T.codeBase, borderRadius:12, overflow:"hidden", border:"1px solid" } },
+    e("div", { style:{ padding:"10px 14px 8px", borderBottom:"1px solid "+T.border, display:"flex", gap:7 } },
+      ...["#ff5f57","#febc2e","#28c840"].map((c,i) =>
+        e("div", { key:i, style:{ width:11, height:11, borderRadius:"50%", background:c } })
+      )
+    ),
+    e("div", { style:{ padding:"18px 22px 22px", fontFamily:"'SF Mono','Fira Code','Consolas',monospace", fontSize:12, lineHeight:1.95 } },
+      code.map((tokens, li) => {
+        const hot = highlighted.includes(li);
+        return e(M.div, {
+          key:li,
+          animate:{ background: hot ? "rgba(124,111,205,0.13)" : "transparent" },
+          transition:{ duration:0.22 },
+          style:{ borderLeft: hot ? "2px solid "+T.purple : "2px solid transparent", paddingLeft:8, borderRadius:3, display:"block", minHeight:20 }
+        },
+          tokens.map(([cls, txt], ti) =>
+            e("span", { key:ti, style:{ ...(TS[cls]||TS.plain), whiteSpace:"pre" } }, txt)
+          )
+        );
+      })
+    )
+  );
+
+const ComparisonTable = ({ activeFeatures }) =>
+  e("div", { style:{ borderRadius:10, border:"1px solid "+T.border, overflow:"hidden", background:T.surface } },
+    e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", borderBottom:"1px solid "+T.border } },
+      e("div", { style:{ padding:"8px 12px", fontSize:10, fontWeight:700, letterSpacing:"0.06em", color:T.text3 } }, "FEATURE"),
+      e("div", { style:{ padding:"8px 12px", fontSize:10, fontWeight:700, letterSpacing:"0.06em", color:T.coralL, textAlign:"center" } }, "XHR"),
+      e("div", { style:{ padding:"8px 12px", fontSize:10, fontWeight:700, letterSpacing:"0.06em", color:T.tealL, textAlign:"center" } }, "FETCH")
+    ),
+    FEATURES.filter((_, i) => activeFeatures.includes(i)).map((f, i) =>
+      e(M.div, { key:f.label, initial:{opacity:0,y:6}, animate:{opacity:1,y:0}, transition:{...ez, delay:i*0.04},
+        style:{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", borderBottom:"1px solid "+T.border+"88" }
+      },
+        e("div", { style:{ padding:"6px 12px", fontSize:11, color:T.text2, fontWeight:500 } }, f.label),
+        e("div", { style:{ padding:"6px 12px", fontSize:11, color:T.coralL, textAlign:"center", fontFamily:"'SF Mono',monospace", fontSize:10 } }, f.xhr),
+        e("div", { style:{ padding:"6px 12px", fontSize:11, color:T.tealL, textAlign:"center", fontFamily:"'SF Mono',monospace", fontSize:10 } }, f.fetch)
+      )
+    )
+  );
+
+const TAG_COLORS = {
+  xhr: { bg:"#1e120e", bd:T.coral, tx:T.coralL },
+  fetch: { bg:"#0e1e18", bd:T.teal, tx:T.tealL },
+  both: { bg:"#141428", bd:T.purple, tx:T.purpleL },
+};
+
+const FeatureTag = ({ label, type }) => {
+  const c = TAG_COLORS[type] || TAG_COLORS.both;
+  return e(M.div, {
+    initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, transition:sp(400,26),
+    style:{ padding:"5px 12px", borderRadius:20, border:"1px solid "+c.bd, background:c.bg, color:c.tx, fontSize:10, fontWeight:600, fontFamily:"'SF Mono',monospace" }
+  }, label);
+};
+
+const DetailPanel = ({ detailKey, onClose }) => {
+  const d = DETAILS[detailKey];
+  if (!d) return null;
+  return e("div", {
+    style: { width:340, flexShrink:0, background:T.surface, borderRadius:14, border:"1.5px solid "+d.color+"44", overflow:"hidden", alignSelf:"flex-start", position:"sticky", top:56 }
+  },
+    e("div", { style:{ padding:"14px 18px 12px", borderBottom:"1px solid "+T.border, display:"flex", alignItems:"center", justifyContent:"space-between" } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:8 } },
+        e("div", { style:{ width:8, height:8, borderRadius:"50%", background:d.color } }),
+        e("span", { style:{ fontSize:14, fontWeight:600, color:T.text1 } }, d.title)
+      ),
+      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6, transition:"color 0.2s" }, onMouseEnter:ev=>ev.target.style.color=T.text1, onMouseLeave:ev=>ev.target.style.color=T.text3 }, "\u2715")
+    ),
+    e("div", { style:{ padding:"16px 18px 20px", maxHeight:"calc(100vh - 140px)", overflowY:"auto" } },
+      d.sections.map((s, i) =>
+        e("div", { key:i, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
+          e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
+        )
+      )
+    )
+  );
+};
+
+const Panel = ({ label, children, style, focused, onClick }) =>
+  e(M.div, {
+    onClick:onClick,
+    animate:{
+      borderColor: focused ? T.purple : T.border2,
+      boxShadow: focused ? "0 0 16px "+T.purple+"30, inset 0 0 12px "+T.purple+"08" : "0 0 0px transparent"
+    },
+    transition:{ duration:0.4 },
+    style:{ borderRadius:12, border:"1.5px solid", background:T.surface, overflow:"hidden", cursor:onClick?"pointer":"default", ...(style||{}) }
+  },
+    label && e("div", { style:{ padding:"8px 13px", borderBottom:"1px solid "+T.border } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, label)
+    ),
+    e("div", { style:{ padding:12 } }, children)
+  );
+
+/* ─── SCENE-SPECIFIC VISUALS ─── */
+
+const SCENE_VISUALS = {
+  "intro": (sc, toggleDetail) =>
+    e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:10 } },
+      e(Panel, { label:"XMLHttpRequest", focused:false, onClick:()=>toggleDetail("xhr") },
+        e("div", { style:{ display:"flex", flexDirection:"column", gap:6, minHeight:80 } },
+          e(FeatureTag, { label:"Callback-based", type:"xhr" }),
+          e(FeatureTag, { label:"1999 (IE5)", type:"xhr" }),
+          e(FeatureTag, { label:"Upload progress", type:"xhr" }),
+        )
+      ),
+      e(Panel, { label:"fetch()", focused:false, onClick:()=>toggleDetail("fetch") },
+        e("div", { style:{ display:"flex", flexDirection:"column", gap:6, minHeight:80 } },
+          e(FeatureTag, { label:"Promise-based", type:"fetch" }),
+          e(FeatureTag, { label:"2015 (ES6 era)", type:"fetch" }),
+          e(FeatureTag, { label:"Streaming / Service Workers", type:"fetch" }),
+        )
+      )
+    ),
+  "xhr-basics": (sc, toggleDetail) =>
+    e("div", { style:{ marginBottom:10 } },
+      e(Panel, { label:"XHR Lifecycle", focused:true, onClick:()=>toggleDetail("xhr") },
+        e("div", { style:{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" } },
+          ...[
+            { n:"1. new XHR()", active:true },
+            { n:"2. .open()", active:true },
+            { n:"3. .send()", active:true },
+            { n:"4. callback", active:false },
+          ].map((step,i) =>
+            e(M.div, { key:i, initial:{opacity:0,x:-10}, animate:{opacity:1,x:0}, transition:{...ez,delay:i*0.1},
+              style:{ display:"flex", alignItems:"center", gap:8 }
+            },
+              e("div", { style:{ padding:"6px 12px", borderRadius:8, border:"1px solid "+(step.active?T.coral:T.border), background:step.active?"#1e120e":T.surface2, color:step.active?T.coralL:T.text3, fontSize:11, fontWeight:600, fontFamily:"'SF Mono',monospace" } }, step.n),
+              i < 3 && e("span", { style:{ color:T.text3, fontSize:14 } }, "\u2192")
+            )
+          )
+        )
+      )
+    ),
+  "xhr-response": (sc, toggleDetail) =>
+    e("div", { style:{ marginBottom:10 } },
+      e(Panel, { label:"readyState values", focused:true, onClick:()=>toggleDetail("xhr") },
+        e("div", { style:{ display:"flex", flexDirection:"column", gap:4 } },
+          ...[
+            { v:"0", n:"UNSENT", desc:"Object created" },
+            { v:"1", n:"OPENED", desc:".open() called" },
+            { v:"2", n:"HEADERS_RECEIVED", desc:"Headers arrived" },
+            { v:"3", n:"LOADING", desc:"Body downloading" },
+            { v:"4", n:"DONE", desc:"Complete", active:true },
+          ].map((rs,i) =>
+            e(M.div, { key:i, initial:{opacity:0,y:6}, animate:{opacity:1,y:0}, transition:{...ez,delay:i*0.06},
+              style:{ display:"grid", gridTemplateColumns:"28px 1fr 1fr", gap:8, padding:"5px 10px", borderRadius:6, border:"1px solid "+(rs.active?T.coral:T.border+"88"), background:rs.active?"#1e120e":"transparent" }
+            },
+              e("span", { style:{ color:rs.active?T.coralL:T.text3, fontFamily:"monospace", fontSize:12, fontWeight:700 } }, rs.v),
+              e("span", { style:{ color:rs.active?T.coralL:T.text2, fontSize:11, fontWeight:600, fontFamily:"monospace" } }, rs.n),
+              e("span", { style:{ color:T.text3, fontSize:11 } }, rs.desc)
+            )
+          )
+        )
+      )
+    ),
+  "xhr-callback-hell": (sc, toggleDetail) =>
+    e("div", { style:{ marginBottom:10 } },
+      e(Panel, { label:"Nesting depth", focused:true, onClick:()=>toggleDetail("xhr") },
+        e("div", { style:{ display:"flex", flexDirection:"column", gap:6 } },
+          ...[0,1,2].map(depth =>
+            e(M.div, { key:depth, initial:{opacity:0,x:depth*10}, animate:{opacity:1,x:0}, transition:{...ez,delay:depth*0.15},
+              style:{ marginLeft:depth*24, padding:"8px 14px", borderRadius:8, border:"1px solid "+T.coral+(depth===2?"":"66"), background:depth===2?"#1e120e":"transparent", display:"flex", alignItems:"center", gap:8 }
+            },
+              e("span", { style:{ color:T.coralL, fontFamily:"monospace", fontSize:11, fontWeight:600 } }, "Request "+(depth+1)),
+              e("span", { style:{ color:T.text3, fontSize:10 } }, depth<2?"callback \u2192 nesting level "+(depth+1):"deepest nesting")
+            )
+          )
+        ),
+        e("div", { style:{ marginTop:12, padding:"8px 12px", borderRadius:8, background:"rgba(196,105,74,0.08)", border:"1px solid "+T.coral+"33" } },
+          e("span", { style:{ fontSize:11, color:T.coralL } }, "\u26A0 \"Pyramid of Doom\" \u2014 gets worse with each sequential request")
+        )
+      )
+    ),
+  "fetch-basics": (sc, toggleDetail) =>
+    e("div", { style:{ marginBottom:10 } },
+      e(Panel, { label:"Promise chain vs async/await", focused:true, onClick:()=>toggleDetail("fetch") },
+        e("div", { style:{ display:"flex", gap:12 } },
+          e("div", { style:{ flex:1 } },
+            e("div", { style:{ fontSize:10, fontWeight:700, color:T.tealL, letterSpacing:"0.06em", marginBottom:6, textTransform:"uppercase" } }, ".then() chain"),
+            e("div", { style:{ display:"flex", flexDirection:"column", gap:4 } },
+              ...["fetch()","  .then(r => r.json())","  .then(data => ...)"].map((s,i) =>
+                e(M.div, { key:i, initial:{opacity:0,y:6}, animate:{opacity:1,y:0}, transition:{...ez,delay:i*0.08},
+                  style:{ padding:"5px 10px", borderRadius:6, border:"1px solid "+T.teal+"66", color:T.tealL, fontSize:10, fontFamily:"monospace" }
+                }, s)
+              )
+            )
+          ),
+          e("div", { style:{ flex:1 } },
+            e("div", { style:{ fontSize:10, fontWeight:700, color:T.purpleL, letterSpacing:"0.06em", marginBottom:6, textTransform:"uppercase" } }, "async / await"),
+            e("div", { style:{ display:"flex", flexDirection:"column", gap:4 } },
+              ...["const res = await fetch()","const data = await res.json()"].map((s,i) =>
+                e(M.div, { key:i, initial:{opacity:0,y:6}, animate:{opacity:1,y:0}, transition:{...ez,delay:i*0.08+0.12},
+                  style:{ padding:"5px 10px", borderRadius:6, border:"1px solid "+T.purple+"66", color:T.purpleL, fontSize:10, fontFamily:"monospace" }
+                }, s)
+              )
+            )
+          )
+        )
+      )
+    ),
+  "response": (sc, toggleDetail) =>
+    e("div", { style:{ marginBottom:10 } },
+      e(ComparisonTable, { activeFeatures:[0,1] })
+    ),
+  "errors": (sc, toggleDetail) =>
+    e("div", { style:{ marginBottom:10 } },
+      e(Panel, { label:"404 response behavior", focused:true, onClick:()=>toggleDetail("errors") },
+        e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 } },
+          e("div", null,
+            e("div", { style:{ fontSize:10, fontWeight:700, color:T.coralL, letterSpacing:"0.06em", marginBottom:6, textTransform:"uppercase" } }, "XHR"),
+            e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:ez,
+              style:{ padding:"8px 12px", borderRadius:8, border:"1px solid "+T.coral+"66", background:"#1e120e" }
+            },
+              e("div", { style:{ fontSize:11, color:T.coralL, fontFamily:"monospace", marginBottom:4 } }, "onload fires"),
+              e("div", { style:{ fontSize:10, color:T.text3 } }, "status = 404 (check manually)")
+            )
+          ),
+          e("div", null,
+            e("div", { style:{ fontSize:10, fontWeight:700, color:T.tealL, letterSpacing:"0.06em", marginBottom:6, textTransform:"uppercase" } }, "fetch"),
+            e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{...ez,delay:0.1},
+              style:{ padding:"8px 12px", borderRadius:8, border:"1px solid "+T.teal+"66", background:"#0e1e18" }
+            },
+              e("div", { style:{ fontSize:11, color:T.tealL, fontFamily:"monospace", marginBottom:4 } }, "Promise resolves \u2713"),
+              e("div", { style:{ fontSize:10, color:T.text3 } }, "response.ok = false (must check!)")
+            )
+          )
+        ),
+        e("div", { style:{ marginTop:10, padding:"8px 12px", borderRadius:8, background:"rgba(124,111,205,0.06)", border:"1px solid "+T.purple+"33" } },
+          e("span", { style:{ fontSize:11, color:T.purpleL } }, "\u26A0 Both only reject/fire onerror on network failures, not HTTP errors")
+        )
+      )
+    ),
+  "progress": (sc, toggleDetail) =>
+    e("div", { style:{ marginBottom:10 } },
+      e(Panel, { label:"Progress event support", focused:true, onClick:()=>toggleDetail("progress") },
+        e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 } },
+          e("div", null,
+            e("div", { style:{ fontSize:10, fontWeight:700, color:T.coralL, letterSpacing:"0.06em", marginBottom:8, textTransform:"uppercase" } }, "XHR"),
+            e("div", { style:{ display:"flex", flexDirection:"column", gap:6 } },
+              e("div", { style:{ display:"flex", alignItems:"center", gap:6 } },
+                e("span", { style:{ color:"#28c840", fontSize:14 } }, "\u2713"),
+                e("span", { style:{ color:T.coralL, fontSize:11 } }, "Download progress")
+              ),
+              e("div", { style:{ display:"flex", alignItems:"center", gap:6 } },
+                e("span", { style:{ color:"#28c840", fontSize:14 } }, "\u2713"),
+                e("span", { style:{ color:T.coralL, fontSize:11 } }, "Upload progress")
+              ),
+              e("div", { style:{ height:4, borderRadius:99, background:T.border, overflow:"hidden", marginTop:4 } },
+                e(M.div, { animate:{width:["0%","75%"]}, transition:{duration:2,repeat:Infinity,repeatDelay:0.5}, style:{height:"100%",background:T.coral,borderRadius:99} })
+              )
+            )
+          ),
+          e("div", null,
+            e("div", { style:{ fontSize:10, fontWeight:700, color:T.tealL, letterSpacing:"0.06em", marginBottom:8, textTransform:"uppercase" } }, "fetch"),
+            e("div", { style:{ display:"flex", flexDirection:"column", gap:6 } },
+              e("div", { style:{ display:"flex", alignItems:"center", gap:6 } },
+                e("span", { style:{ color:"#febc2e", fontSize:14 } }, "\u25CB"),
+                e("span", { style:{ color:T.tealL, fontSize:11 } }, "Download (manual stream)")
+              ),
+              e("div", { style:{ display:"flex", alignItems:"center", gap:6 } },
+                e("span", { style:{ color:"#ff5f57", fontSize:14 } }, "\u2717"),
+                e("span", { style:{ color:T.tealL, fontSize:11 } }, "Upload (not available)")
+              )
+            )
+          )
+        )
+      )
+    ),
+  "streaming": (sc, toggleDetail) =>
+    e("div", { style:{ marginBottom:10 } },
+      e(Panel, { label:"ReadableStream pipeline", focused:true, onClick:()=>toggleDetail("streaming") },
+        e("div", { style:{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" } },
+          ...["fetch()", "Response", ".body", "ReadableStream", "getReader()", "chunks"].map((s,i) =>
+            e(M.div, { key:i, initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, transition:{...ez,delay:i*0.08},
+              style:{ display:"flex", alignItems:"center", gap:8 }
+            },
+              e("div", { style:{ padding:"6px 12px", borderRadius:8, border:"1px solid "+T.teal+(i<3?"":"66"), background:i<3?"#0e1e18":"transparent", color:i<3?T.tealL:T.text2, fontSize:11, fontWeight:600, fontFamily:"'SF Mono',monospace" } }, s),
+              i < 5 && e("span", { style:{ color:T.text3, fontSize:12 } }, "\u2192")
+            )
+          )
+        ),
+        e("div", { style:{ marginTop:12, padding:"8px 12px", borderRadius:8, background:"rgba(61,184,154,0.06)", border:"1px solid "+T.teal+"33" } },
+          e("span", { style:{ fontSize:11, color:T.tealL } }, "Process data incrementally \u2014 ideal for large files, SSE, AI chat streams")
+        )
+      )
+    ),
+  "abort": (sc, toggleDetail) =>
+    e("div", { style:{ marginBottom:10 } },
+      e(Panel, { label:"Cancellation patterns", focused:true, onClick:()=>toggleDetail("abort") },
+        e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 } },
+          e("div", null,
+            e("div", { style:{ fontSize:10, fontWeight:700, color:T.coralL, letterSpacing:"0.06em", marginBottom:6, textTransform:"uppercase" } }, "XHR \u2014 1 step"),
+            e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:ez,
+              style:{ padding:"8px 12px", borderRadius:8, border:"1px solid "+T.coral+"66", color:T.coralL, fontSize:12, fontFamily:"monospace", textAlign:"center" }
+            }, "xhr.abort()")
+          ),
+          e("div", null,
+            e("div", { style:{ fontSize:10, fontWeight:700, color:T.tealL, letterSpacing:"0.06em", marginBottom:6, textTransform:"uppercase" } }, "fetch \u2014 3 steps"),
+            e("div", { style:{ display:"flex", flexDirection:"column", gap:4 } },
+              ...["1. new AbortController()","2. signal \u2192 fetch()","3. ctrl.abort()"].map((s,i) =>
+                e(M.div, { key:i, initial:{opacity:0,y:6}, animate:{opacity:1,y:0}, transition:{...ez,delay:i*0.08},
+                  style:{ padding:"5px 10px", borderRadius:6, border:"1px solid "+T.teal+"66", color:T.tealL, fontSize:10, fontFamily:"monospace" }
+                }, s)
+              )
+            )
+          )
+        )
+      )
+    ),
+  "request-response": (sc, toggleDetail) =>
+    e("div", { style:{ marginBottom:10 } },
+      e(Panel, { label:"First-class HTTP objects", focused:true, onClick:()=>toggleDetail("request-response") },
+        e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 } },
+          e("div", null,
+            e("div", { style:{ fontSize:10, fontWeight:700, color:T.purpleL, letterSpacing:"0.06em", marginBottom:6, textTransform:"uppercase" } }, "Request"),
+            e("div", { style:{ display:"flex", flexDirection:"column", gap:4 } },
+              ...["method","headers","body","mode","cache","signal"].map((p,i) =>
+                e(M.div, { key:i, initial:{opacity:0,x:-6}, animate:{opacity:1,x:0}, transition:{...ez,delay:i*0.05},
+                  style:{ padding:"4px 10px", borderRadius:6, border:"1px solid "+T.purple+"44", color:T.purpleL, fontSize:10, fontFamily:"monospace" }
+                }, "."+p)
+              )
+            )
+          ),
+          e("div", null,
+            e("div", { style:{ fontSize:10, fontWeight:700, color:T.blue, letterSpacing:"0.06em", marginBottom:6, textTransform:"uppercase" } }, "Response"),
+            e("div", { style:{ display:"flex", flexDirection:"column", gap:4 } },
+              ...["ok","status","headers","body","json()","clone()"].map((p,i) =>
+                e(M.div, { key:i, initial:{opacity:0,x:6}, animate:{opacity:1,x:0}, transition:{...ez,delay:i*0.05},
+                  style:{ padding:"4px 10px", borderRadius:6, border:"1px solid "+T.blue+"44", color:T.blue, fontSize:10, fontFamily:"monospace" }
+                }, "."+p)
+              )
+            )
+          )
+        )
+      )
+    ),
+  "cors": (sc, toggleDetail) =>
+    e("div", { style:{ marginBottom:10 } },
+      e(ComparisonTable, { activeFeatures:[6] }),
+      e("div", { style:{ marginTop:10 } },
+        e(Panel, { label:"fetch() CORS modes", focused:true, onClick:()=>toggleDetail("cors") },
+          e("div", { style:{ display:"flex", gap:8, flexWrap:"wrap" } },
+            ...[ {m:"cors",d:"Default \u2014 full CORS"}, {m:"no-cors",d:"Opaque response"}, {m:"same-origin",d:"Reject cross-origin"} ].map((mode,i) =>
+              e(M.div, { key:i, initial:{opacity:0,scale:0.9}, animate:{opacity:1,scale:1}, transition:{...ez,delay:i*0.08},
+                style:{ padding:"8px 14px", borderRadius:8, border:"1px solid "+T.teal+"66", background:"#0e1e18", flex:1, minWidth:120 }
+              },
+                e("div", { style:{ color:T.tealL, fontSize:11, fontWeight:600, fontFamily:"monospace", marginBottom:3 } }, "'"+mode.m+"'"),
+                e("div", { style:{ color:T.text3, fontSize:10 } }, mode.d)
+              )
+            )
+          )
+        )
+      )
+    ),
+  "when-to-use": (sc, toggleDetail) =>
+    e("div", { style:{ marginBottom:10 } },
+      e(ComparisonTable, { activeFeatures:[0,1,2,3,4,5,6,7,8,9] })
+    ),
+  "summary": (sc, toggleDetail) =>
+    e("div", { style:{ marginBottom:10 } },
+      e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:10 } },
+        e(Panel, { label:"XMLHttpRequest", onClick:()=>toggleDetail("xhr") },
+          e("div", { style:{ display:"flex", flexDirection:"column", gap:5 } },
+            e(FeatureTag, { label:"Legacy standard", type:"xhr" }),
+            e(FeatureTag, { label:"Upload progress \u2713", type:"xhr" }),
+            e(FeatureTag, { label:"Sync requests", type:"xhr" }),
+            e("div", { style:{ fontSize:10, color:T.text3, marginTop:4, fontStyle:"italic" } }, "Frozen \u2014 no new features planned")
+          )
+        ),
+        e(Panel, { label:"fetch()", onClick:()=>toggleDetail("fetch") },
+          e("div", { style:{ display:"flex", flexDirection:"column", gap:5 } },
+            e(FeatureTag, { label:"Modern standard", type:"fetch" }),
+            e(FeatureTag, { label:"Promises / Streams", type:"fetch" }),
+            e(FeatureTag, { label:"Service Workers", type:"fetch" }),
+            e("div", { style:{ fontSize:10, color:T.text3, marginTop:4, fontStyle:"italic" } }, "Active spec \u2014 future of HTTP in JS")
+          )
+        )
+      )
+    ),
+};
+
+/* ─── APP ─── */
+
+function App() {
+  const [si, setSi] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [detail, setDetail] = useState(null);
+  const timer = useRef(null);
+  const sc = SCENES[si];
+
+  useEffect(() => { setPlaying(true); }, []);
+
+  useEffect(() => {
+    if (!playing) return;
+    const d = si===0 ? 3500 : si===SCENES.length-1 ? 99999 : 3200;
+    timer.current = setTimeout(() => { si < SCENES.length-1 ? setSi(i=>i+1) : setPlaying(false); }, d);
+    return () => clearTimeout(timer.current);
+  }, [playing, si]);
+
+  const go = d => { clearTimeout(timer.current); setPlaying(false); setSi(i=>Math.max(0,Math.min(SCENES.length-1,i+d))); };
+  const jump = i => { clearTimeout(timer.current); setPlaying(false); setSi(i); };
+  const togglePlay = () => { if(si===SCENES.length-1){setSi(0);setPlaying(true);}else setPlaying(p=>!p); };
+  const toggleDetail = key => { setDetail(d => d===key ? null : key); clearTimeout(timer.current); setPlaying(false); };
+
+  const visKey = sc.tag;
+  const VisComponent = SCENE_VISUALS[visKey];
+
+  return e("div", { style:{ display:"flex", gap:16, alignItems:"flex-start", justifyContent: detail ? "flex-start" : "center" } },
+  e("div", { style:{ width:760, flexShrink:0, background:T.bg, fontFamily:"system-ui,sans-serif", padding:20, borderRadius:16 } },
+
+    e("div", { style:{ marginBottom:18 } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:10, marginBottom:11 } },
+        e(AP, { mode:"wait" },
+          e(M.div, { key:sc.act, initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, exit:{opacity:0}, transition:sp(400,28),
+            style:{ fontSize:9,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:T.purple,background:T.purple+"14",padding:"3px 10px",borderRadius:20,border:"1px solid "+T.purple+"30",flexShrink:0 }
+          }, sc.act)
+        ),
+        e("div", { style:{ flex:1, height:1, background:T.border, borderRadius:99, overflow:"hidden" } },
+          e(M.div, { animate:{width:si/(SCENES.length-1)*100+"%"}, transition:{duration:0.5}, style:{height:"100%",background:T.purple,borderRadius:99} })
+        ),
+        e("span", { style:{ fontSize:10, color:T.text3 } }, (si+1)+" / "+SCENES.length)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.title, initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, exit:{opacity:0,y:-8}, transition:ez,
+          style:{ fontSize:20,fontWeight:600,color:T.text1,marginBottom:4,letterSpacing:"-0.02em" }
+        }, sc.title)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
+          style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
+        }, sc.sub)
+      )
+    ),
+
+    e("div", { style:{ minHeight:460 } },
+
+      e("div", { style:{ fontSize:9,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:T.text3,textAlign:"center",marginBottom:8,paddingBottom:8,borderBottom:"1px solid "+T.border } }, "xhr vs fetch comparison"),
+
+      e(AP, { mode:"wait" },
+        e(M.div, { key:visKey, initial:{opacity:0,y:10}, animate:{opacity:1,y:0}, exit:{opacity:0,y:-10}, transition:ez },
+          VisComponent ? VisComponent(sc, toggleDetail) : null
+        )
+      ),
+
+      e("div", { style:{ display:"grid", gridTemplateColumns: sc.panels && sc.panels.length > 0 ? "1fr 1fr" : "1fr", gap:10 } },
+        sc.panels && sc.panels.includes("xhr") &&
+          e("div", { onClick:()=>toggleDetail("xhr"), style:{cursor:"pointer"} },
+            e("div", { style:{ fontSize:9,fontWeight:700,letterSpacing:"0.06em",textTransform:"uppercase",color:T.coralL,marginBottom:4 } }, "XMLHttpRequest"),
+          ),
+        sc.panels && sc.panels.includes("fetch") &&
+          e("div", { onClick:()=>toggleDetail("fetch"), style:{cursor:"pointer"} },
+            e("div", { style:{ fontSize:9,fontWeight:700,letterSpacing:"0.06em",textTransform:"uppercase",color:T.tealL,marginBottom:4 } }, "fetch()"),
+          ),
+      ),
+
+      e("div", { onClick:()=>toggleDetail("code"), style:{cursor:"pointer", marginTop:10} },
+        e(CodePanel, { code:sc.code, highlighted:sc.hl||[] })
+      ),
+
+    ),
+
+    e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginTop:16 } },
+      e("button", { onClick:()=>go(-1), disabled:si===0,
+        style:{ padding:"6px 14px",borderRadius:8,border:"1px solid "+T.border,background:"transparent",color:si===0?T.text3:T.text2,cursor:si===0?"not-allowed":"pointer",fontSize:11,transition:"color 0.2s" }
+      }, "\u2190 Back"),
+      e("button", { onClick:togglePlay,
+        style:{ padding:"6px 18px",borderRadius:8,border:"1px solid "+(playing?T.coral:T.purple)+"44",background:(playing?T.coral:T.purple)+"14",color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all 0.2s" }
+      }, playing ? "\u23F8  Pause" : si===SCENES.length-1 ? "\u21BA  Replay" : "\u25B6  Play"),
+      e("button", { onClick:()=>go(1), disabled:si===SCENES.length-1,
+        style:{ padding:"6px 14px",borderRadius:8,border:"1px solid "+T.border,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
+      }, "Next \u2192"),
+      e("div", { style:{ flex:1 } }),
+      e("div", { style:{ display:"flex", gap:4, alignItems:"center" } },
+        SCENES.map((_,i) =>
+          e("button", { key:i, onClick:()=>jump(i),
+            style:{ width:i===si?16:5,height:5,borderRadius:99,border:"none",padding:0,background:i===si?T.purple:i<si?T.purple+"55":T.border,cursor:"pointer",transition:"all 0.25s" }
+          })
+        )
+      )
+    )
+  ),
+  detail && e(DetailPanel, { detailKey:detail, onClose:()=>setDetail(null) })
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(e(App));
+</script>
+</body>
+</html>
