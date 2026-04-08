@@ -15,7 +15,11 @@
     justify-content: center;
     padding: 60px 24px;
   }
-  .container { width: 100%; max-width: 640px; }
+  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; }
+  .topnav .name { font-weight: 600; color: #e8e8f0; font-size: 13px; text-decoration: none; }
+  .topnav .sep { color: #38384a; font-size: 12px; }
+  .topnav .current { color: #7c6fcd; font-size: 13px; font-weight: 500; }
+  .container { width: 100%; max-width: 640px; margin-top: 36px; }
   h1 {
     font-size: 28px;
     font-weight: 600;
@@ -68,6 +72,11 @@
 </style>
 </head>
 <body>
+<nav class="topnav">
+  <span class="name">Sharon Zhou</span>
+  <span class="sep">/</span>
+  <span class="current">Animations</span>
+</nav>
 <div class="container">
   <h1>Software Explain Animations</h1>
   <p class="subtitle">Interactive visual explanations of software engineering concepts.</p>
