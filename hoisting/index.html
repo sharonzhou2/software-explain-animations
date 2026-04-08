@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JS Hoisting</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111118;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px 16px;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  #root { width: 100%; max-width: 1120px; }
+  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: system-ui, sans-serif; }
+  .topnav a { text-decoration: none; color: #8888aa; font-size: 13px; transition: color 0.2s; }
+  .topnav a:hover { color: #e8e8f0; }
+  .topnav .name { font-weight: 600; color: #e8e8f0; font-size: 13px; }
+  .topnav .sep { color: #38384a; font-size: 12px; }
+  .topnav .current { color: #7c6fcd; font-size: 13px; font-weight: 500; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="../" class="name">Sharon Zhou</a>
+  <span class="sep">/</span>
+  <a href="../">Animations</a>
+  <span class="sep">/</span>
+  <span class="current">Hoisting</span>
+</nav>
+<div id="root" style="margin-top: 36px;"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/framer-motion@11/dist/framer-motion.js"></script>
+<script>
+const { useState, useEffect, useRef } = React;
+const { motion, AnimatePresence } = window.Motion;
+const e = React.createElement;
+const M = motion;
+const AP = AnimatePresence;
+const sp = (s=380,d=28) => ({ type:"spring", stiffness:s, damping:d });
+const ez = { duration:0.32, ease:[0.22,1,0.36,1] };
+
+const T = {
+  bg:"#111118", surface:"#18181f", surface2:"#1e1e28",
+  border:"#2a2a38", border2:"#38384a",
+  text1:"#e8e8f0", text2:"#8888aa", text3:"#44445a",
+  purple:"#7c6fcd", purpleL:"#a99cf0",
+  teal:"#3db89a", tealL:"#6dd4b8",
+  coral:"#c4694a", coralL:"#e08a6a",
+  blue:"#4a8fd4", blueL:"#82b4e8",
+  amber:"#d4a84a", amberL:"#e8c86a",
+  codeBase:"#141428",
+};
+
+const TS = {
+  fn:    { color:"#82aaff" },
+  meth:  { color:"#89ddff" },
+  str:   { color:"#c3e88d" },
+  kw:    { color:"#c792ea" },
+  num:   { color:"#f78c6c" },
+  punc:  { color:"#89ddff" },
+  plain: { color:"#a6accd" },
+  this:  { color:"#ff5370", fontWeight:"bold" },
+  cmt:   { color:"#546e7a", fontStyle:"italic" },
+};
+
+const STATUS = {
+  hoisted: { bg:"#0e1e18", bd:T.teal, tx:T.tealL, badge:"\u2713 hoisted", badgeBg:"rgba(61,184,154,0.12)" },
+  full:    { bg:"#141e2e", bd:T.blue, tx:T.blueL, badge:"\u2713 fully hoisted", badgeBg:"rgba(74,143,212,0.12)" },
+  tdz:     { bg:"#221814", bd:T.coral, tx:T.coralL, badge:"\u26d4 TDZ", badgeBg:"rgba(196,105,74,0.12)" },
+};
+
+/* ─── SCENES ─── */
+const SCENES = [
+  {
+    id:0, act:"01",
+    title:"Hoisting",
+    sub:"Before any code executes, JavaScript scans for declarations and allocates them in memory. This two-phase process is why some things work before they appear in your code.",
+    code:[
+      [["cmt","// before your code runs,"]],
+      [["cmt","// JS scans for declarations"]],
+    ],
+    hl:[],
+    memory:[],
+    rule:null,
+    out:[],
+  },
+  {
+    id:1, act:"02",
+    title:"var is hoisted",
+    sub:"The engine finds var x and allocates it in memory with undefined. The assignment = 5 only happens when that line actually executes.",
+    code:[
+      [["fn","console"],["punc","."],["meth","log"],["punc","("],["plain","x"],["punc",")"]],
+      [["kw","var"],["plain"," x "],["punc","="],["plain"," "],["num","5"]],
+      [["fn","console"],["punc","."],["meth","log"],["punc","("],["plain","x"],["punc",")"]],
+    ],
+    hl:[1],
+    memory:[{ id:"m1", name:"x", value:"undefined", kind:"var", status:"hoisted" }],
+    rule:{ name:"var hoisting", desc:"Declaration is moved to the top and initialized with undefined" },
+    out:[{id:"o1",t:"undefined",c:T.tealL},{id:"o2",t:"5",c:T.tealL}],
+  },
+  {
+    id:2, act:"03",
+    title:"Function declarations \u2014 fully hoisted",
+    sub:"Function declarations are special. The engine hoists both the name AND the entire function body. You can call them before they appear in code.",
+    code:[
+      [["fn","greet"],["punc","()"]],
+      [],
+      [["kw","function"],["plain"," "],["fn","greet"],["punc","() {"]],
+      [["plain","  "],["fn","console"],["punc","."],["meth","log"],["punc","("],["str","'hello'"],["punc",")"]],
+      [["punc","}"]],
+    ],
+    hl:[2,3,4],
+    memory:[{ id:"m1", name:"greet", value:"\u0192 greet()", kind:"function", status:"full" }],
+    rule:{ name:"Function hoisting", desc:"Function declarations are fully hoisted \u2014 name AND body available immediately" },
+    out:[{id:"o1",t:"\"hello\"",c:T.blueL}],
+  },
+  {
+    id:3, act:"04",
+    title:"let and the Temporal Dead Zone",
+    sub:"let and const are hoisted too \u2014 but NOT initialized. Accessing them before the declaration throws a ReferenceError. This zone is called the TDZ.",
+    code:[
+      [["fn","console"],["punc","."],["meth","log"],["punc","("],["plain","x"],["punc",")"]],
+      [["kw","let"],["plain"," x "],["punc","="],["plain"," "],["num","5"]],
+    ],
+    hl:[1],
+    memory:[{ id:"m1", name:"x", value:"\u26d4 TDZ", kind:"let", status:"tdz" }],
+    rule:{ name:"Temporal Dead Zone", desc:"let/const are hoisted but uninitialized \u2014 access before declaration throws ReferenceError" },
+    out:[{id:"o1",t:"\u26d4 ReferenceError",c:T.coralL}],
+  },
+  {
+    id:4, act:"05",
+    title:"Function expression with var",
+    sub:"A function stored in var gets var\u2019s hoisting \u2014 the variable exists as undefined, but the function value isn\u2019t assigned yet. Calling it throws TypeError.",
+    code:[
+      [["fn","greet"],["punc","()"]],
+      [],
+      [["kw","var"],["plain"," greet "],["punc","="],["plain"," "],["kw","function"],["punc","() {"]],
+      [["plain","  "],["fn","console"],["punc","."],["meth","log"],["punc","("],["str","'hello'"],["punc",")"]],
+      [["punc","}"]],
+    ],
+    hl:[2,3,4],
+    memory:[{ id:"m1", name:"greet", value:"undefined", kind:"var", status:"hoisted" }],
+    rule:{ name:"Expression \u2260 declaration", desc:"var hoists with undefined \u2014 the function assignment hasn\u2019t happened yet \u2192 TypeError" },
+    out:[{id:"o1",t:"\u26d4 TypeError",c:T.coralL}],
+  },
+  {
+    id:5, act:"06",
+    title:"Arrow function with const",
+    sub:"Arrow functions in const have TDZ behavior. The variable is hoisted but completely inaccessible until the declaration line.",
+    code:[
+      [["fn","greet"],["punc","()"]],
+      [],
+      [["kw","const"],["plain"," greet "],["punc","="],["plain"," "],["punc","() => {"]],
+      [["plain","  "],["fn","console"],["punc","."],["meth","log"],["punc","("],["str","'hello'"],["punc",")"]],
+      [["punc","}"]],
+    ],
+    hl:[2,3,4],
+    memory:[{ id:"m1", name:"greet", value:"\u26d4 TDZ", kind:"const", status:"tdz" }],
+    rule:{ name:"const + TDZ", desc:"Arrow functions in const/let are in the TDZ \u2014 cannot call before declaration" },
+    out:[{id:"o1",t:"\u26d4 ReferenceError",c:T.coralL}],
+  },
+  {
+    id:6, act:"07",
+    title:"Function vs var \u2014 who wins?",
+    sub:"When both a function declaration and var share the same name, the function is hoisted first with its body. var\u2019s undefined doesn\u2019t overwrite it.",
+    code:[
+      [["fn","console"],["punc","."],["meth","log"],["punc","("],["kw","typeof"],["plain"," x"],["punc",")"]],
+      [["kw","var"],["plain"," x "],["punc","="],["plain"," "],["num","5"]],
+      [["kw","function"],["plain"," "],["fn","x"],["punc","() {}"]],
+    ],
+    hl:[1,2],
+    memory:[{ id:"m1", name:"x", value:"\u0192 x()", kind:"function", status:"full" }],
+    rule:{ name:"Function-first", desc:"Function declarations hoist above var \u2014 the function body wins over undefined" },
+    out:[{id:"o1",t:"\"function\"",c:T.blueL}],
+  },
+  {
+    id:7, act:"08",
+    title:"var ignores block scope",
+    sub:"var is hoisted to the nearest function scope (or global). Block boundaries like if, for, and while don\u2019t contain it.",
+    code:[
+      [["kw","if"],["plain"," "],["punc","("],["kw","false"],["punc",") {"]],
+      [["plain","  "],["kw","var"],["plain"," x "],["punc","="],["plain"," "],["num","5"]],
+      [["punc","}"]],
+      [["fn","console"],["punc","."],["meth","log"],["punc","("],["plain","x"],["punc",")"]],
+    ],
+    hl:[1],
+    memory:[{ id:"m1", name:"x", value:"undefined", kind:"var", status:"hoisted" }],
+    rule:{ name:"No block scope", desc:"var ignores blocks \u2014 hoisted to function/global scope even inside if (false)" },
+    out:[{id:"o1",t:"undefined",c:T.tealL}],
+  },
+  {
+    id:8, act:"09",
+    title:"let respects block scope",
+    sub:"let and const are scoped to their enclosing block. Outside that block, the variable doesn\u2019t exist at all.",
+    code:[
+      [["kw","if"],["plain"," "],["punc","("],["kw","true"],["punc",") {"]],
+      [["plain","  "],["kw","let"],["plain"," x "],["punc","="],["plain"," "],["num","5"]],
+      [["punc","}"]],
+      [["fn","console"],["punc","."],["meth","log"],["punc","("],["plain","x"],["punc",")"]],
+    ],
+    hl:[1],
+    memory:[],
+    rule:{ name:"Block scope", desc:"let/const are invisible outside their block \u2014 x doesn\u2019t exist in the outer scope" },
+    out:[{id:"o1",t:"\u26d4 ReferenceError",c:T.coralL}],
+  },
+  {
+    id:9, act:"10",
+    title:"class \u2014 TDZ like let",
+    sub:"class declarations are hoisted but land in the Temporal Dead Zone, just like let and const. You must declare the class before using it.",
+    code:[
+      [["kw","const"],["plain"," d "],["punc","="],["plain"," "],["kw","new"],["plain"," "],["fn","Dog"],["punc","()"]],
+      [],
+      [["kw","class"],["plain"," "],["fn","Dog"],["plain"," "],["punc","{"]],
+      [["plain","  "],["fn","constructor"],["punc","() {"]],
+      [["plain","    "],["this","this"],["punc",".name "],["punc","="],["plain"," "],["str","'Rex'"]],
+      [["plain","  "],["punc","}"]],
+      [["punc","}"]],
+    ],
+    hl:[2,3,4,5,6],
+    memory:[{ id:"m1", name:"Dog", value:"\u26d4 TDZ", kind:"class", status:"tdz" }],
+    rule:{ name:"Class TDZ", desc:"class is hoisted into the TDZ \u2014 using it before declaration throws ReferenceError" },
+    out:[{id:"o1",t:"\u26d4 ReferenceError",c:T.coralL}],
+  },
+  {
+    id:10, act:"\u2713",
+    title:"The hoisting rules",
+    sub:"Three tiers of hoisting behavior. The key question: what type of declaration is it?",
+    code:[
+      [["cmt","// Hoisting tiers:"]],
+      [["num","1."],["plain"," "],["kw","function"],["plain"," decl \u2192 fully hoisted"]],
+      [["num","2."],["plain"," "],["kw","var"],["plain","         \u2192 hoisted as undefined"]],
+      [["num","3."],["plain"," "],["kw","let"],["punc","/"],["kw","const"],["punc","/"],["kw","class"],["plain"," \u2192 TDZ"]],
+    ],
+    hl:[],
+    memory:[],
+    rule:{ name:"function > var > let/const/class", desc:"Functions hoist fully. var hoists with undefined. let/const/class hoist into TDZ." },
+    out:[],
+    finale:true,
+  },
+];
+
+/* ─── DETAIL CONTENT ─── */
+const DETAILS = {
+  code: {
+    title:"Source Code",
+    color:T.purpleL,
+    sections:[
+      {heading:"What to watch for",body:"Each scene shows a different declaration type and what happens when you try to use it before it\u2019s declared. The key is understanding the two-phase execution model."},
+      {heading:"Two phases",body:"1. Creation phase: Engine scans for declarations, allocates memory.\n2. Execution phase: Code runs line by line, assignments happen.\n\nHoisting only affects the creation phase \u2014 assignments always happen during execution."},
+    ]
+  },
+  memory: {
+    title:"Memory (after hoisting)",
+    color:T.teal,
+    sections:[
+      {heading:"What is it?",body:"This panel shows what\u2019s allocated in memory after the creation phase \u2014 before any code executes. It reveals what the engine \u2018sees\u2019 after scanning declarations."},
+      {heading:"Creation phase rules",body:"\u2022 var \u2192 allocated with undefined\n\u2022 function declaration \u2192 allocated with full body\n\u2022 let/const/class \u2192 allocated but in TDZ (Temporal Dead Zone)"},
+      {heading:"Temporal Dead Zone",body:"The TDZ is the period between entering a scope and reaching the declaration line. Variables exist in memory but are completely inaccessible. Trying to read them throws ReferenceError."},
+      {heading:"Key insight",body:"All declarations are hoisted \u2014 even let, const, and class. The difference is initialization: var gets undefined, functions get their body, and everything else sits in the TDZ until the declaration line executes."},
+    ]
+  },
+  rule: {
+    title:"Hoisting Rules",
+    color:T.blue,
+    sections:[
+      {heading:"function declarations",body:"Fully hoisted. Both the name and the entire function body are available from the very first line of the scope. This is why you can call a function before its declaration."},
+      {heading:"var",body:"The variable name is hoisted and initialized with undefined. The actual value assignment happens when execution reaches that line. This is why console.log(x) gives undefined, not an error."},
+      {heading:"let / const / class",body:"Hoisted into the Temporal Dead Zone. The engine knows they exist (that\u2019s why you get ReferenceError \u2018cannot access before initialization\u2019, not \u2018not defined\u2019), but they\u2019re inaccessible until the declaration line."},
+      {heading:"Function expressions",body:"Follow the rules of their variable type. `var f = function(){}` \u2192 f is undefined until assignment. `const f = () => {}` \u2192 f is in TDZ until assignment."},
+    ]
+  },
+  console: {
+    title:"Console Output",
+    color:T.tealL,
+    sections:[
+      {heading:"What it shows",body:"The console output reveals what value each variable holds at the moment of access \u2014 proving hoisting behavior."},
+      {heading:"Three outcomes",body:"\u2022 A value (undefined, number, string) \u2192 variable was accessible\n\u2022 TypeError \u2192 variable exists but isn\u2019t callable (var function expression)\n\u2022 ReferenceError \u2192 variable is in the TDZ (let/const/class before declaration)"},
+      {heading:"TypeError vs ReferenceError",body:"TypeError means the variable exists but isn\u2019t the right type (e.g., calling undefined as a function). ReferenceError means you can\u2019t access it at all \u2014 it\u2019s in the TDZ."},
+    ]
+  },
+};
+
+/* ─── COMPONENTS ─── */
+const CodePanel = ({ tokens, highlighted }) =>
+  e("div", { style:{ background:T.codeBase, borderRadius:12, overflow:"hidden", border:"1px solid "+T.border } },
+    e("div", { style:{ padding:"10px 14px 8px", borderBottom:"1px solid "+T.border, display:"flex", gap:7 } },
+      ...["#ff5f57","#febc2e","#28c840"].map((c,i) =>
+        e("div", { key:i, style:{ width:11, height:11, borderRadius:"50%", background:c } })
+      )
+    ),
+    e("div", { style:{ padding:"18px 22px 22px", fontFamily:"'SF Mono','Fira Code','Consolas',monospace", fontSize:12, lineHeight:1.95 } },
+      tokens.map((line, li) => {
+        const hot = (highlighted||[]).includes(li);
+        return e(M.div, {
+          key:li,
+          animate:{ background: hot ? "rgba(124,111,205,0.13)" : "transparent" },
+          transition:{ duration:0.22 },
+          style:{ borderLeft: hot ? "2px solid "+T.purple : "2px solid transparent", paddingLeft:8, borderRadius:3, display:"block", minHeight:"1.2em" }
+        },
+          line.length === 0
+            ? e("span", null, " ")
+            : line.map(([cls, txt], ti) =>
+                e("span", { key:ti, style:{ ...TS[cls], whiteSpace:"pre" } }, txt)
+              )
+        );
+      })
+    )
+  );
+
+const Panel = ({ label, children, style={}, focused=false, onClick }) =>
+  e(M.div, {
+    onClick,
+    animate:{
+      borderColor: focused ? T.purple : T.border2,
+      boxShadow: focused ? "0 0 16px "+T.purple+"30, inset 0 0 12px "+T.purple+"08" : "0 0 0px transparent"
+    },
+    transition:{ duration:0.4 },
+    style:{ borderRadius:12, border:"1.5px solid", background:T.surface, overflow:"hidden", cursor:onClick?"pointer":"default", ...style }
+  },
+    label && e("div", { style:{ padding:"8px 13px", borderBottom:"1px solid "+T.border } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, label)
+    ),
+    e("div", { style:{ padding:12 } }, children)
+  );
+
+const MemoryViz = ({ memory, focused, onClick }) =>
+  e(M.div, {
+    onClick,
+    animate:{
+      borderColor: focused ? T.purple : T.border2,
+      boxShadow: focused ? "0 0 16px "+T.purple+"30, inset 0 0 12px "+T.purple+"08" : "0 0 0px transparent"
+    },
+    transition:{ duration:0.4 },
+    style:{ borderRadius:12, border:"1.5px solid", background:T.surface, overflow:"hidden", cursor:"pointer" }
+  },
+    e("div", { style:{ padding:"8px 13px", borderBottom:"1px solid "+T.border } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, "Memory (after hoisting)")
+    ),
+    e("div", { style:{ padding:12, minHeight:100 } },
+      memory.length === 0
+        ? e("div", { style:{ display:"flex", alignItems:"center", justifyContent:"center", minHeight:80, fontSize:11, color:T.text3, fontStyle:"italic" } }, "no declarations in this scope")
+        : e("div", { style:{ display:"flex", flexDirection:"column", gap:8 } },
+            e(AP, null, memory.map(item => {
+              const s = STATUS[item.status];
+              return e(M.div, {
+                key:item.id, layout:true,
+                initial:{opacity:0,y:16,scale:0.92}, animate:{opacity:1,y:0,scale:1}, exit:{opacity:0,scale:0.92},
+                transition:sp(360,24),
+                style:{ padding:"10px 14px", borderRadius:10, border:"1px solid "+s.bd+"44", background:s.bg }
+              },
+                e("div", { style:{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:6 } },
+                  e("span", { style:{ fontFamily:"'SF Mono',monospace", fontSize:13, fontWeight:600, color:s.tx } }, item.name),
+                  e("span", { style:{ fontSize:9, fontWeight:600, padding:"2px 7px", borderRadius:10, background:s.badgeBg, border:"1px solid "+s.bd+"33", color:s.tx } }, item.kind)
+                ),
+                e("div", { style:{ display:"flex", alignItems:"center", justifyContent:"space-between" } },
+                  e("span", { style:{ fontFamily:"'SF Mono',monospace", fontSize:12, color: item.status==="tdz" ? T.coralL : T.text2 } }, "= "+item.value),
+                  e("span", { style:{ fontSize:10, color:s.tx } }, s.badge)
+                )
+              );
+            }))
+          )
+    )
+  );
+
+const RulePanel = ({ rule, focused, onClick }) =>
+  e(M.div, {
+    onClick,
+    animate:{
+      borderColor: focused ? T.purple : T.border2,
+      boxShadow: focused ? "0 0 16px "+T.purple+"30, inset 0 0 12px "+T.purple+"08" : "0 0 0px transparent"
+    },
+    transition:{ duration:0.4 },
+    style:{ borderRadius:12, border:"1.5px solid", background:T.surface, overflow:"hidden", cursor:"pointer" }
+  },
+    e("div", { style:{ padding:"8px 13px", borderBottom:"1px solid "+T.border } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, "Active Rule")
+    ),
+    e("div", { style:{ padding:12, minHeight:52 } },
+      rule
+        ? e(AP, { mode:"wait" },
+            e(M.div, { key:rule.name, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.15} },
+              e("div", { style:{ fontSize:13, fontWeight:600, color:T.purpleL, marginBottom:4 } }, rule.name),
+              e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.6 } }, rule.desc)
+            )
+          )
+        : e("div", { style:{ fontSize:11, color:T.text3 } }, "\u2014")
+    )
+  );
+
+const Finale = () => {
+  const rows = [
+    { n:1, label:"function declarations", sub:"Fully hoisted \u2014 name and body available anywhere in scope", c:T.blue },
+    { n:2, label:"var", sub:"Hoisted with undefined \u2014 exists but uninitialized until assignment line", c:T.teal },
+    { n:3, label:"let / const", sub:"Hoisted into TDZ \u2014 accessing before declaration throws ReferenceError", c:T.coral },
+    { n:4, label:"class", sub:"Hoisted into TDZ \u2014 must declare before use, just like let/const", c:T.coral },
+    { n:"\u21b7", label:"Function expressions & arrows", sub:"Follow their variable\u2019s rules: var \u2192 undefined, const/let \u2192 TDZ", c:T.amber },
+  ];
+  return e("div", { style:{ padding:"8px 0" } },
+    rows.map((r,i) => e(M.div, { key:i, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.12,...ez},
+      style:{ display:"flex", alignItems:"flex-start", gap:12, padding:"11px 14px", marginBottom:8, borderRadius:10, border:"1px solid "+r.c+"28", background:r.c+"08" }
+    },
+      e("div", { style:{ width:26, height:26, borderRadius:"50%", border:"1.5px solid "+r.c, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:12, fontWeight:700, color:r.c } }, r.n),
+      e("div", null,
+        e("div", { style:{ fontSize:13, fontWeight:600, color:r.c, marginBottom:2 } }, r.label),
+        e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.5 } }, r.sub)
+      )
+    ))
+  );
+};
+
+const DetailPanel = ({ detailKey, onClose }) => {
+  const d = DETAILS[detailKey];
+  if (!d) return null;
+  return e("div", {
+    style:{ width:340, flexShrink:0, background:T.surface, borderRadius:14, border:"1.5px solid "+d.color+"44", overflow:"hidden", alignSelf:"flex-start", position:"sticky", top:56 }
+  },
+    e("div", { style:{ padding:"14px 18px 12px", borderBottom:"1px solid "+T.border, display:"flex", alignItems:"center", justifyContent:"space-between" } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:8 } },
+        e("div", { style:{ width:8, height:8, borderRadius:"50%", background:d.color } }),
+        e("span", { style:{ fontSize:14, fontWeight:600, color:T.text1 } }, d.title)
+      ),
+      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6, transition:"color 0.2s" }, onMouseEnter:ev=>ev.target.style.color=T.text1, onMouseLeave:ev=>ev.target.style.color=T.text3 }, "\u2715")
+    ),
+    e("div", { style:{ padding:"16px 18px 20px", maxHeight:"calc(100vh - 140px)", overflowY:"auto" } },
+      d.sections.map((s, i) =>
+        e("div", { key:i, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
+          e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
+        )
+      )
+    )
+  );
+};
+
+/* ─── APP ─── */
+function App() {
+  const [si, setSi] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [detail, setDetail] = useState(null);
+  const timer = useRef(null);
+  const sc = SCENES[si];
+
+  useEffect(() => { setPlaying(true); }, []);
+
+  useEffect(() => {
+    if (!playing) return;
+    const d = si===0 ? 3000 : sc.finale ? 99999 : 3200;
+    timer.current = setTimeout(() => { si < SCENES.length-1 ? setSi(i=>i+1) : setPlaying(false); }, d);
+    return () => clearTimeout(timer.current);
+  }, [playing, si]);
+
+  const go = d => { clearTimeout(timer.current); setPlaying(false); setSi(i=>Math.max(0,Math.min(SCENES.length-1,i+d))); };
+  const jump = i => { clearTimeout(timer.current); setPlaying(false); setSi(i); };
+  const togglePlay = () => { if(si===SCENES.length-1){setSi(0);setPlaying(true);}else setPlaying(p=>!p); };
+  const toggleDetail = key => { setDetail(d => d===key ? null : key); clearTimeout(timer.current); setPlaying(false); };
+
+  return e("div", { style:{ display:"flex", gap:16, alignItems:"flex-start", justifyContent: detail ? "flex-start" : "center" } },
+  e("div", { style:{ width:760, flexShrink:0, background:T.bg, fontFamily:"system-ui,sans-serif", padding:20, borderRadius:16 } },
+
+    /* header */
+    e("div", { style:{ marginBottom:18 } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:10, marginBottom:11 } },
+        e(AP, { mode:"wait" },
+          e(M.div, { key:sc.act, initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, exit:{opacity:0}, transition:sp(400,28),
+            style:{ fontSize:9,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:T.purple,background:T.purple+"14",padding:"3px 10px",borderRadius:20,border:"1px solid "+T.purple+"30",flexShrink:0 }
+          }, sc.act)
+        ),
+        e("div", { style:{ flex:1, height:1, background:T.border, borderRadius:99, overflow:"hidden" } },
+          e(M.div, { animate:{width:si/(SCENES.length-1)*100+"%"}, transition:{duration:0.5}, style:{height:"100%",background:T.purple,borderRadius:99} })
+        ),
+        e("span", { style:{ fontSize:10, color:T.text3 } }, (si+1)+" / "+SCENES.length)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.title, initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, exit:{opacity:0,y:-8}, transition:ez,
+          style:{ fontSize:20,fontWeight:600,color:T.text1,marginBottom:4,letterSpacing:"-0.02em" }
+        }, sc.title)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
+          style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
+        }, sc.sub)
+      )
+    ),
+
+    /* finale */
+    sc.finale && e(Finale),
+
+    /* main grid */
+    !sc.finale && e("div", null,
+
+      /* row 1: code + memory */
+      e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:10 } },
+        e("div", { onClick:()=>toggleDetail("code"), style:{cursor:"pointer"} },
+          e(CodePanel, { tokens:sc.code, highlighted:sc.hl })
+        ),
+        e(MemoryViz, { memory:sc.memory, focused:false, onClick:()=>toggleDetail("memory") })
+      ),
+
+      /* row 2: rule + console */
+      e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 } },
+        e(RulePanel, { rule:sc.rule, focused:false, onClick:()=>toggleDetail("rule") }),
+        e(Panel, { label:"Console output", onClick:()=>toggleDetail("console") },
+          e("div", { style:{ fontFamily:"'SF Mono','Fira Code',monospace", minHeight:40 } },
+            sc.out.length===0
+              ? e("div", { style:{ fontSize:11,color:T.text3 } }, "\u2014")
+              : e(AP, null, sc.out.map(item =>
+                  e(M.div, { key:item.id, initial:{opacity:0,x:-10}, animate:{opacity:1,x:0}, transition:ez,
+                    style:{ fontSize:12,color:item.c,padding:"2px 0",borderBottom:"1px solid "+T.border }
+                  },
+                    e("span", { style:{ color:T.text3,marginRight:7,fontSize:10 } }, "\u203a"), item.t
+                  )
+                ))
+          )
+        )
+      )
+    ),
+
+    /* controls */
+    e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginTop:16 } },
+      e("button", { onClick:()=>go(-1), disabled:si===0,
+        style:{ padding:"6px 14px",borderRadius:8,border:"1px solid "+T.border,background:"transparent",color:si===0?T.text3:T.text2,cursor:si===0?"not-allowed":"pointer",fontSize:11,transition:"color 0.2s" }
+      }, "\u2190 Back"),
+      e("button", { onClick:togglePlay,
+        style:{ padding:"6px 18px",borderRadius:8,border:"1px solid "+(playing?T.coral:T.purple)+"44",background:(playing?T.coral:T.purple)+"14",color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all 0.2s" }
+      }, playing ? "\u23f8  Pause" : si===SCENES.length-1 ? "\u21ba  Replay" : "\u25b6  Play"),
+      e("button", { onClick:()=>go(1), disabled:si===SCENES.length-1,
+        style:{ padding:"6px 14px",borderRadius:8,border:"1px solid "+T.border,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
+      }, "Next \u2192"),
+      e("div", { style:{ flex:1 } }),
+      e("div", { style:{ display:"flex", gap:4, alignItems:"center" } },
+        SCENES.map((_,i) =>
+          e("button", { key:i, onClick:()=>jump(i),
+            style:{ width:i===si?16:5,height:5,borderRadius:99,border:"none",padding:0,background:i===si?T.purple:i<si?T.purple+"55":T.border,cursor:"pointer",transition:"all 0.25s" }
+          })
+        )
+      )
+    )
+  ),
+  detail && e(DetailPanel, { detailKey:detail, onClose:()=>setDetail(null) })
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(e(App));
+</script>
+</body>
+</html>

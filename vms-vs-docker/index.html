@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VMs vs Docker</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111118;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px 16px;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  #root { width: 100%; max-width: 1120px; }
+  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: system-ui, sans-serif; }
+  .topnav a { text-decoration: none; color: #8888aa; font-size: 13px; transition: color 0.2s; }
+  .topnav a:hover { color: #e8e8f0; }
+  .topnav .name { font-weight: 600; color: #e8e8f0; font-size: 13px; }
+  .topnav .sep { color: #38384a; font-size: 12px; }
+  .topnav .current { color: #7c6fcd; font-size: 13px; font-weight: 500; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="../" class="name">Sharon Zhou</a>
+  <span class="sep">/</span>
+  <a href="../">Animations</a>
+  <span class="sep">/</span>
+  <span class="current">VMs vs Docker</span>
+</nav>
+<div id="root" style="margin-top: 36px;"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/framer-motion@11/dist/framer-motion.js"></script>
+<script>
+const { useState, useEffect, useRef } = React;
+const { motion, AnimatePresence } = window.Motion;
+const e = React.createElement;
+const M = motion;
+const AP = AnimatePresence;
+const sp = (s=380,d=28) => ({ type:"spring", stiffness:s, damping:d });
+const ez = { duration:0.32, ease:[0.22,1,0.36,1] };
+
+const T = {
+  bg:"#111118", surface:"#18181f", surface2:"#1e1e28",
+  border:"#2a2a38", border2:"#38384a",
+  text1:"#e8e8f0", text2:"#8888aa", text3:"#44445a",
+  purple:"#7c6fcd", purpleL:"#a99cf0",
+  teal:"#3db89a", tealL:"#6dd4b8",
+  coral:"#c4694a", coralL:"#e08a6a",
+  blue:"#4a8fd4", blueL:"#82b4e8",
+  amber:"#d4a84a", amberL:"#e8c86a",
+  green:"#4ac46a", greenL:"#6ae88a",
+  red:"#e05555", redL:"#ff7777",
+  docker:"#2496ED", dockerL:"#56b8ff",
+  vm:"#e87a2a", vmL:"#ffaa5a",
+  codeBase:"#141428",
+};
+
+const TS = {
+  fn:{color:"#82aaff"}, meth:{color:"#89ddff"}, str:{color:"#c3e88d"},
+  kw:{color:"#c792ea"}, num:{color:"#f78c6c"}, punc:{color:"#89ddff"},
+  plain:{color:"#a6accd"}, cmt:{color:"#546e7a",fontStyle:"italic"},
+};
+
+/* ─── STACK DIAGRAM ─── */
+/*
+  Each layer: { id, label, color, span?, sub? }
+  span: "full" (whole width), "left" (VM side), "right" (Docker side), "split" (both halves)
+  A stack is rendered bottom-to-top.
+*/
+
+const SCENES = [
+  {
+    id:0, act:"01",
+    title:"VMs vs Docker containers",
+    sub:"Both solve the same problem — running isolated workloads — but they do it at fundamentally different layers. Let's build up each architecture from the hardware.",
+    code:[
+      [["cmt","// The question:"]],
+      [["cmt","// How do you run multiple isolated"]],
+      [["cmt","// apps on one physical machine?"]],
+    ],
+    vmStack:[], dockerStack:[], compare:null, highlight:null,
+  },
+  {
+    id:1, act:"02",
+    title:"It starts with hardware",
+    sub:"Both approaches begin the same way: a physical server with CPU, RAM, disk, and network. This is the foundation everything runs on.",
+    code:[
+      [["cmt","// Physical server"]],
+      [["cmt","// CPU, RAM, Disk, NIC"]],
+      [["cmt","// Same starting point for both"]],
+    ],
+    vmStack:[
+      { id:"hw1", label:"Hardware (CPU, RAM, Disk)", color:T.text3 },
+    ],
+    dockerStack:[
+      { id:"hw2", label:"Hardware (CPU, RAM, Disk)", color:T.text3 },
+    ],
+    compare:null, highlight:"hardware",
+  },
+  {
+    id:2, act:"03",
+    title:"The host OS",
+    sub:"On bare metal, you install a host operating system — Linux, Windows, macOS. This OS has full control of the hardware and manages all resources.",
+    code:[
+      [["cmt","// Both need an OS on the hardware"]],
+      [["cmt","// Linux is the most common choice"]],
+      [["cmt","// for both VMs and containers"]],
+    ],
+    vmStack:[
+      { id:"hos1", label:"Host OS (Linux)", color:T.blue },
+      { id:"hw1", label:"Hardware", color:T.text3 },
+    ],
+    dockerStack:[
+      { id:"hos2", label:"Host OS (Linux)", color:T.blue },
+      { id:"hw2", label:"Hardware", color:T.text3 },
+    ],
+    compare:null, highlight:"hostos",
+  },
+  {
+    id:3, act:"04",
+    title:"VM path: the hypervisor",
+    sub:"For VMs, a hypervisor sits on top of (or replaces) the host OS. It creates and manages virtual machines by emulating hardware. Each VM thinks it has its own physical machine.",
+    code:[
+      [["cmt","// Hypervisor examples:"]],
+      [["plain","  "],["str","'VMware ESXi'"],["plain","  "],["cmt","// Type 1"]],
+      [["plain","  "],["str","'VirtualBox'"],["plain","   "],["cmt","// Type 2"]],
+      [["plain","  "],["str","'KVM'"],["plain","          "],["cmt","// Type 1"]],
+      [["plain","  "],["str","'Hyper-V'"],["plain","      "],["cmt","// Type 1"]],
+    ],
+    vmStack:[
+      { id:"hyp", label:"Hypervisor (KVM / VMware)", color:T.vm },
+      { id:"hos1", label:"Host OS (Linux)", color:T.blue },
+      { id:"hw1", label:"Hardware", color:T.text3 },
+    ],
+    dockerStack:[
+      { id:"hos2", label:"Host OS (Linux)", color:T.blue },
+      { id:"hw2", label:"Hardware", color:T.text3 },
+    ],
+    compare:null, highlight:"hypervisor",
+  },
+  {
+    id:4, act:"05",
+    title:"Each VM gets a full guest OS",
+    sub:"Every VM runs its own complete operating system — kernel, drivers, system libraries, everything. This is powerful (full isolation) but expensive (each OS uses GBs of RAM and disk).",
+    code:[
+      [["cmt","// Each VM = full OS copy"]],
+      [["cmt","// VM 1: Ubuntu 22.04 (2GB RAM)"]],
+      [["cmt","// VM 2: CentOS 9   (2GB RAM)"]],
+      [["cmt","// VM 3: Windows    (4GB RAM)"]],
+      [["cmt","// Total overhead: ~8GB just for OSes"]],
+    ],
+    vmStack:[
+      { id:"app1", label:"App A", color:T.green, pos:"left" },
+      { id:"app2", label:"App B", color:T.green, pos:"mid" },
+      { id:"app3", label:"App C", color:T.green, pos:"right" },
+      { id:"gos1", label:"Guest OS", color:T.coral, pos:"left" },
+      { id:"gos2", label:"Guest OS", color:T.coral, pos:"mid" },
+      { id:"gos3", label:"Guest OS", color:T.coral, pos:"right" },
+      { id:"hyp", label:"Hypervisor", color:T.vm },
+      { id:"hos1", label:"Host OS", color:T.blue },
+      { id:"hw1", label:"Hardware", color:T.text3 },
+    ],
+    dockerStack:[
+      { id:"hos2", label:"Host OS (Linux)", color:T.blue },
+      { id:"hw2", label:"Hardware", color:T.text3 },
+    ],
+    compare:null, highlight:"guestos",
+  },
+  {
+    id:5, act:"06",
+    title:"Docker path: the container engine",
+    sub:"Docker takes a different approach. Instead of a hypervisor, it uses the Docker Engine — which talks directly to the host kernel. No guest OS needed.",
+    code:[
+      [["cmt","// Docker Engine uses Linux features:"]],
+      [["plain","  "],["fn","namespaces"],["plain","  "],["cmt","// isolation"]],
+      [["plain","  "],["fn","cgroups"],["plain","     "],["cmt","// resource limits"]],
+      [["plain","  "],["fn","overlayfs"],["plain","   "],["cmt","// layered filesystem"]],
+    ],
+    vmStack:[
+      { id:"app1", label:"App A", color:T.green, pos:"left" },
+      { id:"app2", label:"App B", color:T.green, pos:"mid" },
+      { id:"app3", label:"App C", color:T.green, pos:"right" },
+      { id:"gos1", label:"Guest OS", color:T.coral, pos:"left" },
+      { id:"gos2", label:"Guest OS", color:T.coral, pos:"mid" },
+      { id:"gos3", label:"Guest OS", color:T.coral, pos:"right" },
+      { id:"hyp", label:"Hypervisor", color:T.vm },
+      { id:"hos1", label:"Host OS", color:T.blue },
+      { id:"hw1", label:"Hardware", color:T.text3 },
+    ],
+    dockerStack:[
+      { id:"deng", label:"Docker Engine", color:T.docker },
+      { id:"hos2", label:"Host OS (Linux)", color:T.blue },
+      { id:"hw2", label:"Hardware", color:T.text3 },
+    ],
+    compare:null, highlight:"engine",
+  },
+  {
+    id:6, act:"07",
+    title:"Containers share the host kernel",
+    sub:"Each container bundles only the app and its dependencies — not an entire OS. They all share the host's Linux kernel. This is why containers are so lightweight.",
+    code:[
+      [["cmt","// Container = app + libs only"]],
+      [["cmt","// Container 1: Node.js app  (~150MB)"]],
+      [["cmt","// Container 2: Python API   (~200MB)"]],
+      [["cmt","// Container 3: Redis        (~30MB)"]],
+      [["cmt","// Total: ~380MB vs ~8GB for VMs"]],
+    ],
+    vmStack:[
+      { id:"app1", label:"App A", color:T.green, pos:"left" },
+      { id:"app2", label:"App B", color:T.green, pos:"mid" },
+      { id:"app3", label:"App C", color:T.green, pos:"right" },
+      { id:"gos1", label:"Guest OS", color:T.coral, pos:"left" },
+      { id:"gos2", label:"Guest OS", color:T.coral, pos:"mid" },
+      { id:"gos3", label:"Guest OS", color:T.coral, pos:"right" },
+      { id:"hyp", label:"Hypervisor", color:T.vm },
+      { id:"hos1", label:"Host OS", color:T.blue },
+      { id:"hw1", label:"Hardware", color:T.text3 },
+    ],
+    dockerStack:[
+      { id:"ca1", label:"App 1 + libs", color:T.green, pos:"left" },
+      { id:"ca2", label:"App 2 + libs", color:T.green, pos:"mid" },
+      { id:"ca3", label:"App 3 + libs", color:T.green, pos:"right" },
+      { id:"deng", label:"Docker Engine", color:T.docker },
+      { id:"hos2", label:"Host OS (shared kernel)", color:T.blue },
+      { id:"hw2", label:"Hardware", color:T.text3 },
+    ],
+    compare:null, highlight:"containers",
+  },
+  {
+    id:7, act:"08",
+    title:"Side by side — the key difference",
+    sub:"VMs virtualize hardware — each VM gets fake hardware + full OS. Docker virtualizes the OS — containers share one kernel, isolate only processes and filesystems.",
+    code:[
+      [["cmt","// VMs:    hardware-level isolation"]],
+      [["cmt","// Docker: OS-level isolation"]],
+      [["cmt","//"]],
+      [["cmt","// VMs are heavier but more isolated"]],
+      [["cmt","// Docker is lighter but shares kernel"]],
+    ],
+    vmStack:[
+      { id:"app1", label:"App A", color:T.green, pos:"left" },
+      { id:"app2", label:"App B", color:T.green, pos:"mid" },
+      { id:"app3", label:"App C", color:T.green, pos:"right" },
+      { id:"gos1", label:"Guest OS", color:T.coral, pos:"left" },
+      { id:"gos2", label:"Guest OS", color:T.coral, pos:"mid" },
+      { id:"gos3", label:"Guest OS", color:T.coral, pos:"right" },
+      { id:"hyp", label:"Hypervisor", color:T.vm },
+      { id:"hos1", label:"Host OS", color:T.blue },
+      { id:"hw1", label:"Hardware", color:T.text3 },
+    ],
+    dockerStack:[
+      { id:"ca1", label:"App 1 + libs", color:T.green, pos:"left" },
+      { id:"ca2", label:"App 2 + libs", color:T.green, pos:"mid" },
+      { id:"ca3", label:"App 3 + libs", color:T.green, pos:"right" },
+      { id:"deng", label:"Docker Engine", color:T.docker },
+      { id:"hos2", label:"Host OS (shared kernel)", color:T.blue },
+      { id:"hw2", label:"Hardware", color:T.text3 },
+    ],
+    compare:"side-by-side", highlight:null,
+  },
+  {
+    id:8, act:"09",
+    title:"Startup time",
+    sub:"A VM boots an entire OS — BIOS, kernel, init system, services. This takes 30-60 seconds. A container just starts a process — it's ready in milliseconds.",
+    code:[
+      [["cmt","// VM startup"]],
+      [["fn","vm"],["punc","."],["meth","start"],["punc","()"],["plain","   "],["cmt","// 30-60 seconds"]],
+      [["cmt",""]],
+      [["cmt","// Docker startup"]],
+      [["fn","docker"],["punc"," "],["meth","run"],["plain"," app"],["plain","  "],["cmt","// < 1 second"]],
+    ],
+    vmStack:[], dockerStack:[],
+    compare:{
+      metric:"Startup Time",
+      vm:{ value:"30-60s", label:"Boots full OS", pct:90 },
+      docker:{ value:"< 1s", label:"Starts a process", pct:5 },
+    },
+    highlight:"startup",
+  },
+  {
+    id:9, act:"10",
+    title:"Resource overhead",
+    sub:"Each VM carries a full OS in memory (1-4GB+). Containers share the kernel and only load their app's dependencies — often just 50-200MB.",
+    code:[
+      [["cmt","// 3 VMs running"]],
+      [["plain","  OS overhead"],["punc",": "],["num","~6GB"],["plain"," RAM"]],
+      [["cmt",""]],
+      [["cmt","// 3 containers running"]],
+      [["plain","  OS overhead"],["punc",": "],["num","~0GB"],["plain"," (shared kernel)"]],
+    ],
+    vmStack:[], dockerStack:[],
+    compare:{
+      metric:"Memory Overhead",
+      vm:{ value:"1-4 GB / VM", label:"Full OS per VM", pct:80 },
+      docker:{ value:"~50 MB", label:"Shared kernel, thin layer", pct:10 },
+    },
+    highlight:"resources",
+  },
+  {
+    id:10, act:"11",
+    title:"Isolation & security",
+    sub:"VMs have hardware-level isolation — a compromised VM can't easily reach the host. Containers share a kernel — a kernel exploit in one container can affect all others.",
+    code:[
+      [["cmt","// VM isolation"]],
+      [["cmt","// ✓ Separate kernel per VM"]],
+      [["cmt","// ✓ Hardware boundary"]],
+      [["cmt",""]],
+      [["cmt","// Container isolation"]],
+      [["cmt","// ✗ Shared kernel"]],
+      [["cmt","// ✓ Namespaces + cgroups"]],
+    ],
+    vmStack:[], dockerStack:[],
+    compare:{
+      metric:"Isolation Level",
+      vm:{ value:"Strong", label:"Hardware boundary, separate kernel", pct:95 },
+      docker:{ value:"Good", label:"Namespace/cgroup isolation, shared kernel", pct:60 },
+    },
+    highlight:"isolation",
+  },
+  {
+    id:11, act:"12",
+    title:"Portability",
+    sub:"Docker images are self-contained, versioned artifacts — build once, run anywhere with a Docker Engine. VMs are tied to hypervisor formats and harder to move between clouds.",
+    code:[
+      [["cmt","// Dockerfile → Image → Run anywhere"]],
+      [["kw","FROM"],["plain"," node"],["punc",":"],["num","20"]],
+      [["kw","COPY"],["plain"," . /app"]],
+      [["kw","RUN"],["plain"," npm install"]],
+      [["kw","CMD"],["plain"," "],["punc","["],["str","\"node\""],["punc",", "],["str","\"server.js\""],["punc","]"]],
+    ],
+    vmStack:[], dockerStack:[],
+    compare:{
+      metric:"Portability",
+      vm:{ value:"Limited", label:"Hypervisor-specific formats (.vmdk, .qcow2)", pct:35 },
+      docker:{ value:"Excellent", label:"OCI images run on any Docker host", pct:95 },
+    },
+    highlight:"portability",
+  },
+  {
+    id:12, act:"13",
+    title:"Density — how many can you run?",
+    sub:"Because containers are so lightweight, you can run far more of them on the same hardware. A server that holds 10 VMs can easily run 100+ containers.",
+    code:[
+      [["cmt","// Same 32GB RAM server:"]],
+      [["cmt","//   VMs:        ~8-10 instances"]],
+      [["cmt","//   Containers: ~100+ instances"]],
+      [["cmt",""]],
+      [["cmt","// This is why Kubernetes works —"]],
+      [["cmt","// scheduling 1000s of containers"]],
+    ],
+    vmStack:[], dockerStack:[],
+    compare:{
+      metric:"Density (32GB server)",
+      vm:{ value:"~10 VMs", label:"Each VM needs 2-4GB overhead", pct:25 },
+      docker:{ value:"100+ containers", label:"Minimal per-container overhead", pct:95 },
+    },
+    highlight:"density",
+  },
+  {
+    id:13, act:"14",
+    title:"When to use which",
+    sub:"They're not competitors — they're tools for different situations. Many production setups run Docker containers inside VMs for the best of both worlds.",
+    code:[
+      [["cmt","// Use VMs when:"]],
+      [["cmt","//   Different OS needed (Windows on Linux)"]],
+      [["cmt","//   Strong security isolation required"]],
+      [["cmt","//   Running untrusted workloads"]],
+      [["cmt",""]],
+      [["cmt","// Use Docker when:"]],
+      [["cmt","//   Microservices architecture"]],
+      [["cmt","//   CI/CD pipelines"]],
+      [["cmt","//   Fast scaling, high density"]],
+      [["cmt","//   Developer environment consistency"]],
+    ],
+    vmStack:[], dockerStack:[],
+    compare:null, highlight:"usecase",
+    usecases:true,
+  },
+  {
+    id:14, act:"✓",
+    title:"VMs vs Docker — summary",
+    sub:"VMs virtualize hardware. Docker virtualizes the OS. VMs are heavier but more isolated. Docker is lighter but shares the kernel. Use both together in production.",
+    code:[], vmStack:[], dockerStack:[], compare:null, highlight:null,
+    finale:true,
+  },
+];
+
+/* ─── DETAIL CONTENT ─── */
+const DETAILS = {
+  vm: {
+    title:"Virtual Machines",
+    color:T.vm,
+    sections:[
+      {heading:"What is a VM?",body:"A Virtual Machine is a software emulation of a complete computer. It runs its own operating system (the \"guest OS\") on virtualized hardware provided by the hypervisor. To the software inside, it looks and behaves like a real, independent machine."},
+      {heading:"How it works",body:"The hypervisor intercepts hardware access from the guest OS and translates it:\n• CPU instructions → hardware virtualization (VT-x/AMD-V)\n• Memory → shadow page tables or EPT\n• Disk → virtual disk files (.vmdk, .qcow2)\n• Network → virtual NICs and switches"},
+      {heading:"Types of hypervisors",body:"Type 1 (bare-metal): Runs directly on hardware. Examples: VMware ESXi, KVM, Hyper-V.\n\nType 2 (hosted): Runs on top of a host OS. Examples: VirtualBox, VMware Workstation, Parallels."},
+      {heading:"Strengths",body:"• Complete isolation — separate kernel per VM\n• Can run different OSes (Linux VM on Windows host)\n• Mature security model\n• Hardware-level boundary stops most attacks"},
+    ]
+  },
+  docker: {
+    title:"Docker Containers",
+    color:T.docker,
+    sections:[
+      {heading:"What is a container?",body:"A container is an isolated process (or group of processes) that shares the host's kernel but has its own filesystem, network, and process namespace. It bundles only the app and its dependencies — not a full OS."},
+      {heading:"How it works",body:"Docker uses Linux kernel features:\n• Namespaces — isolate PID, network, mount, user, IPC\n• cgroups — limit CPU, memory, I/O per container\n• OverlayFS — layered filesystem (images are read-only layers)\n• seccomp — restrict system calls"},
+      {heading:"Images & layers",body:"A Docker image is built from a Dockerfile as a stack of read-only layers. Each instruction (FROM, COPY, RUN) creates a new layer. Layers are cached and shared between images — only changed layers are transferred."},
+      {heading:"Strengths",body:"• Millisecond startup (just fork a process)\n• Minimal overhead (no guest OS)\n• Portable — OCI standard, runs anywhere\n• Perfect for microservices and CI/CD\n• Reproducible builds via Dockerfile"},
+    ]
+  },
+  code: {
+    title:"Source Code",
+    color:T.purpleL,
+    sections:[
+      {heading:"Reading the examples",body:"Each scene shows configuration or comparison relevant to that concept. The code panel highlights commands, Dockerfile syntax, or architectural notes."},
+      {heading:"Key Docker commands",body:"docker build -t myapp .\ndocker run -d -p 8080:80 myapp\ndocker ps\ndocker logs <container>\ndocker stop <container>"},
+      {heading:"Key VM commands (libvirt)",body:"virsh create vm.xml\nvirsh list\nvirsh console <vm>\nvirsh shutdown <vm>"},
+    ]
+  },
+  compare: {
+    title:"Comparison",
+    color:T.purple,
+    sections:[
+      {heading:"Quick reference",body:"                    VM          Docker\nStartup:         30-60s      < 1s\nSize:            GBs         MBs\nIsolation:       Hardware    OS-level\nOS:              Any         Linux*\nDensity:         ~10/host    100+/host\nPortability:     Limited     Excellent\n\n*Docker Desktop uses a Linux VM on Mac/Windows"},
+      {heading:"Best together",body:"Many production setups run containers inside VMs:\n• Cloud VMs (EC2, GCE) run Docker/Kubernetes\n• The VM provides hardware isolation between tenants\n• Containers provide fast, dense app deployment within"},
+    ]
+  },
+};
+
+/* ─── COMPONENTS ─── */
+const CodePanel = ({ tokens, onClick }) =>
+  e("div", { onClick, style:{ background:T.codeBase, borderRadius:12, overflow:"hidden", border:`1px solid ${T.border}`, cursor:onClick?"pointer":"default" } },
+    e("div", { style:{ padding:"10px 14px 8px", borderBottom:`1px solid ${T.border}`, display:"flex", gap:7 } },
+      ...["#ff5f57","#febc2e","#28c840"].map((c,i) =>
+        e("div", { key:i, style:{ width:11, height:11, borderRadius:"50%", background:c } })
+      )
+    ),
+    e("div", { style:{ padding:"14px 18px 16px", fontFamily:"'SF Mono','Fira Code','Consolas',monospace", fontSize:12, lineHeight:1.85 } },
+      tokens.map((line, li) =>
+        e("div", { key:li },
+          line.map(([cls, txt], ti) =>
+            e("span", { key:ti, style:{ ...TS[cls], whiteSpace:"pre" } }, txt)
+          )
+        )
+      )
+    )
+  );
+
+const Panel = ({ label, children, style={}, focused=false, onClick }) =>
+  e(M.div, {
+    onClick,
+    animate:{
+      borderColor: focused ? T.purple : T.border2,
+      boxShadow: focused ? `0 0 16px ${T.purple}30, inset 0 0 12px ${T.purple}08` : "0 0 0px transparent"
+    },
+    transition:{ duration:0.4 },
+    style:{ borderRadius:12, border:"1.5px solid", background:T.surface, overflow:"hidden", cursor:onClick?"pointer":"default", ...style }
+  },
+    label && e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, label)
+    ),
+    e("div", { style:{ padding:12 } }, children)
+  );
+
+/* Architecture stack diagram */
+const StackDiagram = ({ layers, label, color, onClick }) =>
+  e(M.div, {
+    onClick,
+    style:{ flex:1, borderRadius:12, border:`1.5px solid ${T.border2}`, background:T.surface, overflow:"hidden", cursor:"pointer" }
+  },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", gap:6 } },
+      e("div", { style:{ width:8, height:8, borderRadius:"50%", background:color } }),
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color } }, label)
+    ),
+    e("div", { style:{ padding:10, display:"flex", flexDirection:"column", gap:4, minHeight:200 } },
+      layers.length === 0
+        ? e("div", { style:{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", color:T.text3, fontSize:11 } }, "—")
+        : [...layers].reverse().map((layer, i) => {
+            if (layer.pos) {
+              /* This is part of a split row — collect all layers at this position level */
+              const idx = layers.indexOf(layer);
+              /* Only render split rows once (when we hit the first of the group) */
+              const prevLayer = layers[idx + 1];
+              if (prevLayer && prevLayer.pos) return null; /* skip, rendered by group below */
+            }
+            return null; /* handled below */
+          })
+      /* Render properly: group split layers, render full layers */
+    )
+  );
+
+/* Better stack rendering */
+const ArchStack = ({ layers, label, color, onClick }) => {
+  /* Group layers: consecutive pos layers form a row, non-pos layers are full-width */
+  const groups = [];
+  let i = 0;
+  const reversed = [...layers].reverse();
+  while (i < reversed.length) {
+    const l = reversed[i];
+    if (l.pos) {
+      const row = [];
+      while (i < reversed.length && reversed[i].pos) { row.push(reversed[i]); i++; }
+      groups.push({ type:"split", items:row });
+    } else {
+      groups.push({ type:"full", item:l });
+      i++;
+    }
+  }
+
+  return e("div", {
+    onClick,
+    style:{ flex:1, borderRadius:12, border:`1.5px solid ${T.border2}`, background:T.surface, overflow:"hidden", cursor:"pointer" }
+  },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", gap:6 } },
+      e("div", { style:{ width:8, height:8, borderRadius:"50%", background:color } }),
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color } }, label)
+    ),
+    e("div", { style:{ padding:10, display:"flex", flexDirection:"column-reverse", gap:4, minHeight:200, justifyContent:"flex-start" } },
+      layers.length === 0
+        ? e("div", { style:{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", color:T.text3, fontSize:11 } }, "—")
+        : groups.map((g, gi) => {
+            if (g.type === "full") {
+              return e(M.div, {
+                key:g.item.id, layout:true,
+                initial:{opacity:0,y:10}, animate:{opacity:1,y:0}, transition:sp(360,24),
+                style:{ padding:"8px 12px", borderRadius:8, border:`1px solid ${g.item.color}44`, background:`${g.item.color}14`, textAlign:"center" }
+              },
+                e("span", { style:{ fontSize:11, fontWeight:600, color:g.item.color, fontFamily:"'SF Mono',monospace" } }, g.item.label)
+              );
+            } else {
+              return e("div", { key:`row-${gi}`, style:{ display:"flex", gap:4 } },
+                g.items.map(item =>
+                  e(M.div, {
+                    key:item.id, layout:true,
+                    initial:{opacity:0,scale:0.9}, animate:{opacity:1,scale:1}, transition:sp(360,24),
+                    style:{ flex:1, padding:"6px 8px", borderRadius:8, border:`1px solid ${item.color}44`, background:`${item.color}14`, textAlign:"center" }
+                  },
+                    e("span", { style:{ fontSize:10, fontWeight:600, color:item.color, fontFamily:"'SF Mono',monospace" } }, item.label)
+                  )
+                )
+              );
+            }
+          })
+    )
+  );
+};
+
+/* Comparison bar */
+const ComparePanel = ({ compare, onClick }) => {
+  if (!compare || !compare.metric) return null;
+  return e("div", { onClick, style:{ borderRadius:12, border:`1.5px solid ${T.border2}`, background:T.surface, overflow:"hidden", cursor:"pointer" } },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, compare.metric)
+    ),
+    e("div", { style:{ padding:14, display:"flex", flexDirection:"column", gap:14 } },
+      /* VM bar */
+      e("div", null,
+        e("div", { style:{ display:"flex", justifyContent:"space-between", marginBottom:5 } },
+          e("div", { style:{ display:"flex", alignItems:"center", gap:6 } },
+            e("div", { style:{ width:8, height:8, borderRadius:"50%", background:T.vm } }),
+            e("span", { style:{ fontSize:11, fontWeight:600, color:T.vmL } }, "VM"),
+          ),
+          e("span", { style:{ fontSize:12, fontWeight:700, color:T.vmL, fontFamily:"monospace" } }, compare.vm.value)
+        ),
+        e("div", { style:{ height:6, background:T.border, borderRadius:99, overflow:"hidden" } },
+          e(M.div, { initial:{width:0}, animate:{width:`${compare.vm.pct}%`}, transition:{duration:0.8,ease:[0.22,1,0.36,1]}, style:{height:"100%",background:T.vm,borderRadius:99} })
+        ),
+        e("div", { style:{ fontSize:10, color:T.text3, marginTop:3 } }, compare.vm.label)
+      ),
+      /* Docker bar */
+      e("div", null,
+        e("div", { style:{ display:"flex", justifyContent:"space-between", marginBottom:5 } },
+          e("div", { style:{ display:"flex", alignItems:"center", gap:6 } },
+            e("div", { style:{ width:8, height:8, borderRadius:"50%", background:T.docker } }),
+            e("span", { style:{ fontSize:11, fontWeight:600, color:T.dockerL } }, "Docker"),
+          ),
+          e("span", { style:{ fontSize:12, fontWeight:700, color:T.dockerL, fontFamily:"monospace" } }, compare.docker.value)
+        ),
+        e("div", { style:{ height:6, background:T.border, borderRadius:99, overflow:"hidden" } },
+          e(M.div, { initial:{width:0}, animate:{width:`${compare.docker.pct}%`}, transition:{duration:0.8,delay:0.15,ease:[0.22,1,0.36,1]}, style:{height:"100%",background:T.docker,borderRadius:99} })
+        ),
+        e("div", { style:{ fontSize:10, color:T.text3, marginTop:3 } }, compare.docker.label)
+      )
+    )
+  );
+};
+
+/* Use case cards */
+const UseCases = () =>
+  e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 } },
+    e("div", { style:{ borderRadius:12, border:`1px solid ${T.vm}33`, background:`${T.vm}08`, padding:14 } },
+      e("div", { style:{ fontSize:13, fontWeight:600, color:T.vmL, marginBottom:8 } }, "Use VMs when…"),
+      ["Different OS needed (Windows on Linux)","Strong security isolation required","Running untrusted multi-tenant workloads","Legacy apps that need full OS environment","Compliance requires hardware-level separation"].map((t,i) =>
+        e(M.div, { key:i, initial:{opacity:0,x:-10}, animate:{opacity:1,x:0}, transition:{delay:i*0.08,...ez},
+          style:{ fontSize:11, color:T.text2, padding:"4px 0", display:"flex", gap:6, lineHeight:1.4 }
+        }, e("span", { style:{color:T.vm,flexShrink:0} }, "•"), t)
+      )
+    ),
+    e("div", { style:{ borderRadius:12, border:`1px solid ${T.docker}33`, background:`${T.docker}08`, padding:14 } },
+      e("div", { style:{ fontSize:13, fontWeight:600, color:T.dockerL, marginBottom:8 } }, "Use Docker when…"),
+      ["Microservices architecture","CI/CD pipelines — build/test/deploy","Fast horizontal scaling","Developer environment consistency","High density — many services per host"].map((t,i) =>
+        e(M.div, { key:i, initial:{opacity:0,x:-10}, animate:{opacity:1,x:0}, transition:{delay:i*0.08,...ez},
+          style:{ fontSize:11, color:T.text2, padding:"4px 0", display:"flex", gap:6, lineHeight:1.4 }
+        }, e("span", { style:{color:T.docker,flexShrink:0} }, "•"), t)
+      )
+    )
+  );
+
+const Finale = () => {
+  const rows = [
+    { n:"VM", label:"Virtualize hardware", sub:"Full OS per instance — strong isolation, heavy overhead", c:T.vm },
+    { n:"🐳", label:"Virtualize the OS", sub:"Shared kernel, app + libs only — lightweight, fast, portable", c:T.docker },
+    { n:"⚡", label:"Startup", sub:"VMs: 30-60s (boot OS) vs Docker: < 1s (start process)", c:T.amber },
+    { n:"🛡", label:"Isolation", sub:"VMs: hardware boundary vs Docker: namespace/cgroup boundary", c:T.blue },
+    { n:"📦", label:"Portability", sub:"Docker images are standardized (OCI), VMs are hypervisor-specific", c:T.teal },
+    { n:"🤝", label:"Use both", sub:"Production often runs containers inside VMs — best of both worlds", c:T.purple },
+  ];
+  return e("div", { style:{ padding:"8px 0" } },
+    rows.map((r,i) => e(M.div, { key:i, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.1,...ez},
+      style:{ display:"flex", alignItems:"flex-start", gap:12, padding:"11px 14px", marginBottom:8, borderRadius:10, border:`1px solid ${r.c}28`, background:`${r.c}08` }
+    },
+      e("div", { style:{ width:28, height:28, borderRadius:"50%", border:`1.5px solid ${r.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:12, fontWeight:700, color:r.c } }, r.n),
+      e("div", null,
+        e("div", { style:{ fontSize:13, fontWeight:600, color:r.c, marginBottom:2 } }, r.label),
+        e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.5 } }, r.sub)
+      )
+    ))
+  );
+};
+
+const DetailPanel = ({ detailKey, onClose }) => {
+  const d = DETAILS[detailKey];
+  if (!d) return null;
+  return e("div", {
+    style:{ width:340, flexShrink:0, background:T.surface, borderRadius:14, border:`1.5px solid ${d.color}44`, overflow:"hidden", alignSelf:"flex-start", position:"sticky", top:56 }
+  },
+    e("div", { style:{ padding:"14px 18px 12px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:8 } },
+        e("div", { style:{ width:8, height:8, borderRadius:"50%", background:d.color } }),
+        e("span", { style:{ fontSize:14, fontWeight:600, color:T.text1 } }, d.title)
+      ),
+      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6, transition:"color 0.2s" }, onMouseEnter:ev=>ev.target.style.color=T.text1, onMouseLeave:ev=>ev.target.style.color=T.text3 }, "✕")
+    ),
+    e("div", { style:{ padding:"16px 18px 20px", maxHeight:"calc(100vh - 140px)", overflowY:"auto" } },
+      d.sections.map((s, i) =>
+        e("div", { key:i, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
+          e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
+        )
+      )
+    )
+  );
+};
+
+/* ─── APP ─── */
+function App() {
+  const [si, setSi] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [detail, setDetail] = useState(null);
+  const timer = useRef(null);
+  const sc = SCENES[si];
+
+  useEffect(() => { setPlaying(true); }, []);
+
+  useEffect(() => {
+    if (!playing) return;
+    const d = si===0 ? 3000 : sc.finale ? 99999 : 3400;
+    timer.current = setTimeout(() => { si < SCENES.length-1 ? setSi(i=>i+1) : setPlaying(false); }, d);
+    return () => clearTimeout(timer.current);
+  }, [playing, si]);
+
+  const go = d => { clearTimeout(timer.current); setPlaying(false); setSi(i=>Math.max(0,Math.min(SCENES.length-1,i+d))); };
+  const jump = i => { clearTimeout(timer.current); setPlaying(false); setSi(i); };
+  const togglePlay = () => { if(si===SCENES.length-1){setSi(0);setPlaying(true);}else setPlaying(p=>!p); };
+  const toggleDetail = key => { setDetail(d => d===key ? null : key); clearTimeout(timer.current); setPlaying(false); };
+
+  const hasStacks = sc.vmStack.length > 0 || sc.dockerStack.length > 0;
+  const hasCompare = sc.compare && sc.compare.metric;
+
+  return e("div", { style:{ display:"flex", gap:16, alignItems:"flex-start", justifyContent: detail ? "flex-start" : "center" } },
+  e("div", { style:{ width:760, flexShrink:0, background:T.bg, fontFamily:"system-ui,sans-serif", padding:20, borderRadius:16 } },
+
+    /* header */
+    e("div", { style:{ marginBottom:18 } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:10, marginBottom:11 } },
+        e(AP, { mode:"wait" },
+          e(M.div, { key:sc.act, initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, exit:{opacity:0}, transition:sp(400,28),
+            style:{ fontSize:9,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:T.purple,background:`${T.purple}14`,padding:"3px 10px",borderRadius:20,border:`1px solid ${T.purple}30`,flexShrink:0 }
+          }, sc.act)
+        ),
+        e("div", { style:{ flex:1, height:1, background:T.border, borderRadius:99, overflow:"hidden" } },
+          e(M.div, { animate:{width:`${si/(SCENES.length-1)*100}%`}, transition:{duration:0.5}, style:{height:"100%",background:T.purple,borderRadius:99} })
+        ),
+        e("span", { style:{ fontSize:10, color:T.text3 } }, `${si+1} / ${SCENES.length}`)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.title, initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, exit:{opacity:0,y:-8}, transition:ez,
+          style:{ fontSize:20,fontWeight:600,color:T.text1,marginBottom:4,letterSpacing:"-0.02em" }
+        }, sc.title)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
+          style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
+        }, sc.sub)
+      )
+    ),
+
+    e("div", { style:{ minHeight:460 } },
+
+    /* finale */
+    sc.finale && e(Finale),
+
+    /* main */
+    !sc.finale && e("div", null,
+
+      /* architecture stacks */
+      hasStacks && e("div", { style:{ display:"flex", gap:10, marginBottom:10 } },
+        e(ArchStack, { layers:sc.vmStack, label:"Virtual Machine", color:T.vm, onClick:()=>toggleDetail("vm") }),
+        e(ArchStack, { layers:sc.dockerStack, label:"Docker Container", color:T.docker, onClick:()=>toggleDetail("docker") })
+      ),
+
+      /* comparison bars */
+      hasCompare && e("div", { style:{ marginBottom:10 } },
+        e(ComparePanel, { compare:sc.compare, onClick:()=>toggleDetail("compare") })
+      ),
+
+      /* use cases */
+      sc.usecases && e("div", { style:{ marginBottom:10 } }, e(UseCases)),
+
+      /* code */
+      sc.code.length > 0 && e("div", { style:{ marginBottom:10 } },
+        e(CodePanel, { tokens:sc.code, onClick:()=>toggleDetail("code") })
+      )
+    ),
+
+    ), /* close minHeight wrapper */
+
+    /* controls */
+    e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginTop:16 } },
+      e("button", { onClick:()=>go(-1), disabled:si===0,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===0?T.text3:T.text2,cursor:si===0?"not-allowed":"pointer",fontSize:11,transition:"color 0.2s" }
+      }, "← Back"),
+      e("button", { onClick:togglePlay,
+        style:{ padding:"6px 18px",borderRadius:8,border:`1px solid ${playing?T.coral:T.purple}44`,background:playing?`${T.coral}14`:`${T.purple}14`,color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all 0.2s" }
+      }, playing ? "⏸  Pause" : si===SCENES.length-1 ? "↺  Replay" : "▶  Play"),
+      e("button", { onClick:()=>go(1), disabled:si===SCENES.length-1,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
+      }, "Next →"),
+      e("div", { style:{ flex:1 } }),
+      e("div", { style:{ display:"flex", gap:4, alignItems:"center" } },
+        SCENES.map((_,i) =>
+          e("button", { key:i, onClick:()=>jump(i),
+            style:{ width:i===si?16:5,height:5,borderRadius:99,border:"none",padding:0,background:i===si?T.purple:i<si?`${T.purple}55`:T.border,cursor:"pointer",transition:"all 0.25s" }
+          })
+        )
+      )
+    )
+  ),
+  detail && e(DetailPanel, { detailKey:detail, onClose:()=>setDetail(null) })
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(e(App));
+</script>
+</body>
+</html>
