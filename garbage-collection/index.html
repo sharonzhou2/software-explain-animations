@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JS Garbage Collection</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111118;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px 16px;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  #root { width: 100%; max-width: 1120px; }
+  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: system-ui, sans-serif; }
+  .topnav a { text-decoration: none; color: #8888aa; font-size: 13px; transition: color 0.2s; }
+  .topnav a:hover { color: #e8e8f0; }
+  .topnav .name { font-weight: 600; color: #e8e8f0; font-size: 13px; }
+  .topnav .sep { color: #38384a; font-size: 12px; }
+  .topnav .current { color: #7c6fcd; font-size: 13px; font-weight: 500; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="../" class="name">Sharon Zhou</a>
+  <span class="sep">/</span>
+  <a href="../">Animations</a>
+  <span class="sep">/</span>
+  <span class="current">Garbage Collection</span>
+</nav>
+<div id="root" style="margin-top: 36px;"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/framer-motion@11/dist/framer-motion.js"></script>
+<script>
+const { useState, useEffect, useRef } = React;
+const { motion, AnimatePresence } = window.Motion;
+const e = React.createElement;
+const M = motion;
+const AP = AnimatePresence;
+const sp = (s=380,d=28) => ({ type:"spring", stiffness:s, damping:d });
+const ez = { duration:0.32, ease:[0.22,1,0.36,1] };
+
+const T = {
+  bg:"#111118", surface:"#18181f", surface2:"#1e1e28",
+  border:"#2a2a38", border2:"#38384a",
+  text1:"#e8e8f0", text2:"#8888aa", text3:"#44445a",
+  purple:"#7c6fcd", purpleL:"#a99cf0",
+  teal:"#3db89a", tealL:"#6dd4b8",
+  coral:"#c4694a", coralL:"#e08a6a",
+  blue:"#4a8fd4", blueL:"#82b4e8",
+  amber:"#d4a84a", amberL:"#e8c86a",
+  red:"#e05555", redL:"#ff7777",
+  green:"#4ac46a", greenL:"#6ae88a",
+  codeBase:"#141428",
+};
+
+const TS = {
+  fn:{color:"#82aaff"}, meth:{color:"#89ddff"}, str:{color:"#c3e88d"},
+  kw:{color:"#c792ea"}, num:{color:"#f78c6c"}, punc:{color:"#89ddff"},
+  plain:{color:"#a6accd"}, cmt:{color:"#546e7a",fontStyle:"italic"},
+};
+
+/*
+  Heap objects: { id, label, type, color }
+  References (arrows): { from, to }  — from can be "root" or an object id
+  "root" represents the GC root (global/stack variables)
+*/
+
+const SCENES = [
+  {
+    id:0, act:"01",
+    title:"Garbage collection in JavaScript",
+    sub:"Memory is allocated automatically when objects are created — and freed automatically when they're no longer reachable. You never call free(). Here's how the engine decides what to keep and what to discard.",
+    code:[
+      [["cmt","// JS manages memory for you"]],
+      [["cmt","// but understanding GC helps"]],
+      [["cmt","// you avoid memory leaks"]],
+    ],
+    heap:[], refs:[], freed:[], roots:[], gcActive:false, phase:null,
+  },
+  {
+    id:1, act:"02",
+    title:"Objects are allocated on the heap",
+    sub:"When you create an object, array, or function, the engine allocates memory on the heap. A variable holds a reference (pointer) to that memory.",
+    code:[
+      [["kw","let"],["plain"," user "],["punc","= { name"],["punc",": "],["str","'Alice'"],["punc"," }"]],
+      [["kw","let"],["plain"," scores "],["punc","= ["],["num","95"],["punc",", "],["num","87"],["punc",", "],["num","92"],["punc","]"]],
+    ],
+    heap:[
+      { id:"user", label:'{ name: "Alice" }', type:"Object", color:T.blue },
+      { id:"scores", label:"[95, 87, 92]", type:"Array", color:T.teal },
+    ],
+    refs:[{ from:"root", to:"user" }, { from:"root", to:"scores" }],
+    freed:[], roots:["user","scores"], gcActive:false, phase:null,
+  },
+  {
+    id:2, act:"03",
+    title:"Objects can reference other objects",
+    sub:"Objects often contain references to other objects, forming a graph. The GC needs to traverse this graph to find everything that's still in use.",
+    code:[
+      [["kw","let"],["plain"," user "],["punc","= { name"],["punc",": "],["str","'Alice'"],["punc"," }"]],
+      [["kw","let"],["plain"," scores "],["punc","= ["],["num","95"],["punc",", "],["num","87"],["punc","]"]],
+      [["plain","user"],["punc",".scores = scores"]],
+      [["kw","let"],["plain"," team "],["punc","= { lead"],["punc",": user }"]],
+    ],
+    heap:[
+      { id:"user", label:'{ name: "Alice", scores }', type:"Object", color:T.blue },
+      { id:"scores", label:"[95, 87]", type:"Array", color:T.teal },
+      { id:"team", label:"{ lead: user }", type:"Object", color:T.amber },
+    ],
+    refs:[
+      { from:"root", to:"user" }, { from:"root", to:"scores" }, { from:"root", to:"team" },
+      { from:"user", to:"scores" }, { from:"team", to:"user" },
+    ],
+    freed:[], roots:["user","scores","team"], gcActive:false, phase:null,
+  },
+  {
+    id:3, act:"04",
+    title:"Reachability — the core concept",
+    sub:"An object is \"reachable\" if there's any chain of references from a root (global variable, current call stack) to that object. Reachable = kept alive.",
+    code:[
+      [["cmt","// Roots: global vars, stack frames"]],
+      [["cmt","// If a root can reach an object"]],
+      [["cmt","// through any chain → it's alive"]],
+    ],
+    heap:[
+      { id:"user", label:'{ name: "Alice", scores }', type:"Object", color:T.blue },
+      { id:"scores", label:"[95, 87]", type:"Array", color:T.teal },
+      { id:"team", label:"{ lead: user }", type:"Object", color:T.amber },
+    ],
+    refs:[
+      { from:"root", to:"user" }, { from:"root", to:"scores" }, { from:"root", to:"team" },
+      { from:"user", to:"scores" }, { from:"team", to:"user" },
+    ],
+    freed:[], roots:["user","scores","team"], gcActive:false, phase:"reachability",
+  },
+  {
+    id:4, act:"05",
+    title:"A reference is removed",
+    sub:"We set user = null. The variable no longer points to the Alice object. But is Alice garbage? Not yet — team.lead still references it.",
+    code:[
+      [["plain","user "],["punc","= "],["kw","null"],["plain","  "],["cmt","// drop the reference"]],
+      [["cmt","// but team.lead still → Alice obj"]],
+      [["cmt","// Alice is still reachable!"]],
+    ],
+    heap:[
+      { id:"user", label:'{ name: "Alice", scores }', type:"Object", color:T.blue },
+      { id:"scores", label:"[95, 87]", type:"Array", color:T.teal },
+      { id:"team", label:"{ lead: user }", type:"Object", color:T.amber },
+    ],
+    refs:[
+      { from:"root", to:"scores" }, { from:"root", to:"team" },
+      { from:"user", to:"scores" }, { from:"team", to:"user" },
+    ],
+    freed:[], roots:["scores","team"], gcActive:false, phase:null,
+  },
+  {
+    id:5, act:"06",
+    title:"Now it becomes unreachable",
+    sub:"We also set team = null. Now there's no root that can reach the Alice object or the team object. They form an \"island\" — connected to each other, but cut off from any root.",
+    code:[
+      [["plain","team "],["punc","= "],["kw","null"]],
+      [["cmt","// team and Alice reference each other"]],
+      [["cmt","// but NO root can reach either one"]],
+      [["cmt","// → both are unreachable garbage"]],
+    ],
+    heap:[
+      { id:"user", label:'{ name: "Alice", scores }', type:"Object", color:T.red },
+      { id:"scores", label:"[95, 87]", type:"Array", color:T.teal },
+      { id:"team", label:"{ lead: user }", type:"Object", color:T.red },
+    ],
+    refs:[
+      { from:"root", to:"scores" },
+      { from:"user", to:"scores" }, { from:"team", to:"user" },
+    ],
+    freed:[], roots:["scores"], gcActive:false, phase:"unreachable",
+    unreachable:["user","team"],
+  },
+  {
+    id:6, act:"07",
+    title:"Mark phase — the GC traces from roots",
+    sub:"The garbage collector starts at the roots and follows every reference, marking each reachable object. This is the \"mark\" in mark-and-sweep.",
+    code:[
+      [["cmt","// GC Mark Phase"]],
+      [["cmt","// Start at roots → follow refs"]],
+      [["cmt","// Mark everything reachable"]],
+    ],
+    heap:[
+      { id:"user", label:'{ name: "Alice", scores }', type:"Object", color:T.red },
+      { id:"scores", label:"[95, 87]", type:"Array", color:T.green },
+      { id:"team", label:"{ lead: user }", type:"Object", color:T.red },
+    ],
+    refs:[
+      { from:"root", to:"scores" },
+      { from:"user", to:"scores" }, { from:"team", to:"user" },
+    ],
+    freed:[], roots:["scores"], gcActive:true, phase:"mark",
+    marked:["scores"], unreachable:["user","team"],
+  },
+  {
+    id:7, act:"08",
+    title:"Sweep phase — unmarked objects are freed",
+    sub:"Any object not marked as reachable is garbage. The GC reclaims that memory. Note: team→user→scores formed a cycle, but cycles don't prevent collection — only reachability from roots matters.",
+    code:[
+      [["cmt","// GC Sweep Phase"]],
+      [["cmt","// Unmarked objects → freed"]],
+      [["cmt","// Circular refs don't help!"]],
+    ],
+    heap:[
+      { id:"scores", label:"[95, 87]", type:"Array", color:T.green },
+    ],
+    refs:[
+      { from:"root", to:"scores" },
+    ],
+    freed:["user","team"], roots:["scores"], gcActive:true, phase:"sweep",
+    marked:["scores"],
+  },
+  {
+    id:8, act:"09",
+    title:"Memory reclaimed",
+    sub:"The heap is clean. The Alice object and team object have been collected. The scores array survives because it's still directly referenced by a root variable.",
+    code:[
+      [["cmt","// Heap after GC:"]],
+      [["cmt","// ✓ scores — still reachable"]],
+      [["cmt","// ✗ user obj — collected"]],
+      [["cmt","// ✗ team obj — collected"]],
+    ],
+    heap:[
+      { id:"scores", label:"[95, 87]", type:"Array", color:T.teal },
+    ],
+    refs:[
+      { from:"root", to:"scores" },
+    ],
+    freed:[], roots:["scores"], gcActive:false, phase:null,
+  },
+  {
+    id:9, act:"10",
+    title:"Closures retain references",
+    sub:"A closure captures variables from its outer scope. As long as the closure exists, those variables — and anything they reference — stay alive.",
+    code:[
+      [["kw","function"],["plain"," "],["fn","createCounter"],["punc","() {"]],
+      [["plain","  "],["kw","let"],["plain"," count "],["punc","= "],["num","0"]],
+      [["plain","  "],["kw","let"],["plain"," log "],["punc","= []"],["plain","  "],["cmt","// big array"]],
+      [["plain","  "],["kw","return"],["plain"," "],["punc","() => {"]],
+      [["plain","    log"],["punc","."],["meth","push"],["punc","(++count)"]],
+      [["plain","    "],["kw","return"],["plain"," count"]],
+      [["plain","  "],["punc","}"]],
+      [["punc","}"]],
+      [["kw","const"],["plain"," inc "],["punc","= "],["fn","createCounter"],["punc","()"]],
+    ],
+    heap:[
+      { id:"closure", label:"() => { log.push(…) }", type:"Closure", color:T.purple },
+      { id:"count", label:"count: 0", type:"Variable", color:T.blue },
+      { id:"log", label:"log: []", type:"Array", color:T.teal },
+    ],
+    refs:[
+      { from:"root", to:"closure" },
+      { from:"closure", to:"count" }, { from:"closure", to:"log" },
+    ],
+    freed:[], roots:["inc"], gcActive:false, phase:"closure",
+  },
+  {
+    id:10, act:"11",
+    title:"Common leak — forgotten listeners",
+    sub:"Event listeners hold references to their callbacks and any closed-over variables. If you never remove them, those objects can never be garbage collected.",
+    code:[
+      [["kw","function"],["plain"," "],["fn","setup"],["punc","() {"]],
+      [["plain","  "],["kw","const"],["plain"," data "],["punc","= "],["fn","hugeArray"],["punc","()"]],
+      [["plain","  "],["plain","button"],["punc","."],["fn","addEventListener"],["punc","("]],
+      [["plain","    "],["str","'click'"],["punc",","]],
+      [["plain","    "],["punc","() => "],["fn","process"],["punc","(data)"]],
+      [["plain","  "],["punc",")"]],
+      [["punc","}"],["plain","  "],["cmt","// data never freed!"]],
+    ],
+    heap:[
+      { id:"listener", label:"() => process(data)", type:"Listener", color:T.coral },
+      { id:"data", label:"hugeArray (10MB)", type:"Array", color:T.red },
+      { id:"button", label:"<button>", type:"DOM Node", color:T.teal },
+    ],
+    refs:[
+      { from:"root", to:"button" },
+      { from:"button", to:"listener" }, { from:"listener", to:"data" },
+    ],
+    freed:[], roots:["button"], gcActive:false, phase:"leak",
+    leaking:["data"],
+  },
+  {
+    id:11, act:"12",
+    title:"Fix — remove listeners, use WeakRef",
+    sub:"Remove event listeners when done. Use WeakMap/WeakSet for caches — they hold weak references that don't prevent GC. The object can be collected even while the WeakMap entry exists.",
+    code:[
+      [["cmt","// Fix 1: remove listener"]],
+      [["plain","button"],["punc","."],["fn","removeEventListener"],["punc","("],["str","'click'"],["punc",", fn)"]],
+      [["plain",""]],
+      [["cmt","// Fix 2: WeakMap for caches"]],
+      [["kw","const"],["plain"," cache "],["punc","= "],["kw","new"],["plain"," "],["fn","WeakMap"],["punc","()"]],
+      [["plain","cache"],["punc","."],["meth","set"],["punc","(obj, data)"]],
+      [["cmt","// obj can still be GC'd"]],
+    ],
+    heap:[
+      { id:"weakmap", label:"WeakMap { … }", type:"WeakMap", color:T.green },
+      { id:"obj", label:"{ key: value }", type:"Object", color:T.blue },
+    ],
+    refs:[
+      { from:"root", to:"weakmap" }, { from:"root", to:"obj" },
+      { from:"weakmap", to:"obj", weak:true },
+    ],
+    freed:[], roots:["weakmap","obj"], gcActive:false, phase:"weak",
+  },
+  {
+    id:12, act:"13",
+    title:"Generational GC — young vs old",
+    sub:"V8 splits the heap into generations. New objects go to the \"young generation\" (nursery) — most die quickly. Survivors get promoted to the \"old generation\" which is collected less often.",
+    code:[
+      [["cmt","// V8's generational heap"]],
+      [["cmt","// Young gen: small, frequent GC"]],
+      [["cmt","// Old gen: large, infrequent GC"]],
+      [["cmt","// Most objects die young"]],
+    ],
+    heap:[
+      { id:"new1", label:"temp1", type:"Young Gen", color:T.amber },
+      { id:"new2", label:"temp2", type:"Young Gen", color:T.amber },
+      { id:"new3", label:"temp3", type:"Young Gen", color:T.amber },
+      { id:"old1", label:"config", type:"Old Gen", color:T.blue },
+      { id:"old2", label:"app state", type:"Old Gen", color:T.blue },
+    ],
+    refs:[
+      { from:"root", to:"old1" }, { from:"root", to:"old2" }, { from:"root", to:"new1" },
+    ],
+    freed:[], roots:["old1","old2","new1"], gcActive:false, phase:"generational",
+    unreachable:["new2","new3"],
+  },
+  {
+    id:13, act:"✓",
+    title:"GC cheat sheet",
+    sub:"Memory management in JS is automatic, but understanding it prevents leaks and helps you write efficient code.",
+    code:[],
+    heap:[], refs:[], freed:[], roots:[], gcActive:false, phase:null, finale:true,
+  },
+];
+
+/* ─── DETAIL CONTENT ─── */
+const DETAILS = {
+  heap: {
+    title:"The Heap",
+    color:T.blue,
+    sections:[
+      {heading:"What is it?",body:"A large, unstructured region of memory where JavaScript objects, arrays, functions, and closures are stored. Unlike the call stack (which stores primitives and references), the heap stores the actual object data."},
+      {heading:"How allocation works",body:"When you write { name: 'Alice' } or [1,2,3], the engine:\n1. Finds a free block of memory on the heap\n2. Writes the object data there\n3. Returns a reference (pointer) to your variable\n\nThis happens automatically — no malloc() needed."},
+      {heading:"Heap fragmentation",body:"As objects are allocated and freed, the heap can become fragmented — free memory is scattered in small chunks. The GC periodically compacts the heap, moving objects together to create larger contiguous free blocks."},
+    ]
+  },
+  roots: {
+    title:"GC Roots",
+    color:T.green,
+    sections:[
+      {heading:"What are roots?",body:"The starting points for the garbage collector's reachability analysis. An object is alive if and only if it can be reached from a root through a chain of references."},
+      {heading:"What counts as a root?",body:"• Global variables (window properties)\n• Variables on the current call stack\n• Active closures and their captured variables\n• DOM nodes still in the document tree\n• Active timers (setTimeout/setInterval callbacks)\n• Pending promises"},
+      {heading:"Why it matters",body:"If you understand roots, you understand GC. A memory leak is simply an object that's reachable from a root when you think it shouldn't be — usually via a forgotten closure, event listener, or global variable."},
+    ]
+  },
+  gc: {
+    title:"Mark-and-Sweep",
+    color:T.purple,
+    sections:[
+      {heading:"The algorithm",body:"1. MARK: Start at every root. Follow all references recursively. Mark each visited object as \"alive.\"\n2. SWEEP: Scan the entire heap. Any object not marked is unreachable — free its memory.\n3. COMPACT (optional): Move surviving objects together to reduce fragmentation."},
+      {heading:"Why not reference counting?",body:"Older GCs counted how many references point to an object (ref count = 0 → free it). But this fails with circular references: A→B→A both have count 1, but neither is reachable. Mark-and-sweep handles cycles correctly."},
+      {heading:"Stop-the-world",body:"GC must pause JavaScript execution briefly (\"stop the world\") to safely traverse the heap. V8 minimizes this with incremental marking, concurrent sweeping, and generational collection."},
+    ]
+  },
+  code: {
+    title:"Source Code",
+    color:T.purpleL,
+    sections:[
+      {heading:"Reading the examples",body:"Each scene shows code that creates, connects, or drops references to objects. Watch how the heap visualization changes as references are added or removed."},
+      {heading:"Common leak patterns",body:"• Forgotten event listeners holding closures\n• Global variables that accumulate data\n• Closures capturing more than needed\n• Detached DOM nodes still referenced in JS\n• Timers (setInterval) never cleared"},
+      {heading:"Prevention tips",body:"• Use const/let (block-scoped) over var\n• Remove event listeners when components unmount\n• Use WeakMap/WeakSet for object caches\n• Nullify references when done with large objects\n• Use browser DevTools → Memory tab to profile"},
+    ]
+  },
+  console: {
+    title:"Freed Memory",
+    color:T.tealL,
+    sections:[
+      {heading:"What gets freed",body:"Objects that the GC determines are unreachable are freed — their heap memory is reclaimed and can be reused for new allocations."},
+      {heading:"When does GC run?",body:"You can't control when GC runs. The engine decides based on memory pressure, allocation rate, and idle time. In V8:\n• Minor GC (Scavenge): frequent, young generation only\n• Major GC (Mark-Compact): less frequent, full heap"},
+      {heading:"Can I force GC?",body:"Not from normal JavaScript. In Node.js you can use --expose-gc flag and call global.gc(), but this is only for debugging. In Chrome DevTools, click the trash can icon in the Memory tab."},
+    ]
+  },
+};
+
+/* ─── COMPONENTS ─── */
+const CodePanel = ({ tokens, onClick }) =>
+  e("div", { onClick, style:{ background:T.codeBase, borderRadius:12, overflow:"hidden", border:`1px solid ${T.border}`, cursor:onClick?"pointer":"default" } },
+    e("div", { style:{ padding:"10px 14px 8px", borderBottom:`1px solid ${T.border}`, display:"flex", gap:7 } },
+      ...["#ff5f57","#febc2e","#28c840"].map((c,i) =>
+        e("div", { key:i, style:{ width:11, height:11, borderRadius:"50%", background:c } })
+      )
+    ),
+    e("div", { style:{ padding:"18px 22px 22px", fontFamily:"'SF Mono','Fira Code','Consolas',monospace", fontSize:12, lineHeight:1.95 } },
+      tokens.map((line, li) =>
+        e("div", { key:li },
+          line.map(([cls, txt], ti) =>
+            e("span", { key:ti, style:{ ...TS[cls], whiteSpace:"pre" } }, txt)
+          )
+        )
+      )
+    )
+  );
+
+const Panel = ({ label, children, style={}, focused=false, onClick }) =>
+  e(M.div, {
+    onClick,
+    animate:{
+      borderColor: focused ? T.purple : T.border2,
+      boxShadow: focused ? `0 0 16px ${T.purple}30, inset 0 0 12px ${T.purple}08` : "0 0 0px transparent"
+    },
+    transition:{ duration:0.4 },
+    style:{ borderRadius:12, border:"1.5px solid", background:T.surface, overflow:"hidden", cursor:onClick?"pointer":"default", ...style }
+  },
+    label && e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, label)
+    ),
+    e("div", { style:{ padding:12 } }, children)
+  );
+
+/* Heap visualization */
+const HeapViz = ({ heap, refs, freed, roots, gcActive, phase, marked, unreachable, leaking, onClick }) => {
+  const rootColor = T.green;
+  return e(M.div, {
+    onClick,
+    animate:{ borderColor: gcActive ? T.purple : T.border2, boxShadow: gcActive ? `0 0 16px ${T.purple}30` : "none" },
+    transition:{ duration:0.4 },
+    style:{ borderRadius:12, border:"1.5px solid", background:T.surface, overflow:"hidden", cursor:"pointer" }
+  },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, "Heap Memory"),
+      gcActive && e(M.div, {
+        animate:{ opacity:[0.5,1,0.5] },
+        transition:{ duration:1.5, repeat:Infinity },
+        style:{ fontSize:9, fontWeight:700, color:T.purple, letterSpacing:"0.1em", textTransform:"uppercase" }
+      }, phase === "mark" ? "marking…" : "sweeping…")
+    ),
+    e("div", { style:{ padding:16, minHeight:160 } },
+      /* GC Root */
+      e("div", { style:{ display:"flex", alignItems:"center", gap:10, marginBottom:16 } },
+        e("div", { style:{ padding:"5px 12px", borderRadius:8, background:`${rootColor}14`, border:`1px solid ${rootColor}44`, fontSize:11, fontWeight:600, color:rootColor, fontFamily:"monospace" } }, "GC Root"),
+        roots.length > 0 && e("div", { style:{ display:"flex", gap:6, flexWrap:"wrap" } },
+          roots.map(r => e("div", { key:r, style:{ display:"flex", alignItems:"center", gap:4 } },
+            e("div", { style:{ width:16, height:1, background:rootColor } }),
+            e("div", { style:{ fontSize:10, color:rootColor, fontFamily:"monospace" } }, r)
+          ))
+        )
+      ),
+
+      /* Heap objects */
+      heap.length === 0 && freed.length === 0 &&
+        e("div", { style:{ textAlign:"center", color:T.text3, fontSize:11, padding:20 } }, "empty"),
+
+      e("div", { style:{ display:"flex", flexWrap:"wrap", gap:10 } },
+        e(AP, null,
+          heap.map(obj => {
+            const isMarked = (marked||[]).includes(obj.id);
+            const isUnreachable = (unreachable||[]).includes(obj.id);
+            const isLeaking = (leaking||[]).includes(obj.id);
+            const borderColor = isMarked ? T.green : isUnreachable ? T.red : isLeaking ? T.coral : obj.color;
+            const bg = isMarked ? `${T.green}14` : isUnreachable ? `${T.red}0c` : isLeaking ? `${T.coral}14` : `${obj.color}14`;
+            return e(M.div, {
+              key:obj.id,
+              layout:true,
+              initial:{ opacity:0, scale:0.8 },
+              animate:{ opacity: isUnreachable ? 0.5 : 1, scale:1 },
+              exit:{ opacity:0, scale:0.5, y:20 },
+              transition:sp(360,24),
+              style:{ padding:"8px 12px", borderRadius:10, border:`1.5px solid ${borderColor}`, background:bg, minWidth:100 }
+            },
+              e("div", { style:{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, marginBottom:3 } },
+                e("span", { style:{ fontSize:9, fontWeight:700, color:borderColor, letterSpacing:"0.06em", textTransform:"uppercase" } }, obj.type),
+                isMarked && e("span", { style:{ fontSize:9, color:T.green } }, "✓ alive"),
+                isUnreachable && e("span", { style:{ fontSize:9, color:T.red } }, "✗ garbage"),
+                isLeaking && e(M.div, { animate:{opacity:[0.5,1,0.5]}, transition:{duration:1,repeat:Infinity}, style:{ fontSize:9, color:T.coral } }, "⚠ leaked")
+              ),
+              e("div", { style:{ fontSize:11, fontFamily:"'SF Mono',monospace", color: isUnreachable ? T.text3 : T.text1, textDecoration: isUnreachable ? "line-through" : "none" } }, obj.label)
+            );
+          })
+        ),
+
+        /* Freed placeholders */
+        freed.map(id =>
+          e(M.div, { key:`freed-${id}`, initial:{opacity:0.6}, animate:{opacity:0}, transition:{duration:1.5},
+            style:{ padding:"8px 12px", borderRadius:10, border:`1.5px dashed ${T.red}44`, minWidth:100, display:"flex", alignItems:"center", justifyContent:"center" }
+          },
+            e("span", { style:{ fontSize:10, color:T.red, fontFamily:"monospace" } }, `freed: ${id}`)
+          )
+        )
+      ),
+
+      /* Reference arrows (simplified as text) */
+      refs.filter(r => r.from !== "root").length > 0 &&
+        e("div", { style:{ marginTop:12, padding:"8px 10px", borderRadius:8, background:T.surface2, border:`1px solid ${T.border}` } },
+          e("div", { style:{ fontSize:9, fontWeight:600, color:T.text3, marginBottom:4, letterSpacing:"0.06em", textTransform:"uppercase" } }, "References"),
+          e("div", { style:{ display:"flex", flexWrap:"wrap", gap:6 } },
+            refs.filter(r => r.from !== "root").map((r,i) =>
+              e("div", { key:i, style:{ fontSize:10, fontFamily:"monospace", color:r.weak?T.text3:T.text2, padding:"2px 6px", borderRadius:4, background:T.bg } },
+                r.from, " → ", r.to, r.weak ? " (weak)" : ""
+              )
+            )
+          )
+        )
+    )
+  );
+};
+
+const Finale = () => {
+  const rows = [
+    { n:"1", label:"Reachability", sub:"An object is alive if reachable from any GC root via references", c:T.green },
+    { n:"2", label:"Mark-and-Sweep", sub:"Trace from roots (mark), then free unmarked objects (sweep)", c:T.purple },
+    { n:"3", label:"Cycles don't help", sub:"Circular references between unreachable objects are still collected", c:T.blue },
+    { n:"4", label:"Closures retain", sub:"A closure keeps its captured variables alive as long as it exists", c:T.amber },
+    { n:"5", label:"Weak references", sub:"WeakMap/WeakSet don't prevent GC — use them for caches", c:T.teal },
+    { n:"⚠", label:"Watch for leaks", sub:"Forgotten listeners, global accumulators, detached DOM nodes", c:T.coral },
+  ];
+  return e("div", { style:{ padding:"8px 0" } },
+    rows.map((r,i) => e(M.div, { key:i, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.1,...ez},
+      style:{ display:"flex", alignItems:"flex-start", gap:12, padding:"11px 14px", marginBottom:8, borderRadius:10, border:`1px solid ${r.c}28`, background:`${r.c}08` }
+    },
+      e("div", { style:{ width:26, height:26, borderRadius:"50%", border:`1.5px solid ${r.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:12, fontWeight:700, color:r.c } }, r.n),
+      e("div", null,
+        e("div", { style:{ fontSize:13, fontWeight:600, color:r.c, marginBottom:2 } }, r.label),
+        e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.5 } }, r.sub)
+      )
+    ))
+  );
+};
+
+const DetailPanel = ({ detailKey, onClose }) => {
+  const d = DETAILS[detailKey];
+  if (!d) return null;
+  return e("div", {
+    style:{ width:340, flexShrink:0, background:T.surface, borderRadius:14, border:`1.5px solid ${d.color}44`, overflow:"hidden", alignSelf:"flex-start", position:"sticky", top:56 }
+  },
+    e("div", { style:{ padding:"14px 18px 12px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:8 } },
+        e("div", { style:{ width:8, height:8, borderRadius:"50%", background:d.color } }),
+        e("span", { style:{ fontSize:14, fontWeight:600, color:T.text1 } }, d.title)
+      ),
+      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6, transition:"color 0.2s" }, onMouseEnter:ev=>ev.target.style.color=T.text1, onMouseLeave:ev=>ev.target.style.color=T.text3 }, "✕")
+    ),
+    e("div", { style:{ padding:"16px 18px 20px", maxHeight:"calc(100vh - 140px)", overflowY:"auto" } },
+      d.sections.map((s, i) =>
+        e("div", { key:i, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
+          e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
+        )
+      )
+    )
+  );
+};
+
+/* ─── APP ─── */
+function App() {
+  const [si, setSi] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [detail, setDetail] = useState(null);
+  const timer = useRef(null);
+  const sc = SCENES[si];
+
+  useEffect(() => { setPlaying(true); }, []);
+
+  useEffect(() => {
+    if (!playing) return;
+    const d = si===0 ? 3000 : sc.finale ? 99999 : 3200;
+    timer.current = setTimeout(() => { si < SCENES.length-1 ? setSi(i=>i+1) : setPlaying(false); }, d);
+    return () => clearTimeout(timer.current);
+  }, [playing, si]);
+
+  const go = d => { clearTimeout(timer.current); setPlaying(false); setSi(i=>Math.max(0,Math.min(SCENES.length-1,i+d))); };
+  const jump = i => { clearTimeout(timer.current); setPlaying(false); setSi(i); };
+  const togglePlay = () => { if(si===SCENES.length-1){setSi(0);setPlaying(true);}else setPlaying(p=>!p); };
+  const toggleDetail = key => { setDetail(d => d===key ? null : key); clearTimeout(timer.current); setPlaying(false); };
+
+  return e("div", { style:{ display:"flex", gap:16, alignItems:"flex-start", justifyContent: detail ? "flex-start" : "center" } },
+  e("div", { style:{ width:760, flexShrink:0, background:T.bg, fontFamily:"system-ui,sans-serif", padding:20, borderRadius:16 } },
+
+    /* header */
+    e("div", { style:{ marginBottom:18 } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:10, marginBottom:11 } },
+        e(AP, { mode:"wait" },
+          e(M.div, { key:sc.act, initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, exit:{opacity:0}, transition:sp(400,28),
+            style:{ fontSize:9,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:T.purple,background:`${T.purple}14`,padding:"3px 10px",borderRadius:20,border:`1px solid ${T.purple}30`,flexShrink:0 }
+          }, sc.act)
+        ),
+        e("div", { style:{ flex:1, height:1, background:T.border, borderRadius:99, overflow:"hidden" } },
+          e(M.div, { animate:{width:`${si/(SCENES.length-1)*100}%`}, transition:{duration:0.5}, style:{height:"100%",background:T.purple,borderRadius:99} })
+        ),
+        e("span", { style:{ fontSize:10, color:T.text3 } }, `${si+1} / ${SCENES.length}`)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.title, initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, exit:{opacity:0,y:-8}, transition:ez,
+          style:{ fontSize:20,fontWeight:600,color:T.text1,marginBottom:4,letterSpacing:"-0.02em" }
+        }, sc.title)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
+          style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
+        }, sc.sub)
+      )
+    ),
+
+    /* finale */
+    sc.finale && e(Finale),
+
+    /* main */
+    !sc.finale && e("div", null,
+      /* code panel */
+      sc.code.length > 0 && e("div", { style:{ marginBottom:10 } },
+        e(CodePanel, { tokens:sc.code, onClick:()=>toggleDetail("code") })
+      ),
+
+      /* heap viz */
+      e("div", { style:{ marginBottom:10 } },
+        e(HeapViz, {
+          heap:sc.heap, refs:sc.refs, freed:sc.freed, roots:sc.roots,
+          gcActive:sc.gcActive, phase:sc.phase,
+          marked:sc.marked, unreachable:sc.unreachable, leaking:sc.leaking,
+          onClick:()=>toggleDetail("heap")
+        })
+      ),
+
+      /* info panels */
+      e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 } },
+        e(Panel, { label:"GC Phase", focused:sc.gcActive, onClick:()=>toggleDetail("gc") },
+          e("div", { style:{ minHeight:32 } },
+            sc.phase
+              ? e("div", null,
+                  e("div", { style:{ fontSize:13, fontWeight:600, color:
+                    sc.phase==="mark"?T.green : sc.phase==="sweep"?T.red :
+                    sc.phase==="reachability"?T.blue : sc.phase==="closure"?T.purple :
+                    sc.phase==="leak"?T.coral : sc.phase==="weak"?T.green :
+                    sc.phase==="generational"?T.amber : sc.phase==="unreachable"?T.red : T.text2,
+                    marginBottom:3 } },
+                    sc.phase==="mark"?"Mark — tracing from roots" :
+                    sc.phase==="sweep"?"Sweep — freeing garbage" :
+                    sc.phase==="reachability"?"Reachable = alive" :
+                    sc.phase==="closure"?"Closure retains scope" :
+                    sc.phase==="leak"?"Memory leak detected" :
+                    sc.phase==="weak"?"Weak reference — allows GC" :
+                    sc.phase==="generational"?"Generational collection" :
+                    sc.phase==="unreachable"?"Unreachable — ready for GC" :
+                    sc.phase
+                  ),
+                  e("div", { style:{ fontSize:11, color:T.text2 } },
+                    sc.phase==="mark"?"Following all references from GC roots" :
+                    sc.phase==="sweep"?"Reclaiming memory from unmarked objects" :
+                    sc.phase==="reachability"?"Root → reference chain → object = alive" :
+                    sc.phase==="closure"?"The closure keeps count and log alive" :
+                    sc.phase==="leak"?"Listener prevents data from being freed" :
+                    sc.phase==="weak"?"WeakMap entries don't count as references" :
+                    sc.phase==="generational"?"Young objects collected more aggressively" :
+                    sc.phase==="unreachable"?"No root can reach these objects" :
+                    ""
+                  )
+                )
+              : e("div", { style:{ fontSize:11, color:T.text3 } }, "Idle — no collection running")
+          )
+        ),
+        e(Panel, { label:"GC Roots", onClick:()=>toggleDetail("roots") },
+          e("div", { style:{ minHeight:32, display:"flex", flexWrap:"wrap", gap:6 } },
+            sc.roots.length === 0
+              ? e("div", { style:{ fontSize:11, color:T.text3 } }, "—")
+              : sc.roots.map(r =>
+                  e("div", { key:r, style:{ padding:"3px 8px", borderRadius:6, background:`${T.green}14`, border:`1px solid ${T.green}33`, fontSize:10, fontFamily:"monospace", color:T.greenL } }, r)
+                )
+          )
+        )
+      )
+    ),
+
+    /* controls */
+    e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginTop:16 } },
+      e("button", { onClick:()=>go(-1), disabled:si===0,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===0?T.text3:T.text2,cursor:si===0?"not-allowed":"pointer",fontSize:11,transition:"color 0.2s" }
+      }, "← Back"),
+      e("button", { onClick:togglePlay,
+        style:{ padding:"6px 18px",borderRadius:8,border:`1px solid ${playing?T.coral:T.purple}44`,background:playing?`${T.coral}14`:`${T.purple}14`,color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all 0.2s" }
+      }, playing ? "⏸  Pause" : si===SCENES.length-1 ? "↺  Replay" : "▶  Play"),
+      e("button", { onClick:()=>go(1), disabled:si===SCENES.length-1,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
+      }, "Next →"),
+      e("div", { style:{ flex:1 } }),
+      e("div", { style:{ display:"flex", gap:4, alignItems:"center" } },
+        SCENES.map((_,i) =>
+          e("button", { key:i, onClick:()=>jump(i),
+            style:{ width:i===si?16:5,height:5,borderRadius:99,border:"none",padding:0,background:i===si?T.purple:i<si?`${T.purple}55`:T.border,cursor:"pointer",transition:"all 0.25s" }
+          })
+        )
+      )
+    )
+  ),
+  detail && e(DetailPanel, { detailKey:detail, onClose:()=>setDetail(null) })
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(e(App));
+</script>
+</body>
+</html>
