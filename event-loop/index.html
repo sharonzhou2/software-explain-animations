@@ -67,16 +67,16 @@ const CODE_TOKENS = [
 const WEB_APIS = ["fetch","setTimeout","URL","localStorage","sessionStorage","HTMLDivElement","document","indexedDB","XMLHttpRequest"];
 
 const SCENES = [
-  { id:0, act:"01", title:"JavaScript runtime", sub:"One thread. One call stack. Yet async work never blocks the UI. Here's exactly how.", stack:[], micro:[], macro:[], apis:[], loop:false, hl:[], out:[], tp:0 },
-  { id:1, act:"02", title:"Script begins", sub:"The engine creates a Global Execution Context and pushes it onto the call stack.", stack:[{id:"g",label:"global()",tier:"base"}], micro:[], macro:[], apis:[], loop:false, hl:[], out:[], tp:0 },
-  { id:2, act:"03", title:'console.log("start")', sub:"Synchronous. Enters the stack, runs immediately, pops off.", stack:[{id:"cl1",label:'console.log("start")',tier:"sync"},{id:"g",label:"global()",tier:"base"}], micro:[], macro:[], apis:[], loop:false, hl:[0], out:[{id:"o1",t:'"start"',c:T.tealL}], tp:0 },
-  { id:3, act:"04", title:"setTimeout → Web API", sub:"Enters the stack for one moment then delegates its callback to the browser's Timer API. JS does not wait.", stack:[{id:"st",label:"setTimeout(cb, 0)",tier:"async"},{id:"g",label:"global()",tier:"base"}], micro:[], macro:[], apis:["setTimeout"], loop:false, hl:[1,2,3], out:[{id:"o1",t:'"start"',c:T.tealL}], tp:0.25 },
-  { id:4, act:"05", title:"Stack pops — browser takes over", sub:"The Timer API counts down in the background. The call stack is free to keep running.", stack:[{id:"g",label:"global()",tier:"base"}], micro:[], macro:[], apis:["setTimeout"], loop:false, hl:[1,2,3], out:[{id:"o1",t:'"start"',c:T.tealL}], tp:0.65 },
-  { id:5, act:"06", title:"Promise → Microtask Queue", sub:"Promise.resolve() is already settled. Its .then() skips Web APIs entirely — straight into the Microtask Queue.", stack:[{id:"pr",label:"Promise.resolve().then()",tier:"promise"},{id:"g",label:"global()",tier:"base"}], micro:[{id:"m1",label:"promise cb"}], macro:[], apis:["setTimeout"], loop:false, hl:[4,5,6], out:[{id:"o1",t:'"start"',c:T.tealL}], tp:0.85 },
-  { id:6, act:"07", title:'console.log("end")', sub:"Last synchronous statement. The event loop still hasn't touched anything.", stack:[{id:"cl2",label:'console.log("end")',tier:"sync"},{id:"g",label:"global()",tier:"base"}], micro:[{id:"m1",label:"promise cb"}], macro:[], apis:["setTimeout"], loop:false, hl:[7], out:[{id:"o1",t:'"start"',c:T.tealL},{id:"o2",t:'"end"',c:T.tealL}], tp:1 },
-  { id:7, act:"08", title:"Stack empties — event loop activates", sub:"global() pops. Stack is empty. The loop moves the timer callback to the Task Queue.", stack:[], micro:[{id:"m1",label:"promise cb"}], macro:[{id:"t1",label:"setTimeout cb"}], apis:[], loop:true, hl:[], out:[{id:"o1",t:'"start"',c:T.tealL},{id:"o2",t:'"end"',c:T.tealL}], tp:0 },
-  { id:8, act:"09", title:"Microtasks drain first — always", sub:"The loop drains the entire Microtask Queue before any macrotask. Every single time.", stack:[{id:"pcb",label:"promise cb()",tier:"promise"}], micro:[], macro:[{id:"t1",label:"setTimeout cb"}], apis:[], loop:true, hl:[4,5,6], out:[{id:"o1",t:'"start"',c:T.tealL},{id:"o2",t:'"end"',c:T.tealL},{id:"o3",t:'"promise"',c:T.coralL}], tp:0 },
-  { id:9, act:"10", title:"Macrotask runs last", sub:"Microtask queue empty. The loop picks one task. The setTimeout callback finally executes.", stack:[{id:"tcb",label:"setTimeout cb()",tier:"async"}], micro:[], macro:[], apis:[], loop:true, hl:[1,2,3], out:[{id:"o1",t:'"start"',c:T.tealL},{id:"o2",t:'"end"',c:T.tealL},{id:"o3",t:'"promise"',c:T.coralL},{id:"o4",t:'"timeout"',c:T.tealL}], tp:0 },
+  { id:0, act:"01", title:"JavaScript runtime", sub:"One thread. One call stack. Yet async work never blocks the UI. Here's exactly how.", stack:[], micro:[], macro:[], apis:[], loop:false, hl:[], out:[], tp:0, focus:[] },
+  { id:1, act:"02", title:"Script begins", sub:"The engine creates a Global Execution Context and pushes it onto the call stack.", stack:[{id:"g",label:"global()",tier:"base"}], micro:[], macro:[], apis:[], loop:false, hl:[], out:[], tp:0, focus:["stack"] },
+  { id:2, act:"03", title:'console.log("start")', sub:"Synchronous. Enters the stack, runs immediately, pops off.", stack:[{id:"cl1",label:'console.log("start")',tier:"sync"},{id:"g",label:"global()",tier:"base"}], micro:[], macro:[], apis:[], loop:false, hl:[0], out:[{id:"o1",t:'"start"',c:T.tealL}], tp:0, focus:["stack","console"] },
+  { id:3, act:"04", title:"setTimeout → Web API", sub:"Enters the stack for one moment then delegates its callback to the browser's Timer API. JS does not wait.", stack:[{id:"st",label:"setTimeout(cb, 0)",tier:"async"},{id:"g",label:"global()",tier:"base"}], micro:[], macro:[], apis:["setTimeout"], loop:false, hl:[1,2,3], out:[{id:"o1",t:'"start"',c:T.tealL}], tp:0.25, focus:["stack","webapis"] },
+  { id:4, act:"05", title:"Stack pops — browser takes over", sub:"The Timer API counts down in the background. The call stack is free to keep running.", stack:[{id:"g",label:"global()",tier:"base"}], micro:[], macro:[], apis:["setTimeout"], loop:false, hl:[1,2,3], out:[{id:"o1",t:'"start"',c:T.tealL}], tp:0.65, focus:["webapis"] },
+  { id:5, act:"06", title:"Promise → Microtask Queue", sub:"Promise.resolve() is already settled. Its .then() skips Web APIs entirely — straight into the Microtask Queue.", stack:[{id:"pr",label:"Promise.resolve().then()",tier:"promise"},{id:"g",label:"global()",tier:"base"}], micro:[{id:"m1",label:"promise cb"}], macro:[], apis:["setTimeout"], loop:false, hl:[4,5,6], out:[{id:"o1",t:'"start"',c:T.tealL}], tp:0.85, focus:["stack","micro"] },
+  { id:6, act:"07", title:'console.log("end")', sub:"Last synchronous statement. The event loop still hasn't touched anything.", stack:[{id:"cl2",label:'console.log("end")',tier:"sync"},{id:"g",label:"global()",tier:"base"}], micro:[{id:"m1",label:"promise cb"}], macro:[], apis:["setTimeout"], loop:false, hl:[7], out:[{id:"o1",t:'"start"',c:T.tealL},{id:"o2",t:'"end"',c:T.tealL}], tp:1, focus:["stack","console"] },
+  { id:7, act:"08", title:"Stack empties — event loop activates", sub:"global() pops. Stack is empty. The loop moves the timer callback to the Task Queue.", stack:[], micro:[{id:"m1",label:"promise cb"}], macro:[{id:"t1",label:"setTimeout cb"}], apis:[], loop:true, hl:[], out:[{id:"o1",t:'"start"',c:T.tealL},{id:"o2",t:'"end"',c:T.tealL}], tp:0, focus:["loop","macro","micro"] },
+  { id:8, act:"09", title:"Microtasks drain first — always", sub:"The loop drains the entire Microtask Queue before any macrotask. Every single time.", stack:[{id:"pcb",label:"promise cb()",tier:"promise"}], micro:[], macro:[{id:"t1",label:"setTimeout cb"}], apis:[], loop:true, hl:[4,5,6], out:[{id:"o1",t:'"start"',c:T.tealL},{id:"o2",t:'"end"',c:T.tealL},{id:"o3",t:'"promise"',c:T.coralL}], tp:0, focus:["micro","stack","console"] },
+  { id:9, act:"10", title:"Macrotask runs last", sub:"Microtask queue empty. The loop picks one task. The setTimeout callback finally executes.", stack:[{id:"tcb",label:"setTimeout cb()",tier:"async"}], micro:[], macro:[], apis:[], loop:true, hl:[1,2,3], out:[{id:"o1",t:'"start"',c:T.tealL},{id:"o2",t:'"end"',c:T.tealL},{id:"o3",t:'"promise"',c:T.coralL},{id:"o4",t:'"timeout"',c:T.tealL}], tp:0, focus:["macro","stack","console"] },
 ];
 
 const TIER = {
@@ -87,7 +87,7 @@ const TIER = {
 };
 
 const CodePanel = ({ highlighted }) =>
-  e("div", { style:{ background:T.codeBase, borderRadius:12, overflow:"hidden", border:`1px solid ${T.border}` } },
+  e(M.div, { animate:{ borderColor:highlighted.length>0?T.purple:T.border, boxShadow:highlighted.length>0?`0 0 16px ${T.purple}30`:"0 0 0px transparent" }, transition:{duration:0.4}, style:{ background:T.codeBase, borderRadius:12, overflow:"hidden", border:"1px solid" } },
     e("div", { style:{ padding:"10px 14px 8px", borderBottom:`1px solid ${T.border}`, display:"flex", gap:7 } },
       ...["#ff5f57","#febc2e","#28c840"].map((c,i) =>
         e("div", { key:i, style:{ width:11, height:11, borderRadius:"50%", background:c } })
@@ -151,8 +151,15 @@ const LoopRing = ({ active }) => {
   );
 };
 
-const Panel = ({ label, children, style={} }) =>
-  e("div", { style:{ borderRadius:12, border:`1.5px solid ${T.border2}`, background:T.surface, overflow:"hidden", ...style } },
+const Panel = ({ label, children, style={}, focused=false }) =>
+  e(M.div, {
+    animate:{
+      borderColor: focused ? T.purple : T.border2,
+      boxShadow: focused ? `0 0 16px ${T.purple}30, inset 0 0 12px ${T.purple}08` : "0 0 0px transparent"
+    },
+    transition:{ duration:0.4 },
+    style:{ borderRadius:12, border:"1.5px solid", background:T.surface, overflow:"hidden", ...style }
+  },
     label && e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
       e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, label)
     ),
@@ -207,13 +214,13 @@ function App() {
     e("div", { style:{ fontSize:9,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:T.text3,textAlign:"center",marginBottom:8,paddingBottom:8,borderBottom:`1px solid ${T.border}` } }, "javascript runtime"),
 
     e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1.45fr", gap:10, marginBottom:10 } },
-      e(Panel, { label:"Call Stack" },
+      e(Panel, { label:"Call Stack", focused:(sc.focus||[]).includes("stack") },
         e("div", { style:{ minHeight:130, display:"flex", flexDirection:"column", justifyContent:"flex-end", position:"relative" } },
           sc.stack.length===0 && e("div", { style:{ position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:T.text3 } }, "empty"),
           e(AP, null, [...sc.stack].reverse().map(item => e(Frame, { key:item.id, item })))
         )
       ),
-      e(Panel, { label:"Web APIs" },
+      e(Panel, { label:"Web APIs", focused:(sc.focus||[]).includes("webapis") },
         e("div", { style:{ display:"flex", flexWrap:"wrap", gap:6 } },
           WEB_APIS.map(a => e(ApiTag, { key:a, label:a, active:(sc.apis||[]).includes(a) }))
         ),
@@ -232,18 +239,18 @@ function App() {
     ),
 
     e("div", { style:{ display:"grid", gridTemplateColumns:"88px 1fr 1fr", gap:10, marginBottom:10 } },
-      e("div", { style:{ borderRadius:12, border:`1.5px solid ${T.border}`, background:T.surface, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"space-between", padding:"10px 0" } },
+      e(M.div, { animate:{ borderColor:(sc.focus||[]).includes("loop")?T.purple:T.border, boxShadow:(sc.focus||[]).includes("loop")?`0 0 16px ${T.purple}30, inset 0 0 12px ${T.purple}08`:"0 0 0px transparent" }, transition:{duration:0.4}, style:{ borderRadius:12, border:"1.5px solid", background:T.surface, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"space-between", padding:"10px 0" } },
         e("div", { style:{ fontSize:9,fontWeight:600,letterSpacing:"0.08em",textTransform:"uppercase",color:T.text3,paddingTop:2 } }, "Event Loop"),
         e(LoopRing, { active:sc.loop }),
         e("div", { style:{ height:1 } })
       ),
-      e(Panel, { label:"Task Queue" },
+      e(Panel, { label:"Task Queue", focused:(sc.focus||[]).includes("macro") },
         e("div", { style:{ display:"flex", flexWrap:"wrap", gap:6, minHeight:36, alignItems:"flex-start", position:"relative" } },
           sc.macro.length===0 && e("div", { style:{ fontSize:10,color:T.text3 } }, "empty"),
           e(AP, null, sc.macro.map(item => e(Chip, { key:item.id, item, color:"teal" })))
         )
       ),
-      e(Panel, { label:"Microtask Queue" },
+      e(Panel, { label:"Microtask Queue", focused:(sc.focus||[]).includes("micro") },
         e("div", { style:{ display:"flex", flexWrap:"wrap", gap:6, minHeight:36, alignItems:"flex-start", position:"relative" } },
           sc.micro.length===0 && e("div", { style:{ fontSize:10,color:T.text3 } }, "empty"),
           e(AP, null, sc.micro.map(item => e(Chip, { key:item.id, item, color:"coral" })))
@@ -253,7 +260,7 @@ function App() {
 
     e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 } },
       e(CodePanel, { highlighted: sc.hl || [] }),
-      e(Panel, { label:"Console output" },
+      e(Panel, { label:"Console output", focused:(sc.focus||[]).includes("console") },
         e("div", { style:{ fontFamily:"'SF Mono','Fira Code',monospace", minHeight:60 } },
           sc.out.length===0
             ? e("div", { style:{ fontSize:11,color:T.text3 } }, "—")
