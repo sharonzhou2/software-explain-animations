@@ -67,29 +67,40 @@ const TOKEN_STYLES = {
 };
 
 const CODE_TOKENS = [
-  [ ["fn","console"], ["punc","."], ["meth","log"], ["punc","("], ["str","'start'"], ["punc",")"] ],
-  [ ["fn","setTimeout"], ["punc","("], ["kw","function"], ["plain"," "], ["fn","cb"], ["punc","() {"] ],
-  [ ["plain","  "], ["fn","console"], ["punc","."], ["meth","log"], ["punc","("], ["str","'timeout'"], ["punc",")"] ],
-  [ ["punc","}, "], ["num","0"], ["punc",")"] ],
-  [ ["fn","Promise"], ["punc","."], ["meth","resolve"], ["punc","()."], ["meth","then"], ["punc","("], ["kw","function"], ["punc","() {"] ],
-  [ ["plain","  "], ["fn","console"], ["punc","."], ["meth","log"], ["punc","("], ["str","'promise'"], ["punc",")"] ],
-  [ ["punc","})"] ],
-  [ ["fn","console"], ["punc","."], ["meth","log"], ["punc","("], ["str","'end'"], ["punc",")"] ],
+  [ ["fn","console"], ["punc","."], ["meth","log"], ["punc","("], ["str","'start'"], ["punc",")"] ],                          // 0
+  [ ["fn","setTimeout"], ["punc","("], ["kw","function"], ["plain"," "], ["fn","cb"], ["punc","() {"] ],                       // 1
+  [ ["plain","  "], ["fn","console"], ["punc","."], ["meth","log"], ["punc","("], ["str","'timeout'"], ["punc",")"] ],          // 2
+  [ ["punc","}, "], ["num","0"], ["punc",")"] ],                                                                               // 3
+  [ ["fn","fetch"], ["punc","("], ["str","'/api'"], ["punc",")."], ["meth","then"], ["punc","("], ["kw","function"], ["punc","() {"] ],  // 4
+  [ ["plain","  "], ["fn","console"], ["punc","."], ["meth","log"], ["punc","("], ["str","'fetched'"], ["punc",")"] ],          // 5
+  [ ["punc","})"] ],                                                                                                           // 6
+  [ ["fn","Promise"], ["punc","."], ["meth","resolve"], ["punc","()."], ["meth","then"], ["punc","("], ["kw","function"], ["punc","() {"] ],  // 7
+  [ ["plain","  "], ["fn","console"], ["punc","."], ["meth","log"], ["punc","("], ["str","'promise'"], ["punc",")"] ],          // 8
+  [ ["punc","})"] ],                                                                                                           // 9
+  [ ["fn","console"], ["punc","."], ["meth","log"], ["punc","("], ["str","'end'"], ["punc",")"] ],                             // 10
 ];
 
 const WEB_APIS = ["fetch","setTimeout","URL","localStorage","sessionStorage","HTMLDivElement","document","indexedDB","XMLHttpRequest"];
 
+const O1={id:"o1",t:'"start"',c:T.tealL}, O2={id:"o2",t:'"end"',c:T.tealL}, O3={id:"o3",t:'"promise"',c:T.coralL}, O4={id:"o4",t:'"timeout"',c:T.tealL}, O5={id:"o5",t:'"fetched"',c:T.coralL};
+const G={id:"g",label:"global()",tier:"base"};
+
 const SCENES = [
-  { id:0, act:"01", title:"JavaScript runtime", sub:"One thread. One call stack. Yet async work never blocks the UI. Here's exactly how.", stack:[], micro:[], macro:[], apis:[], loop:false, hl:[], out:[], tp:0, focus:[] },
-  { id:1, act:"02", title:"Script begins", sub:"The engine creates a Global Execution Context and pushes it onto the call stack.", stack:[{id:"g",label:"global()",tier:"base"}], micro:[], macro:[], apis:[], loop:false, hl:[], out:[], tp:0, focus:["stack"] },
-  { id:2, act:"03", title:'console.log("start")', sub:"Synchronous. Enters the stack, runs immediately, pops off.", stack:[{id:"cl1",label:'console.log("start")',tier:"sync"},{id:"g",label:"global()",tier:"base"}], micro:[], macro:[], apis:[], loop:false, hl:[0], out:[{id:"o1",t:'"start"',c:T.tealL}], tp:0, focus:["stack","console"] },
-  { id:3, act:"04", title:"setTimeout → Web API", sub:"Enters the stack for one moment then delegates its callback to the browser's Timer API. JS does not wait.", stack:[{id:"st",label:"setTimeout(cb, 0)",tier:"async"},{id:"g",label:"global()",tier:"base"}], micro:[], macro:[], apis:["setTimeout"], loop:false, hl:[1,2,3], out:[{id:"o1",t:'"start"',c:T.tealL}], tp:0.25, focus:["stack","webapis"] },
-  { id:4, act:"05", title:"Stack pops — browser takes over", sub:"The Timer API counts down in the background. The call stack is free to keep running.", stack:[{id:"g",label:"global()",tier:"base"}], micro:[], macro:[], apis:["setTimeout"], loop:false, hl:[1,2,3], out:[{id:"o1",t:'"start"',c:T.tealL}], tp:0.65, focus:["webapis"] },
-  { id:5, act:"06", title:"Promise → Microtask Queue", sub:"Promise.resolve() is already settled. Its .then() skips Web APIs entirely — straight into the Microtask Queue.", stack:[{id:"pr",label:"Promise.resolve().then()",tier:"promise"},{id:"g",label:"global()",tier:"base"}], micro:[{id:"m1",label:"promise cb"}], macro:[], apis:["setTimeout"], loop:false, hl:[4,5,6], out:[{id:"o1",t:'"start"',c:T.tealL}], tp:0.85, focus:["stack","micro"] },
-  { id:6, act:"07", title:'console.log("end")', sub:"Last synchronous statement. The event loop still hasn't touched anything.", stack:[{id:"cl2",label:'console.log("end")',tier:"sync"},{id:"g",label:"global()",tier:"base"}], micro:[{id:"m1",label:"promise cb"}], macro:[], apis:["setTimeout"], loop:false, hl:[7], out:[{id:"o1",t:'"start"',c:T.tealL},{id:"o2",t:'"end"',c:T.tealL}], tp:1, focus:["stack","console"] },
-  { id:7, act:"08", title:"Stack empties — event loop activates", sub:"global() pops. Stack is empty. The loop moves the timer callback to the Task Queue.", stack:[], micro:[{id:"m1",label:"promise cb"}], macro:[{id:"t1",label:"setTimeout cb"}], apis:[], loop:true, hl:[], out:[{id:"o1",t:'"start"',c:T.tealL},{id:"o2",t:'"end"',c:T.tealL}], tp:0, focus:["loop","macro","micro"] },
-  { id:8, act:"09", title:"Microtasks drain first — always", sub:"The loop drains the entire Microtask Queue before any macrotask. Every single time.", stack:[{id:"pcb",label:"promise cb()",tier:"promise"}], micro:[], macro:[{id:"t1",label:"setTimeout cb"}], apis:[], loop:true, hl:[4,5,6], out:[{id:"o1",t:'"start"',c:T.tealL},{id:"o2",t:'"end"',c:T.tealL},{id:"o3",t:'"promise"',c:T.coralL}], tp:0, focus:["micro","stack","console"] },
-  { id:9, act:"10", title:"Macrotask runs last", sub:"Microtask queue empty. The loop picks one task. The setTimeout callback finally executes.", stack:[{id:"tcb",label:"setTimeout cb()",tier:"async"}], micro:[], macro:[], apis:[], loop:true, hl:[1,2,3], out:[{id:"o1",t:'"start"',c:T.tealL},{id:"o2",t:'"end"',c:T.tealL},{id:"o3",t:'"promise"',c:T.coralL},{id:"o4",t:'"timeout"',c:T.tealL}], tp:0, focus:["macro","stack","console"] },
+  { id:0,  act:"01", title:"JavaScript runtime", sub:"One thread. One call stack. Yet async work never blocks the UI — even with network requests. Here's exactly how.", stack:[], micro:[], macro:[], apis:[], loop:false, hl:[], out:[], tp:0, focus:[] },
+  { id:1,  act:"02", title:"Script begins", sub:"The engine creates a Global Execution Context and pushes it onto the call stack.", stack:[G], micro:[], macro:[], apis:[], loop:false, hl:[], out:[], tp:0, focus:["stack"] },
+  { id:2,  act:"03", title:'console.log("start")', sub:"Synchronous. Enters the stack, runs immediately, pops off.", stack:[{id:"cl1",label:'console.log("start")',tier:"sync"},G], micro:[], macro:[], apis:[], loop:false, hl:[0], out:[O1], tp:0, focus:["stack","console"] },
+  { id:3,  act:"04", title:"setTimeout → Timer API", sub:"Enters the stack for one moment then delegates its callback to the browser's Timer API. JS does not wait.", stack:[{id:"st",label:"setTimeout(cb, 0)",tier:"async"},G], micro:[], macro:[], apis:["setTimeout"], loop:false, hl:[1,2,3], out:[O1], tp:0.25, focus:["stack","webapis"] },
+  { id:4,  act:"05", title:"Timer counting in background", sub:"The Timer API counts down in a separate thread. The call stack is free to keep running.", stack:[G], micro:[], macro:[], apis:["setTimeout"], loop:false, hl:[1,2,3], out:[O1], tp:0.65, focus:["webapis"] },
+  { id:5,  act:"06", title:"fetch → Network API", sub:"fetch() enters the stack and immediately hands off to the browser's Network API. A pending Promise is returned — JS moves on without waiting.", stack:[{id:"ft",label:"fetch('/api').then()",tier:"async"},G], micro:[], macro:[], apis:["setTimeout","fetch"], loop:false, hl:[4,5,6], out:[O1], tp:0.8, focus:["stack","webapis"] },
+  { id:6,  act:"07", title:"Network request in flight", sub:"The browser's network thread sends the HTTP request. fetch's .then() callback is registered but won't fire until the response arrives.", stack:[G], micro:[], macro:[], apis:["setTimeout","fetch"], loop:false, hl:[4,5,6], out:[O1], tp:0.9, focus:["webapis"] },
+  { id:7,  act:"08", title:"Promise.resolve → Microtask Queue", sub:"Already settled — its .then() skips Web APIs entirely and goes straight into the Microtask Queue.", stack:[{id:"pr",label:"Promise.resolve().then()",tier:"promise"},G], micro:[{id:"m1",label:"promise cb"}], macro:[], apis:["fetch"], loop:false, hl:[7,8,9], out:[O1], tp:1, focus:["stack","micro"] },
+  { id:8,  act:"09", title:'console.log("end")', sub:"Last synchronous statement. The event loop still hasn't touched anything.", stack:[{id:"cl2",label:'console.log("end")',tier:"sync"},G], micro:[{id:"m1",label:"promise cb"}], macro:[], apis:["fetch"], loop:false, hl:[10], out:[O1,O2], tp:0, focus:["stack","console"] },
+  { id:9,  act:"10", title:"Stack empties — event loop activates", sub:"global() pops. Stack is empty. Timer expired → its callback moves to the Task Queue. Network request still in flight.", stack:[], micro:[{id:"m1",label:"promise cb"}], macro:[{id:"t1",label:"setTimeout cb"}], apis:["fetch"], loop:true, hl:[], out:[O1,O2], tp:0, focus:["loop","macro","micro"] },
+  { id:10, act:"11", title:"Microtasks drain first — always", sub:"The loop drains the entire Microtask Queue before any macrotask. Promise.resolve's callback runs.", stack:[{id:"pcb",label:"promise cb()",tier:"promise"}], micro:[], macro:[{id:"t1",label:"setTimeout cb"}], apis:["fetch"], loop:true, hl:[7,8,9], out:[O1,O2,O3], tp:0, focus:["micro","stack","console"] },
+  { id:11, act:"12", title:"Macrotask runs — setTimeout", sub:"Microtask queue empty. The loop picks one macrotask. The setTimeout callback finally executes.", stack:[{id:"tcb",label:"setTimeout cb()",tier:"async"}], micro:[], macro:[], apis:["fetch"], loop:true, hl:[1,2,3], out:[O1,O2,O3,O4], tp:0, focus:["macro","stack","console"] },
+  { id:12, act:"13", title:"Network response arrives", sub:"The HTTP response comes back. The browser moves fetch's .then() callback into the Microtask Queue — not the Task Queue! Promises are always microtasks.", stack:[], micro:[{id:"m2",label:"fetch .then cb"}], macro:[], apis:[], loop:true, hl:[4,5,6], out:[O1,O2,O3,O4], tp:0, focus:["webapis","micro"] },
+  { id:13, act:"14", title:"fetch .then() executes", sub:"The event loop drains the microtask queue again. The fetch callback runs and logs \"fetched\". This proves: even async network callbacks follow microtask priority.", stack:[{id:"fcb",label:"fetch .then cb()",tier:"promise"}], micro:[], macro:[], apis:[], loop:true, hl:[4,5,6], out:[O1,O2,O3,O4,O5], tp:0, focus:["stack","console"] },
+  { id:14, act:"✓", title:"Sync → Microtasks → Macrotasks", sub:"fetch().then() is a microtask — same priority as Promise.resolve().then(). The only difference: fetch waits for the network, so it resolves later. The ordering rules never change.", stack:[], micro:[], macro:[], apis:[], loop:false, hl:[], out:[O1,O2,O3,O4,O5], tp:0, focus:[], finale:true },
 ];
 
 const TIER = {
@@ -219,9 +230,9 @@ const DETAILS = {
     title: "Source Code",
     color: T.purpleL,
     sections: [
-      { heading: "This example", body: "This code demonstrates the three execution phases: synchronous code runs first, then microtasks (promises), then macrotasks (setTimeout). The output order is always: 'start', 'end', 'promise', 'timeout'." },
-      { heading: "Why this order?", body: "1) console.log('start') — sync, runs immediately.\n2) setTimeout — registers callback with Timer API, moves on.\n3) Promise.resolve().then() — already resolved, callback goes to microtask queue.\n4) console.log('end') — sync, runs immediately.\n5) Stack empty → microtasks drain → 'promise'.\n6) Macrotask runs → 'timeout'." },
-      { heading: "Common mistake", body: "Developers often expect setTimeout(fn, 0) to run \"next\" — but promises always jump the queue. Understanding this prevents subtle race conditions in async code." },
+      { heading: "This example", body: "This code demonstrates all three execution phases plus a real network request: synchronous code runs first, then microtasks (promises), then macrotasks (setTimeout), and finally the fetch response's .then() — which is also a microtask, just one that resolves later." },
+      { heading: "Why this order?", body: "1) console.log('start') — sync, runs immediately.\n2) setTimeout — registers callback with Timer API.\n3) fetch('/api').then() — hands off to Network API, registers .then() for later.\n4) Promise.resolve().then() — already resolved, callback goes to microtask queue now.\n5) console.log('end') — sync, runs immediately.\n6) Stack empty → microtasks drain → 'promise'.\n7) Macrotask → 'timeout'.\n8) Network responds → fetch .then() → microtask → 'fetched'." },
+      { heading: "fetch vs Promise.resolve", body: "Both use .then() and both create microtasks. The difference: Promise.resolve() is already settled so its callback queues immediately. fetch() must wait for the network — its .then() only queues when the response arrives." },
     ]
   },
   console: {
@@ -229,8 +240,8 @@ const DETAILS = {
     color: T.tealL,
     sections: [
       { heading: "What it shows", body: "The console displays output in the exact order statements execute — making it the ultimate proof of JavaScript's execution model." },
-      { heading: "The guaranteed order", body: "1) \"start\" — first synchronous statement.\n2) \"end\" — second synchronous statement (setTimeout and Promise.then are just registrations, not executions).\n3) \"promise\" — microtask, runs before any macrotask.\n4) \"timeout\" — macrotask, runs last." },
-      { heading: "Key insight", body: "If you ever see this order wrong, something unusual is happening — like a polyfill implementing promises with setTimeout, or running in a non-standard environment." },
+      { heading: "The guaranteed order", body: "1) \"start\" — first synchronous statement.\n2) \"end\" — second synchronous statement (setTimeout, fetch, and Promise.then are just registrations, not executions).\n3) \"promise\" — microtask from already-resolved promise.\n4) \"timeout\" — macrotask, runs after microtasks.\n5) \"fetched\" — microtask from fetch .then(), but queued later because it waited for the network." },
+      { heading: "Key insight", body: "\"fetched\" prints last not because it has lower priority, but because the network response hasn't arrived yet when the first microtask drain happens. Once it arrives, its .then() callback is a microtask — same priority as Promise.resolve().then()." },
     ]
   },
 };
