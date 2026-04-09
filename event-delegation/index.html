@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Event Delegation in JavaScript</title>
+<title>Event Delegation</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -53,10 +53,13 @@ const T = {
   purple:"#7c6fcd", purpleL:"#a99cf0",
   teal:"#3db89a", tealL:"#6dd4b8",
   coral:"#c4694a", coralL:"#e08a6a",
-  blue:"#4a8fd4", codeBase:"#141428",
+  blue:"#4a8fd4", blueL:"#82b4e8",
+  amber:"#d4a84a", amberL:"#e8c86a",
+  pink:"#c45a8a", pinkL:"#e87aaa",
+  codeBase:"#141428",
 };
 
-const TOKEN_STYLES = {
+const TS = {
   fn:    { color:"#82aaff" },
   meth:  { color:"#89ddff" },
   str:   { color:"#c3e88d" },
@@ -64,431 +67,627 @@ const TOKEN_STYLES = {
   num:   { color:"#f78c6c" },
   punc:  { color:"#89ddff" },
   plain: { color:"#a6accd" },
+  this:  { color:"#ff5370", fontWeight:"bold" },
   cmt:   { color:"#546e7a", fontStyle:"italic" },
+  evt:   { color:"#ffcb6b", fontWeight:"bold" },
+  tag:   { color:"#f07178" },
 };
 
-/* ── DOM tree nodes used across scenes ── */
-const TREE = {
-  document: { id:"document", tag:"document", children:["body"] },
-  body:     { id:"body", tag:"body", children:["ul"] },
-  ul:       { id:"ul", tag:"ul#list", children:["li1","li2","li3"] },
-  li1:      { id:"li1", tag:"li", text:"Item 1", children:[] },
-  li2:      { id:"li2", tag:"li", text:"Item 2", children:[] },
-  li3:      { id:"li3", tag:"li", text:"Item 3", children:[] },
-};
-
-/* ── Code snippets per scene ── */
-const CODES = {
-  naive: [
-    [ ["cmt","// Naive: one listener per element"] ],
-    [ ["kw","const"], ["plain"," items = "], ["fn","document"], ["punc","."], ["meth","querySelectorAll"], ["punc","("], ["str","'li'"], ["punc",")"] ],
-    [ ["plain","items."], ["meth","forEach"], ["punc","("], ["plain","item "], ["kw","=>"], ["plain"," {"] ],
-    [ ["plain","  item."], ["meth","addEventListener"], ["punc","("], ["str","'click'"], ["punc",", "], ["fn","handler"], ["punc",")"] ],
-    [ ["punc","})"] ],
-  ],
-  delegation: [
-    [ ["cmt","// Delegation: one listener on parent"] ],
-    [ ["kw","const"], ["plain"," list = "], ["fn","document"], ["punc","."], ["meth","querySelector"], ["punc","("], ["str","'#list'"], ["punc",")"] ],
-    [ ["plain","list."], ["meth","addEventListener"], ["punc","("], ["str","'click'"], ["punc",", "], ["plain","(e) "], ["kw","=>"], ["plain"," {"] ],
-    [ ["plain","  "], ["kw","if"], ["plain"," (e."], ["fn","target"], ["punc","."], ["meth","matches"], ["punc","("], ["str","'li'"], ["punc","))"], ["plain"," {"] ],
-    [ ["plain","    "], ["fn","handle"], ["punc","("], ["plain","e."], ["fn","target"], ["punc",")"] ],
-    [ ["plain","  }"] ],
-    [ ["punc","})"] ],
-  ],
-  bubbling: [
-    [ ["cmt","// Event bubbling demo"] ],
-    [ ["plain","li."], ["meth","addEventListener"], ["punc","("], ["str","'click'"], ["punc",", () =>"] ],
-    [ ["plain","  "], ["fn","console"], ["punc","."], ["meth","log"], ["punc","("], ["str","'li clicked'"], ["punc",")"], ["plain",")"] ],
-    [ ["plain","ul."], ["meth","addEventListener"], ["punc","("], ["str","'click'"], ["punc",", () =>"] ],
-    [ ["plain","  "], ["fn","console"], ["punc","."], ["meth","log"], ["punc","("], ["str","'ul clicked'"], ["punc",")"], ["plain",")"] ],
-    [ ["plain","body."], ["meth","addEventListener"], ["punc","("], ["str","'click'"], ["punc",", () =>"] ],
-    [ ["plain","  "], ["fn","console"], ["punc","."], ["meth","log"], ["punc","("], ["str","'body clicked'"], ["punc",")"], ["plain",")"] ],
-  ],
-  capturing: [
-    [ ["cmt","// Capture phase (top-down)"] ],
-    [ ["plain","body."], ["meth","addEventListener"], ["punc","("], ["str","'click'"], ["punc",","] ],
-    [ ["plain","  () => "], ["fn","console"], ["punc","."], ["meth","log"], ["punc","("], ["str","'body'"], ["punc","),"] ],
-    [ ["plain","  { "], ["fn","capture"], ["punc",": "], ["kw","true"], ["plain"," }"] ],
-    [ ["punc",")"] ],
-  ],
-  phases: [
-    [ ["cmt","// Three phases of an event"] ],
-    [ ["cmt","// 1. Capture:  document → body → ul"] ],
-    [ ["cmt","// 2. Target:   li  (where click happened)"] ],
-    [ ["cmt","// 3. Bubble:   ul → body → document"] ],
-    [ ["plain","el."], ["meth","addEventListener"], ["punc","("], ["str","'click'"], ["punc",", fn, {"] ],
-    [ ["plain","  "], ["fn","capture"], ["punc",": "], ["kw","true"], ["plain","  "], ["cmt","// listen in phase 1"] ],
-    [ ["punc","})"] ],
-  ],
-  targetVsCurrent: [
-    [ ["cmt","// event.target vs event.currentTarget"] ],
-    [ ["plain","ul."], ["meth","addEventListener"], ["punc","("], ["str","'click'"], ["punc",", (e) =>"], ["plain"," {"] ],
-    [ ["plain","  e."], ["fn","target"],        ["plain","         "], ["cmt","// <li> that was clicked"] ],
-    [ ["plain","  e."], ["fn","currentTarget"],  ["plain","  "], ["cmt","// <ul> (listener host)"] ],
-    [ ["punc","})"] ],
-  ],
-  closest: [
-    [ ["cmt","// Matching targets with closest()"] ],
-    [ ["plain","list."], ["meth","addEventListener"], ["punc","("], ["str","'click'"], ["punc",", (e) =>"], ["plain"," {"] ],
-    [ ["plain","  "], ["kw","const"], ["plain"," li = e."], ["fn","target"], ["punc","."], ["meth","closest"], ["punc","("], ["str","'li'"], ["punc",")"] ],
-    [ ["plain","  "], ["kw","if"], ["plain"," (li "], ["punc","&&"], ["plain"," list."], ["meth","contains"], ["punc","("], ["plain","li"], ["punc",")) {"] ],
-    [ ["plain","    "], ["fn","handle"], ["punc","("], ["plain","li"], ["punc",")"] ],
-    [ ["plain","  }"] ],
-    [ ["punc","})"] ],
-  ],
-  dynamic: [
-    [ ["cmt","// Works for dynamically added elements!"] ],
-    [ ["kw","const"], ["plain"," li4 = "], ["fn","document"], ["punc","."], ["meth","createElement"], ["punc","("], ["str","'li'"], ["punc",")"] ],
-    [ ["plain","li4."], ["fn","textContent"], ["plain"," = "], ["str","'Item 4'"] ],
-    [ ["plain","list."], ["meth","appendChild"], ["punc","("], ["plain","li4"], ["punc",")"] ],
-    [ ["cmt","// Click on li4 → handled by parent's listener"] ],
-    [ ["cmt","// No new addEventListener needed!"] ],
-  ],
-  stopProp: [
-    [ ["cmt","// event.stopPropagation()"] ],
-    [ ["plain","inner."], ["meth","addEventListener"], ["punc","("], ["str","'click'"], ["punc",", (e) =>"], ["plain"," {"] ],
-    [ ["plain","  e."], ["meth","stopPropagation"], ["punc","()"], ["plain","  "], ["cmt","// stops bubbling"] ],
-    [ ["plain","  "], ["fn","console"], ["punc","."], ["meth","log"], ["punc","("], ["str","'only inner'"], ["punc",")"] ],
-    [ ["punc","})"] ],
-    [ ["cmt","// Parent listener never fires!"] ],
-  ],
-  todoExample: [
-    [ ["cmt","// Real-world: Todo list with delegation"] ],
-    [ ["plain","todoList."], ["meth","addEventListener"], ["punc","("], ["str","'click'"], ["punc",", (e) =>"], ["plain"," {"] ],
-    [ ["plain","  "], ["kw","const"], ["plain"," del = e."], ["fn","target"], ["punc","."], ["meth","closest"], ["punc","("], ["str","'.delete-btn'"], ["punc",")"] ],
-    [ ["plain","  "], ["kw","if"], ["plain"," (del) "], ["kw","return"], ["plain"," "], ["fn","deleteTodo"], ["punc","("], ["plain","del"], ["punc",")"] ],
-    [ ["plain","  "], ["kw","const"], ["plain"," cb = e."], ["fn","target"], ["punc","."], ["meth","closest"], ["punc","("], ["str","'.checkbox'"], ["punc",")"] ],
-    [ ["plain","  "], ["kw","if"], ["plain"," (cb) "], ["kw","return"], ["plain"," "], ["fn","toggleTodo"], ["punc","("], ["plain","cb"], ["punc",")"] ],
-    [ ["punc","})"] ],
-  ],
-  summary: [
-    [ ["cmt","// Event delegation in a nutshell"] ],
-    [ ["cmt","// 1. Attach ONE listener to a parent"] ],
-    [ ["cmt","// 2. Use event.target to find the source"] ],
-    [ ["cmt","// 3. Use matches() or closest() to filter"] ],
-    [ ["cmt","// 4. Works for current + future children"] ],
-    [ ["cmt","// 5. Fewer listeners = better performance"] ],
-  ],
-};
-
-/* ── Scene definitions ── */
+/* ─── SCENES ─── */
 const SCENES = [
-  { id:0, act:"01", title:"The problem — too many listeners",
-    sub:"Imagine a list with 100 items. Attaching a click handler to each one means 100 separate event listeners in memory. What if there were a better way?",
-    code:"naive", hl:[], tree:true, clicked:null, bubblePath:[], phase:null, activeNodes:[], focusAreas:["tree"],
-    listeners:{ li1:true, li2:true, li3:true },
-    delegated:false, newNode:false },
-
-  { id:1, act:"02", title:"Event bubbling",
-    sub:"When you click an element, the event doesn't just fire there. It bubbles up through every ancestor in the DOM tree, from child to parent to grandparent.",
-    code:"bubbling", hl:[1,2], tree:true, clicked:"li2", bubblePath:["li2","ul","body","document"], phase:"bubble", activeNodes:["li2","ul","body","document"], focusAreas:["tree","console"],
-    listeners:{}, delegated:false, newNode:false,
-    consoleOut:[ {id:"c1",t:"li clicked",c:T.tealL}, {id:"c2",t:"ul clicked",c:T.tealL}, {id:"c3",t:"body clicked",c:T.tealL} ] },
-
-  { id:2, act:"03", title:"Event capturing",
-    sub:"Before bubbling, there's a capture phase. The event travels top-down from document to the target. Most developers never use it, but it exists.",
-    code:"capturing", hl:[0,1,2,3], tree:true, clicked:"li2", bubblePath:["document","body","ul","li2"], phase:"capture", activeNodes:["document","body","ul","li2"], focusAreas:["tree"],
-    listeners:{}, delegated:false, newNode:false },
-
-  { id:3, act:"04", title:"Three phases of every event",
-    sub:"Every DOM event goes through three phases: Capture (top-down), Target (the actual element), and Bubble (bottom-up). By default, listeners fire during the bubble phase.",
-    code:"phases", hl:[1,2,3], tree:true, clicked:"li2", bubblePath:[], phase:"all", activeNodes:["document","body","ul","li2"], focusAreas:["tree","phases"],
-    listeners:{}, delegated:false, newNode:false },
-
-  { id:4, act:"05", title:"event.target vs event.currentTarget",
-    sub:"event.target is the element that was actually clicked (the origin). event.currentTarget is the element the listener is attached to. With delegation, these are different.",
-    code:"targetVsCurrent", hl:[2,3], tree:true, clicked:"li2", bubblePath:["li2","ul"], phase:"bubble", activeNodes:["li2","ul"], focusAreas:["tree","code"],
-    listeners:{ ul:true }, delegated:false, newNode:false,
-    targetLabel:"li2", currentTargetLabel:"ul" },
-
-  { id:5, act:"06", title:"The naive approach",
-    sub:"One listener per element works, but scales poorly. 100 items = 100 listeners. 1000 items = 1000 listeners. Each one uses memory and slows down page load.",
-    code:"naive", hl:[2,3], tree:true, clicked:null, bubblePath:[], phase:null, activeNodes:[], focusAreas:["tree","perf"],
-    listeners:{ li1:true, li2:true, li3:true },
-    delegated:false, newNode:false,
-    perfNote:"3 listeners for 3 items" },
-
-  { id:6, act:"07", title:"Event delegation pattern",
-    sub:"Instead of many listeners, attach just ONE to the parent. When a child is clicked, the event bubbles up to the parent where our single listener catches it.",
-    code:"delegation", hl:[2,3,4], tree:true, clicked:null, bubblePath:[], phase:null, activeNodes:["ul"], focusAreas:["tree","code"],
-    listeners:{ ul:true },
-    delegated:true, newNode:false,
-    perfNote:"1 listener for all items" },
-
-  { id:7, act:"08", title:"Delegation step by step",
-    sub:"Click \"Item 2\". The click event fires on li, then bubbles up to ul where our listener lives. We check event.target to see which li was actually clicked.",
-    code:"delegation", hl:[3,4], tree:true, clicked:"li2", bubblePath:["li2","ul"], phase:"bubble", activeNodes:["li2","ul"], focusAreas:["tree","code"],
-    listeners:{ ul:true },
-    delegated:true, newNode:false },
-
-  { id:8, act:"09", title:"Matching with closest() and matches()",
-    sub:"event.target.matches('li') checks if the clicked element is an li. closest('li') walks up to find the nearest matching ancestor — essential when li contains nested elements.",
-    code:"closest", hl:[2,3], tree:true, clicked:"li2", bubblePath:["li2","ul"], phase:null, activeNodes:["li2","ul"], focusAreas:["code"],
-    listeners:{ ul:true },
-    delegated:true, newNode:false },
-
-  { id:9, act:"10", title:"Dynamic elements — no re-binding needed",
-    sub:"New elements added to the DOM automatically work with delegation. The parent listener catches events from children that didn't exist when the listener was created.",
-    code:"dynamic", hl:[1,2,3], tree:true, clicked:"li4", bubblePath:["li4","ul"], phase:"bubble", activeNodes:["li4","ul"], focusAreas:["tree","code"],
-    listeners:{ ul:true },
-    delegated:true, newNode:true },
-
-  { id:10, act:"11", title:"event.stopPropagation()",
-    sub:"Stops the event from traveling further. Use sparingly — it can break delegation patterns higher up. Prefer checking event.target instead.",
-    code:"stopProp", hl:[2], tree:true, clicked:"li2", bubblePath:["li2"], phase:"stopped", activeNodes:["li2"], focusAreas:["tree","code"],
-    listeners:{ li2:true, ul:true },
-    delegated:false, newNode:false },
-
-  { id:11, act:"12", title:"Performance benefits",
-    sub:"Fewer listeners means less memory, faster page loads, and no need to manage listener lifecycle. The difference is dramatic with hundreds or thousands of elements.",
-    code:"delegation", hl:[], tree:true, clicked:null, bubblePath:[], phase:null, activeNodes:[], focusAreas:["perf"],
-    listeners:{ ul:true },
-    delegated:true, newNode:false,
-    perfCompare:true },
-
-  { id:12, act:"13", title:"Practical example — todo list",
-    sub:"A real todo list uses delegation to handle clicks on delete buttons, checkboxes, and text — all from a single listener on the list container.",
-    code:"todoExample", hl:[2,3,4,5], tree:false, clicked:null, bubblePath:[], phase:null, activeNodes:[], focusAreas:["code","todo"],
-    listeners:{},
-    delegated:true, newNode:false },
-
-  { id:13, act:"\u2713", title:"Delegation — one listener to rule them all",
-    sub:"Attach to a parent, check event.target, use matches() or closest(). It works for existing elements, future elements, and keeps memory usage flat. Master this pattern.",
-    code:"summary", hl:[], tree:true, clicked:null, bubblePath:[], phase:null, activeNodes:[], focusAreas:[],
-    listeners:{ ul:true },
-    delegated:true, newNode:false, finale:true },
+  {
+    id:0, act:"01",
+    title:"The problem — too many listeners",
+    sub:"Imagine a list with 100 items. Attaching a click handler to every single item means 100 event listeners — wasteful and slow.",
+    code:[
+      [["cmt","// Adding a listener to each item"]],
+      [["plain","items"],["punc","."],["meth","forEach"],["punc","("],["plain","item"],["punc"," => {"]],
+      [["plain","  item"],["punc","."],["meth","addEventListener"],["punc","("],["str","'click'"],["punc",","]],
+      [["plain","    handleClick"],["punc",")"]],
+      [["punc","})"]],
+      [["cmt","// 100 items = 100 listeners!"]],
+    ],
+    tree:{ phase:null, active:null },
+    detailKey:"problem",
+  },
+  {
+    id:1, act:"02",
+    title:"Event bubbling",
+    sub:"When you click an element, the event doesn't stop there. It bubbles up through every ancestor in the DOM tree, from the target to the root.",
+    code:[
+      [["tag","<div>"],["plain","              "],["cmt","// 3. receives event"]],
+      [["plain","  "],["tag","<ul>"],["plain","            "],["cmt","// 2. receives event"]],
+      [["plain","    "],["tag","<li>"],["plain","Click me"],["tag","</li>"],["plain"," "],["cmt","// 1. clicked!"]],
+      [["plain","  "],["tag","</ul>"]],
+      [["tag","</div>"]],
+    ],
+    tree:{ phase:"bubble", active:"li" },
+    detailKey:"bubbling",
+  },
+  {
+    id:2, act:"03",
+    title:"Event capturing",
+    sub:"Before bubbling, events actually travel top-down — from the root to the target. This is called the capture phase. Most code ignores it.",
+    code:[
+      [["cmt","// Capture phase: top to down"]],
+      [["plain","el"],["punc","."],["meth","addEventListener"],["punc","("]],
+      [["plain","  "],["str","'click'"],["punc",","]],
+      [["plain","  handler"],["punc",","]],
+      [["plain","  "],["kw","true"],["plain","  "],["cmt","// enables capture"]],
+      [["punc",")"]],
+    ],
+    tree:{ phase:"capture", active:"li" },
+    detailKey:"capturing",
+  },
+  {
+    id:3, act:"04",
+    title:"Three phases",
+    sub:"Every DOM event goes through three phases: Capture (down) then Target (the element) then Bubble (up). This is the complete event lifecycle.",
+    code:[
+      [["cmt","// Phase 1: Capture  (root to target)"]],
+      [["cmt","// Phase 2: Target   (the element)"]],
+      [["cmt","// Phase 3: Bubble   (target to root)"]],
+      [["plain",""]],
+      [["plain","el"],["punc","."],["meth","addEventListener"],["punc","("],["str","'click'"],["punc",", fn,"]],
+      [["plain","  "],["punc","{ "],["plain","capture"],["punc",": "],["kw","true"],["punc"," }"],["plain","  "],["cmt","// phase 1"]],
+      [["punc",")"]],
+    ],
+    tree:{ phase:"all", active:"li" },
+    detailKey:"phases",
+  },
+  {
+    id:4, act:"05",
+    title:"event.target vs event.currentTarget",
+    sub:"event.target is the element that was actually clicked. event.currentTarget is the element the listener is attached to. They can be different!",
+    code:[
+      [["plain","ul"],["punc","."],["meth","addEventListener"],["punc","("],["str","'click'"],["punc",","],["plain"," e"],["punc"," => {"]],
+      [["plain","  e"],["punc","."],["evt","target"],["plain","         "],["cmt","// <li> clicked"]],
+      [["plain","  e"],["punc","."],["evt","currentTarget"],["plain","  "],["cmt","// <ul> listener"]],
+      [["punc","})"]],
+    ],
+    tree:{ phase:"target-vs-current", active:"li" },
+    detailKey:"targetVsCurrent",
+  },
+  {
+    id:5, act:"06",
+    title:"The naive approach",
+    sub:"Attaching one listener per element works for small lists. But with hundreds of elements, it hurts performance and breaks for dynamically added items.",
+    code:[
+      [["cmt","// Naive: one listener per <li>"]],
+      [["plain","document"],["punc","."],["meth","querySelectorAll"],["punc","("],["str","'li'"],["punc",")"]],
+      [["plain","  "],["punc","."],["meth","forEach"],["punc","("],["plain","li"],["punc"," => {"]],
+      [["plain","    li"],["punc","."],["meth","addEventListener"],["punc","("],["str","'click'"],["punc",","]],
+      [["plain","      "],["fn","handleClick"],["punc",")"]],
+      [["punc","  })"]],
+      [["cmt","// Problem: new <li>s won't work!"]],
+    ],
+    tree:{ phase:null, active:null, naive:true },
+    detailKey:"naive",
+  },
+  {
+    id:6, act:"07",
+    title:"Event delegation pattern",
+    sub:"Instead of many listeners, attach ONE listener to the parent. When a child is clicked, the event bubbles up and the parent catches it.",
+    code:[
+      [["cmt","// Delegation: one listener on parent"]],
+      [["plain","ul"],["punc","."],["meth","addEventListener"],["punc","("],["str","'click'"],["punc",","],["plain"," e"],["punc"," => {"]],
+      [["plain","  "],["kw","if"],["plain"," "],["punc","("],["plain","e"],["punc","."],["evt","target"],["punc","."],["plain","tagName "],["punc","==="],["plain"," "],["str","'LI'"],["punc",") {"]],
+      [["plain","    "],["fn","handleClick"],["punc","("],["plain","e"],["punc","."],["evt","target"],["punc",")"]],
+      [["plain","  "],["punc","}"]],
+      [["punc","})"]],
+    ],
+    tree:{ phase:"delegation", active:"li" },
+    detailKey:"delegation",
+  },
+  {
+    id:7, act:"08",
+    title:"How delegation works",
+    sub:"Step by step: user clicks a child element, the event bubbles up to the parent, the parent's listener fires, it checks event.target to know which child was clicked.",
+    code:[
+      [["cmt","// Step 1: User clicks <li>"]],
+      [["cmt","// Step 2: Event bubbles up to <ul>"]],
+      [["cmt","// Step 3: <ul>'s listener fires"]],
+      [["cmt","// Step 4: Check e.target"]],
+      [["plain","ul"],["punc","."],["meth","addEventListener"],["punc","("],["str","'click'"],["punc",","],["plain"," e"],["punc"," => {"]],
+      [["plain","  "],["fn","console"],["punc","."],["meth","log"],["punc","("],["plain","e"],["punc","."],["evt","target"],["punc",")"],["plain"," "],["cmt","// the <li>"]],
+      [["punc","})"]],
+    ],
+    tree:{ phase:"step-by-step", active:"li" },
+    detailKey:"howItWorks",
+  },
+  {
+    id:8, act:"09",
+    title:"Matching with closest() and matches()",
+    sub:"Use closest() to find the nearest ancestor matching a selector — essential when the click lands on a nested element inside your target.",
+    code:[
+      [["plain","ul"],["punc","."],["meth","addEventListener"],["punc","("],["str","'click'"],["punc",","],["plain"," e"],["punc"," => {"]],
+      [["plain","  "],["kw","const"],["plain"," li "],["punc","= "],["plain","e"],["punc","."],["evt","target"]],
+      [["plain","    "],["punc","."],["meth","closest"],["punc","("],["str","'li'"],["punc",")"]],
+      [["plain","  "],["kw","if"],["plain"," "],["punc","("],["plain","li"],["punc",") {"]],
+      [["plain","    "],["fn","handleClick"],["punc","("],["plain","li"],["punc",")"]],
+      [["plain","  "],["punc","}"]],
+      [["punc","})"]],
+    ],
+    tree:{ phase:"closest", active:"span" },
+    detailKey:"matching",
+  },
+  {
+    id:9, act:"10",
+    title:"Dynamic elements",
+    sub:"Delegation shines with dynamic content. Since the listener is on the parent, newly added children are automatically handled — no rebinding needed.",
+    code:[
+      [["cmt","// Parent listener already exists"]],
+      [["kw","const"],["plain"," newLi "],["punc","= "],["plain","document"]],
+      [["plain","  "],["punc","."],["meth","createElement"],["punc","("],["str","'li'"],["punc",")"]],
+      [["plain","newLi"],["punc","."],["plain","textContent "],["punc","= "],["str","'New item'"]],
+      [["plain","ul"],["punc","."],["meth","appendChild"],["punc","("],["plain","newLi"],["punc",")"]],
+      [["cmt","// It just works! No new listener"]],
+    ],
+    tree:{ phase:"dynamic", active:"new" },
+    detailKey:"dynamic",
+  },
+  {
+    id:10, act:"11",
+    title:"event.stopPropagation()",
+    sub:"stopPropagation() prevents an event from bubbling further. Use it sparingly — it can break delegation if a child stops the event before it reaches the delegating parent.",
+    code:[
+      [["plain","button"],["punc","."],["meth","addEventListener"],["punc","("],["str","'click'"],["punc",","],["plain"," e"],["punc"," => {"]],
+      [["plain","  e"],["punc","."],["meth","stopPropagation"],["punc","()"]],
+      [["plain","  "],["cmt","// Event stops here!"]],
+      [["plain","  "],["cmt","// Parent never sees it"]],
+      [["punc","})"]],
+    ],
+    tree:{ phase:"stopped", active:"li2" },
+    detailKey:"stopProp",
+  },
+  {
+    id:11, act:"12",
+    title:"Practical examples",
+    sub:"Event delegation is everywhere: todo lists (toggle/delete), table rows (sort/select), nav menus (active state), and any UI with repeated interactive elements.",
+    code:[
+      [["cmt","// Todo list delegation"]],
+      [["plain","todoList"],["punc","."],["meth","addEventListener"],["punc","("],["str","'click'"],["punc",","],["plain"," e"],["punc"," => {"]],
+      [["plain","  "],["kw","const"],["plain"," btn "],["punc","= "],["plain","e"],["punc","."],["evt","target"]],
+      [["plain","    "],["punc","."],["meth","closest"],["punc","("],["str","'.delete-btn'"],["punc",")"]],
+      [["plain","  "],["kw","if"],["plain"," "],["punc","("],["plain","btn"],["punc",")"]],
+      [["plain","    btn"],["punc","."],["meth","closest"],["punc","("],["str","'.todo'"],["punc",")"],["punc","."],["meth","remove"],["punc","()"]],
+      [["punc","})"]],
+    ],
+    tree:{ phase:null, active:null },
+    detailKey:"practical",
+  },
+  {
+    id:12, act:"\u2713",
+    title:"Event delegation — summary",
+    sub:"One listener on a parent, handling events for all children through bubbling. Efficient, dynamic, and the professional way to handle DOM events.",
+    code:[
+      [["cmt","// Event delegation in one pattern:"]],
+      [["plain","parent"],["punc","."],["meth","addEventListener"],["punc","("],["str","'click'"],["punc",","],["plain"," e"],["punc"," => {"]],
+      [["plain","  "],["kw","const"],["plain"," el "],["punc","= "],["plain","e"],["punc","."],["evt","target"],["punc","."],["meth","closest"],["punc","(sel)"]],
+      [["plain","  "],["kw","if"],["plain"," "],["punc","("],["plain","el"],["punc",") "],["fn","handle"],["punc","("],["plain","el"],["punc",")"]],
+      [["punc","})"]],
+    ],
+    tree:{ phase:null, active:null },
+    detailKey:null,
+    finale:true,
+  },
 ];
 
-/* ── Code panel ── */
-const CodePanel = ({ tokens, highlighted }) =>
-  e(M.div, { animate:{ borderColor:highlighted.length>0?T.purple:T.border, boxShadow:highlighted.length>0?"0 0 16px "+T.purple+"30":"0 0 0px transparent" }, transition:{duration:0.4}, style:{ background:T.codeBase, borderRadius:12, overflow:"hidden", border:"1px solid" } },
-    e("div", { style:{ padding:"10px 14px 8px", borderBottom:"1px solid "+T.border, display:"flex", gap:7 } },
-      ...["#ff5f57","#febc2e","#28c840"].map(function(c,i){ return e("div", { key:i, style:{ width:11, height:11, borderRadius:"50%", background:c } }); })
-    ),
-    e("div", { style:{ padding:"18px 22px 22px", fontFamily:"'SF Mono','Fira Code','Consolas',monospace", fontSize:12, lineHeight:1.95 } },
-      tokens.map(function(line, li) {
-        var hot = highlighted.includes(li);
-        return e(M.div, { key:li, animate:{ background: hot ? "rgba(124,111,205,0.13)" : "transparent" }, transition:{ duration:0.22 },
-          style:{ borderLeft: hot ? "2px solid "+T.purple : "2px solid transparent", paddingLeft:8, borderRadius:3, display:"block" }
-        }, line.map(function(pair, ti){ return e("span", { key:ti, style:Object.assign({}, TOKEN_STYLES[pair[0]], { whiteSpace:"pre" }) }, pair[1]); }));
-      })
-    )
-  );
-
-/* ── DOM tree visualization ── */
-var NODE_COLORS = { document:T.purple, body:T.blue, ul:T.teal, li1:T.coral, li2:T.coral, li3:T.coral, li4:T.coral };
-
-function TreeNode(props) {
-  var id=props.id, tag=props.tag, children=props.children, depth=props.depth, active=props.active,
-      clicked=props.clicked, hasListener=props.hasListener, bubbling=props.bubbling, phase=props.phase,
-      isTarget=props.isTarget, isCurrent=props.isCurrent;
-  var col = NODE_COLORS[id] || T.text2;
-  var isActive = active;
-  var glowColor = phase==="capture" ? T.blue : phase==="bubble" ? T.coral : phase==="stopped" ? "#c44" : T.purple;
-  return e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center" } },
-    e(M.div, {
-      animate:{
-        borderColor: isActive ? glowColor : T.border2,
-        boxShadow: isActive ? "0 0 12px "+glowColor+"40" : "0 0 0px transparent",
-        scale: clicked ? 1.08 : 1,
-        background: isActive ? glowColor+"18" : T.surface
-      },
-      transition:sp(400,26),
-      style:{ padding:"6px 12px", borderRadius:8, border:"1.5px solid", fontSize:11, fontWeight:600, fontFamily:"'SF Mono',monospace", color:col, position:"relative", cursor:"default", minWidth:50, textAlign:"center" }
-    },
-      e("span", null, tag),
-      hasListener && e("div", { style:{ position:"absolute", top:-4, right:-4, width:9, height:9, borderRadius:"50%", background:T.teal, border:"1.5px solid "+T.surface } }),
-      isTarget && e("div", { style:{ position:"absolute", bottom:-12, left:"50%", transform:"translateX(-50%)", fontSize:8, color:T.coralL, fontWeight:700, whiteSpace:"nowrap" } }, "target"),
-      isCurrent && e("div", { style:{ position:"absolute", top:-12, left:"50%", transform:"translateX(-50%)", fontSize:8, color:T.tealL, fontWeight:700, whiteSpace:"nowrap" } }, "currentTarget")
-    ),
-    children && children.length > 0 && e("div", { style:{ width:1, height:14, background:T.border2 } }),
-    children && children.length > 0 && e("div", { style:{ display:"flex", gap:8, alignItems:"flex-start" } },
-      children.map(function(cid) {
-        return e("div", { key:cid, style:{ display:"flex", flexDirection:"column", alignItems:"center" } },
-          e("div", { style:{ width:1, height:10, background:T.border2 } }),
-          e(TreeNode, Object.assign({}, props, { id:cid, tag:TREE[cid]?TREE[cid].tag:(cid==="li4"?"li":"?"), children:TREE[cid]?TREE[cid].children:(cid==="li4"?[]:[]), depth:depth+1, clicked:props.clickedNode===cid, isTarget:props.targetLabel===cid, isCurrent:props.currentTargetLabel===cid, active:(props.activeNodes||[]).indexOf(cid)>=0, hasListener:!!(props.listeners||{})[cid] }))
-        );
-      })
-    )
-  );
-}
-
-function DOMTree(props) {
-  var sc = props.scene;
-  var treeChildren = sc.newNode
-    ? { document:{ id:"document",tag:"document",children:["body"] }, body:{ id:"body",tag:"body",children:["ul"] }, ul:{ id:"ul",tag:"ul#list",children:["li1","li2","li3","li4"] }, li1:TREE.li1, li2:TREE.li2, li3:TREE.li3 }
-    : TREE;
-  var rootId = "document";
-  var root = treeChildren[rootId] || TREE[rootId];
-  return e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", padding:"12px 0" } },
-    e(TreeNode, { id:rootId, tag:root.tag, children:root.children, depth:0, active:(sc.activeNodes||[]).indexOf(rootId)>=0, clicked:false, clickedNode:sc.clicked, hasListener:!!(sc.listeners||{})[rootId], bubbling:sc.bubblePath, phase:sc.phase, activeNodes:sc.activeNodes||[], listeners:sc.listeners||{}, targetLabel:sc.targetLabel, currentTargetLabel:sc.currentTargetLabel })
-  );
-}
-
-/* ── Bubble path arrow visualization ── */
-function BubbleArrow(props) {
-  var path = props.path, phase = props.phase;
-  if (!path || path.length < 2) return null;
-  var color = phase==="capture" ? T.blue : phase==="stopped" ? "#c44" : T.coral;
-  var label = phase==="capture" ? "CAPTURE (top-down)" : phase==="bubble" ? "BUBBLE (bottom-up)" : phase==="stopped" ? "STOPPED" : "";
-  return e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{duration:0.4},
-    style:{ display:"flex", alignItems:"center", gap:6, padding:"6px 12px", borderRadius:8, background:color+"14", border:"1px solid "+color+"33", marginTop:8 }
-  },
-    e("span", { style:{ fontSize:9, fontWeight:700, letterSpacing:"0.08em", color:color, textTransform:"uppercase" } }, label),
-    e("span", { style:{ fontSize:10, color:T.text2, fontFamily:"monospace" } }, path.join(" \u2192 "))
-  );
-}
-
-/* ── Phase diagram ── */
-function PhaseDiagram() {
-  var phases = [
-    { name:"CAPTURE", dir:"top \u2192 down", color:T.blue, desc:"document \u2192 target" },
-    { name:"TARGET", dir:"at element", color:T.purple, desc:"where event occurred" },
-    { name:"BUBBLE", dir:"bottom \u2192 up", color:T.coral, desc:"target \u2192 document" },
-  ];
-  return e("div", { style:{ display:"flex", gap:6, marginTop:8 } },
-    phases.map(function(p,i) {
-      return e(M.div, { key:p.name, initial:{opacity:0,y:10}, animate:{opacity:1,y:0}, transition:{delay:i*0.15,duration:0.3},
-        style:{ flex:1, padding:"8px 10px", borderRadius:8, background:p.color+"14", border:"1px solid "+p.color+"33", textAlign:"center" }
-      },
-        e("div", { style:{ fontSize:10, fontWeight:700, color:p.color, letterSpacing:"0.06em" } }, p.name),
-        e("div", { style:{ fontSize:9, color:T.text2, marginTop:3 } }, p.dir),
-        e("div", { style:{ fontSize:8, color:T.text3, marginTop:2 } }, p.desc)
-      );
-    })
-  );
-}
-
-/* ── Performance comparison ── */
-function PerfPanel(props) {
-  var compare = props.compare;
-  var note = props.note;
-  if (compare) {
-    return e("div", { style:{ marginTop:10 } },
-      e("div", { style:{ fontSize:10, fontWeight:700, color:T.text2, marginBottom:8, letterSpacing:"0.06em", textTransform:"uppercase" } }, "Memory comparison"),
-      e("div", { style:{ display:"flex", gap:8 } },
-        e(M.div, { initial:{scaleX:0}, animate:{scaleX:1}, transition:{duration:0.6}, style:{ flex:1, padding:"10px 12px", borderRadius:8, background:T.coral+"14", border:"1px solid "+T.coral+"33" } },
-          e("div", { style:{ fontSize:10, fontWeight:700, color:T.coralL } }, "Naive approach"),
-          e("div", { style:{ fontSize:20, fontWeight:700, color:T.coralL, margin:"4px 0" } }, "1000"),
-          e("div", { style:{ fontSize:9, color:T.text3 } }, "listeners for 1000 items"),
-          e("div", { style:{ height:4, background:T.border, borderRadius:99, marginTop:6, overflow:"hidden" } },
-            e(M.div, { initial:{width:0}, animate:{width:"100%"}, transition:{duration:0.8}, style:{height:"100%",background:T.coral,borderRadius:99} })
-          )
-        ),
-        e(M.div, { initial:{scaleX:0}, animate:{scaleX:1}, transition:{duration:0.6,delay:0.2}, style:{ flex:1, padding:"10px 12px", borderRadius:8, background:T.teal+"14", border:"1px solid "+T.teal+"33" } },
-          e("div", { style:{ fontSize:10, fontWeight:700, color:T.tealL } }, "Delegation"),
-          e("div", { style:{ fontSize:20, fontWeight:700, color:T.tealL, margin:"4px 0" } }, "1"),
-          e("div", { style:{ fontSize:9, color:T.text3 } }, "listener for 1000 items"),
-          e("div", { style:{ height:4, background:T.border, borderRadius:99, marginTop:6, overflow:"hidden" } },
-            e(M.div, { initial:{width:0}, animate:{width:"0.1%"}, transition:{duration:0.8,delay:0.2}, style:{height:"100%",background:T.teal,borderRadius:99} })
-          )
-        )
-      )
-    );
-  }
-  if (note) {
-    return e(M.div, { initial:{opacity:0}, animate:{opacity:1}, style:{ marginTop:8, padding:"6px 10px", borderRadius:6, background:T.surface2, fontSize:10, color:T.text2, border:"1px solid "+T.border } },
-      "\uD83C\uDFAF ", note
-    );
-  }
-  return null;
-}
-
-/* ── Todo list mock for practical example ── */
-function TodoMock() {
-  var items = [
-    { text:"Learn event delegation", done:true },
-    { text:"Refactor click handlers", done:false },
-    { text:"Remove per-element listeners", done:false },
-  ];
-  return e(M.div, { initial:{opacity:0,y:10}, animate:{opacity:1,y:0}, transition:{duration:0.3},
-    style:{ marginTop:8, borderRadius:8, border:"1px solid "+T.border, overflow:"hidden", background:T.surface }
-  },
-    e("div", { style:{ padding:"8px 12px", borderBottom:"1px solid "+T.border, fontSize:10, fontWeight:700, color:T.text2, letterSpacing:"0.06em", textTransform:"uppercase" } }, "Todo List (delegated)"),
-    items.map(function(item,i) {
-      return e(M.div, { key:i, initial:{opacity:0,x:-8}, animate:{opacity:1,x:0}, transition:{delay:i*0.1},
-        style:{ padding:"8px 12px", borderBottom:i<items.length-1?"1px solid "+T.border:"none", display:"flex", alignItems:"center", gap:8 }
-      },
-        e("div", { style:{ width:14, height:14, borderRadius:4, border:"1.5px solid "+(item.done?T.teal:T.border2), background:item.done?T.teal+"22":"transparent", display:"flex", alignItems:"center", justifyContent:"center", fontSize:9, color:T.tealL } }, item.done?"\u2713":""),
-        e("span", { style:{ fontSize:12, color:item.done?T.text3:T.text1, textDecoration:item.done?"line-through":"none", flex:1 } }, item.text),
-        e("span", { style:{ fontSize:10, color:T.coral, cursor:"pointer" } }, "\u2715")
-      );
-    })
-  );
-}
-
-/* ── Detail sidebar ── */
-var DETAILS = {
-  tree: {
-    title:"DOM Tree",
-    color:T.purple,
+/* ─── DETAIL CONTENT ─── */
+const DETAILS = {
+  problem: {
+    title:"The Problem",
+    color:T.coralL,
     sections:[
-      { heading:"What is it?", body:"The Document Object Model is a tree structure representing your HTML. Every element is a node, and nodes have parent-child relationships. Events travel through this tree." },
-      { heading:"Why it matters for delegation", body:"Because events bubble through the tree, a listener on any ancestor can catch events from all descendants. This is the fundamental mechanism that makes event delegation possible." },
-      { heading:"Key insight", body:"The DOM tree structure determines the event path. An event on <li> will always pass through <ul>, <body>, and <document> — in that exact order." },
+      {heading:"Why it matters",body:"Every addEventListener() call allocates memory. With 100+ elements, you're creating 100+ function references, 100+ closures, and 100+ entries in the browser's event system.\n\nThis slows down page load, increases memory usage, and makes cleanup harder."},
+      {heading:"When it gets worse",body:"Dynamic content makes it even worse:\n\n- New elements need new listeners\n- Removed elements need listener cleanup\n- Forgetting cleanup causes memory leaks\n- Re-rendering means re-attaching"},
     ]
   },
-  code: {
-    title:"Code Pattern",
-    color:T.purpleL,
-    sections:[
-      { heading:"The delegation pattern", body:"1. querySelector the parent element\n2. addEventListener on the parent\n3. Inside the handler, check event.target\n4. Use matches() or closest() to filter\n5. Run your logic only for matching targets" },
-      { heading:"matches() vs closest()", body:"matches('selector') returns true/false for the element itself. closest('selector') walks up the DOM tree and returns the first matching ancestor (or null). Use closest() when target elements have nested children." },
-      { heading:"Key insight", body:"closest() is more robust than matches() because it handles clicks on nested elements inside your target (e.g., clicking a <span> inside a <button>)." },
-    ]
-  },
-  console: {
-    title:"Console Output",
+  bubbling: {
+    title:"Event Bubbling",
     color:T.tealL,
     sections:[
-      { heading:"Bubbling proof", body:"When an event bubbles, every ancestor's listener fires in order. The console output proves this: li clicked, then ul clicked, then body clicked." },
-      { heading:"Order matters", body:"Listeners fire in DOM tree order during bubbling (child first) and reverse order during capturing (parent first). This is deterministic and specified by the DOM spec." },
+      {heading:"How bubbling works",body:"When an event fires on an element, it first runs the handler on that element, then on its parent, then all the way up to <html> and document.\n\nThis is the default behavior for most DOM events (click, input, keydown, etc.)."},
+      {heading:"Which events bubble",body:"Most events bubble: click, mousedown, mouseup, keydown, keyup, input, change, submit, focus (as focusin), blur (as focusout).\n\nSome do NOT bubble: focus, blur, load, unload, scroll (on non-document elements), resize."},
+    ]
+  },
+  capturing: {
+    title:"Event Capturing",
+    color:T.blueL,
+    sections:[
+      {heading:"Capture phase",body:"Before bubbling, the event travels DOWN from the root to the target. This is the capture phase.\n\nTo listen during capture, pass { capture: true } or simply true as the third argument to addEventListener()."},
+      {heading:"When to use capture",body:"Capture is rarely needed. Use it when:\n\n- You need to intercept events before they reach targets\n- You're building focus management systems\n- You need to handle events that don't bubble (focus/blur via focusin/focusout)"},
     ]
   },
   phases: {
-    title:"Event Phases",
-    color:T.blue,
+    title:"Three Phases",
+    color:T.amberL,
     sections:[
-      { heading:"Phase 1: Capture", body:"The event starts at the document and travels DOWN to the target element. Listeners registered with { capture: true } fire during this phase. Rarely used in practice." },
-      { heading:"Phase 2: Target", body:"The event reaches the actual element that was interacted with. Both capture and bubble listeners on this element fire (capture first)." },
-      { heading:"Phase 3: Bubble", body:"The event travels back UP from the target to the document. This is where most listeners fire by default. This phase enables event delegation." },
-      { heading:"Key insight", body:"addEventListener's third argument controls which phase to listen in. Default (false/omitted) = bubble phase. { capture: true } = capture phase." },
+      {heading:"Complete lifecycle",body:"1. CAPTURE: Event travels from Window to Document to <html> to ... to parent of target\n\n2. TARGET: Event reaches the target element itself\n\n3. BUBBLE: Event travels back up from parent of target to ... to <html> to Document to Window"},
+      {heading:"eventPhase property",body:"event.eventPhase tells you which phase you're in:\n\n0 = NONE\n1 = CAPTURING_PHASE\n2 = AT_TARGET\n3 = BUBBLING_PHASE"},
     ]
   },
-  perf: {
-    title:"Performance",
-    color:T.teal,
+  targetVsCurrent: {
+    title:"target vs currentTarget",
+    color:T.purpleL,
     sections:[
-      { heading:"Memory savings", body:"Each addEventListener creates a function reference in memory. With 1000 elements, that's 1000 functions. Delegation reduces this to 1, saving significant memory on large lists." },
-      { heading:"Initialization speed", body:"Attaching 1000 listeners takes measurable time during page load. One delegated listener is instant. This matters for large DOM trees and dynamic content." },
-      { heading:"Garbage collection", body:"When elements are removed from the DOM, their individual listeners must be properly cleaned up to avoid memory leaks. With delegation, there's nothing to clean up on child removal." },
-      { heading:"Key insight", body:"Delegation isn't just elegant — it's a performance pattern. React's synthetic event system uses delegation internally for exactly these reasons." },
+      {heading:"event.target",body:"The element that actually triggered the event. The element the user clicked on. This is the deepest element in the DOM tree where the event originated."},
+      {heading:"event.currentTarget",body:"The element that the event listener is attached to. Inside a handler, this is the element you called addEventListener() on.\n\nDuring delegation, target and currentTarget are always different: target is the child, currentTarget is the parent."},
+      {heading:"Key insight",body:"event.target stays the same as the event bubbles.\nevent.currentTarget changes at each level. It is always the element currently handling the event."},
     ]
   },
-  todo: {
-    title:"Practical Patterns",
+  naive: {
+    title:"Naive Approach",
     color:T.coralL,
     sections:[
-      { heading:"Todo lists", body:"One listener on the <ul> handles all clicks on list items, delete buttons, and checkboxes. New todos automatically work without re-binding." },
-      { heading:"Data tables", body:"One listener on <tbody> handles row clicks, cell edits, sort buttons, and selection. Essential for tables with hundreds of rows." },
-      { heading:"Navigation menus", body:"One listener on <nav> handles all link clicks, dropdown toggles, and active state changes. Perfect for dynamically generated menus." },
-      { heading:"Key insight", body:"Any UI with a container of similar interactive children is a candidate for delegation: tabs, carousels, galleries, comment threads, file browsers." },
+      {heading:"Problems with many listeners",body:"- Memory waste: each listener holds a closure\n- Setup cost: O(n) time to attach all listeners\n- No dynamic support: new elements are missed\n- Cleanup burden: must remove listeners manually\n- Re-render issues: need to re-attach after DOM changes"},
+      {heading:"When it is actually fine",body:"The naive approach is okay when:\n- You have a small, fixed number of elements (< 10)\n- Elements never change dynamically\n- Each element needs truly unique handler logic\n- You're using a framework that handles cleanup"},
+    ]
+  },
+  delegation: {
+    title:"Event Delegation",
+    color:T.tealL,
+    sections:[
+      {heading:"The pattern",body:"1. Attach ONE listener to a common parent\n2. When events bubble up, check event.target\n3. If the target matches your criteria, handle it\n4. Otherwise, ignore the event"},
+      {heading:"Benefits",body:"- Memory efficient: one listener instead of many\n- Dynamic: works for elements added later\n- Cleaner code: single point of event handling\n- Easy cleanup: one removeEventListener()"},
+    ]
+  },
+  howItWorks: {
+    title:"Step by Step",
+    color:T.blueL,
+    sections:[
+      {heading:"The flow",body:"1. User clicks <li> element\n2. Browser creates a click Event\n3. Event captures down to <li> (usually ignored)\n4. Event fires at <li> (target phase)\n5. Event bubbles up: <li> to <ul> to <div> to ...\n6. <ul>'s listener fires\n7. Handler checks e.target: it is the <li>\n8. Handler processes the <li>"},
+      {heading:"Why it works",body:"The key insight: even though the listener is on <ul>, event.target still points to <li>. The actual element clicked. Bubbling carries the event up, but the target reference is preserved."},
+    ]
+  },
+  matching: {
+    title:"Target Matching",
+    color:T.amberL,
+    sections:[
+      {heading:"closest() method",body:"element.closest(selector) walks up the DOM tree from the element, testing each ancestor against the selector. Returns the first match or null.\n\nPerfect for delegation because clicks might land on nested elements inside your target."},
+      {heading:"matches() method",body:"element.matches(selector) returns true if the element matches the CSS selector.\n\nUseful for simple cases:\nif (e.target.matches('.btn')) { ... }"},
+      {heading:"Why closest() is better",body:"If <li> contains a <span>, clicking the <span> means e.target is <span>, not <li>.\n\nclosest('li') walks up from <span> and finds <li>.\nmatches('li') on <span> returns false. It misses!"},
+    ]
+  },
+  dynamic: {
+    title:"Dynamic Elements",
+    color:T.tealL,
+    sections:[
+      {heading:"Why delegation wins",body:"With delegation, the listener is on the parent, which already exists. New children automatically participate because their events bubble up to the parent.\n\nNo need to:\n- Track new elements\n- Attach new listeners\n- Clean up old listeners"},
+      {heading:"Frameworks use this",body:"React's event system is built on delegation. React attaches listeners to the root container, not individual elements. This is why React can handle thousands of interactive elements efficiently."},
+    ]
+  },
+  stopProp: {
+    title:"stopPropagation()",
+    color:T.pinkL,
+    sections:[
+      {heading:"What it does",body:"event.stopPropagation() prevents the event from continuing its journey through the DOM. In the bubble phase, it stops the event from reaching ancestors. In capture, it stops it from reaching descendants."},
+      {heading:"Danger with delegation",body:"If a child calls stopPropagation(), the event never reaches the delegating parent. The delegation breaks silently.\n\nThis is a common source of bugs in applications mixing direct listeners and delegation."},
+      {heading:"Alternatives",body:"Instead of stopPropagation(), consider:\n- event.stopImmediatePropagation(): also prevents same-element listeners\n- Conditional logic in the handler\n- CSS pointer-events: none for non-interactive areas"},
+    ]
+  },
+  practical: {
+    title:"Practical Examples",
+    color:T.amberL,
+    sections:[
+      {heading:"Todo list",body:"One listener on the list container handles:\n- Checkbox toggles (closest('.checkbox'))\n- Delete buttons (closest('.delete-btn'))\n- Edit triggers (closest('.edit-btn'))\n\nAll with a single addEventListener()."},
+      {heading:"Data tables",body:"One listener on <table> or <tbody>:\n- Row selection (closest('tr'))\n- Cell editing (closest('td'))\n- Sort buttons (closest('th button'))\n\nScales to thousands of rows."},
+      {heading:"Navigation menus",body:"One listener on the <nav> element:\n- Link clicks (closest('a'))\n- Dropdown toggles (closest('.dropdown-trigger'))\n- Active state management"},
     ]
   },
 };
 
-var DetailPanel = function(props) {
-  var d = DETAILS[props.detailKey];
+/* ─── COMPONENTS ─── */
+const CodePanel = ({ tokens }) =>
+  e("div", { style:{ background:T.codeBase, borderRadius:12, overflow:"hidden", border:`1px solid ${T.border}` } },
+    e("div", { style:{ padding:"10px 14px 8px", borderBottom:`1px solid ${T.border}`, display:"flex", gap:7 } },
+      ...["#ff5f57","#febc2e","#28c840"].map((c,i) =>
+        e("div", { key:i, style:{ width:11, height:11, borderRadius:"50%", background:c } })
+      )
+    ),
+    e("div", { style:{ padding:"18px 22px 22px", fontFamily:"'SF Mono','Fira Code','Consolas',monospace", fontSize:12, lineHeight:1.95 } },
+      tokens.map((line, li) =>
+        e("div", { key:li, style:{ paddingLeft:0, borderRadius:3, display:"block" } },
+          line.map(([cls, txt], ti) =>
+            e("span", { key:ti, style:{ ...TS[cls], whiteSpace:"pre" } }, txt)
+          )
+        )
+      )
+    )
+  );
+
+const Panel = ({ label, children, style={}, onClick }) =>
+  e(M.div, {
+    onClick,
+    animate:{
+      borderColor: T.border2,
+      boxShadow: "0 0 0px transparent"
+    },
+    transition:{ duration:0.4 },
+    style:{ borderRadius:12, border:"1.5px solid", background:T.surface, overflow:"hidden", cursor:onClick?"pointer":"default", ...style }
+  },
+    label && e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, label)
+    ),
+    e("div", { style:{ padding:12 } }, children)
+  );
+
+/* ─── DOM TREE VISUALIZATION ─── */
+const DOMTreeViz = ({ tree, onClick }) => {
+  const { phase } = tree;
+  const naive = tree.naive || false;
+  const stopped = phase === "stopped";
+  const closestMode = phase === "closest";
+  const dynamic = phase === "dynamic";
+
+  const nodeW = 68, nodeH = 30;
+  const svgW = 360, extraH = (closestMode||dynamic) ? 260 : 220;
+
+  const nodes = [
+    { id:"document", label:"document", x:svgW/2, y:20, color:T.text3 },
+    { id:"div", label:"<div>", x:svgW/2, y:75, color:T.blue },
+    { id:"ul", label:"<ul>", x:svgW/2, y:130, color:T.teal },
+    { id:"li1", label:"<li> 1", x:svgW/2-80, y:185, color:T.purple },
+    { id:"li2", label:"<li> 2", x:svgW/2, y:185, color:T.purple },
+    { id:"li3", label:"<li> 3", x:svgW/2+80, y:185, color:T.purple },
+  ];
+  if (closestMode) {
+    nodes.push({ id:"span", label:"<span>", x:svgW/2, y:235, color:T.amber });
+  }
+  if (dynamic) {
+    nodes.push({ id:"li-new", label:"<li> new", x:svgW/2+80, y:235, color:T.tealL });
+  }
+
+  const edges = [
+    ["document","div"], ["div","ul"], ["ul","li1"], ["ul","li2"], ["ul","li3"]
+  ];
+  if (closestMode) edges.push(["li2","span"]);
+  if (dynamic) edges.push(["ul","li-new"]);
+
+  const getNode = id => nodes.find(n => n.id === id);
+
+  var bubbleArrows = [];
+  var highlightNodes = [];
+  var listenerNode = null;
+
+  if (phase === "bubble") {
+    highlightNodes = ["li2","ul","div","document"];
+    bubbleArrows = [["li2","ul"],["ul","div"],["div","document"]];
+  } else if (phase === "capture") {
+    highlightNodes = ["document","div","ul","li2"];
+    bubbleArrows = [["document","div"],["div","ul"],["ul","li2"]];
+  } else if (phase === "all") {
+    highlightNodes = ["document","div","ul","li2"];
+    bubbleArrows = [["document","div"],["div","ul"],["ul","li2"],["li2","ul"],["ul","div"],["div","document"]];
+  } else if (phase === "target-vs-current") {
+    highlightNodes = ["li2","ul"];
+    listenerNode = "ul";
+  } else if (phase === "delegation") {
+    highlightNodes = ["li2","ul"];
+    bubbleArrows = [["li2","ul"]];
+    listenerNode = "ul";
+  } else if (phase === "step-by-step") {
+    highlightNodes = ["li2","ul"];
+    bubbleArrows = [["li2","ul"]];
+    listenerNode = "ul";
+  } else if (phase === "closest") {
+    highlightNodes = ["span","li2","ul"];
+    bubbleArrows = [["span","li2"],["li2","ul"]];
+    listenerNode = "ul";
+  } else if (phase === "dynamic") {
+    highlightNodes = ["li-new","ul"];
+    bubbleArrows = [["li-new","ul"]];
+    listenerNode = "ul";
+  } else if (phase === "stopped") {
+    highlightNodes = ["li2"];
+  }
+
+  return e(M.div, {
+    onClick,
+    animate:{ borderColor:T.border2, boxShadow:"0 0 0px transparent" },
+    transition:{ duration:0.4 },
+    style:{ borderRadius:12, border:"1.5px solid", background:T.surface, overflow:"hidden", cursor:onClick?"pointer":"default" }
+  },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, "DOM Tree")
+    ),
+    e("div", { style:{ padding:8, display:"flex", justifyContent:"center" } },
+      e("svg", { width:svgW, height:extraH, viewBox:`0 0 ${svgW} ${extraH}` },
+
+        /* edges */
+        edges.map(function(pair, i) {
+          var from = getNode(pair[0]);
+          var to = getNode(pair[1]);
+          if (!from || !to) return null;
+          var isHL = bubbleArrows.some(function(a) {
+            return (a[0]===pair[0] && a[1]===pair[1]) || (a[0]===pair[1] && a[1]===pair[0]);
+          });
+          return e("line", {
+            key:i, x1:from.x, y1:from.y+nodeH/2, x2:to.x, y2:to.y-nodeH/2,
+            stroke: isHL ? T.amber : T.border2, strokeWidth: isHL ? 2 : 1,
+            strokeDasharray: isHL ? "none" : "4,3",
+          });
+        }),
+
+        /* animated dots traveling along arrows */
+        bubbleArrows.map(function(pair, i) {
+          var from = getNode(pair[0]);
+          var to = getNode(pair[1]);
+          if (!from || !to) return null;
+          return e(M.circle, {
+            key:"dot-"+i, r:4, fill:T.amber,
+            initial:{ cx:from.x, cy:from.y },
+            animate:{ cx:[from.x,to.x], cy:[from.y,to.y] },
+            transition:{ duration:0.8, delay:i*0.4, repeat:Infinity, repeatDelay:bubbleArrows.length*0.4, ease:"easeInOut" },
+          });
+        }),
+
+        /* nodes */
+        nodes.map(function(n) {
+          var isHL = highlightNodes.indexOf(n.id) !== -1;
+          var isListener = listenerNode === n.id;
+          var isNaive = naive && n.id.indexOf("li") === 0;
+          var isTarget = (phase === "target-vs-current" && n.id === "li2");
+          var isCurrent = (phase === "target-vs-current" && n.id === "ul");
+          var isDyn = (n.id === "li-new");
+
+          var fillColor = n.color + "15";
+          var strokeColor = n.color + "44";
+          if (isHL) { fillColor = n.color + "30"; strokeColor = n.color; }
+          if (isListener) { fillColor = T.teal + "40"; strokeColor = T.tealL; }
+          if (isNaive) { fillColor = T.coral + "30"; strokeColor = T.coral; }
+          if (isDyn) { fillColor = T.teal + "30"; strokeColor = T.tealL; }
+
+          return e("g", { key:n.id },
+            e(M.rect, {
+              x:n.x-nodeW/2, y:n.y-nodeH/2, width:nodeW, height:nodeH, rx:8,
+              fill:fillColor, stroke:strokeColor,
+              strokeWidth: (isHL||isListener||isNaive) ? 2 : 1,
+              animate: isHL ? { opacity:[0.7,1,0.7] } : {},
+              transition: isHL ? { duration:1.5, repeat:Infinity } : {},
+            }),
+            e("text", {
+              x:n.x, y:n.y+1, textAnchor:"middle", dominantBaseline:"middle",
+              fill:n.color, fontSize:10, fontFamily:"'SF Mono',monospace",
+              fontWeight: isHL ? 700 : 400
+            }, n.label),
+
+            /* listener badge */
+            isListener && e("g", null,
+              e("rect", { x:n.x+nodeW/2-4, y:n.y-nodeH/2-8, width:30, height:14, rx:4, fill:T.tealL, opacity:0.9 }),
+              e("text", { x:n.x+nodeW/2+11, y:n.y-nodeH/2-1, textAnchor:"middle", dominantBaseline:"middle", fill:"#111", fontSize:7, fontWeight:700 }, "LISTEN")
+            ),
+
+            /* target badge */
+            isTarget && e("g", null,
+              e("rect", { x:n.x-nodeW/2-6, y:n.y-nodeH/2-8, width:36, height:14, rx:4, fill:T.amberL, opacity:0.9 }),
+              e("text", { x:n.x-nodeW/2+12, y:n.y-nodeH/2-1, textAnchor:"middle", dominantBaseline:"middle", fill:"#111", fontSize:7, fontWeight:700 }, "TARGET")
+            ),
+
+            /* currentTarget badge */
+            isCurrent && e("g", null,
+              e("rect", { x:n.x-nodeW/2-6, y:n.y-nodeH/2-8, width:56, height:14, rx:4, fill:T.purpleL, opacity:0.9 }),
+              e("text", { x:n.x-nodeW/2+22, y:n.y-nodeH/2-1, textAnchor:"middle", dominantBaseline:"middle", fill:"#111", fontSize:6, fontWeight:700 }, "CURRENTTARGET")
+            ),
+
+            /* naive listener badges */
+            isNaive && e("g", null,
+              e("rect", { x:n.x+nodeW/2-4, y:n.y-nodeH/2-8, width:10, height:14, rx:4, fill:T.coral, opacity:0.7 }),
+              e("text", { x:n.x+nodeW/2+1, y:n.y-nodeH/2-1, textAnchor:"middle", dominantBaseline:"middle", fill:"#fff", fontSize:7, fontWeight:700 }, "L")
+            ),
+
+            /* dynamic badge */
+            isDyn && e("g", null,
+              e("rect", { x:n.x-nodeW/2-2, y:n.y-nodeH/2-8, width:22, height:14, rx:4, fill:T.tealL, opacity:0.8 }),
+              e("text", { x:n.x-nodeW/2+9, y:n.y-nodeH/2-1, textAnchor:"middle", dominantBaseline:"middle", fill:"#111", fontSize:7, fontWeight:700 }, "NEW")
+            ),
+
+            /* stopped badge */
+            (stopped && n.id === "li2") && e("g", null,
+              e("rect", { x:n.x+nodeW/2+4, y:n.y-8, width:48, height:16, rx:4, fill:T.coral+"30", stroke:T.coral, strokeWidth:1 }),
+              e("text", { x:n.x+nodeW/2+28, y:n.y+1, textAnchor:"middle", dominantBaseline:"middle", fill:T.coralL, fontSize:8, fontWeight:700 }, "STOPPED")
+            )
+          );
+        }),
+
+        /* stopped blocking line */
+        stopped && e("line", {
+          x1:svgW/2-40, y1:155, x2:svgW/2+40, y2:155,
+          stroke:T.coral, strokeWidth:2, strokeDasharray:"6,4"
+        }),
+        stopped && e("text", {
+          x:svgW/2, y:167, textAnchor:"middle", fill:T.coralL, fontSize:9, fontFamily:"'SF Mono',monospace"
+        }, "event blocked")
+      )
+    ),
+
+    /* legend */
+    phase && e("div", { style:{ padding:"4px 14px 10px", display:"flex", gap:10, flexWrap:"wrap", justifyContent:"center" } },
+      phase === "bubble" && e("span", { style:{ fontSize:9, color:T.amberL } }, "event bubbles up from target"),
+      phase === "capture" && e("span", { style:{ fontSize:9, color:T.blueL } }, "event captures down to target"),
+      phase === "all" && e("span", { style:{ fontSize:9, color:T.amberL } }, "capture down, then bubble up"),
+      phase === "target-vs-current" && e("span", { style:{ fontSize:9, color:T.purpleL } }, "target = clicked | currentTarget = listener"),
+      phase === "delegation" && e("span", { style:{ fontSize:9, color:T.tealL } }, "one listener on parent catches all"),
+      phase === "step-by-step" && e("span", { style:{ fontSize:9, color:T.tealL } }, "click child, bubble, parent handles"),
+      phase === "closest" && e("span", { style:{ fontSize:9, color:T.amberL } }, "closest() walks up from <span> to <li>"),
+      phase === "dynamic" && e("span", { style:{ fontSize:9, color:T.tealL } }, "new element works with existing listener"),
+      phase === "stopped" && e("span", { style:{ fontSize:9, color:T.coralL } }, "stopPropagation blocks bubbling")
+    )
+  );
+};
+
+/* ─── INFO PANEL ─── */
+const InfoPanel = ({ scene, onClick }) => {
+  var phaseLabels = {
+    "bubble": { label:"Bubbling", desc:"Event travels up the tree", color:T.amber },
+    "capture": { label:"Capturing", desc:"Event travels down the tree", color:T.blue },
+    "all": { label:"All Phases", desc:"Capture then Target then Bubble", color:T.amber },
+    "target-vs-current": { label:"target / currentTarget", desc:"Who fired vs who listens", color:T.purple },
+    "delegation": { label:"Delegation", desc:"One listener on parent", color:T.teal },
+    "step-by-step": { label:"Step by Step", desc:"How delegation works in detail", color:T.teal },
+    "closest": { label:"closest()", desc:"Match targets with CSS selectors", color:T.amber },
+    "dynamic": { label:"Dynamic Elements", desc:"New elements just work", color:T.teal },
+    "stopped": { label:"stopPropagation", desc:"Blocking event travel", color:T.coral },
+  };
+
+  var info = phaseLabels[scene.tree.phase];
+
+  return e(M.div, {
+    onClick,
+    animate:{ borderColor:T.border2, boxShadow:"0 0 0px transparent" },
+    transition:{ duration:0.4 },
+    style:{ borderRadius:12, border:"1.5px solid", background:T.surface, overflow:"hidden", cursor:onClick?"pointer":"default" }
+  },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, "Event Phase")
+    ),
+    e("div", { style:{ padding:12, minHeight:52 } },
+      info
+        ? e(AP, { mode:"wait" },
+            e(M.div, { key:info.label, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.15} },
+              e("div", { style:{ fontSize:13, fontWeight:600, color:info.color, marginBottom:4 } }, info.label),
+              e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.6 } }, info.desc)
+            )
+          )
+        : e("div", { style:{ fontSize:11, color:T.text3 } }, "\u2014")
+    )
+  );
+};
+
+const Finale = () => {
+  var rows = [
+    { n:1, label:"Events bubble up", sub:"Click events travel from the target element up through all ancestors to the root", c:T.amber },
+    { n:2, label:"Events capture down", sub:"Before bubbling, events travel top-down during the capture phase (rarely used)", c:T.blue },
+    { n:3, label:"One listener on parent", sub:"Attach a single addEventListener on the common ancestor element", c:T.teal },
+    { n:4, label:"Check event.target", sub:"Use event.target.closest(selector) to identify which child was clicked", c:T.purple },
+    { n:5, label:"Works with dynamic elements", sub:"New children are automatically handled since the listener is on the parent", c:T.tealL },
+    { n:6, label:"Be careful with stopPropagation", sub:"Stopping event propagation in children will break delegation silently", c:T.coral },
+  ];
+  return e("div", { style:{ padding:"8px 0" } },
+    rows.map(function(r,i) { return e(M.div, { key:i, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.12,...ez},
+      style:{ display:"flex", alignItems:"flex-start", gap:12, padding:"11px 14px", marginBottom:8, borderRadius:10, border:`1px solid ${r.c}28`, background:`${r.c}08` }
+    },
+      e("div", { style:{ width:26, height:26, borderRadius:"50%", border:`1.5px solid ${r.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:12, fontWeight:700, color:r.c } }, r.n),
+      e("div", null,
+        e("div", { style:{ fontSize:13, fontWeight:600, color:r.c, marginBottom:2 } }, r.label),
+        e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.5 } }, r.sub)
+      )
+    ); })
+  );
+};
+
+const DetailPanel = ({ detailKey, onClose }) => {
+  var d = DETAILS[detailKey];
   if (!d) return null;
   return e("div", {
-    style: { width:340, flexShrink:0, background:T.surface, borderRadius:14, border:"1.5px solid "+d.color+"44", overflow:"hidden", alignSelf:"flex-start", position:"sticky", top:56 }
+    style:{ width:340, flexShrink:0, background:T.surface, borderRadius:14, border:`1.5px solid ${d.color}44`, overflow:"hidden", alignSelf:"flex-start", position:"sticky", top:56 }
   },
-    e("div", { style:{ padding:"14px 18px 12px", borderBottom:"1px solid "+T.border, display:"flex", alignItems:"center", justifyContent:"space-between" } },
+    e("div", { style:{ padding:"14px 18px 12px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" } },
       e("div", { style:{ display:"flex", alignItems:"center", gap:8 } },
         e("div", { style:{ width:8, height:8, borderRadius:"50%", background:d.color } }),
         e("span", { style:{ fontSize:14, fontWeight:600, color:T.text1 } }, d.title)
       ),
-      e("button", { onClick:props.onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6, transition:"color 0.2s" }, onMouseEnter:function(ev){ev.target.style.color=T.text1;}, onMouseLeave:function(ev){ev.target.style.color=T.text3;} }, "\u2715")
+      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6, transition:"color 0.2s" }, onMouseEnter:function(ev){ev.target.style.color=T.text1;}, onMouseLeave:function(ev){ev.target.style.color=T.text3;} }, "\u2715")
     ),
     e("div", { style:{ padding:"16px 18px 20px", maxHeight:"calc(100vh - 140px)", overflowY:"auto" } },
       d.sections.map(function(s, i) {
@@ -501,29 +700,11 @@ var DetailPanel = function(props) {
   );
 };
 
-/* ── Reusable Panel ── */
-var Panel = function(props) {
-  return e(M.div, {
-    onClick:props.onClick,
-    animate:{
-      borderColor: props.focused ? T.purple : T.border2,
-      boxShadow: props.focused ? "0 0 16px "+T.purple+"30, inset 0 0 12px "+T.purple+"08" : "0 0 0px transparent"
-    },
-    transition:{ duration:0.4 },
-    style:{ borderRadius:12, border:"1.5px solid", background:T.surface, overflow:"hidden", cursor:props.onClick?"pointer":"default" }
-  },
-    props.label && e("div", { style:{ padding:"8px 13px", borderBottom:"1px solid "+T.border } },
-      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, props.label)
-    ),
-    e("div", { style:{ padding:12 } }, props.children)
-  );
-};
-
-/* ── Main App ── */
+/* ─── APP ─── */
 function App() {
-  var _state = useState(0); var si = _state[0]; var setSi = _state[1];
-  var _play = useState(false); var playing = _play[0]; var setPlaying = _play[1];
-  var _det = useState(null); var detail = _det[0]; var setDetail = _det[1];
+  var _s = useState(0), si = _s[0], setSi = _s[1];
+  var _p = useState(false), playing = _p[0], setPlaying = _p[1];
+  var _d = useState(null), detail = _d[0], setDetail = _d[1];
   var timer = useRef(null);
   var sc = SCENES[si];
 
@@ -531,22 +712,20 @@ function App() {
 
   useEffect(function() {
     if (!playing) return;
-    var d = si===0 ? 3000 : si===SCENES.length-1 ? 99999 : 2800;
+    var d = si===0 ? 3000 : sc.finale ? 99999 : 3200;
     timer.current = setTimeout(function() { si < SCENES.length-1 ? setSi(function(i){return i+1;}) : setPlaying(false); }, d);
     return function() { clearTimeout(timer.current); };
   }, [playing, si]);
 
-  var go = function(d) { clearTimeout(timer.current); setPlaying(false); setSi(function(i){ return Math.max(0,Math.min(SCENES.length-1,i+d)); }); };
+  var go = function(d) { clearTimeout(timer.current); setPlaying(false); setSi(function(i){return Math.max(0,Math.min(SCENES.length-1,i+d));}); };
   var jump = function(i) { clearTimeout(timer.current); setPlaying(false); setSi(i); };
   var togglePlay = function() { if(si===SCENES.length-1){setSi(0);setPlaying(true);}else setPlaying(function(p){return !p;}); };
-  var toggleDetail = function(key) { setDetail(function(d){ return d===key?null:key; }); clearTimeout(timer.current); setPlaying(false); };
-
-  var tokens = CODES[sc.code] || [];
+  var toggleDetail = function(key) { if(!key) return; setDetail(function(d){return d===key?null:key;}); clearTimeout(timer.current); setPlaying(false); };
 
   return e("div", { style:{ display:"flex", gap:16, alignItems:"flex-start", justifyContent: detail ? "flex-start" : "center" } },
   e("div", { style:{ width:760, flexShrink:0, background:T.bg, fontFamily:"system-ui,sans-serif", padding:20, borderRadius:16 } },
 
-    /* ── Header ── */
+    /* header */
     e("div", { style:{ marginBottom:18 } },
       e("div", { style:{ display:"flex", alignItems:"center", gap:10, marginBottom:11 } },
         e(AP, { mode:"wait" },
@@ -571,61 +750,36 @@ function App() {
       )
     ),
 
-    /* ── Main content with minHeight ── */
     e("div", { style:{ minHeight:460 } },
+    /* finale */
+    sc.finale && e(Finale),
 
-      /* ── Two-column layout: code + visualization ── */
-      e("div", { style:{ display:"grid", gridTemplateColumns: sc.tree ? "1fr 1fr" : "1fr", gap:10, marginBottom:10 } },
+    /* main grid */
+    !sc.finale && e("div", null,
 
-        /* Left: code panel */
-        e("div", { onClick:function(){toggleDetail("code");}, style:{cursor:"pointer"} },
-          e(CodePanel, { tokens:tokens, highlighted:sc.hl||[] })
-        ),
-
-        /* Right: DOM tree or todo mock */
-        sc.tree && e(Panel, { label:"DOM Tree", focused:(sc.focusAreas||[]).indexOf("tree")>=0, onClick:function(){toggleDetail("tree");} },
-          e(DOMTree, { scene:sc }),
-          sc.bubblePath && sc.bubblePath.length >= 2 && e(BubbleArrow, { path:sc.bubblePath, phase:sc.phase }),
-          sc.phase==="all" && e(PhaseDiagram)
+      /* row 1: code panel */
+      e("div", { style:{ marginBottom:10 } },
+        e("div", { onClick:function(){toggleDetail(sc.detailKey);}, style:{cursor:sc.detailKey?"pointer":"default"} },
+          e(CodePanel, { tokens: sc.code })
         )
       ),
 
-      /* ── Extra panels based on scene ── */
-      sc.consoleOut && e(Panel, { label:"Console output", focused:(sc.focusAreas||[]).indexOf("console")>=0, onClick:function(){toggleDetail("console");} },
-        e("div", { style:{ fontFamily:"'SF Mono','Fira Code',monospace", minHeight:40 } },
-          e(AP, null, sc.consoleOut.map(function(item) {
-            return e(M.div, { key:item.id, initial:{opacity:0,x:-10}, animate:{opacity:1,x:0}, transition:ez,
-              style:{ fontSize:12, color:item.c, padding:"2px 0", borderBottom:"1px solid "+T.border }
-            }, e("span", { style:{ color:T.text3,marginRight:7,fontSize:10 } }, "\u203A"), item.t);
-          }))
-        )
-      ),
-
-      (sc.perfNote || sc.perfCompare) && e("div", { onClick:function(){toggleDetail("perf");}, style:{cursor:"pointer", marginTop:10} },
-        e(PerfPanel, { compare:sc.perfCompare, note:sc.perfNote })
-      ),
-
-      (sc.focusAreas||[]).indexOf("phases")>=0 && !sc.phase && e(PhaseDiagram),
-
-      (sc.focusAreas||[]).indexOf("todo")>=0 && e("div", { onClick:function(){toggleDetail("todo");}, style:{cursor:"pointer"} }, e(TodoMock)),
-
-      /* Finale banner */
-      sc.finale && e(M.div, { initial:{opacity:0,scale:0.9}, animate:{opacity:1,scale:1}, transition:sp(400,26),
-        style:{ marginTop:16, padding:"16px 20px", borderRadius:12, background:"linear-gradient(135deg, "+T.purple+"18, "+T.teal+"18)", border:"1px solid "+T.purple+"33", textAlign:"center" }
-      },
-        e("div", { style:{ fontSize:14, fontWeight:700, color:T.purpleL, marginBottom:4 } }, "Event Delegation"),
-        e("div", { style:{ fontSize:11, color:T.text2 } }, "One listener. Any number of children. Past, present, and future.")
+      /* row 2: DOM tree + info panel */
+      e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 } },
+        e(DOMTreeViz, { tree:sc.tree, onClick:function(){toggleDetail(sc.detailKey);} }),
+        e(InfoPanel, { scene:sc, onClick:function(){toggleDetail(sc.detailKey);} })
       )
     ),
+    ), /* close minHeight wrapper */
 
-    /* ── Controls ── */
+    /* controls */
     e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginTop:16 } },
       e("button", { onClick:function(){go(-1);}, disabled:si===0,
         style:{ padding:"6px 14px",borderRadius:8,border:"1px solid "+T.border,background:"transparent",color:si===0?T.text3:T.text2,cursor:si===0?"not-allowed":"pointer",fontSize:11,transition:"color 0.2s" }
       }, "\u2190 Back"),
       e("button", { onClick:togglePlay,
         style:{ padding:"6px 18px",borderRadius:8,border:"1px solid "+(playing?T.coral:T.purple)+"44",background:(playing?T.coral:T.purple)+"14",color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all 0.2s" }
-      }, playing ? "\u23F8  Pause" : si===SCENES.length-1 ? "\u21BA  Replay" : "\u25B6  Play"),
+      }, playing ? "\u23f8  Pause" : si===SCENES.length-1 ? "\u21ba  Replay" : "\u25b6  Play"),
       e("button", { onClick:function(){go(1);}, disabled:si===SCENES.length-1,
         style:{ padding:"6px 14px",borderRadius:8,border:"1px solid "+T.border,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
       }, "Next \u2192"),
@@ -639,8 +793,6 @@ function App() {
       )
     )
   ),
-
-  /* ── Detail sidebar ── */
   detail && e(DetailPanel, { detailKey:detail, onClose:function(){setDetail(null);} })
   );
 }

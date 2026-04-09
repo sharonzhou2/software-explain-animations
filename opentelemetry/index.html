@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenTelemetry</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111118;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px 16px;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  #root { width: 100%; max-width: 1120px; }
+  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: system-ui, sans-serif; }
+  .topnav a { text-decoration: none; color: #8888aa; font-size: 13px; transition: color 0.2s; }
+  .topnav a:hover { color: #e8e8f0; }
+  .topnav .name { font-weight: 600; color: #e8e8f0; font-size: 13px; }
+  .topnav .sep { color: #38384a; font-size: 12px; }
+  .topnav .current { color: #7c6fcd; font-size: 13px; font-weight: 500; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="../" class="name">Sharon Zhou</a>
+  <span class="sep">/</span>
+  <a href="../">Animations</a>
+  <span class="sep">/</span>
+  <span class="current">OpenTelemetry</span>
+</nav>
+<div id="root" style="margin-top: 36px;"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/framer-motion@11/dist/framer-motion.js"></script>
+<script>
+const { useState, useEffect, useRef } = React;
+const { motion, AnimatePresence } = window.Motion;
+const e = React.createElement;
+const M = motion;
+const AP = AnimatePresence;
+const sp = (s=380,d=28) => ({ type:"spring", stiffness:s, damping:d });
+const ez = { duration:0.32, ease:[0.22,1,0.36,1] };
+
+const T = {
+  bg:"#111118", surface:"#18181f", surface2:"#1e1e28",
+  border:"#2a2a38", border2:"#38384a",
+  text1:"#e8e8f0", text2:"#8888aa", text3:"#44445a",
+  purple:"#7c6fcd", purpleL:"#a99cf0",
+  teal:"#3db89a", tealL:"#6dd4b8",
+  coral:"#c4694a", coralL:"#e08a6a",
+  blue:"#4a8fd4", blueL:"#82b4e8",
+  amber:"#d4a84a", amberL:"#e8c86a",
+  green:"#4ac46a", greenL:"#6ae88a",
+  red:"#e05555", redL:"#ff7777",
+  codeBase:"#141428",
+  trace:  "#7c6fcd", traceL: "#a99cf0",
+  metric: "#3db89a", metricL:"#6dd4b8",
+  log:    "#d4a84a", logL:   "#e8c86a",
+};
+
+const TS = {
+  fn:{color:"#82aaff"}, meth:{color:"#89ddff"}, str:{color:"#c3e88d"},
+  kw:{color:"#c792ea"}, num:{color:"#f78c6c"}, punc:{color:"#89ddff"},
+  plain:{color:"#a6accd"}, cmt:{color:"#546e7a",fontStyle:"italic"},
+  key:{color:"#f78c6c"}, val:{color:"#c3e88d"},
+};
+
+/* ─── SCENES ─── */
+const SCENES = [
+  {
+    id:0, act:"01",
+    title:"What is OpenTelemetry?",
+    sub:"OTel is a vendor-neutral, open-source standard for collecting telemetry data — traces, metrics, and logs. It decouples instrumentation from backends so you're never locked in.",
+    code:[
+      [["cmt","// OpenTelemetry (OTel)"]],
+      [["cmt","// CNCF project — industry standard"]],
+      [["cmt","// One API, any backend"]],
+    ],
+    pipeline:null, signals:null, spans:null, collector:null,
+  },
+  {
+    id:1, act:"02",
+    title:"The problem before OTel",
+    sub:"Every vendor had its own SDK. Switching from Datadog to Jaeger meant rewriting all instrumentation. No standard format, no interoperability, no portable telemetry.",
+    code:[
+      [["cmt","// Before OTel:"]],
+      [["kw","import"],["plain"," "],["str","'datadog-sdk'"],["plain","    "],["cmt","// vendor A"]],
+      [["kw","import"],["plain"," "],["str","'newrelic-agent'"],["plain"," "],["cmt","// vendor B"]],
+      [["kw","import"],["plain"," "],["str","'jaeger-client'"],["plain","  "],["cmt","// vendor C"]],
+      [["cmt","// Different APIs, different formats"]],
+      [["cmt","// Switch vendor = rewrite everything"]],
+    ],
+    pipeline:null, signals:null, spans:null, collector:null,
+  },
+  {
+    id:2, act:"03",
+    title:"The three signals",
+    sub:"OTel standardizes three types of telemetry data. Traces show request flow across services. Metrics measure system health. Logs capture discrete events.",
+    code:[
+      [["cmt","// Three pillars of observability"]],
+      [["cmt","// 1. Traces  — request flow"]],
+      [["cmt","// 2. Metrics — counters, gauges"]],
+      [["cmt","// 3. Logs    — structured events"]],
+    ],
+    signals:[
+      { id:"traces",  label:"Traces",  sub:"Distributed request flow", color:T.trace, icon:"⟿" },
+      { id:"metrics", label:"Metrics", sub:"Counters, gauges, histograms", color:T.metric, icon:"📊" },
+      { id:"logs",    label:"Logs",    sub:"Structured event records", color:T.log, icon:"📝" },
+    ],
+    pipeline:null, spans:null, collector:null,
+  },
+  {
+    id:3, act:"04",
+    title:"Instrumentation — adding telemetry to code",
+    sub:"Auto-instrumentation wraps popular frameworks (Express, Flask, gRPC) automatically. Manual instrumentation lets you add custom spans and metrics where you need them.",
+    code:[
+      [["cmt","// Auto-instrumentation (zero code)"]],
+      [["fn","registerInstrumentations"],["punc","({"]],
+      [["plain","  instrumentations"],["punc",": ["]],
+      [["plain","    "],["kw","new"],["plain"," "],["fn","HttpInstrumentation"],["punc","(),"]],
+      [["plain","    "],["kw","new"],["plain"," "],["fn","ExpressInstrumentation"],["punc","(),"]],
+      [["plain","  "],["punc","]"]],
+      [["punc","})"]],
+    ],
+    pipeline:null, signals:null, spans:null, collector:null,
+  },
+  {
+    id:4, act:"05",
+    title:"Manual span creation",
+    sub:"You create a tracer, then start spans around the operations you want to measure. Spans can be nested to show parent-child relationships.",
+    code:[
+      [["kw","const"],["plain"," tracer "],["punc","= "],["fn","trace"],["punc","."],["meth","getTracer"],["punc","("],["str","'my-app'"],["punc",")"]],
+      [["plain",""]],
+      [["plain","tracer"],["punc","."],["meth","startActiveSpan"],["punc","("],["str","'processOrder'"],["punc",","]],
+      [["plain","  "],["punc","(span) => {"]],
+      [["plain","    span"],["punc","."],["meth","setAttribute"],["punc","("],["str","'order.id'"],["punc",", id)"]],
+      [["plain","    "],["cmt","// ... do work ..."]],
+      [["plain","    span"],["punc","."],["meth","end"],["punc","()"]],
+      [["plain","  "],["punc","}"]],
+      [["punc",")"]],
+    ],
+    pipeline:null, signals:null, spans:null, collector:null,
+  },
+  {
+    id:5, act:"06",
+    title:"Traces — a tree of spans",
+    sub:"A trace represents one request flowing through your system. Each service creates a span. Spans form a tree — the root span is the entry point, child spans are downstream calls.",
+    code:[
+      [["cmt","// Trace: one request, multiple spans"]],
+      [["cmt","// API Gateway → Auth → User Service → DB"]],
+    ],
+    spans:[
+      { id:"root",  label:"API Gateway",   dur:"120ms", depth:0, color:T.trace,  start:0,   width:100 },
+      { id:"auth",  label:"Auth Service",  dur:"25ms",  depth:1, color:T.blue,   start:5,   width:25 },
+      { id:"user",  label:"User Service",  dur:"65ms",  depth:1, color:T.teal,   start:32,  width:55 },
+      { id:"db",    label:"DB Query",      dur:"30ms",  depth:2, color:T.amber,  start:40,  width:28 },
+      { id:"cache", label:"Cache Write",   dur:"8ms",   depth:2, color:T.green,  start:75,  width:10 },
+    ],
+    pipeline:null, signals:null, collector:null,
+  },
+  {
+    id:6, act:"07",
+    title:"Span anatomy",
+    sub:"Each span carries structured data: a unique traceId (shared across the whole trace), spanId, parent reference, name, timing, status, and custom attributes.",
+    code:[
+      [["punc","{"]],
+      [["plain","  "],["key","traceId"],["punc",":  "],["str","\"abc123...\""]],
+      [["plain","  "],["key","spanId"],["punc",":   "],["str","\"def456...\""]],
+      [["plain","  "],["key","parentId"],["punc",": "],["str","\"root789...\""]],
+      [["plain","  "],["key","name"],["punc",":     "],["str","\"DB Query\""]],
+      [["plain","  "],["key","start"],["punc",":    "],["num","1712345678.040"]],
+      [["plain","  "],["key","duration"],["punc",": "],["num","30"],["plain","ms"]],
+      [["plain","  "],["key","status"],["punc",":   "],["str","\"OK\""]],
+      [["plain","  "],["key","attributes"],["punc",": { "],["str","\"db.system\""],["punc",": "],["str","\"postgresql\""],["punc"," }"]],
+      [["punc","}"]],
+    ],
+    pipeline:null, signals:null, spans:null, collector:null,
+  },
+  {
+    id:7, act:"08",
+    title:"Context propagation",
+    sub:"When Service A calls Service B, the trace context must travel with the request. OTel uses the W3C traceparent header to propagate traceId and parentSpanId across service boundaries.",
+    code:[
+      [["cmt","// W3C traceparent header format:"]],
+      [["str","'traceparent: 00-<traceId>-<spanId>-01'"]],
+      [["plain",""]],
+      [["cmt","// Example HTTP header:"]],
+      [["key","traceparent"],["punc",": "]],
+      [["str","'00-abc123def456-789abc-01'"]],
+      [["plain",""]],
+      [["cmt","// OTel SDK injects this automatically"]],
+      [["cmt","// on outgoing HTTP/gRPC calls"]],
+    ],
+    pipeline:null, signals:null, spans:null, collector:null,
+    propagation:true,
+  },
+  {
+    id:8, act:"09",
+    title:"The OTel Collector",
+    sub:"The Collector is a standalone process that receives telemetry, processes it, and exports it to backends. It's the central hub of the OTel pipeline: Receivers → Processors → Exporters.",
+    code:[
+      [["cmt","# collector-config.yaml"]],
+      [["key","receivers"],["punc",":"]],
+      [["plain","  "],["key","otlp"],["punc",":"]],
+      [["plain","    "],["key","protocols"],["punc",": { "],["key","grpc"],["punc",": {}, "],["key","http"],["punc",": {} }"]],
+      [["key","processors"],["punc",":"]],
+      [["plain","  "],["key","batch"],["punc",": { "],["key","timeout"],["punc",": "],["num","5s"],["punc"," }"]],
+      [["key","exporters"],["punc",":"]],
+      [["plain","  "],["key","otlp"],["punc",": { "],["key","endpoint"],["punc",": "],["str","\"jaeger:4317\""],["punc"," }"]],
+    ],
+    collector:{
+      receivers:["OTLP (gRPC)","OTLP (HTTP)","Prometheus","Jaeger"],
+      processors:["Batch","Filter","Attributes","Sampling"],
+      exporters:["Jaeger","Prometheus","Datadog","OTLP"],
+    },
+    pipeline:null, signals:null, spans:null,
+  },
+  {
+    id:9, act:"10",
+    title:"Collector processors",
+    sub:"Processors transform telemetry in-flight. Batch groups data for efficiency. Filter drops unwanted spans. Sampling reduces volume. Attributes add/remove metadata.",
+    code:[
+      [["key","processors"],["punc",":"]],
+      [["plain","  "],["key","batch"],["punc",":"]],
+      [["plain","    "],["key","send_batch_size"],["punc",": "],["num","1024"]],
+      [["plain","    "],["key","timeout"],["punc",": "],["num","5s"]],
+      [["plain","  "],["key","filter"],["punc",":"]],
+      [["plain","    "],["key","spans"],["punc",":"]],
+      [["plain","      "],["key","exclude"],["punc",": { "],["key","match_type"],["punc",": "],["str","\"strict\""]],
+      [["plain","        "],["key","attributes"],["punc",": [{ "],["key","key"],["punc",": "],["str","\"http.target\""]],
+      [["plain","          "],["key","value"],["punc",": "],["str","\"/healthz\""],["punc"," }] }"]],
+    ],
+    collector:null, pipeline:null, signals:null, spans:null,
+  },
+  {
+    id:10, act:"11",
+    title:"Push model — app pushes telemetry",
+    sub:"OTel uses a push model: the app SDK sends data to the Collector (or directly to a backend). Contrast with Prometheus which pulls metrics from your app's /metrics endpoint.",
+    code:[
+      [["cmt","// OTel: PUSH model"]],
+      [["cmt","// App SDK → pushes → Collector → Backend"]],
+      [["cmt",""]],
+      [["cmt","// Prometheus: PULL model"]],
+      [["cmt","// Prometheus ← scrapes ← App /metrics"]],
+      [["cmt",""]],
+      [["cmt","// OTel can export TO Prometheus too"]],
+      [["cmt","// (Collector exposes /metrics for scraping)"]],
+    ],
+    pipeline:{
+      push:[
+        { id:"app",  label:"App (SDK)", color:T.trace },
+        { id:"col",  label:"Collector", color:T.purple },
+        { id:"back", label:"Backend",   color:T.teal },
+      ],
+      pull:[
+        { id:"prom", label:"Prometheus", color:T.coral },
+        { id:"app2", label:"App /metrics", color:T.blue },
+      ],
+    },
+    signals:null, spans:null, collector:null,
+  },
+  {
+    id:11, act:"12",
+    title:"Export destinations",
+    sub:"Because OTel is vendor-neutral, you can export to any backend without changing your instrumentation. Switch from Jaeger to Datadog? Just change the Collector config.",
+    code:[
+      [["key","exporters"],["punc",":"]],
+      [["plain","  "],["key","jaeger"],["punc",":    { "],["key","endpoint"],["punc",": "],["str","\"jaeger:14250\""],["punc"," }"]],
+      [["plain","  "],["key","prometheus"],["punc",": { "],["key","endpoint"],["punc",": "],["str","\":8889\""],["punc"," }"]],
+      [["plain","  "],["key","otlp/dd"],["punc",":   { "],["key","endpoint"],["punc",": "],["str","\"dd-agent:4317\""],["punc"," }"]],
+      [["plain","  "],["key","otlp/nr"],["punc",":   { "],["key","endpoint"],["punc",": "],["str","\"otlp.nr-data.net\""],["punc"," }"]],
+    ],
+    pipeline:null, signals:null, spans:null, collector:null,
+    backends:["Jaeger","Zipkin","Prometheus","Grafana Tempo","Datadog","New Relic","Honeycomb","Dynatrace"],
+  },
+  {
+    id:12, act:"13",
+    title:"OTLP — the native protocol",
+    sub:"OpenTelemetry Protocol (OTLP) is the standard wire format for sending all three signals. Supports gRPC (fast, streaming) and HTTP/protobuf (firewall-friendly).",
+    code:[
+      [["cmt","// OTLP over gRPC (default port 4317)"]],
+      [["key","endpoint"],["punc",": "],["str","\"otel-collector:4317\""]],
+      [["key","protocol"],["punc",": "],["str","\"grpc\""]],
+      [["plain",""]],
+      [["cmt","// OTLP over HTTP (default port 4318)"]],
+      [["key","endpoint"],["punc",": "],["str","\"otel-collector:4318\""]],
+      [["key","protocol"],["punc",": "],["str","\"http/protobuf\""]],
+    ],
+    pipeline:null, signals:null, spans:null, collector:null,
+  },
+  {
+    id:13, act:"14",
+    title:"Typical deployment",
+    sub:"In production: your app includes the OTel SDK, which pushes telemetry to a Collector running as a sidecar or DaemonSet. The Collector fans out to one or more backends.",
+    code:[
+      [["cmt","// Typical production setup:"]],
+      [["cmt","//"]],
+      [["cmt","// ┌─────────┐    OTLP     ┌───────────┐"]],
+      [["cmt","// │ App+SDK ├────────────►│ Collector │"]],
+      [["cmt","// └─────────┘             └─────┬─────┘"]],
+      [["cmt","//                     ┌─────────┼─────────┐"]],
+      [["cmt","//                     ▼         ▼         ▼"]],
+      [["cmt","//                  Jaeger   Prometheus  Datadog"]],
+    ],
+    pipeline:{
+      push:[
+        { id:"app",  label:"App + SDK",     color:T.trace },
+        { id:"col",  label:"OTel Collector (sidecar)", color:T.purple },
+        { id:"back", label:"Backends",      color:T.teal },
+      ],
+    },
+    signals:null, spans:null, collector:null,
+    deployment:true,
+  },
+  {
+    id:14, act:"✓",
+    title:"OpenTelemetry — summary",
+    sub:"Instrument once, export anywhere. OTel is the future of observability.",
+    code:[], pipeline:null, signals:null, spans:null, collector:null,
+    finale:true,
+  },
+];
+
+/* ─── DETAIL CONTENT ─── */
+const DETAILS = {
+  traces: {
+    title:"Traces",
+    color:T.trace,
+    sections:[
+      {heading:"What is a trace?",body:"A trace represents the journey of a single request through a distributed system. It's a directed acyclic graph (tree) of spans, where each span represents a unit of work in one service."},
+      {heading:"Why traces matter",body:"In a microservices architecture, a single user request might hit 10+ services. Without traces, debugging \"why was this request slow?\" means grepping logs across dozens of services. Traces show the exact path and timing."},
+      {heading:"Sampling",body:"In high-traffic systems, tracing every request is expensive. OTel supports:\n• Head sampling — decide at request start (fast, simple)\n• Tail sampling — decide after seeing the full trace (can keep errors/slow traces)\n• Probabilistic — keep N% of traces"},
+    ]
+  },
+  metrics: {
+    title:"Metrics",
+    color:T.metric,
+    sections:[
+      {heading:"Metric types",body:"• Counter — monotonically increasing (requests_total)\n• Gauge — current value (temperature, queue_size)\n• Histogram — distribution of values (request_duration)\n\nOTel also supports UpDownCounter and exponential histograms."},
+      {heading:"Push vs Pull",body:"OTel metrics are push-based (SDK → Collector). For Prometheus compatibility, the Collector can expose a /metrics endpoint for scraping. You get the best of both worlds."},
+      {heading:"Exemplars",body:"Exemplars link metrics to traces. When a histogram bucket records a slow request, the exemplar stores the traceId — so you can jump from \"p99 latency spiked\" directly to the trace that caused it."},
+    ]
+  },
+  logs: {
+    title:"Logs",
+    color:T.log,
+    sections:[
+      {heading:"Structured logs",body:"OTel logs aren't just text — they're structured records with timestamp, severity, body, attributes, and crucially: traceId and spanId. This correlates logs with the trace they belong to."},
+      {heading:"Log correlation",body:"When you emit a log inside a traced operation, OTel automatically attaches the active traceId and spanId. In your backend, you can click from a log line directly to its trace — and vice versa."},
+      {heading:"Bridges",body:"OTel doesn't replace your logging library (winston, log4j, slog). Instead, it bridges: your existing logger emits logs, and the OTel SDK captures them with trace context attached."},
+    ]
+  },
+  collector: {
+    title:"OTel Collector",
+    color:T.purple,
+    sections:[
+      {heading:"Why a collector?",body:"You could export directly from your app to a backend. But a Collector in between gives you:\n• Buffering and retry on failure\n• Processing (filtering, sampling, enrichment)\n• Fan-out to multiple backends\n• Decouples app from backend choice"},
+      {heading:"Deployment modes",body:"• Sidecar — one Collector per pod (Kubernetes)\n• DaemonSet — one per node\n• Gateway — centralized fleet of Collectors\n• No Collector — SDK exports directly (simple but limited)"},
+      {heading:"Pipeline config",body:"A Collector config defines pipelines:\n\nservice:\n  pipelines:\n    traces:\n      receivers: [otlp]\n      processors: [batch, filter]\n      exporters: [jaeger]\n    metrics:\n      receivers: [otlp, prometheus]\n      processors: [batch]\n      exporters: [prometheus]"},
+    ]
+  },
+  code: {
+    title:"Code Examples",
+    color:T.purpleL,
+    sections:[
+      {heading:"Auto-instrumentation",body:"For Node.js:\nnpx opentelemetry-instrument node app.js\n\nFor Python:\nopentelemetry-instrument python app.py\n\nFor Java:\njava -javaagent:opentelemetry-javaagent.jar -jar app.jar\n\nZero code changes — instruments HTTP, DB, gRPC automatically."},
+      {heading:"SDK setup (Node.js)",body:"const { NodeSDK } = require('@opentelemetry/sdk-node')\nconst { OTLPTraceExporter } = require('@opentelemetry/exporter-trace-otlp-grpc')\n\nconst sdk = new NodeSDK({\n  traceExporter: new OTLPTraceExporter({\n    url: 'http://collector:4317'\n  }),\n})\nsdk.start()"},
+      {heading:"Environment variables",body:"OTel is configured via env vars:\nOTEL_SERVICE_NAME=my-app\nOTEL_EXPORTER_OTLP_ENDPOINT=http://collector:4317\nOTEL_TRACES_SAMPLER=parentbased_traceidratio\nOTEL_TRACES_SAMPLER_ARG=0.1"},
+    ]
+  },
+  propagation: {
+    title:"Context Propagation",
+    color:T.blue,
+    sections:[
+      {heading:"What is propagation?",body:"When Service A calls Service B, the trace must continue. Context propagation injects trace metadata into outgoing requests (HTTP headers, gRPC metadata) and extracts it on the receiving side."},
+      {heading:"W3C Trace Context",body:"The standard format (used by default):\n\ntraceparent: 00-<trace-id>-<parent-span-id>-<flags>\n\n• 00 — version\n• trace-id — 32 hex chars, shared by all spans in the trace\n• parent-span-id — 16 hex chars, the calling span\n• flags — 01 = sampled"},
+      {heading:"Propagators",body:"OTel supports multiple propagation formats:\n• W3C TraceContext (default)\n• B3 (Zipkin format)\n• Jaeger propagation\n• AWS X-Ray\n\nYou can use multiple simultaneously for migration."},
+    ]
+  },
+};
+
+/* ─── COMPONENTS ─── */
+const CodePanel = ({ tokens, onClick }) =>
+  e("div", { onClick, style:{ background:T.codeBase, borderRadius:12, overflow:"hidden", border:`1px solid ${T.border}`, cursor:onClick?"pointer":"default" } },
+    e("div", { style:{ padding:"10px 14px 8px", borderBottom:`1px solid ${T.border}`, display:"flex", gap:7 } },
+      ...["#ff5f57","#febc2e","#28c840"].map((c,i) =>
+        e("div", { key:i, style:{ width:11, height:11, borderRadius:"50%", background:c } })
+      )
+    ),
+    e("div", { style:{ padding:"14px 18px 16px", fontFamily:"'SF Mono','Fira Code','Consolas',monospace", fontSize:12, lineHeight:1.85 } },
+      tokens.map((line, li) =>
+        e("div", { key:li },
+          line.map(([cls, txt], ti) =>
+            e("span", { key:ti, style:{ ...TS[cls], whiteSpace:"pre" } }, txt)
+          )
+        )
+      )
+    )
+  );
+
+const Panel = ({ label, children, style={}, focused=false, onClick }) =>
+  e(M.div, {
+    onClick,
+    animate:{ borderColor: focused ? T.purple : T.border2, boxShadow: focused ? `0 0 16px ${T.purple}30, inset 0 0 12px ${T.purple}08` : "0 0 0px transparent" },
+    transition:{ duration:0.4 },
+    style:{ borderRadius:12, border:"1.5px solid", background:T.surface, overflow:"hidden", cursor:onClick?"pointer":"default", ...style }
+  },
+    label && e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, label)
+    ),
+    e("div", { style:{ padding:12 } }, children)
+  );
+
+/* Trace waterfall */
+const TraceWaterfall = ({ spans, onClick }) =>
+  e("div", { onClick, style:{ borderRadius:12, border:`1.5px solid ${T.border2}`, background:T.surface, overflow:"hidden", cursor:"pointer" } },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, "Trace Waterfall")
+    ),
+    e("div", { style:{ padding:12 } },
+      spans.map((s, i) =>
+        e(M.div, { key:s.id, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.1,...ez},
+          style:{ display:"flex", alignItems:"center", gap:8, marginBottom:6, paddingLeft:s.depth*20 }
+        },
+          e("div", { style:{ fontSize:10, fontFamily:"monospace", color:s.color, width:90, flexShrink:0, fontWeight:600 } }, s.label),
+          e("div", { style:{ flex:1, height:18, background:T.bg, borderRadius:4, position:"relative", overflow:"hidden" } },
+            e(M.div, { initial:{width:0}, animate:{width:`${s.width}%`}, transition:{delay:i*0.1+0.2, duration:0.5, ease:[0.22,1,0.36,1]},
+              style:{ position:"absolute", left:`${s.start}%`, height:"100%", background:`${s.color}44`, borderRadius:4, border:`1px solid ${s.color}66`, display:"flex", alignItems:"center", justifyContent:"center" }
+            },
+              e("span", { style:{ fontSize:9, color:s.color, fontFamily:"monospace", fontWeight:600 } }, s.dur)
+            )
+          )
+        )
+      )
+    )
+  );
+
+/* Signals cards */
+const SignalCards = ({ signals, onClick }) =>
+  e("div", { style:{ display:"flex", gap:10 } },
+    signals.map((s, i) =>
+      e(M.div, { key:s.id, initial:{opacity:0,y:15}, animate:{opacity:1,y:0}, transition:{delay:i*0.12,...ez}, onClick:()=>onClick(s.id),
+        style:{ flex:1, borderRadius:12, border:`1.5px solid ${s.color}44`, background:`${s.color}0c`, padding:16, cursor:"pointer", textAlign:"center" }
+      },
+        e("div", { style:{ fontSize:24, marginBottom:6 } }, s.icon),
+        e("div", { style:{ fontSize:14, fontWeight:600, color:s.color, marginBottom:3 } }, s.label),
+        e("div", { style:{ fontSize:11, color:T.text2 } }, s.sub),
+      )
+    )
+  );
+
+/* Collector pipeline */
+const CollectorViz = ({ collector, onClick }) =>
+  e("div", { onClick, style:{ borderRadius:12, border:`1.5px solid ${T.purple}44`, background:T.surface, overflow:"hidden", cursor:"pointer" } },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", gap:6 } },
+      e("div", { style:{ width:8, height:8, borderRadius:"50%", background:T.purple } }),
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.purple } }, "OTel Collector Pipeline")
+    ),
+    e("div", { style:{ padding:14, display:"flex", alignItems:"stretch", gap:6 } },
+      /* Receivers */
+      e("div", { style:{ flex:1, borderRadius:8, border:`1px solid ${T.teal}44`, background:`${T.teal}0c`, padding:10 } },
+        e("div", { style:{ fontSize:10, fontWeight:700, color:T.teal, marginBottom:6, textTransform:"uppercase", letterSpacing:"0.06em" } }, "Receivers"),
+        collector.receivers.map((r,i) => e("div", { key:i, style:{ fontSize:10, color:T.text2, padding:"2px 0", fontFamily:"monospace" } }, r))
+      ),
+      e("div", { style:{ display:"flex", alignItems:"center", color:T.text3, fontSize:16 } }, "→"),
+      /* Processors */
+      e("div", { style:{ flex:1, borderRadius:8, border:`1px solid ${T.purple}44`, background:`${T.purple}0c`, padding:10 } },
+        e("div", { style:{ fontSize:10, fontWeight:700, color:T.purple, marginBottom:6, textTransform:"uppercase", letterSpacing:"0.06em" } }, "Processors"),
+        collector.processors.map((p,i) => e("div", { key:i, style:{ fontSize:10, color:T.text2, padding:"2px 0", fontFamily:"monospace" } }, p))
+      ),
+      e("div", { style:{ display:"flex", alignItems:"center", color:T.text3, fontSize:16 } }, "→"),
+      /* Exporters */
+      e("div", { style:{ flex:1, borderRadius:8, border:`1px solid ${T.coral}44`, background:`${T.coral}0c`, padding:10 } },
+        e("div", { style:{ fontSize:10, fontWeight:700, color:T.coral, marginBottom:6, textTransform:"uppercase", letterSpacing:"0.06em" } }, "Exporters"),
+        collector.exporters.map((x,i) => e("div", { key:i, style:{ fontSize:10, color:T.text2, padding:"2px 0", fontFamily:"monospace" } }, x))
+      ),
+    )
+  );
+
+/* Push flow */
+const PushFlow = ({ pipeline, onClick }) =>
+  e("div", { onClick, style:{ borderRadius:12, border:`1.5px solid ${T.border2}`, background:T.surface, overflow:"hidden", padding:14, cursor:"pointer" } },
+    e("div", { style:{ fontSize:10, fontWeight:700, color:T.text2, marginBottom:10, letterSpacing:"0.06em", textTransform:"uppercase" } }, "Push Model — Data Flow"),
+    e("div", { style:{ display:"flex", alignItems:"center", justifyContent:"center", gap:10 } },
+      pipeline.push.map((n, i) =>
+        e(React.Fragment, { key:n.id },
+          e(M.div, { initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, transition:{delay:i*0.15,...ez},
+            style:{ padding:"10px 16px", borderRadius:10, border:`1.5px solid ${n.color}44`, background:`${n.color}14`, textAlign:"center" }
+          },
+            e("div", { style:{ fontSize:12, fontWeight:600, color:n.color, fontFamily:"monospace" } }, n.label)
+          ),
+          i < pipeline.push.length - 1 && e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:i*0.15+0.1},
+            style:{ fontSize:16, color:T.text3 } }, "→")
+        )
+      )
+    ),
+    pipeline.pull && e("div", { style:{ marginTop:14, paddingTop:10, borderTop:`1px solid ${T.border}` } },
+      e("div", { style:{ fontSize:10, fontWeight:700, color:T.text3, marginBottom:8, letterSpacing:"0.06em", textTransform:"uppercase" } }, "Pull Model (Prometheus)"),
+      e("div", { style:{ display:"flex", alignItems:"center", justifyContent:"center", gap:10 } },
+        pipeline.pull.map((n, i) =>
+          e(React.Fragment, { key:n.id },
+            e("div", { style:{ padding:"8px 14px", borderRadius:8, border:`1px solid ${n.color}44`, background:`${n.color}14`, fontSize:11, fontWeight:600, color:n.color, fontFamily:"monospace" } }, n.label),
+            i < pipeline.pull.length - 1 && e("div", { style:{ fontSize:16, color:T.text3 } }, "←")
+          )
+        )
+      )
+    )
+  );
+
+/* Backend grid */
+const BackendGrid = ({ backends }) =>
+  e("div", { style:{ display:"flex", flexWrap:"wrap", gap:8, marginTop:10 } },
+    backends.map((b,i) =>
+      e(M.div, { key:b, initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, transition:{delay:i*0.06,...ez},
+        style:{ padding:"6px 14px", borderRadius:8, border:`1px solid ${T.teal}33`, background:`${T.teal}0c`, fontSize:11, fontFamily:"monospace", color:T.tealL, fontWeight:500 }
+      }, b)
+    )
+  );
+
+/* Context propagation viz */
+const PropagationViz = () =>
+  e("div", { style:{ borderRadius:12, border:`1.5px solid ${T.blue}44`, background:T.surface, overflow:"hidden", padding:14 } },
+    e("div", { style:{ fontSize:10, fontWeight:700, color:T.blue, marginBottom:12, letterSpacing:"0.06em", textTransform:"uppercase" } }, "Context Propagation"),
+    e("div", { style:{ display:"flex", alignItems:"center", justifyContent:"center", gap:6 } },
+      [
+        { label:"Service A", sub:"creates span", color:T.trace },
+        { label:"HTTP Header", sub:"traceparent: 00-abc...", color:T.blue },
+        { label:"Service B", sub:"continues trace", color:T.teal },
+      ].map((n,i) =>
+        e(React.Fragment, { key:i },
+          e(M.div, { initial:{opacity:0,y:10}, animate:{opacity:1,y:0}, transition:{delay:i*0.15,...ez},
+            style:{ padding:"10px 14px", borderRadius:10, border:`1px solid ${n.color}44`, background:`${n.color}0c`, textAlign:"center", flex:1 }
+          },
+            e("div", { style:{ fontSize:12, fontWeight:600, color:n.color, marginBottom:2 } }, n.label),
+            e("div", { style:{ fontSize:9, color:T.text2, fontFamily:"monospace" } }, n.sub),
+          ),
+          i < 2 && e("div", { style:{ fontSize:14, color:T.text3 } }, "→")
+        )
+      )
+    )
+  );
+
+const Finale = () => {
+  const rows = [
+    { n:"1", label:"Vendor-neutral standard", sub:"Instrument once with OTel SDK — export to any backend", c:T.purple },
+    { n:"2", label:"Three signals", sub:"Traces, metrics, and logs — all correlated with traceId", c:T.trace },
+    { n:"3", label:"Auto-instrumentation", sub:"Zero-code setup for popular frameworks and libraries", c:T.teal },
+    { n:"4", label:"Context propagation", sub:"W3C traceparent header carries traceId across services", c:T.blue },
+    { n:"5", label:"OTel Collector", sub:"Receives → processes → exports. Decouples app from backend", c:T.coral },
+    { n:"6", label:"Push model + OTLP", sub:"App pushes telemetry via gRPC/HTTP using the OTLP protocol", c:T.amber },
+  ];
+  return e("div", { style:{ padding:"8px 0" } },
+    rows.map((r,i) => e(M.div, { key:i, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.1,...ez},
+      style:{ display:"flex", alignItems:"flex-start", gap:12, padding:"11px 14px", marginBottom:8, borderRadius:10, border:`1px solid ${r.c}28`, background:`${r.c}08` }
+    },
+      e("div", { style:{ width:26, height:26, borderRadius:"50%", border:`1.5px solid ${r.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:12, fontWeight:700, color:r.c } }, r.n),
+      e("div", null,
+        e("div", { style:{ fontSize:13, fontWeight:600, color:r.c, marginBottom:2 } }, r.label),
+        e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.5 } }, r.sub)
+      )
+    ))
+  );
+};
+
+const DetailPanel = ({ detailKey, onClose }) => {
+  const d = DETAILS[detailKey];
+  if (!d) return null;
+  return e("div", {
+    style:{ width:340, flexShrink:0, background:T.surface, borderRadius:14, border:`1.5px solid ${d.color}44`, overflow:"hidden", alignSelf:"flex-start", position:"sticky", top:56 }
+  },
+    e("div", { style:{ padding:"14px 18px 12px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:8 } },
+        e("div", { style:{ width:8, height:8, borderRadius:"50%", background:d.color } }),
+        e("span", { style:{ fontSize:14, fontWeight:600, color:T.text1 } }, d.title)
+      ),
+      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6, transition:"color 0.2s" }, onMouseEnter:ev=>ev.target.style.color=T.text1, onMouseLeave:ev=>ev.target.style.color=T.text3 }, "✕")
+    ),
+    e("div", { style:{ padding:"16px 18px 20px", maxHeight:"calc(100vh - 140px)", overflowY:"auto" } },
+      d.sections.map((s, i) =>
+        e("div", { key:i, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
+          e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
+        )
+      )
+    )
+  );
+};
+
+/* ─── APP ─── */
+function App() {
+  const [si, setSi] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [detail, setDetail] = useState(null);
+  const timer = useRef(null);
+  const sc = SCENES[si];
+
+  useEffect(() => { setPlaying(true); }, []);
+
+  useEffect(() => {
+    if (!playing) return;
+    const d = si===0 ? 3000 : sc.finale ? 99999 : 3400;
+    timer.current = setTimeout(() => { si < SCENES.length-1 ? setSi(i=>i+1) : setPlaying(false); }, d);
+    return () => clearTimeout(timer.current);
+  }, [playing, si]);
+
+  const go = d => { clearTimeout(timer.current); setPlaying(false); setSi(i=>Math.max(0,Math.min(SCENES.length-1,i+d))); };
+  const jump = i => { clearTimeout(timer.current); setPlaying(false); setSi(i); };
+  const togglePlay = () => { if(si===SCENES.length-1){setSi(0);setPlaying(true);}else setPlaying(p=>!p); };
+  const toggleDetail = key => { setDetail(d => d===key ? null : key); clearTimeout(timer.current); setPlaying(false); };
+
+  return e("div", { style:{ display:"flex", gap:16, alignItems:"flex-start", justifyContent: detail ? "flex-start" : "center" } },
+  e("div", { style:{ width:760, flexShrink:0, background:T.bg, fontFamily:"system-ui,sans-serif", padding:20, borderRadius:16 } },
+
+    /* header */
+    e("div", { style:{ marginBottom:18 } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:10, marginBottom:11 } },
+        e(AP, { mode:"wait" },
+          e(M.div, { key:sc.act, initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, exit:{opacity:0}, transition:sp(400,28),
+            style:{ fontSize:9,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:T.purple,background:`${T.purple}14`,padding:"3px 10px",borderRadius:20,border:`1px solid ${T.purple}30`,flexShrink:0 }
+          }, sc.act)
+        ),
+        e("div", { style:{ flex:1, height:1, background:T.border, borderRadius:99, overflow:"hidden" } },
+          e(M.div, { animate:{width:`${si/(SCENES.length-1)*100}%`}, transition:{duration:0.5}, style:{height:"100%",background:T.purple,borderRadius:99} })
+        ),
+        e("span", { style:{ fontSize:10, color:T.text3 } }, `${si+1} / ${SCENES.length}`)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.title, initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, exit:{opacity:0,y:-8}, transition:ez,
+          style:{ fontSize:20,fontWeight:600,color:T.text1,marginBottom:4,letterSpacing:"-0.02em" }
+        }, sc.title)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
+          style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
+        }, sc.sub)
+      )
+    ),
+
+    e("div", { style:{ minHeight:460 } },
+
+    /* finale */
+    sc.finale && e(Finale),
+
+    /* main */
+    !sc.finale && e("div", null,
+
+      /* signals cards */
+      sc.signals && e("div", { style:{ marginBottom:10 } },
+        e(SignalCards, { signals:sc.signals, onClick:toggleDetail })
+      ),
+
+      /* trace waterfall */
+      sc.spans && e("div", { style:{ marginBottom:10 } },
+        e(TraceWaterfall, { spans:sc.spans, onClick:()=>toggleDetail("traces") })
+      ),
+
+      /* collector pipeline */
+      sc.collector && e("div", { style:{ marginBottom:10 } },
+        e(CollectorViz, { collector:sc.collector, onClick:()=>toggleDetail("collector") })
+      ),
+
+      /* push/pull flow */
+      sc.pipeline && e("div", { style:{ marginBottom:10 } },
+        e(PushFlow, { pipeline:sc.pipeline, onClick:()=>toggleDetail("collector") })
+      ),
+
+      /* context propagation */
+      sc.propagation && e("div", { style:{ marginBottom:10 } },
+        e(PropagationViz)
+      ),
+
+      /* backend grid */
+      sc.backends && e("div", { style:{ marginBottom:10 } },
+        e(Panel, { label:"Export Destinations", onClick:()=>toggleDetail("collector") },
+          e(BackendGrid, { backends:sc.backends })
+        )
+      ),
+
+      /* code */
+      sc.code.length > 0 && e("div", null,
+        e(CodePanel, { tokens:sc.code, onClick:()=>toggleDetail("code") })
+      )
+    ),
+
+    ), /* close minHeight wrapper */
+
+    /* controls */
+    e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginTop:16 } },
+      e("button", { onClick:()=>go(-1), disabled:si===0,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===0?T.text3:T.text2,cursor:si===0?"not-allowed":"pointer",fontSize:11,transition:"color 0.2s" }
+      }, "← Back"),
+      e("button", { onClick:togglePlay,
+        style:{ padding:"6px 18px",borderRadius:8,border:`1px solid ${playing?T.coral:T.purple}44`,background:playing?`${T.coral}14`:`${T.purple}14`,color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all 0.2s" }
+      }, playing ? "⏸  Pause" : si===SCENES.length-1 ? "↺  Replay" : "▶  Play"),
+      e("button", { onClick:()=>go(1), disabled:si===SCENES.length-1,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
+      }, "Next →"),
+      e("div", { style:{ flex:1 } }),
+      e("div", { style:{ display:"flex", gap:4, alignItems:"center" } },
+        SCENES.map((_,i) =>
+          e("button", { key:i, onClick:()=>jump(i),
+            style:{ width:i===si?16:5,height:5,borderRadius:99,border:"none",padding:0,background:i===si?T.purple:i<si?`${T.purple}55`:T.border,cursor:"pointer",transition:"all 0.25s" }
+          })
+        )
+      )
+    )
+  ),
+  detail && e(DetailPanel, { detailKey:detail, onClose:()=>setDetail(null) })
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(e(App));
+</script>
+</body>
+</html>
