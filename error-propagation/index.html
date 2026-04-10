@@ -21,6 +21,17 @@
     font-size: 15px;
   }
   #root { width: 100%; max-width: 1320px; }
+  
+  code, .code-pill {
+    font-family: 'JetBrains Mono', 'SF Mono', monospace;
+    font-size: 0.88em;
+    padding: 2px 7px;
+    background: #23232e;
+    border: 1px solid #2f2f3c;
+    border-radius: 5px;
+    color: #e8e8f0;
+    white-space: nowrap;
+  }
   .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: 'Satoshi', system-ui, sans-serif; }
   .topnav a { text-decoration: none; color: #8888aa; font-size: 13px; transition: color 0.2s; }
   .topnav a:hover { color: #e8e8f0; }
@@ -629,11 +640,17 @@ const DetailPanel = ({ detailKey, onClose }) => {
 /* ── Visualization panels ── */
 const ErrorTypeBadge = ({ name, color, desc }) =>
   e(M.div, {
-    initial:{opacity:0,scale:0.85}, animate:{opacity:1,scale:1}, transition:sp(400,26),
-    style:{ padding:"6px 12px", borderRadius:8, border:"1px solid "+color+"55", background:color+"14", marginBottom:6 }
+    initial:{opacity:0,x:-6}, animate:{opacity:1,x:0}, transition:sp(400,26),
+    style:{ display:"flex", alignItems:"center", gap:10, padding:"6px 0" }
   },
-    e("span", { style:{ fontSize:11, fontWeight:600, color:color, fontFamily:"monospace" } }, name),
-    e("span", { style:{ fontSize:10, color:T.text2, marginLeft:8 } }, desc)
+    e("code", { style:{
+      fontSize:11, fontWeight:600, color:color,
+      fontFamily:"'JetBrains Mono','SF Mono',monospace",
+      padding:"3px 8px", borderRadius:5,
+      background:"#23232e", border:"1px solid "+color+"33",
+      whiteSpace:"nowrap"
+    } }, name),
+    e("span", { style:{ fontSize:11, color:T.text2 } }, desc)
   );
 
 const PromiseChainVis = ({ catchPos }) => {

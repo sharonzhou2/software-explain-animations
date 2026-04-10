@@ -40,7 +40,8 @@ Each animation HTML file follows the same pattern:
 - **Animation helpers**: `sp(stiffness, damping)` for spring configs, `ez` for easing curves
 - **Motion aliases**: `M = motion`, `AP = AnimatePresence` from Framer Motion
 - **Scene-based structure**: Each animation defines a `SCENES` array of objects with `id`, `title`, `sub` (subtitle), `code` (tokenized code lines), and scene-specific data
-- **Token-based code display**: Code is represented as arrays of `[type, text]` tuples (e.g., `["fn","console"]`, `["punc","."]`) with syntax-highlighting styles in `TOKEN_STYLES` / `TS`
+- **Token-based code display**: Code inside the main code panel is represented as arrays of `[type, text]` tuples (e.g., `["fn","console"]`, `["punc","."]`) with syntax-highlighting styles in `TOKEN_STYLES` / `TS`
+- **Inline code references** (anywhere outside the main code panel — Error type lists, badges, prose, finale rows, callouts): use a `<code>` element. The shared `code, .code-pill` CSS rule renders it as a dark monospace pill (`#23232e` bg, `#2f2f3c` border, JetBrains Mono, 5px radius) — same style as `linear` / `ease` on joshwcomeau.com. Use `e("code", { style:{ color: <accent> } }, "TypeError")` to color the code while keeping the dark pill background.
 - **Two-panel layout**: Left side shows code + controls, right side shows animated visualization with a detail sidebar
 
 ### Icons — NEVER Use Emojis
