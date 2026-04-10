@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prototypal Inheritance</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111118;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px 16px 24px 196px;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  #root { width: 100%; max-width: 1120px; }
+  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: system-ui, sans-serif; }
+  .topnav a { text-decoration: none; color: #8888aa; font-size: 13px; transition: color 0.2s; }
+  .topnav a:hover { color: #e8e8f0; }
+  .topnav .name { font-weight: 600; color: #e8e8f0; font-size: 13px; }
+  .topnav .sep { color: #38384a; font-size: 12px; }
+  .topnav .current { color: #7c6fcd; font-size: 13px; font-weight: 500; }
+  .sidenav { position: fixed; top: 38px; left: 0; width: 180px; height: calc(100vh - 38px); background: #111118; border-right: 1px solid #2a2a38; padding: 14px 0; overflow-y: auto; z-index: 200; font-family: system-ui, sans-serif; }
+  .sidenav a { display: block; padding: 6px 16px; font-size: 11px; color: #8888aa; text-decoration: none; transition: color 0.2s, background 0.2s; border-left: 2px solid transparent; }
+  .sidenav a:hover { color: #e8e8f0; background: rgba(124,111,205,0.06); }
+  .sidenav a.active { color: #a99cf0; border-left-color: #7c6fcd; background: rgba(124,111,205,0.1); font-weight: 600; }
+  .sidenav .nav-section { padding: 8px 16px 4px; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #44445a; }
+  .sidenav .nav-section:first-child { padding-top: 4px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="../" class="name">Sharon Zhou</a>
+  <span class="sep">/</span>
+  <a href="../">Animations</a>
+  <span class="sep">/</span>
+  <span class="current">Prototypal Inheritance</span>
+</nav>
+<nav class="sidenav">
+  <div class="nav-section">JavaScript</div>
+  <a href="../event-loop/">Event Loop</a>
+  <a href="../this-keyword/">this Keyword</a>
+  <a href="../hoisting/">Hoisting</a>
+  <a href="../closures/">Closures</a>
+  <a href="../garbage-collection/">Garbage Collection</a>
+  <a href="../event-delegation/">Event Delegation</a>
+  <a href="../iterators-generators/">Iterators & Generators</a>
+  <a href="../xhr-vs-fetch/">XHR vs fetch()</a>
+  <a href="../error-propagation/">Error Propagation</a>
+  <a href="../web-workers/">Web Workers</a>
+  <a href="../prototypal-inheritance/" class="active">Prototypal Inheritance</a>
+  <a href="../critical-rendering-path/">Critical Rendering Path</a>
+  <a href="../reflow-vs-repaint/">Reflow vs Repaint</a>
+  <a href="../request-animation-frame/">requestAnimationFrame</a>
+  <a href="../css-box-model/">CSS Box Model & Layout</a>
+  <a href="../cors/">CORS</a>
+  <a href="../websocket-vs-sse/">WebSocket vs SSE</a>
+  <a href="../web-security/">Web Security</a>
+  <div class="nav-section">Infrastructure</div>
+  <a href="../vms-vs-docker/">VMs vs Docker</a>
+  <a href="../opentelemetry/">OpenTelemetry</a>
+</nav>
+<div id="root" style="margin-top: 36px;"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/framer-motion@11/dist/framer-motion.js"></script>
+<script>
+const { useState, useEffect, useRef } = React;
+const { motion, AnimatePresence } = window.Motion;
+const e = React.createElement;
+const M = motion;
+const AP = AnimatePresence;
+const sp = (s=380,d=28) => ({ type:"spring", stiffness:s, damping:d });
+const ez = { duration:0.32, ease:[0.22,1,0.36,1] };
+
+const T = {
+  bg:"#111118", surface:"#18181f", surface2:"#1e1e28",
+  border:"#2a2a38", border2:"#38384a",
+  text1:"#e8e8f0", text2:"#8888aa", text3:"#44445a",
+  purple:"#7c6fcd", purpleL:"#a99cf0",
+  teal:"#3db89a", tealL:"#6dd4b8",
+  coral:"#c4694a", coralL:"#e08a6a",
+  blue:"#4a8fd4", blueL:"#82b4e8",
+  amber:"#d4a84a", amberL:"#e8c86a",
+  pink:"#c45a8a", pinkL:"#e87aaa",
+  codeBase:"#141428",
+};
+
+const TS = {
+  fn:    { color:"#82aaff" },
+  meth:  { color:"#89ddff" },
+  str:   { color:"#c3e88d" },
+  kw:    { color:"#c792ea" },
+  num:   { color:"#f78c6c" },
+  punc:  { color:"#89ddff" },
+  plain: { color:"#a6accd" },
+  proto: { color:"#ff5370", fontWeight:"bold" },
+  cmt:   { color:"#546e7a", fontStyle:"italic" },
+  cls:   { color:"#ffcb6b" },
+  op:    { color:"#89ddff" },
+};
+
+/* ─── SCENES ─── */
+const SCENES = [
+  {
+    id:0, act:"01",
+    title:"Prototypal Inheritance",
+    sub:"JavaScript uses prototypes, not classes, as its core inheritance mechanism. Every object can serve as a blueprint for another — forming a chain of delegation.",
+    code:[
+      [["cmt","// How does JS really do inheritance?"]],
+      [["cmt","// Hint: it's not like Java or C++"]],
+    ],
+    chain:{ nodes:["?"], links:[], highlight:null },
+    concept:{ label:"Prototype-based", color:T.purple },
+    note:null,
+    out:[],
+  },
+  {
+    id:1, act:"02",
+    title:"Classical inheritance (Java/C++)",
+    sub:"In classical OOP, classes are blueprints. You define a class, extend it, call super(). Objects are instances stamped from these class templates.",
+    code:[
+      [["cmt","// Java-style (classical)"]],
+      [["kw","class"],["plain"," "],["cls","Animal"],["plain"," {"]],
+      [["plain","  "],["cls","String"],["plain"," name;"]],
+      [["plain","  "],["kw","void"],["plain"," "],["fn","speak"],["punc","()"],["plain"," { ... }"]],
+      [["plain","}"]],
+      [["kw","class"],["plain"," "],["cls","Dog"],["plain"," "],["kw","extends"],["plain"," "],["cls","Animal"],["plain"," {"]],
+      [["plain","  "],["kw","void"],["plain"," "],["fn","fetch"],["punc","()"],["plain"," { ... }"]],
+      [["plain","}"]],
+    ],
+    chain:{ nodes:["Animal (class)","Dog (class)","myDog (instance)"], links:["extends","new"], highlight:"Animal (class)" },
+    concept:{ label:"Class = blueprint", color:T.blue },
+    note:{ name:"Classical model", desc:"Classes define structure. Instances are copies stamped from the blueprint. Inheritance is static and hierarchical." },
+    out:[{id:"o1",t:"Dog extends Animal",c:T.blueL}],
+  },
+  {
+    id:2, act:"03",
+    title:"JS has no real classes",
+    sub:"JavaScript's class keyword is syntactic sugar. Under the hood, it's all prototype chains and constructor functions — no class copying.",
+    code:[
+      [["cmt","// ES6 class is syntactic sugar"]],
+      [["kw","class"],["plain"," "],["cls","Dog"],["plain"," "],["kw","extends"],["plain"," "],["cls","Animal"],["plain"," {}"]],
+      [["plain",""]],
+      [["cmt","// Under the hood, this becomes:"]],
+      [["kw","function"],["plain"," "],["fn","Dog"],["punc","() { ... }"]],
+      [["plain","Dog"],["punc","."],["plain","prototype "],["op","="]],
+      [["plain","  Object"],["punc","."],["fn","create"],["punc","("],["plain","Animal"],["punc","."],["plain","prototype"],["punc",")"]],
+    ],
+    chain:{ nodes:["Animal.prototype","Dog.prototype","dog instance"], links:["[[Prototype]]","[[Prototype]]"], highlight:"Dog.prototype" },
+    concept:{ label:"Sugar, not classes", color:T.coral },
+    note:{ name:"Syntactic sugar", desc:"class and extends just set up prototype chains. There's no class copying — it's delegation all the way down." },
+    out:[{id:"o1",t:"typeof Dog === 'function'",c:T.coralL}],
+  },
+  {
+    id:3, act:"04",
+    title:"The prototype chain",
+    sub:"Every object has an internal [[Prototype]] link pointing to another object. This forms a chain that ends at null.",
+    code:[
+      [["kw","const"],["plain"," animal "],["op","="],["plain"," { "],["fn","speak"],["punc","()"],["plain"," { } }"]],
+      [["kw","const"],["plain"," dog "],["op","="],["plain"," Object"],["punc","."],["fn","create"],["punc","("],["plain","animal"],["punc",")"]],
+      [["plain",""]],
+      [["plain","Object"],["punc","."],["fn","getPrototypeOf"],["punc","("],["plain","dog"],["punc",")"]],
+      [["cmt","// → animal"]],
+      [["plain","Object"],["punc","."],["fn","getPrototypeOf"],["punc","("],["plain","animal"],["punc",")"]],
+      [["cmt","// → Object.prototype"]],
+      [["plain","Object"],["punc","."],["fn","getPrototypeOf"],["punc","("],["plain","Object"],["punc","."],["plain","prototype"],["punc",")"]],
+      [["cmt","// → null"]],
+    ],
+    chain:{ nodes:["null","Object.prototype","animal","dog"], links:["","[[Proto]]","[[Proto]]"], highlight:"dog" },
+    concept:{ label:"[[Prototype]] chain", color:T.teal },
+    note:{ name:"Prototype chain", desc:"Every object links to a prototype. That prototype links to its prototype, all the way up to Object.prototype, which links to null." },
+    out:[{id:"o1",t:"dog → animal → Object.prototype → null",c:T.tealL}],
+  },
+  {
+    id:4, act:"05",
+    title:"Object.create",
+    sub:"Object.create() is the purest way to set up prototypal inheritance. It creates a new object with the specified prototype.",
+    code:[
+      [["kw","const"],["plain"," vehicle "],["op","="],["plain"," {"]],
+      [["plain","  "],["fn","start"],["punc","()"],["plain"," { "],["kw","return"],["plain"," "],["str","'Vroom'"],["plain"," }"]],
+      [["plain","}"]],
+      [["plain",""]],
+      [["kw","const"],["plain"," car "],["op","="],["plain"," Object"],["punc","."],["fn","create"],["punc","("],["plain","vehicle"],["punc",")"]],
+      [["plain","car"],["punc","."],["plain","doors "],["op","="],["plain"," "],["num","4"]],
+      [["plain",""]],
+      [["plain","car"],["punc","."],["fn","start"],["punc","()"],["plain","  "],["cmt","// → 'Vroom' (delegated)"]],
+    ],
+    chain:{ nodes:["Object.prototype","vehicle","car"], links:["[[Proto]]","[[Proto]]"], highlight:"car" },
+    concept:{ label:"Object.create()", color:T.purple },
+    note:{ name:"Direct prototypal link", desc:"Object.create(proto) makes a new empty object whose [[Prototype]] is proto. No constructor, no new — just a direct link." },
+    out:[{id:"o1",t:"car.start() → 'Vroom'",c:T.purpleL},{id:"o2",t:"car.doors → 4",c:T.amberL}],
+  },
+  {
+    id:5, act:"06",
+    title:"Property lookup",
+    sub:"When you access a property, JS walks up the prototype chain. It checks the object first, then its prototype, then the next, until null.",
+    code:[
+      [["kw","const"],["plain"," a "],["op","="],["plain"," { "],["plain","x"],["punc",":"],["plain"," "],["num","1"],["plain"," }"]],
+      [["kw","const"],["plain"," b "],["op","="],["plain"," Object"],["punc","."],["fn","create"],["punc","("],["plain","a"],["punc",")"]],
+      [["plain","b"],["punc","."],["plain","y "],["op","="],["plain"," "],["num","2"]],
+      [["kw","const"],["plain"," c "],["op","="],["plain"," Object"],["punc","."],["fn","create"],["punc","("],["plain","b"],["punc",")"]],
+      [["plain",""]],
+      [["plain","c"],["punc","."],["plain","y   "],["cmt","// → 2 (found on b)"]],
+      [["plain","c"],["punc","."],["plain","x   "],["cmt","// → 1 (found on a)"]],
+      [["plain","c"],["punc","."],["plain","z   "],["cmt","// → undefined (not found)"]],
+    ],
+    chain:{ nodes:["a { x: 1 }","b { y: 2 }","c { }"], links:["[[Proto]]","[[Proto]]"], highlight:"c { }" },
+    concept:{ label:"Property lookup", color:T.amber },
+    note:{ name:"Chain walking", desc:"c.x → not on c → check b → not on b → check a → found! Returns 1. If it reaches null without finding the property, returns undefined." },
+    out:[{id:"o1",t:"c.y → 2 (from b)",c:T.amberL},{id:"o2",t:"c.x → 1 (from a)",c:T.tealL},{id:"o3",t:"c.z → undefined",c:T.coralL}],
+  },
+  {
+    id:6, act:"07",
+    title:"Constructor functions + .prototype",
+    sub:"Before ES6 classes, constructor functions were the standard pattern. Every function has a .prototype property used when called with new.",
+    code:[
+      [["kw","function"],["plain"," "],["fn","Animal"],["punc","("],["plain","name"],["punc",") {"]],
+      [["plain","  "],["proto","this"],["punc","."],["plain","name "],["op","="],["plain"," name"]],
+      [["punc","}"]],
+      [["plain","Animal"],["punc","."],["plain","prototype"],["punc","."],["fn","speak"],["plain"," "],["op","="]],
+      [["plain","  "],["kw","function"],["punc","()"],["plain"," { "],["kw","return"],["plain"," "],["proto","this"],["punc","."],["plain","name "],["punc","}"]],
+      [["plain",""]],
+      [["kw","const"],["plain"," a "],["op","="],["plain"," "],["kw","new"],["plain"," "],["fn","Animal"],["punc","("],["str","'Rex'"],["punc",")"]],
+      [["plain","a"],["punc","."],["fn","speak"],["punc","()"],["plain","  "],["cmt","// → 'Rex'"]],
+    ],
+    chain:{ nodes:["Object.prototype","Animal.prototype","a (instance)"], links:["[[Proto]]","[[Proto]]"], highlight:"Animal.prototype" },
+    concept:{ label:"F.prototype + new", color:T.teal },
+    note:{ name:"Constructor pattern", desc:"new Animal() creates an object whose [[Prototype]] is Animal.prototype. Methods on Animal.prototype are shared by all instances — not copied." },
+    out:[{id:"o1",t:"a.speak() → 'Rex'",c:T.tealL},{id:"o2",t:"a.__proto__ === Animal.prototype",c:T.blueL}],
+  },
+  {
+    id:7, act:"08",
+    title:"ES6 class syntax",
+    sub:"The class keyword provides familiar syntax but desugars to constructor functions + prototypes. Same mechanism, cleaner look.",
+    code:[
+      [["kw","class"],["plain"," "],["cls","Animal"],["plain"," {"]],
+      [["plain","  "],["fn","constructor"],["punc","("],["plain","name"],["punc",") {"]],
+      [["plain","    "],["proto","this"],["punc","."],["plain","name "],["op","="],["plain"," name"]],
+      [["plain","  }"]],
+      [["plain","  "],["fn","speak"],["punc","()"],["plain"," {"]],
+      [["plain","    "],["kw","return"],["plain"," "],["proto","this"],["punc","."],["plain","name"]],
+      [["plain","  }"]],
+      [["plain","}"]],
+    ],
+    chain:{ nodes:["Object.prototype","Animal.prototype","instance"], links:["[[Proto]]","[[Proto]]"], highlight:"Animal.prototype" },
+    concept:{ label:"class = sugar", color:T.coral },
+    note:{ name:"Same prototype chain", desc:"class Animal { speak() {} } puts speak on Animal.prototype — exactly like the constructor pattern. typeof Animal === 'function'." },
+    out:[{id:"o1",t:"typeof Animal === 'function'",c:T.coralL}],
+  },
+  {
+    id:8, act:"09",
+    title:"extends / super",
+    sub:"extends sets up the prototype chain between constructors. super() calls the parent constructor. Both map directly to prototype operations.",
+    code:[
+      [["kw","class"],["plain"," "],["cls","Animal"],["plain"," {"]],
+      [["plain","  "],["fn","constructor"],["punc","(n)"],["plain"," { "],["proto","this"],["punc","."],["plain","name"],["op","="],["plain","n }"]],
+      [["plain","  "],["fn","speak"],["punc","()"],["plain"," { "],["kw","return"],["plain"," "],["str","'...'"],["plain"," }"]],
+      [["plain","}"]],
+      [["kw","class"],["plain"," "],["cls","Dog"],["plain"," "],["kw","extends"],["plain"," "],["cls","Animal"],["plain"," {"]],
+      [["plain","  "],["fn","constructor"],["punc","(n)"],["plain"," { "],["kw","super"],["punc","(n)"],["plain"," }"]],
+      [["plain","  "],["fn","fetch"],["punc","()"],["plain"," { "],["kw","return"],["plain"," "],["str","'ball'"],["plain"," }"]],
+      [["plain","}"]],
+    ],
+    chain:{ nodes:["Object.prototype","Animal.prototype","Dog.prototype","dog instance"], links:["[[Proto]]","[[Proto]]","[[Proto]]"], highlight:"Dog.prototype" },
+    concept:{ label:"extends → chain", color:T.pink },
+    note:{ name:"extends desugars to", desc:"Dog.prototype = Object.create(Animal.prototype)\nDog.prototype.constructor = Dog\nsuper(n) → Animal.call(this, n)" },
+    out:[{id:"o1",t:"dog.fetch() → on Dog.prototype",c:T.pinkL},{id:"o2",t:"dog.speak() → on Animal.prototype",c:T.tealL}],
+  },
+  {
+    id:9, act:"10",
+    title:"hasOwnProperty vs in",
+    sub:"hasOwnProperty checks only the object itself. The in operator walks the entire prototype chain. Knowing the difference prevents subtle bugs.",
+    code:[
+      [["kw","const"],["plain"," parent "],["op","="],["plain"," { "],["plain","x"],["punc",":"],["plain"," "],["num","1"],["plain"," }"]],
+      [["kw","const"],["plain"," child "],["op","="],["plain"," Object"],["punc","."],["fn","create"],["punc","("],["plain","parent"],["punc",")"]],
+      [["plain","child"],["punc","."],["plain","y "],["op","="],["plain"," "],["num","2"]],
+      [["plain",""]],
+      [["plain","child"],["punc","."],["fn","hasOwnProperty"],["punc","("],["str","'y'"],["punc",")"],["plain"," "],["cmt","// true"]],
+      [["plain","child"],["punc","."],["fn","hasOwnProperty"],["punc","("],["str","'x'"],["punc",")"],["plain"," "],["cmt","// false"]],
+      [["str","'x'"],["plain"," "],["kw","in"],["plain"," child"],["plain","             "],["cmt","// true"]],
+      [["str","'y'"],["plain"," "],["kw","in"],["plain"," child"],["plain","             "],["cmt","// true"]],
+    ],
+    chain:{ nodes:["parent { x: 1 }","child { y: 2 }"], links:["[[Proto]]"], highlight:"child { y: 2 }" },
+    concept:{ label:"Own vs inherited", color:T.amber },
+    note:{ name:"Property ownership", desc:"hasOwnProperty('x') → false (x is on parent)\n'x' in child → true (in walks the chain)\n\nUse hasOwnProperty when you need to distinguish own from inherited properties." },
+    out:[{id:"o1",t:"hasOwn('y') → true (own)",c:T.amberL},{id:"o2",t:"hasOwn('x') → false (inherited)",c:T.coralL},{id:"o3",t:"'x' in child → true (chain)",c:T.tealL}],
+  },
+  {
+    id:10, act:"11",
+    title:"Mixins & Object.assign",
+    sub:"Composition over inheritance: Object.assign copies properties from multiple sources, enabling mixin patterns without deep prototype chains.",
+    code:[
+      [["kw","const"],["plain"," canFly "],["op","="],["plain"," {"]],
+      [["plain","  "],["fn","fly"],["punc","()"],["plain"," { "],["kw","return"],["plain"," "],["str","'flying'"],["plain"," }"]],
+      [["plain","}"]],
+      [["kw","const"],["plain"," canSwim "],["op","="],["plain"," {"]],
+      [["plain","  "],["fn","swim"],["punc","()"],["plain"," { "],["kw","return"],["plain"," "],["str","'swimming'"],["plain"," }"]],
+      [["plain","}"]],
+      [["plain",""]],
+      [["kw","const"],["plain"," duck "],["op","="],["plain"," Object"],["punc","."],["fn","assign"],["punc","("]],
+      [["plain","  { "],["plain","name"],["punc",":"],["plain"," "],["str","'Donald'"],["plain"," }"],["punc",","]],
+      [["plain","  canFly"],["punc",","],["plain"," canSwim"]],
+      [["punc",")"]],
+    ],
+    chain:{ nodes:["canFly","canSwim","duck"], links:["assign","assign"], highlight:"duck" },
+    concept:{ label:"Composition", color:T.blue },
+    note:{ name:"Mixins", desc:"Object.assign copies own enumerable properties. Unlike prototype delegation, these are own properties — no chain lookup needed. Flat and explicit." },
+    out:[{id:"o1",t:"duck.fly() → 'flying'",c:T.blueL},{id:"o2",t:"duck.swim() → 'swimming'",c:T.tealL},{id:"o3",t:"duck.name → 'Donald'",c:T.amberL}],
+  },
+  {
+    id:11, act:"12",
+    title:"When to use which pattern",
+    sub:"Prototypal delegation for shared behavior, composition for flexibility, classes for familiarity. Each has trade-offs.",
+    code:[
+      [["cmt","// Prototype delegation"]],
+      [["cmt","//   shared methods, memory efficient"]],
+      [["cmt","//   Object.create() or class"]],
+      [["plain",""]],
+      [["cmt","// Composition (Object.assign)"]],
+      [["cmt","//   flexible, no diamond problem"]],
+      [["cmt","//   copies props, more memory"]],
+      [["plain",""]],
+      [["cmt","// Factory functions"]],
+      [["cmt","//   no new/this, true encapsulation"]],
+      [["cmt","//   closure-based private state"]],
+    ],
+    chain:{ nodes:["Delegation","Composition","Factories"], links:["or","or"], highlight:null },
+    concept:{ label:"Trade-offs", color:T.purple },
+    note:{ name:"Decision guide", desc:"Shared behavior across many instances → prototypes\nMixing capabilities from multiple sources → composition\nPrivate state + no this confusion → factory functions\nTeam familiarity → class syntax" },
+    out:[],
+  },
+  {
+    id:12, act:"\u2713",
+    title:"Prototypal inheritance",
+    sub:"JavaScript's inheritance is delegation through prototype chains — not class copying. Understanding this unlocks the language.",
+    code:[
+      [["cmt","// Key takeaways:"]],
+      [["num","1."],["plain"," Objects link to other objects"]],
+      [["num","2."],["plain"," "],["kw","class"],["plain"," is sugar over prototypes"]],
+      [["num","3."],["plain"," Property lookup walks the chain"]],
+      [["num","4."],["plain"," Object.create = pure delegation"]],
+      [["num","5."],["plain"," Composition via Object.assign"]],
+      [["num","6."],["plain"," hasOwnProperty vs in"]],
+    ],
+    chain:{ nodes:[], links:[], highlight:null },
+    concept:{ label:"Delegation, not copying", color:T.purple },
+    note:{ name:"Prototype chain", desc:"null ← Object.prototype ← YourProto ← instance" },
+    out:[],
+    finale:true,
+  },
+];
+
+/* ─── DETAIL CONTENT ─── */
+const DETAILS = {
+  code: {
+    title:"Source Code",
+    color:T.purpleL,
+    sections:[
+      {heading:"What to watch for",body:"Each scene shows a different facet of prototypal inheritance. Pay attention to how objects link to each other — not how classes copy structure."},
+      {heading:"Key patterns",body:"\u2022 Object.create(proto) \u2014 pure delegation\n\u2022 new Func() \u2014 constructor + prototype\n\u2022 class extends \u2014 sugar over prototypes\n\u2022 Object.assign() \u2014 composition/mixins\n\u2022 hasOwnProperty vs in \u2014 own vs chain"},
+    ]
+  },
+  chain: {
+    title:"Prototype Chain",
+    color:T.teal,
+    sections:[
+      {heading:"How the chain works",body:"Every object has an internal [[Prototype]] slot (accessible via Object.getPrototypeOf or the deprecated __proto__).\n\nWhen you access a property, the engine:\n1. Checks the object itself\n2. Checks its [[Prototype]]\n3. Checks that object's [[Prototype]]\n4. ...continues until null"},
+      {heading:"Chain termination",body:"Object.prototype sits at the top of most chains. Its [[Prototype]] is null — the chain's end. If a property isn't found anywhere, undefined is returned."},
+      {heading:"Performance note",body:"Deep prototype chains can slow property lookups. In practice, chains of 2-3 levels are common and performant."},
+    ]
+  },
+  concept: {
+    title:"Core Concept",
+    color:T.amber,
+    sections:[
+      {heading:"Prototypal vs classical",body:"Classical: classes are blueprints, instances are copies\nPrototypal: objects link to objects, instances delegate\n\nIn JS, there's no copying of structure. When dog.speak() is called, JS finds speak on the prototype through the chain — the method lives in one place."},
+      {heading:"Delegation model",body:"Prototypal inheritance is really delegation. When an object can't handle a request, it delegates to its prototype. This is more flexible than copying — you can change a prototype and all linked objects see the change."},
+      {heading:"Why it matters",body:"Understanding prototypes explains:\n\u2022 Why class is syntax sugar\n\u2022 How method sharing works\n\u2022 Why instanceof works the way it does\n\u2022 How to compose behavior without deep hierarchies"},
+    ]
+  },
+  output: {
+    title:"Console Output",
+    color:T.tealL,
+    sections:[
+      {heading:"What it shows",body:"The output demonstrates where properties and methods are found in the prototype chain. Watch how methods defined on prototypes are accessible from instances without being copied."},
+      {heading:"Debugging prototypes",body:"Useful tools for inspecting the chain:\n\u2022 Object.getPrototypeOf(obj)\n\u2022 obj.hasOwnProperty('prop')\n\u2022 'prop' in obj\n\u2022 obj instanceof Constructor\n\u2022 Object.keys(obj) vs for...in"},
+    ]
+  },
+};
+
+/* ─── COMPONENTS ─── */
+const CodePanel = ({ tokens }) =>
+  e("div", { style:{ background:T.codeBase, borderRadius:12, overflow:"hidden", border:`1px solid ${T.border}` } },
+    e("div", { style:{ padding:"10px 14px 8px", borderBottom:`1px solid ${T.border}`, display:"flex", gap:7 } },
+      ...["#ff5f57","#febc2e","#28c840"].map((c,i) =>
+        e("div", { key:i, style:{ width:11, height:11, borderRadius:"50%", background:c } })
+      )
+    ),
+    e("div", { style:{ padding:"18px 22px 22px", fontFamily:"'SF Mono','Fira Code','Consolas',monospace", fontSize:12, lineHeight:1.95 } },
+      tokens.map((line, li) =>
+        e("div", { key:li, style:{ paddingLeft:0, borderRadius:3, display:"block" } },
+          line.map(([cls, txt], ti) =>
+            e("span", { key:ti, style:{ ...TS[cls], whiteSpace:"pre" } }, txt)
+          )
+        )
+      )
+    )
+  );
+
+const Panel = ({ label, children, style={}, focused=false, onClick }) =>
+  e(M.div, {
+    onClick,
+    animate:{
+      borderColor: focused ? T.purple : T.border2,
+      boxShadow: focused ? `0 0 16px ${T.purple}30, inset 0 0 12px ${T.purple}08` : "0 0 0px transparent"
+    },
+    transition:{ duration:0.4 },
+    style:{ borderRadius:12, border:"1.5px solid", background:T.surface, overflow:"hidden", cursor:onClick?"pointer":"default", ...style }
+  },
+    label && e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, label)
+    ),
+    e("div", { style:{ padding:12 } }, children)
+  );
+
+const ChainViz = ({ chain, focused, onClick }) => {
+  const { nodes, links, highlight } = chain;
+  return e(M.div, {
+    onClick,
+    animate:{
+      borderColor: focused ? T.purple : T.border2,
+      boxShadow: focused ? `0 0 16px ${T.purple}30, inset 0 0 12px ${T.purple}08` : "0 0 0px transparent"
+    },
+    transition:{ duration:0.4 },
+    style:{ borderRadius:12, border:"1.5px solid", background:T.surface, overflow:"hidden", cursor:"pointer" }
+  },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, "Prototype Chain")
+    ),
+    e("div", { style:{ padding:14, display:"flex", flexDirection:"column", alignItems:"center", gap:0, minHeight:100 } },
+      nodes.length === 0
+        ? e("div", { style:{ fontSize:11, color:T.text3 } }, "\u2014")
+        : nodes.map((node, i) =>
+          e("div", { key:i, style:{ display:"flex", flexDirection:"column", alignItems:"center" } },
+            e(M.div, {
+              initial:{ opacity:0, scale:0.85 },
+              animate:{ opacity:1, scale:1 },
+              transition:{ delay:i*0.08, ...sp(400,28) },
+              style:{
+                padding:"5px 12px", borderRadius:8,
+                background: node === highlight ? `${T.teal}18` : `${T.purple}10`,
+                border: `1px solid ${node === highlight ? T.teal : T.purple}44`,
+                fontFamily:"'SF Mono',monospace", fontSize:11, fontWeight: node === highlight ? 700 : 500,
+                color: node === highlight ? T.tealL : T.purpleL,
+                textAlign:"center", maxWidth:180
+              }
+            }, node),
+            i < nodes.length - 1 && e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", padding:"2px 0" } },
+              e("div", { style:{ width:1, height:10, background:T.border2 } }),
+              links[i] && e("div", { style:{ fontSize:8, color:T.text3, fontFamily:"monospace", padding:"1px 0" } }, links[i]),
+              e("div", { style:{ width:1, height:10, background:T.border2 } }),
+              e("div", { style:{ width:0, height:0, borderLeft:"4px solid transparent", borderRight:"4px solid transparent", borderTop:`5px solid ${T.border2}` } })
+            )
+          )
+        )
+    )
+  );
+};
+
+const ConceptPanel = ({ concept, note, focused, onClick }) =>
+  e(M.div, {
+    onClick,
+    animate:{
+      borderColor: focused ? T.purple : T.border2,
+      boxShadow: focused ? `0 0 16px ${T.purple}30, inset 0 0 12px ${T.purple}08` : "0 0 0px transparent"
+    },
+    transition:{ duration:0.4 },
+    style:{ borderRadius:12, border:"1.5px solid", background:T.surface, overflow:"hidden", cursor:"pointer" }
+  },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, "Concept")
+    ),
+    e("div", { style:{ padding:12, minHeight:52 } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginBottom: note ? 8 : 0 } },
+        e(M.div, {
+          animate:{ scale:[1,1.05,1] },
+          transition:{ duration:2, repeat:Infinity },
+          style:{ padding:"4px 12px", borderRadius:8, background:`${concept.color}18`, border:`1px solid ${concept.color}44`, fontFamily:"'SF Mono',monospace", fontSize:12, fontWeight:600, color:concept.color }
+        }, concept.label)
+      ),
+      note && e(AP, { mode:"wait" },
+        e(M.div, { key:note.name, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.15} },
+          e("div", { style:{ fontSize:12, fontWeight:600, color:T.purpleL, marginBottom:3 } }, note.name),
+          e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.6, whiteSpace:"pre-wrap" } }, note.desc)
+        )
+      )
+    )
+  );
+
+const Finale = () => {
+  const rows = [
+    { n:1, label:"Prototype chain", sub:"Every object links to a prototype via [[Prototype]], forming a delegation chain ending at null", c:T.teal },
+    { n:2, label:"class is sugar", sub:"ES6 class/extends desugar to constructor functions + Object.create on prototypes", c:T.coral },
+    { n:3, label:"Property lookup", sub:"Accessing a property walks up the chain until found or null — delegation, not copying", c:T.amber },
+    { n:4, label:"Object.create", sub:"The purest prototypal pattern: create a new object with a specific prototype, no constructor needed", c:T.purple },
+    { n:5, label:"Composition", sub:"Object.assign enables mixins — combine capabilities from multiple sources without deep chains", c:T.blue },
+    { n:"\u21B3", label:"Own vs inherited", sub:"hasOwnProperty checks the object only; in walks the chain. Know the difference.", c:T.pink },
+  ];
+  return e("div", { style:{ padding:"8px 0" } },
+    rows.map((r,i) => e(M.div, { key:i, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.12,...ez},
+      style:{ display:"flex", alignItems:"flex-start", gap:12, padding:"11px 14px", marginBottom:8, borderRadius:10, border:`1px solid ${r.c}28`, background:`${r.c}08` }
+    },
+      e("div", { style:{ width:26, height:26, borderRadius:"50%", border:`1.5px solid ${r.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:12, fontWeight:700, color:r.c } }, r.n),
+      e("div", null,
+        e("div", { style:{ fontSize:13, fontWeight:600, color:r.c, marginBottom:2 } }, r.label),
+        e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.5 } }, r.sub)
+      )
+    ))
+  );
+};
+
+const DetailPanel = ({ detailKey, onClose }) => {
+  const d = DETAILS[detailKey];
+  if (!d) return null;
+  return e("div", {
+    style:{ width:340, flexShrink:0, background:T.surface, borderRadius:14, border:`1.5px solid ${d.color}44`, overflow:"hidden", alignSelf:"flex-start", position:"sticky", top:56 }
+  },
+    e("div", { style:{ padding:"14px 18px 12px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:8 } },
+        e("div", { style:{ width:8, height:8, borderRadius:"50%", background:d.color } }),
+        e("span", { style:{ fontSize:14, fontWeight:600, color:T.text1 } }, d.title)
+      ),
+      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6, transition:"color 0.2s" }, onMouseEnter:ev=>ev.target.style.color=T.text1, onMouseLeave:ev=>ev.target.style.color=T.text3 }, "\u2715")
+    ),
+    e("div", { style:{ padding:"16px 18px 20px", maxHeight:"calc(100vh - 140px)", overflowY:"auto" } },
+      d.sections.map((s, i) =>
+        e("div", { key:i, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
+          e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
+        )
+      )
+    )
+  );
+};
+
+/* ─── APP ─── */
+function App() {
+  const [si, setSi] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [detail, setDetail] = useState(null);
+  const timer = useRef(null);
+  const sc = SCENES[si];
+
+  useEffect(() => { setPlaying(true); }, []);
+
+  useEffect(() => {
+    if (!playing) return;
+    const d = si===0 ? 3000 : sc.finale ? 99999 : 3200;
+    timer.current = setTimeout(() => { si < SCENES.length-1 ? setSi(i=>i+1) : setPlaying(false); }, d);
+    return () => clearTimeout(timer.current);
+  }, [playing, si]);
+
+  const go = d => { clearTimeout(timer.current); setPlaying(false); setSi(i=>Math.max(0,Math.min(SCENES.length-1,i+d))); };
+  const jump = i => { clearTimeout(timer.current); setPlaying(false); setSi(i); };
+  const togglePlay = () => { if(si===SCENES.length-1){setSi(0);setPlaying(true);}else setPlaying(p=>!p); };
+  const toggleDetail = key => { setDetail(d => d===key ? null : key); clearTimeout(timer.current); setPlaying(false); };
+
+  return e("div", { style:{ display:"flex", gap:16, alignItems:"flex-start", justifyContent: detail ? "flex-start" : "center" } },
+  e("div", { style:{ width:760, flexShrink:0, background:T.bg, fontFamily:"system-ui,sans-serif", padding:20, borderRadius:16 } },
+
+    /* header */
+    e("div", { style:{ marginBottom:18 } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:10, marginBottom:11 } },
+        e(AP, { mode:"wait" },
+          e(M.div, { key:sc.act, initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, exit:{opacity:0}, transition:sp(400,28),
+            style:{ fontSize:9,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:T.purple,background:`${T.purple}14`,padding:"3px 10px",borderRadius:20,border:`1px solid ${T.purple}30`,flexShrink:0 }
+          }, sc.act)
+        ),
+        e("div", { style:{ flex:1, height:1, background:T.border, borderRadius:99, overflow:"hidden" } },
+          e(M.div, { animate:{width:`${si/(SCENES.length-1)*100}%`}, transition:{duration:0.5}, style:{height:"100%",background:T.purple,borderRadius:99} })
+        ),
+        e("span", { style:{ fontSize:10, color:T.text3 } }, `${si+1} / ${SCENES.length}`)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.title, initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, exit:{opacity:0,y:-8}, transition:ez,
+          style:{ fontSize:20,fontWeight:600,color:T.text1,marginBottom:4,letterSpacing:"-0.02em" }
+        }, sc.title)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
+          style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
+        }, sc.sub)
+      )
+    ),
+
+    e("div", { style:{ minHeight:460 } },
+    /* finale */
+    sc.finale && e(Finale),
+
+    /* main grid */
+    !sc.finale && e("div", null,
+
+      /* row 1: code + chain viz */
+      e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:10 } },
+        e("div", { onClick:()=>toggleDetail("code"), style:{cursor:"pointer"} },
+          e(CodePanel, { tokens: sc.code })
+        ),
+        e(ChainViz, { chain:sc.chain, focused:false, onClick:()=>toggleDetail("chain") })
+      ),
+
+      /* row 2: concept + console */
+      e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 } },
+        e(ConceptPanel, { concept:sc.concept, note:sc.note, focused:false, onClick:()=>toggleDetail("concept") }),
+        e(Panel, { label:"Console output", onClick:()=>toggleDetail("output") },
+          e("div", { style:{ fontFamily:"'SF Mono','Fira Code',monospace", minHeight:40 } },
+            sc.out.length===0
+              ? e("div", { style:{ fontSize:11,color:T.text3 } }, "\u2014")
+              : e(AP, null, sc.out.map(item =>
+                  e(M.div, { key:item.id, initial:{opacity:0,x:-10}, animate:{opacity:1,x:0}, transition:ez,
+                    style:{ fontSize:12,color:item.c,padding:"2px 0",borderBottom:`1px solid ${T.border}` }
+                  },
+                    e("span", { style:{ color:T.text3,marginRight:7,fontSize:10 } }, "\u203A"), item.t
+                  )
+                ))
+          )
+        )
+      )
+    ),
+    ), /* close minHeight wrapper */
+
+    /* controls */
+    e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginTop:16 } },
+      e("button", { onClick:()=>go(-1), disabled:si===0,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===0?T.text3:T.text2,cursor:si===0?"not-allowed":"pointer",fontSize:11,transition:"color 0.2s" }
+      }, "\u2190 Back"),
+      e("button", { onClick:togglePlay,
+        style:{ padding:"6px 18px",borderRadius:8,border:`1px solid ${playing?T.coral:T.purple}44`,background:playing?`${T.coral}14`:`${T.purple}14`,color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all 0.2s" }
+      }, playing ? "\u23F8  Pause" : si===SCENES.length-1 ? "\u21BA  Replay" : "\u25B6  Play"),
+      e("button", { onClick:()=>go(1), disabled:si===SCENES.length-1,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
+      }, "Next \u2192"),
+      e("div", { style:{ flex:1 } }),
+      e("div", { style:{ display:"flex", gap:4, alignItems:"center" } },
+        SCENES.map((_,i) =>
+          e("button", { key:i, onClick:()=>jump(i),
+            style:{ width:i===si?16:5,height:5,borderRadius:99,border:"none",padding:0,background:i===si?T.purple:i<si?`${T.purple}55`:T.border,cursor:"pointer",transition:"all 0.25s" }
+          })
+        )
+      )
+    )
+  ),
+  detail && e(DetailPanel, { detailKey:detail, onClose:()=>setDetail(null) })
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(e(App));
+</script>
+</body>
+</html>
