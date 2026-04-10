@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Software Explain Animations</title>
+<link href="https://cdn.lineicons.com/5.0/lineicons.css" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -11,74 +12,74 @@
     color: #e8e8f0;
     font-family: system-ui, -apple-system, sans-serif;
     min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    padding: 60px 24px;
+    padding: 24px 16px 24px 196px;
   }
   .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; }
-  .topnav .name { font-weight: 600; color: #e8e8f0; font-size: 13px; text-decoration: none; }
+  .topnav a { text-decoration: none; color: #8888aa; font-size: 13px; transition: color 0.2s; }
+  .topnav a:hover { color: #e8e8f0; }
+  .topnav .name { font-weight: 600; color: #e8e8f0; font-size: 13px; }
   .topnav .sep { color: #38384a; font-size: 12px; }
   .topnav .current { color: #7c6fcd; font-size: 13px; font-weight: 500; }
-  .container { width: 100%; max-width: 640px; margin-top: 36px; }
-  h1 {
-    font-size: 28px;
-    font-weight: 600;
-    letter-spacing: -0.03em;
-    margin-bottom: 8px;
+
+  .sidenav { position: fixed; top: 38px; left: 0; width: 180px; height: calc(100vh - 38px); background: #111118; border-right: 1px solid #2a2a38; padding: 14px 0; overflow-y: auto; z-index: 200; font-family: system-ui, sans-serif; }
+  .sidenav a { display: block; padding: 6px 16px; font-size: 11px; color: #8888aa; text-decoration: none; transition: color 0.2s, background 0.2s; border-left: 2px solid transparent; }
+  .sidenav a:hover { color: #e8e8f0; background: rgba(124,111,205,0.06); }
+  .sidenav a.active { color: #a99cf0; border-left-color: #7c6fcd; background: rgba(124,111,205,0.1); font-weight: 600; }
+  .sidenav .nav-section { padding: 8px 16px 4px; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #44445a; }
+  .sidenav .nav-section:first-child { padding-top: 4px; }
+
+  .container { max-width: 720px; margin: 48px auto 0; }
+  h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.03em; margin-bottom: 6px; }
+  .subtitle { color: #8888aa; font-size: 14px; margin-bottom: 28px; line-height: 1.6; }
+
+  .search-wrap { position: relative; margin-bottom: 32px; }
+  .search-wrap i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #44445a; font-size: 16px; pointer-events: none; }
+  .search-input {
+    width: 100%; padding: 10px 14px 10px 40px; border-radius: 10px;
+    border: 1px solid #2a2a38; background: #18181f; color: #e8e8f0;
+    font-size: 14px; font-family: inherit; outline: none; transition: border-color 0.2s;
   }
-  .subtitle {
-    color: #8888aa;
-    font-size: 14px;
-    margin-bottom: 48px;
-    line-height: 1.6;
+  .search-input::placeholder { color: #44445a; }
+  .search-input:focus { border-color: #7c6fcd; }
+
+  .section-label {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    color: #44445a; padding: 16px 0 10px; border-bottom: 1px solid #1e1e28;
   }
-  .grid { display: flex; flex-direction: column; gap: 12px; }
-  a.card {
-    display: block;
-    text-decoration: none;
-    padding: 20px 24px;
-    border-radius: 12px;
-    border: 1.5px solid #2a2a38;
-    background: #18181f;
-    transition: border-color 0.2s, background 0.2s;
+
+  .article-list { list-style: none; }
+  .article-item { border-bottom: 1px solid #1e1e28; }
+  .article-item a {
+    display: flex; align-items: baseline; gap: 12px;
+    padding: 14px 4px; text-decoration: none; transition: background 0.15s; border-radius: 6px;
   }
-  a.card:hover {
-    border-color: #7c6fcd;
-    background: #1e1e28;
+  .article-item a:hover { background: rgba(124,111,205,0.06); }
+  .article-title { font-size: 15px; font-weight: 500; color: #e8e8f0; flex-shrink: 0; }
+  .article-desc { font-size: 13px; color: #5a5a72; line-height: 1.5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .article-tag {
+    font-size: 9px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
+    padding: 2px 7px; border-radius: 10px; flex-shrink: 0; white-space: nowrap;
   }
-  .card-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: #e8e8f0;
-    margin-bottom: 4px;
+  .article-tag.js { color: #7c6fcd; background: rgba(124,111,205,0.1); }
+  .article-tag.browser { color: #4a8fd4; background: rgba(74,143,212,0.1); }
+  .article-tag.infra { color: #3db89a; background: rgba(61,184,154,0.1); }
+
+  .pagination {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    margin: 32px 0 48px; user-select: none;
   }
-  .card-desc {
-    font-size: 13px;
-    color: #8888aa;
-    line-height: 1.5;
+  .page-btn {
+    background: #18181f; border: 1px solid #2a2a38; color: #8888aa;
+    width: 34px; height: 34px; border-radius: 8px; cursor: pointer;
+    font-size: 13px; font-family: inherit; display: flex; align-items: center; justify-content: center;
+    transition: border-color 0.2s, color 0.2s, background 0.2s;
   }
-  .tag {
-    display: inline-block;
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    color: #7c6fcd;
-    background: rgba(124,111,205,0.1);
-    border: 1px solid rgba(124,111,205,0.2);
-    padding: 2px 8px;
-    border-radius: 12px;
-    margin-bottom: 8px;
-  }
-  .tag.infra {
-    color: #3db89a;
-    background: rgba(61,184,154,0.1);
-    border: 1px solid rgba(61,184,154,0.2);
-  }
-  .tag.browser {
-    color: #4a8fd4;
-    background: rgba(74,143,212,0.1);
-    border: 1px solid rgba(74,143,212,0.2);
-  }
+  .page-btn:hover:not(:disabled) { border-color: #7c6fcd; color: #e8e8f0; }
+  .page-btn.active { background: #7c6fcd; border-color: #7c6fcd; color: #fff; font-weight: 600; }
+  .page-btn:disabled { opacity: 0.3; cursor: default; }
+  .page-info { font-size: 12px; color: #44445a; margin: 0 8px; }
+
+  .no-results { text-align: center; padding: 48px 0; color: #44445a; font-size: 14px; }
 </style>
 </head>
 <body>
@@ -87,111 +88,150 @@
   <span class="sep">/</span>
   <span class="current">Animations</span>
 </nav>
+<nav class="sidenav">
+  <div class="nav-section">JavaScript</div>
+  <a href="event-loop/">Event Loop</a>
+  <a href="this-keyword/">this Keyword</a>
+  <a href="hoisting/">Hoisting</a>
+  <a href="closures/">Closures</a>
+  <a href="garbage-collection/">Garbage Collection</a>
+  <a href="event-delegation/">Event Delegation</a>
+  <a href="iterators-generators/">Iterators & Generators</a>
+  <a href="xhr-vs-fetch/">XHR vs fetch()</a>
+  <a href="error-propagation/">Error Propagation</a>
+  <a href="web-workers/">Web Workers</a>
+  <a href="prototypal-inheritance/">Prototypal Inheritance</a>
+  <div class="nav-section">Browser</div>
+  <a href="critical-rendering-path/">Critical Rendering Path</a>
+  <a href="reflow-vs-repaint/">Reflow vs Repaint</a>
+  <a href="css-box-model/">CSS Box Model & Layout</a>
+  <a href="web-security/">Web Security</a>
+  <a href="request-animation-frame/">requestAnimationFrame</a>
+  <a href="cors/">CORS</a>
+  <a href="websocket-vs-sse/">WebSocket vs SSE</a>
+  <div class="nav-section">Infrastructure</div>
+  <a href="vms-vs-docker/">VMs vs Docker</a>
+  <a href="opentelemetry/">OpenTelemetry</a>
+</nav>
 <div class="container">
   <h1>Software Explain Animations</h1>
   <p class="subtitle">Interactive visual explanations of software engineering concepts.</p>
-  <div class="grid">
-    <a class="card" href="event-loop/">
-      <span class="tag">JavaScript</span>
-      <div class="card-title">The Event Loop</div>
-      <div class="card-desc">Step through how the call stack, Web APIs, microtask queue, and task queue work together to make async JS possible.</div>
-    </a>
-    <a class="card" href="this-keyword/">
-      <span class="tag">JavaScript</span>
-      <div class="card-title">The this Keyword</div>
-      <div class="card-desc">See how this changes meaning across global scope, object methods, arrow functions, constructors, and explicit binding.</div>
-    </a>
-    <a class="card" href="hoisting/">
-      <span class="tag">JavaScript</span>
-      <div class="card-title">Hoisting</div>
-      <div class="card-desc">Watch how var, let, const, functions, and classes behave before their declarations — and why the Temporal Dead Zone exists.</div>
-    </a>
-    <a class="card" href="garbage-collection/">
-      <span class="tag">JavaScript</span>
-      <div class="card-title">Garbage Collection</div>
-      <div class="card-desc">Watch mark-and-sweep in action — how the engine traces reachability from roots, handles circular references, closures, and memory leaks.</div>
-    </a>
-    <a class="card" href="event-delegation/">
-      <span class="tag">JavaScript</span>
-      <div class="card-title">Event Delegation</div>
-      <div class="card-desc">Watch events bubble through the DOM tree and see why attaching one listener to a parent beats binding to every child — with matches(), closest(), and dynamic elements.</div>
-    </a>
-    <a class="card" href="vms-vs-docker/">
-      <span class="tag infra">Infrastructure</span>
-      <div class="card-title">VMs vs Docker</div>
-      <div class="card-desc">Build up both architectures layer by layer — hypervisors vs container engines, guest OSes vs shared kernels, and when to use each.</div>
-    </a>
-    <a class="card" href="opentelemetry/">
-      <span class="tag infra">Infrastructure</span>
-      <div class="card-title">OpenTelemetry</div>
-      <div class="card-desc">Follow telemetry from instrumentation to backend — traces, metrics, logs, context propagation, the OTel Collector pipeline, and OTLP.</div>
-    </a>
-    <a class="card" href="iterators-generators/">
-      <span class="tag">JavaScript</span>
-      <div class="card-title">Iterators &amp; Generators</div>
-      <div class="card-desc">Step through the iteration protocol, generator functions, yield keyword, lazy evaluation, yield* delegation, and practical use cases like pagination and tree traversal.</div>
-    </a>
-    <a class="card" href="xhr-vs-fetch/">
-      <span class="tag">JavaScript</span>
-      <div class="card-title">XMLHttpRequest vs fetch()</div>
-      <div class="card-desc">Compare the two HTTP APIs side by side — callbacks vs promises, progress events, streaming, abort patterns, error handling, and when to use each.</div>
-    </a>
-    <a class="card" href="error-propagation/">
-      <span class="tag">JavaScript</span>
-      <div class="card-title">Error Propagation</div>
-      <div class="card-desc">Trace how errors travel up the call stack, through try/catch/finally, callbacks, promises, and async/await — and what happens when nobody catches.</div>
-    </a>
-    <a class="card" href="web-workers/">
-      <span class="tag">JavaScript</span>
-      <div class="card-title">Web Workers</div>
-      <div class="card-desc">See how Web Workers bring real parallelism to JavaScript — postMessage, structured clone, transferables, SharedArrayBuffer, and Service Workers.</div>
-    </a>
-    <a class="card" href="closures/">
-      <span class="tag">JavaScript</span>
-      <div class="card-title">Closures</div>
-      <div class="card-desc">See how functions remember their lexical scope — counters, the loop problem, private state, module pattern, and common gotchas.</div>
-    </a>
-    <a class="card" href="prototypal-inheritance/">
-      <span class="tag">JavaScript</span>
-      <div class="card-title">Prototypal Inheritance</div>
-      <div class="card-desc">Walk the prototype chain — Object.create, constructor functions, ES6 class sugar, extends/super, and mixins vs inheritance.</div>
-    </a>
-    <a class="card" href="critical-rendering-path/">
-      <span class="tag browser">Browser</span>
-      <div class="card-title">Critical Rendering Path</div>
-      <div class="card-desc">Follow a page from HTML to pixels — DOM, CSSOM, render tree, layout, paint, composite, and how to optimize each step.</div>
-    </a>
-    <a class="card" href="reflow-vs-repaint/">
-      <span class="tag browser">Browser</span>
-      <div class="card-title">Reflow vs Repaint</div>
-      <div class="card-desc">Understand which CSS changes trigger reflow, repaint, or composite-only — and how to avoid layout thrashing.</div>
-    </a>
-    <a class="card" href="css-box-model/">
-      <span class="tag browser">Browser</span>
-      <div class="card-title">CSS Box Model & Layout</div>
-      <div class="card-desc">Visualize content, padding, border, and margin — box-sizing, margin collapse, flexbox, grid, and positioning.</div>
-    </a>
-    <a class="card" href="web-security/">
-      <span class="tag browser">Browser</span>
-      <div class="card-title">Web Security</div>
-      <div class="card-desc">Understand XSS, CSRF, SQL injection, clickjacking, CSP, HTTPS — how attacks work and how to defend against them.</div>
-    </a>
-    <a class="card" href="request-animation-frame/">
-      <span class="tag browser">Browser</span>
-      <div class="card-title">requestAnimationFrame</div>
-      <div class="card-desc">Compare rAF vs setTimeout for animation — frame timing, sync with display refresh, delta time, and where rAF fits in the event loop.</div>
-    </a>
-    <a class="card" href="cors/">
-      <span class="tag browser">Browser</span>
-      <div class="card-title">CORS</div>
-      <div class="card-desc">Follow the preflight dance — same-origin policy, OPTIONS requests, Access-Control headers, credentials, and common errors.</div>
-    </a>
-    <a class="card" href="websocket-vs-sse/">
-      <span class="tag browser">Browser</span>
-      <div class="card-title">WebSocket vs SSE</div>
-      <div class="card-desc">Compare full-duplex WebSocket with server-push SSE — handshake, protocols, reconnection, and when to use each.</div>
-    </a>
+
+  <div class="search-wrap">
+    <i class="lni lni-search-alt"></i>
+    <input class="search-input" type="text" placeholder="Search animations..." id="search" autocomplete="off">
   </div>
+
+  <div id="article-root"></div>
+  <div id="pagination"></div>
 </div>
+
+<script>
+const ARTICLES = [
+  { cat: "JavaScript", tag: "js", title: "The Event Loop", href: "event-loop/", desc: "Step through how the call stack, Web APIs, microtask queue, and task queue work together to make async JS possible." },
+  { cat: "JavaScript", tag: "js", title: "The this Keyword", href: "this-keyword/", desc: "See how this changes meaning across global scope, object methods, arrow functions, constructors, and explicit binding." },
+  { cat: "JavaScript", tag: "js", title: "Hoisting", href: "hoisting/", desc: "Watch how var, let, const, functions, and classes behave before their declarations — and why the Temporal Dead Zone exists." },
+  { cat: "JavaScript", tag: "js", title: "Closures", href: "closures/", desc: "See how functions remember their lexical scope — counters, the loop problem, private state, module pattern, and common gotchas." },
+  { cat: "JavaScript", tag: "js", title: "Garbage Collection", href: "garbage-collection/", desc: "Watch mark-and-sweep in action — how the engine traces reachability from roots, handles circular references, closures, and memory leaks." },
+  { cat: "JavaScript", tag: "js", title: "Event Delegation", href: "event-delegation/", desc: "Watch events bubble through the DOM tree and see why attaching one listener to a parent beats binding to every child." },
+  { cat: "JavaScript", tag: "js", title: "Iterators & Generators", href: "iterators-generators/", desc: "Step through the iteration protocol, generator functions, yield keyword, lazy evaluation, and practical use cases." },
+  { cat: "JavaScript", tag: "js", title: "XMLHttpRequest vs fetch()", href: "xhr-vs-fetch/", desc: "Compare the two HTTP APIs side by side — callbacks vs promises, progress events, streaming, abort patterns, and error handling." },
+  { cat: "JavaScript", tag: "js", title: "Error Propagation", href: "error-propagation/", desc: "Trace how errors travel up the call stack, through try/catch/finally, callbacks, promises, and async/await." },
+  { cat: "JavaScript", tag: "js", title: "Web Workers", href: "web-workers/", desc: "See how Web Workers bring real parallelism to JavaScript — postMessage, structured clone, transferables, and SharedArrayBuffer." },
+  { cat: "JavaScript", tag: "js", title: "Prototypal Inheritance", href: "prototypal-inheritance/", desc: "Walk the prototype chain — Object.create, constructor functions, ES6 class sugar, extends/super, and mixins." },
+  { cat: "Browser", tag: "browser", title: "Critical Rendering Path", href: "critical-rendering-path/", desc: "Follow a page from HTML to pixels — DOM, CSSOM, render tree, layout, paint, composite, and how to optimize each step." },
+  { cat: "Browser", tag: "browser", title: "Reflow vs Repaint", href: "reflow-vs-repaint/", desc: "Understand which CSS changes trigger reflow, repaint, or composite-only — and how to avoid layout thrashing." },
+  { cat: "Browser", tag: "browser", title: "CSS Box Model & Layout", href: "css-box-model/", desc: "Visualize content, padding, border, and margin — box-sizing, margin collapse, flexbox, grid, and positioning." },
+  { cat: "Browser", tag: "browser", title: "Web Security", href: "web-security/", desc: "Understand XSS, CSRF, SQL injection, clickjacking, CSP, HTTPS — how attacks work and how to defend against them." },
+  { cat: "Browser", tag: "browser", title: "requestAnimationFrame", href: "request-animation-frame/", desc: "Compare rAF vs setTimeout for animation — frame timing, sync with display refresh, delta time, and where rAF fits." },
+  { cat: "Browser", tag: "browser", title: "CORS", href: "cors/", desc: "Follow the preflight dance — same-origin policy, OPTIONS requests, Access-Control headers, credentials, and common errors." },
+  { cat: "Browser", tag: "browser", title: "WebSocket vs SSE", href: "websocket-vs-sse/", desc: "Compare full-duplex WebSocket with server-push SSE — handshake, protocols, reconnection, and when to use each." },
+  { cat: "Infrastructure", tag: "infra", title: "VMs vs Docker", href: "vms-vs-docker/", desc: "Build up both architectures layer by layer — hypervisors vs container engines, guest OSes vs shared kernels." },
+  { cat: "Infrastructure", tag: "infra", title: "OpenTelemetry", href: "opentelemetry/", desc: "Follow telemetry from instrumentation to backend — traces, metrics, logs, context propagation, and the OTel Collector." },
+];
+
+const PER_PAGE = 8;
+let currentPage = 1;
+let query = "";
+
+function filterArticles() {
+  if (!query) return ARTICLES;
+  const q = query.toLowerCase();
+  return ARTICLES.filter(a =>
+    a.title.toLowerCase().includes(q) ||
+    a.desc.toLowerCase().includes(q) ||
+    a.cat.toLowerCase().includes(q)
+  );
+}
+
+function render() {
+  const filtered = filterArticles();
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+  if (currentPage > totalPages) currentPage = totalPages;
+  const start = (currentPage - 1) * PER_PAGE;
+  const pageItems = filtered.slice(start, start + PER_PAGE);
+
+  const root = document.getElementById("article-root");
+
+  if (filtered.length === 0) {
+    root.innerHTML = '<div class="no-results">No animations match your search.</div>';
+    document.getElementById("pagination").innerHTML = "";
+    return;
+  }
+
+  // Group by category preserving order
+  const groups = [];
+  let lastCat = null;
+  for (const item of pageItems) {
+    if (item.cat !== lastCat) {
+      groups.push({ cat: item.cat, items: [] });
+      lastCat = item.cat;
+    }
+    groups[groups.length - 1].items.push(item);
+  }
+
+  let html = "";
+  for (const g of groups) {
+    html += `<div class="section-label">${g.cat}</div><ul class="article-list">`;
+    for (const a of g.items) {
+      html += `<li class="article-item"><a href="${a.href}">
+        <span class="article-tag ${a.tag}">${a.cat}</span>
+        <span class="article-title">${a.title}</span>
+        <span class="article-desc">${a.desc}</span>
+      </a></li>`;
+    }
+    html += "</ul>";
+  }
+  root.innerHTML = html;
+
+  // Pagination
+  let pHtml = "";
+  if (totalPages > 1) {
+    pHtml += `<button class="page-btn" onclick="goPage(${currentPage - 1})" ${currentPage === 1 ? "disabled" : ""}><i class="lni lni-chevron-left" style="font-size:11px"></i></button>`;
+    for (let p = 1; p <= totalPages; p++) {
+      pHtml += `<button class="page-btn${p === currentPage ? " active" : ""}" onclick="goPage(${p})">${p}</button>`;
+    }
+    pHtml += `<button class="page-btn" onclick="goPage(${currentPage + 1})" ${currentPage === totalPages ? "disabled" : ""}><i class="lni lni-chevron-right" style="font-size:11px"></i></button>`;
+  }
+  document.getElementById("pagination").innerHTML = pHtml;
+}
+
+function goPage(p) {
+  const filtered = filterArticles();
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+  if (p < 1 || p > totalPages) return;
+  currentPage = p;
+  render();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+document.getElementById("search").addEventListener("input", function() {
+  query = this.value.trim();
+  currentPage = 1;
+  render();
+});
+
+render();
+</script>
 </body>
 </html>
