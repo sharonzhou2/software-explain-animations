@@ -891,47 +891,11 @@ function App() {
     /* finale */
     sc.finale && e(Finale),
 
-    /* main grid */
-    !sc.finale && e("div", null,
-
-      /* row 1: code panel + concept/api stack */
-      e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:10 } },
-        e("div", { onClick:()=>toggleDetail("code"), style:{cursor:"pointer"} },
-          e(CodePanel, { tokens: sc.code })
-        ),
-        e("div", { style:{ display:"flex", flexDirection:"column", gap:10 } },
-          e(Panel, { label:"Concept", onClick:()=>toggleDetail("concept") },
-            e("div", { style:{ minHeight:52 } },
-              e(AP, { mode:"wait" },
-                e(M.div, { key:sc.id, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.15} },
-                  e("div", { style:{ fontSize:13, fontWeight:600, color:T.tealL, marginBottom:4 } }, sc.title),
-                  e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.6 } },
-                    sc.sub.length > 100 ? sc.sub.slice(0,100)+"..." : sc.sub
-                  )
-                )
-              )
-            )
-          ),
-          e(Panel, { label:"API Reference", onClick:()=>toggleDetail("api") },
-            e("div", { style:{ minHeight:52 } },
-              e(AP, { mode:"wait" },
-                e(M.div, { key:sc.id, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.15} },
-                  sc.detail_hint==="api"
-                    ? e("div", null,
-                        e("div", { style:{ fontSize:12, color:T.amberL, fontFamily:"monospace", marginBottom:2 } },
-                          sc.id===3?"new Worker(url)":sc.id===4?"postMessage(data)":sc.id===7?"Worker APIs":sc.id===8?"postMessage(data,[transfer])":sc.id===9?"SharedArrayBuffer":sc.id===11?"self.addEventListener('fetch',...)":"Worker API"
-                        ),
-                        e("div", { style:{ fontSize:11, color:T.text2 } }, "Click to explore the full API")
-                      )
-                    : e("div", { style:{ fontSize:11, color:T.text3 } }, "Click for API details")
-                )
-              )
-            )
-          )
-        )
+    /* main grid — code on left, thread viz on right */
+    !sc.finale && e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1.2fr", gap:10 } },
+      e("div", { onClick:()=>toggleDetail("code"), style:{cursor:"pointer"} },
+        e(CodePanel, { tokens: sc.code })
       ),
-
-      /* row 2: full-width thread visualization */
       e(Panel, { label:"Thread Visualization", onClick:()=>toggleDetail("threads") },
         e(AP, { mode:"wait" },
           e(M.div, { key:sc.id, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.15} },
