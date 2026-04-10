@@ -6,6 +6,7 @@
 <title>Authentication</title>
 <link href="https://cdn.lineicons.com/5.0/lineicons.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -597,7 +598,7 @@ const OAuthRoles = () => {
     { icon:"lni-user-4", label:"Resource Owner", sub:"the user", color:T.purpleL },
     { icon:"lni-code-1", label:"Client", sub:"your app", color:T.tealL },
     { icon:"lni-shield-2", label:"Auth Server", sub:"Google / Okta", color:T.oauthL },
-    { icon:"lni-database-1", label:"Resource Server", sub:"the API", color:T.amberL },
+    { icon:"iconify:logos:postgresql", label:"Resource Server", sub:"the API", color:T.amberL },
   ];
   return e("div", {
     style:{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr 1fr", gap:8 }
@@ -619,7 +620,9 @@ const OAuthRoles = () => {
             display:"flex", alignItems:"center", justifyContent:"center",
             background:`${r.color}18`, border:`1px solid ${r.color}55`, color:r.color,
           }
-        }, e("i", { className:"lni "+r.icon, style:{ fontSize:17 } })),
+        }, r.icon.indexOf("iconify:") === 0
+            ? e("iconify-icon", { icon:r.icon.slice(8), width:18, height:18 })
+            : e("i", { className:"lni "+r.icon, style:{ fontSize:17 } })),
         e("div", { style:{ fontSize:11, fontWeight:700, color:r.color, marginBottom:2 } }, r.label),
         e("div", { style:{ fontSize:9, color:T.text3 } }, r.sub)
       )

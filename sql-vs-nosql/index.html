@@ -6,6 +6,7 @@
 <title>SQL vs NoSQL</title>
 <link href="https://cdn.lineicons.com/5.0/lineicons.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -400,7 +401,7 @@ const SqlTable = ({ onClick, highlightJoin=false }) => {
   const head = { ...cell, color:T.sqlL, fontWeight:700, background:`${T.sql}10`, borderBottom:`1px solid ${T.sql}44` };
   return e("div", { onClick, style:{ flex:1, borderRadius:12, border:`1.5px solid ${T.border2}`, background:T.surface, overflow:"hidden", cursor:"pointer" } },
     e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", gap:6 } },
-      e("i", { className:"lni lni-database", style:{ color:T.sql, fontSize:12 } }),
+      e("iconify-icon", { icon:"logos:postgresql", width:14, height:14 }),
       e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.sql } }, "SQL — FIXED SCHEMA")
     ),
     e("div", { style:{ padding:12, display:"flex", flexDirection:"column", gap:10 } },
@@ -837,8 +838,8 @@ const UseCases = () =>
 
 const Finale = () => {
   const rows = [
-    { n:"lni-database", label:"SQL — structured", sub:"Tables, rows, fixed schema, relational joins, ACID", c:T.sql },
-    { n:"lni-files-1", label:"NoSQL — flexible", sub:"Documents, key-value, wide-column, or graph — schemaless", c:T.nosql },
+    { n:"iconify:logos:postgresql", label:"SQL — structured", sub:"Tables, rows, fixed schema, relational joins, ACID", c:T.sql },
+    { n:"iconify:logos:mongodb-icon", label:"NoSQL — flexible", sub:"Documents, key-value, wide-column, or graph — schemaless", c:T.nosql },
     { n:"lni-hand", label:"Four NoSQL flavors", sub:"Document, Key-Value, Wide-Column, Graph — different shapes for different access patterns", c:T.amber },
     { n:"lni-shield-2", label:"ACID vs BASE", sub:"Strict transactions vs eventual consistency — pick your consistency model", c:T.blue },
     { n:"lni-network", label:"CAP theorem", sub:"In a partition, you choose C (consistency) or A (availability) — P is non-negotiable", c:T.purple },
@@ -848,7 +849,10 @@ const Finale = () => {
     rows.map((r,i) => e(M.div, { key:i, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.1,...ez},
       style:{ display:"flex", alignItems:"flex-start", gap:12, padding:"11px 14px", marginBottom:8, borderRadius:10, border:`1px solid ${r.c}28`, background:`${r.c}08` }
     },
-      e("div", { style:{ width:28, height:28, borderRadius:"50%", border:`1.5px solid ${r.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:12, fontWeight:700, color:r.c } }, e("i", { className:"lni " + r.n })),
+      e("div", { style:{ width:28, height:28, borderRadius:"50%", border:`1.5px solid ${r.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:12, fontWeight:700, color:r.c } },
+        r.n.indexOf("iconify:") === 0
+          ? e("iconify-icon", { icon:r.n.slice(8), width:16, height:16 })
+          : e("i", { className:"lni " + r.n })),
       e("div", null,
         e("div", { style:{ fontSize:13, fontWeight:600, color:r.c, marginBottom:2 } }, r.label),
         e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.5 } }, r.sub)
