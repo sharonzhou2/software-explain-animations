@@ -31,6 +31,14 @@
   .sidenav a.active { color: #a99cf0; border-left-color: #7c6fcd; background: rgba(124,111,205,0.1); font-weight: 600; }
   .sidenav .nav-section { padding: 8px 16px 4px; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #44445a; }
   .sidenav .nav-section:first-child { padding-top: 4px; }
+  .sidenav details { margin: 0; }
+  .sidenav summary { padding: 8px 16px 4px; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #44445a; cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; user-select: none; transition: color 0.2s; }
+  .sidenav summary::-webkit-details-marker { display: none; }
+  .sidenav summary:hover { color: #8888aa; }
+  .sidenav summary::after { content: ""; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(-45deg); transition: transform 0.2s; margin-right: 2px; }
+  .sidenav details[open] summary::after { transform: rotate(45deg); }
+  .sidenav details + details summary { padding-top: 12px; }
+  .sidenav details:first-of-type summary { padding-top: 4px; }
 </style>
 </head>
 <body>
@@ -42,41 +50,47 @@
   <span class="current">Critical Rendering Path</span>
 </nav>
 <nav class="sidenav">
-  <div class="nav-section">JavaScript</div>
-  <a href="../event-loop/">Event Loop</a>
-  <a href="../this-keyword/">this Keyword</a>
-  <a href="../hoisting/">Hoisting</a>
-  <a href="../closures/">Closures</a>
-  <a href="../garbage-collection/">Garbage Collection</a>
-  <a href="../event-delegation/">Event Delegation</a>
-  <a href="../iterators-generators/">Iterators & Generators</a>
-  <a href="../xhr-vs-fetch/">XHR vs fetch()</a>
-  <a href="../error-propagation/">Error Propagation</a>
-  <a href="../web-workers/">Web Workers</a>
-  <a href="../prototypal-inheritance/">Prototypal Inheritance</a>
-  <div class="nav-section">Browser</div>
-  <a href="../critical-rendering-path/" class="active">Critical Rendering Path</a>
-  <a href="../reflow-vs-repaint/">Reflow vs Repaint</a>
-  <a href="../css-box-model/">CSS Box Model & Layout</a>
-  <a href="../web-security/">Web Security</a>
-  <a href="../request-animation-frame/">requestAnimationFrame</a>
-  <a href="../cors/">CORS</a>
-  <a href="../websocket-vs-sse/">WebSocket vs SSE</a>
-  <a href="../debounce-vs-throttle/">Debounce vs Throttle</a>
-  <div class="nav-section">Infrastructure</div>
-  <a href="../vms-vs-docker/">VMs vs Docker</a>
-  <a href="../opentelemetry/">OpenTelemetry</a>
-  <a href="../kubernetes/">Kubernetes</a>
-  <a href="../kafka/">Kafka</a>
-  <a href="../database-indexing/">Database Indexing</a>
-  <a href="../sql-vs-nosql/">SQL vs NoSQL</a>
-  <a href="../load-balancing/">Load Balancing</a>
-  <a href="../caching-strategies/">Caching Strategies</a>
-  <a href="../authentication/">Authentication</a>
-  <a href="../http-versions/">HTTP Versions</a>
-  <a href="../rate-limiting/">Rate Limiting</a>
-  <a href="../database-sharding/">Database Sharding</a>
-  <a href="../microservices-vs-monolith/">Microservices vs Monolith</a>
+  <details>
+    <summary>JavaScript</summary>
+    <a href="../event-loop/">Event Loop</a>
+        <a href="../this-keyword/">this Keyword</a>
+        <a href="../hoisting/">Hoisting</a>
+        <a href="../closures/">Closures</a>
+        <a href="../garbage-collection/">Garbage Collection</a>
+        <a href="../event-delegation/">Event Delegation</a>
+        <a href="../iterators-generators/">Iterators & Generators</a>
+        <a href="../xhr-vs-fetch/">XHR vs fetch()</a>
+        <a href="../error-propagation/">Error Propagation</a>
+        <a href="../web-workers/">Web Workers</a>
+        <a href="../prototypal-inheritance/">Prototypal Inheritance</a>
+  </details>
+  <details open>
+    <summary>Browser</summary>
+    <a href="../critical-rendering-path/" class="active">Critical Rendering Path</a>
+        <a href="../reflow-vs-repaint/">Reflow vs Repaint</a>
+        <a href="../css-box-model/">CSS Box Model & Layout</a>
+        <a href="../web-security/">Web Security</a>
+        <a href="../request-animation-frame/">requestAnimationFrame</a>
+        <a href="../cors/">CORS</a>
+        <a href="../websocket-vs-sse/">WebSocket vs SSE</a>
+        <a href="../debounce-vs-throttle/">Debounce vs Throttle</a>
+  </details>
+  <details>
+    <summary>Infrastructure</summary>
+    <a href="../vms-vs-docker/">VMs vs Docker</a>
+        <a href="../opentelemetry/">OpenTelemetry</a>
+        <a href="../kubernetes/">Kubernetes</a>
+        <a href="../kafka/">Kafka</a>
+        <a href="../database-indexing/">Database Indexing</a>
+        <a href="../sql-vs-nosql/">SQL vs NoSQL</a>
+        <a href="../load-balancing/">Load Balancing</a>
+        <a href="../caching-strategies/">Caching Strategies</a>
+        <a href="../authentication/">Authentication</a>
+        <a href="../http-versions/">HTTP Versions</a>
+        <a href="../rate-limiting/">Rate Limiting</a>
+        <a href="../database-sharding/">Database Sharding</a>
+        <a href="../microservices-vs-monolith/">Microservices vs Monolith</a>
+  </details>
 </nav>
 <div id="root" style="margin-top: 36px;"></div>
 
