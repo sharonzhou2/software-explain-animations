@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Software Explain Animations</title>
+<link href="https://cdn.lineicons.com/5.0/lineicons.css" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -32,7 +33,7 @@
   .subtitle { color: #8888aa; font-size: 14px; margin-bottom: 28px; line-height: 1.6; }
 
   .search-wrap { position: relative; margin-bottom: 32px; }
-  .search-wrap svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #44445a; pointer-events: none; }
+  .search-wrap .lni { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #8888aa; font-size: 16px; pointer-events: none; }
   .search-input {
     width: 100%; padding: 10px 14px 10px 40px; border-radius: 10px;
     border: 1px solid #2a2a38; background: #18181f; color: #e8e8f0;
@@ -119,7 +120,7 @@
   <p class="subtitle">Interactive visual explanations of software engineering concepts.</p>
 
   <div class="search-wrap">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <i class="lni lni-search-1"></i>
     <input class="search-input" type="text" placeholder="Search animations..." id="search" autocomplete="off">
   </div>
 
@@ -210,11 +211,11 @@ function render() {
   // Pagination
   let pHtml = "";
   if (totalPages > 1) {
-    pHtml += `<button class="page-btn" onclick="goPage(${currentPage - 1})" ${currentPage === 1 ? "disabled" : ""}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>`;
+    pHtml += `<button class="page-btn" onclick="goPage(${currentPage - 1})" ${currentPage === 1 ? "disabled" : ""}><i class="lni lni-arrow-left"></i></button>`;
     for (let p = 1; p <= totalPages; p++) {
       pHtml += `<button class="page-btn${p === currentPage ? " active" : ""}" onclick="goPage(${p})">${p}</button>`;
     }
-    pHtml += `<button class="page-btn" onclick="goPage(${currentPage + 1})" ${currentPage === totalPages ? "disabled" : ""}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>`;
+    pHtml += `<button class="page-btn" onclick="goPage(${currentPage + 1})" ${currentPage === totalPages ? "disabled" : ""}><i class="lni lni-arrow-right"></i></button>`;
   }
   document.getElementById("pagination").innerHTML = pHtml;
 }

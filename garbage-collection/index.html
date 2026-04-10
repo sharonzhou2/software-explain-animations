@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>JS Garbage Collection</title>
+<link href="https://cdn.lineicons.com/5.0/lineicons.css" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -260,9 +261,9 @@ const SCENES = [
     sub:"The heap is clean. The Alice object and team object have been collected. The scores array survives because it's still directly referenced by a root variable.",
     code:[
       [["cmt","// Heap after GC:"]],
-      [["cmt","// ✓ scores — still reachable"]],
-      [["cmt","// ✗ user obj — collected"]],
-      [["cmt","// ✗ team obj — collected"]],
+      [["cmt","// scores — still reachable"]],
+      [["cmt","// user obj — collected"]],
+      [["cmt","// team obj — collected"]],
     ],
     heap:[
       { id:"scores", label:"[95, 87]", type:"Array", color:T.teal },
@@ -370,7 +371,7 @@ const SCENES = [
     unreachable:["new2","new3"],
   },
   {
-    id:13, act:"✓",
+    id:13, act:"DONE",
     title:"GC cheat sheet",
     sub:"Memory management in JS is automatic, but understanding it prevents leaks and helps you write efficient code.",
     code:[],
@@ -514,9 +515,9 @@ const HeapViz = ({ heap, refs, freed, roots, gcActive, phase, marked, unreachabl
             },
               e("div", { style:{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, marginBottom:3 } },
                 e("span", { style:{ fontSize:9, fontWeight:700, color:borderColor, letterSpacing:"0.06em", textTransform:"uppercase" } }, obj.type),
-                isMarked && e("span", { style:{ fontSize:9, color:T.green } }, "✓ alive"),
-                isUnreachable && e("span", { style:{ fontSize:9, color:T.red } }, "✗ garbage"),
-                isLeaking && e(M.div, { animate:{opacity:[0.5,1,0.5]}, transition:{duration:1,repeat:Infinity}, style:{ fontSize:9, color:T.coral } }, "⚠ leaked")
+                isMarked && e("span", { style:{ fontSize:9, color:T.green, display:"flex", alignItems:"center", gap:3 } }, e("i", { className:"lni lni-check", style:{fontSize:10} }), "alive"),
+                isUnreachable && e("span", { style:{ fontSize:9, color:T.red, display:"flex", alignItems:"center", gap:3 } }, e("i", { className:"lni lni-xmark", style:{fontSize:10} }), "garbage"),
+                isLeaking && e(M.div, { animate:{opacity:[0.5,1,0.5]}, transition:{duration:1,repeat:Infinity}, style:{ fontSize:9, color:T.coral, display:"flex", alignItems:"center", gap:3 } }, e("i", { className:"lni lni-info", style:{fontSize:10} }), "leaked")
               ),
               e("div", { style:{ fontSize:11, fontFamily:"'SF Mono',monospace", color: isUnreachable ? T.text3 : T.text1, textDecoration: isUnreachable ? "line-through" : "none" } }, obj.label)
             );
@@ -556,13 +557,13 @@ const Finale = () => {
     { n:"3", label:"Cycles don't help", sub:"Circular references between unreachable objects are still collected", c:T.blue },
     { n:"4", label:"Closures retain", sub:"A closure keeps its captured variables alive as long as it exists", c:T.amber },
     { n:"5", label:"Weak references", sub:"WeakMap/WeakSet don't prevent GC — use them for caches", c:T.teal },
-    { n:"⚠", label:"Watch for leaks", sub:"Forgotten listeners, global accumulators, detached DOM nodes", c:T.coral },
+    { n:"lni-info", label:"Watch for leaks", sub:"Forgotten listeners, global accumulators, detached DOM nodes", c:T.coral },
   ];
   return e("div", { style:{ padding:"8px 0" } },
     rows.map((r,i) => e(M.div, { key:i, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.1,...ez},
       style:{ display:"flex", alignItems:"flex-start", gap:12, padding:"11px 14px", marginBottom:8, borderRadius:10, border:`1px solid ${r.c}28`, background:`${r.c}08` }
     },
-      e("div", { style:{ width:26, height:26, borderRadius:"50%", border:`1.5px solid ${r.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:12, fontWeight:700, color:r.c } }, r.n),
+      e("div", { style:{ width:26, height:26, borderRadius:"50%", border:`1.5px solid ${r.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:12, fontWeight:700, color:r.c } }, r.n.startsWith("lni-") ? e("i", { className:"lni " + r.n }) : r.n),
       e("div", null,
         e("div", { style:{ fontSize:13, fontWeight:600, color:r.c, marginBottom:2 } }, r.label),
         e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.5 } }, r.sub)
@@ -582,7 +583,7 @@ const DetailPanel = ({ detailKey, onClose }) => {
         e("div", { style:{ width:8, height:8, borderRadius:"50%", background:d.color } }),
         e("span", { style:{ fontSize:14, fontWeight:600, color:T.text1 } }, d.title)
       ),
-      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6, transition:"color 0.2s" }, onMouseEnter:ev=>ev.target.style.color=T.text1, onMouseLeave:ev=>ev.target.style.color=T.text3 }, "✕")
+      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6, transition:"color 0.2s" }, onMouseEnter:ev=>ev.target.style.color=T.text1, onMouseLeave:ev=>ev.target.style.color=T.text3 }, e("i", { className:"lni lni-xmark" }))
     ),
     e("div", { style:{ padding:"16px 18px 20px", maxHeight:"calc(100vh - 140px)", overflowY:"auto" } },
       d.sections.map((s, i) =>

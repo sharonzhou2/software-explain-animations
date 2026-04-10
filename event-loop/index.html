@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>JS Event Loop</title>
+<link href="https://cdn.lineicons.com/5.0/lineicons.css" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -133,7 +134,7 @@ const SCENES = [
   { id:11, act:"12", title:"Macrotask runs — setTimeout", sub:"Microtask queue empty. The loop picks one macrotask. The setTimeout callback finally executes.", stack:[{id:"tcb",label:"setTimeout cb()",tier:"async"}], micro:[], macro:[], apis:["fetch"], loop:true, hl:[1,2,3], out:[O1,O2,O3,O4], tp:0, focus:["macro","stack","console"] },
   { id:12, act:"13", title:"Network response arrives", sub:"The HTTP response comes back. The browser moves fetch's .then() callback into the Microtask Queue — not the Task Queue! Promises are always microtasks.", stack:[], micro:[{id:"m2",label:"fetch .then cb"}], macro:[], apis:[], loop:true, hl:[4,5,6], out:[O1,O2,O3,O4], tp:0, focus:["webapis","micro"] },
   { id:13, act:"14", title:"fetch .then() executes", sub:"The event loop drains the microtask queue again. The fetch callback runs and logs \"fetched\". This proves: even async network callbacks follow microtask priority.", stack:[{id:"fcb",label:"fetch .then cb()",tier:"promise"}], micro:[], macro:[], apis:[], loop:true, hl:[4,5,6], out:[O1,O2,O3,O4,O5], tp:0, focus:["stack","console"] },
-  { id:14, act:"✓", title:"Sync → Microtasks → Macrotasks", sub:"fetch().then() is a microtask — same priority as Promise.resolve().then(). The only difference: fetch waits for the network, so it resolves later. The ordering rules never change.", stack:[], micro:[], macro:[], apis:[], loop:false, hl:[], out:[O1,O2,O3,O4,O5], tp:0, focus:[], finale:true },
+  { id:14, act:"DONE", title:"Sync → Microtasks → Macrotasks", sub:"fetch().then() is a microtask — same priority as Promise.resolve().then(). The only difference: fetch waits for the network, so it resolves later. The ordering rules never change.", stack:[], micro:[], macro:[], apis:[], loop:false, hl:[], out:[O1,O2,O3,O4,O5], tp:0, focus:[], finale:true },
 ];
 
 const TIER = {
@@ -290,7 +291,7 @@ const DetailPanel = ({ detailKey, onClose }) => {
         e("div", { style:{ width:8, height:8, borderRadius:"50%", background:d.color } }),
         e("span", { style:{ fontSize:14, fontWeight:600, color:T.text1 } }, d.title)
       ),
-      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6, transition:"color 0.2s" }, onMouseEnter:ev=>ev.target.style.color=T.text1, onMouseLeave:ev=>ev.target.style.color=T.text3 }, "✕")
+      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6, transition:"color 0.2s" }, onMouseEnter:ev=>ev.target.style.color=T.text1, onMouseLeave:ev=>ev.target.style.color=T.text3 }, e("i", { className:"lni lni-xmark" }))
     ),
     e("div", { style:{ padding:"16px 18px 20px", maxHeight:"calc(100vh - 140px)", overflowY:"auto" } },
       d.sections.map((s, i) =>

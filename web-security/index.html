@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Web Security</title>
+<link href="https://cdn.lineicons.com/5.0/lineicons.css" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -392,19 +393,19 @@ const SCENES = [
     diagram:{ type:"owasp", actors:[], flows:[] },
   },
   {
-    id:13, act:"✓",
+    id:13, act:"DONE",
     title:"Web Security Summary",
     sub:"Defense in depth: layer multiple protections. No single measure is enough — combine CSP, input validation, secure cookies, HTTPS, and CSRF tokens.",
     code:[
       [["cmt","// Security checklist:"]],
-      [["good","✓"],["plain"," Escape & sanitize all user input"]],
-      [["good","✓"],["plain"," Use Content-Security-Policy"]],
-      [["good","✓"],["plain"," Set HttpOnly, Secure, SameSite"]],
-      [["good","✓"],["plain"," CSRF tokens on state changes"]],
-      [["good","✓"],["plain"," Parameterized SQL queries"]],
-      [["good","✓"],["plain"," X-Frame-Options / frame-ancestors"]],
-      [["good","✓"],["plain"," HTTPS everywhere"]],
-      [["good","✓"],["plain"," Regular dependency audits"]],
+      [["good","[x]"],["plain"," Escape & sanitize all user input"]],
+      [["good","[x]"],["plain"," Use Content-Security-Policy"]],
+      [["good","[x]"],["plain"," Set HttpOnly, Secure, SameSite"]],
+      [["good","[x]"],["plain"," CSRF tokens on state changes"]],
+      [["good","[x]"],["plain"," Parameterized SQL queries"]],
+      [["good","[x]"],["plain"," X-Frame-Options / frame-ancestors"]],
+      [["good","[x]"],["plain"," HTTPS everywhere"]],
+      [["good","[x]"],["plain"," Regular dependency audits"]],
     ],
     attack:null,
     defense:null,

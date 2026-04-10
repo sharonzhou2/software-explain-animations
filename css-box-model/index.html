@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CSS Box Model & Layout</title>
+<link href="https://cdn.lineicons.com/5.0/lineicons.css" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -300,7 +301,7 @@ const SCENES = [
     vizType:"position",
   },
   {
-    id:12, act:"✓",
+    id:12, act:"DONE",
     title:"The CSS Box Model & Layout",
     sub:"Every element is a box with content, padding, border, and margin. Layout modes control how boxes relate to each other.",
     code:[
@@ -496,7 +497,7 @@ const BoxSizingViz = () => {
       initial:{opacity:0,x:10}, animate:{opacity:1,x:0}, transition:{...ez,delay:0.2},
       style:{ borderRadius:10, border:`1px solid ${T.teal}44`, background:`${T.teal}08`, padding:14 }
     },
-      e("div", { style:{ fontSize:11, fontWeight:700, color:T.tealL, marginBottom:10, textAlign:"center" } }, "border-box ✓"),
+      e("div", { style:{ fontSize:11, fontWeight:700, color:T.tealL, marginBottom:10, textAlign:"center", display:"flex", alignItems:"center", justifyContent:"center", gap:5 } }, "border-box", e("i", { className:"lni lni-check", style:{fontSize:12} })),
       e("div", { style:{ position:"relative", height:100, display:"flex", alignItems:"center", justifyContent:"center" } },
         e("div", { style:{ width:"100%", height:80, borderRadius:6, border:`2px solid ${T.teal}66`, display:"flex", alignItems:"center", justifyContent:"center", position:"relative" } },
           e("div", { style:{ fontSize:9, color:T.teal, position:"absolute", top:-14, left:0 } }, "total: 200px"),
@@ -708,14 +709,14 @@ const Finale = () => {
     { n:2, label:"Padding", sub:"Space between content and border — expands the box", c:BM.padding.fill },
     { n:3, label:"Border", sub:"The visible edge — has thickness, style, and color", c:BM.border.fill },
     { n:4, label:"Margin", sub:"Outer spacing — separates elements, can collapse vertically", c:BM.margin.fill },
-    { n:"⤷", label:"border-box", sub:"Always use box-sizing: border-box — width includes padding + border", c:T.purple },
-    { n:"✦", label:"Layout", sub:"Normal flow → Flexbox (1D) → Grid (2D) → Position for exceptions", c:T.pink },
+    { n:"lni-check-circle-1", label:"border-box", sub:"Always use box-sizing: border-box — width includes padding + border", c:T.purple },
+    { n:"lni-layout-9", label:"Layout", sub:"Normal flow → Flexbox (1D) → Grid (2D) → Position for exceptions", c:T.pink },
   ];
   return e("div", { style:{ padding:"8px 0" } },
     rows.map((r,i) => e(M.div, { key:i, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.12,...ez},
       style:{ display:"flex", alignItems:"flex-start", gap:12, padding:"11px 14px", marginBottom:8, borderRadius:10, border:`1px solid ${r.c}28`, background:`${r.c}08` }
     },
-      e("div", { style:{ width:26, height:26, borderRadius:"50%", border:`1.5px solid ${r.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:12, fontWeight:700, color:r.c } }, r.n),
+      e("div", { style:{ width:26, height:26, borderRadius:"50%", border:`1.5px solid ${r.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:12, fontWeight:700, color:r.c } }, typeof r.n === "string" && r.n.startsWith("lni-") ? e("i", { className:"lni " + r.n }) : r.n),
       e("div", null,
         e("div", { style:{ fontSize:13, fontWeight:600, color:r.c, marginBottom:2 } }, r.label),
         e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.5 } }, r.sub)
@@ -736,7 +737,7 @@ const DetailPanel = ({ detailKey, onClose }) => {
         e("div", { style:{ width:8, height:8, borderRadius:"50%", background:d.color } }),
         e("span", { style:{ fontSize:14, fontWeight:600, color:T.text1 } }, d.title)
       ),
-      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6, transition:"color 0.2s" }, onMouseEnter:ev=>ev.target.style.color=T.text1, onMouseLeave:ev=>ev.target.style.color=T.text3 }, "✕")
+      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6, transition:"color 0.2s" }, onMouseEnter:ev=>ev.target.style.color=T.text1, onMouseLeave:ev=>ev.target.style.color=T.text3 }, e("i", { className:"lni lni-xmark" }))
     ),
     e("div", { style:{ padding:"16px 18px 20px", maxHeight:"calc(100vh - 140px)", overflowY:"auto" } },
       d.sections.map((s, i) =>

@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>requestAnimationFrame</title>
+<link href="https://cdn.lineicons.com/5.0/lineicons.css" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -449,7 +450,7 @@ const FrameTimeline = ({ mode, label, animKey }) => {
         stPcts.map((pct,i) => stMissed[i] ?
           e(M.div, { key:i, initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.6+i*0.04},
             style:{ position:"absolute", left:`${pct}%`, top:0, fontSize:8, color:T.coral, fontWeight:700, transform:"translateX(-50%)" }
-          }, "✗") : null
+          }, e("i", { className:"lni lni-xmark" })) : null
         )
       )
     ),
@@ -464,7 +465,7 @@ const FrameTimeline = ({ mode, label, animKey }) => {
     isRaf && !isSetTimeout && e(M.div, {
       initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.8},
       style:{ textAlign:"right", fontSize:9, color:T.tealL, fontWeight:600, marginTop:6, letterSpacing:"0.04em" }
-    }, "✓ perfectly aligned with display refresh"),
+    }, e("span", { style:{ display:"inline-flex", alignItems:"center", gap:5 } }, e("i", { className:"lni lni-check" }), "perfectly aligned with display refresh")),
 
     /* Both mode: show alignment lines */
     mode === "both" && e(M.div, {
@@ -786,7 +787,7 @@ const SceneViz = ({ scene }) => {
             "Can cause layout thrashing",
           ].map((t,i) =>
             e("div", { key:i, style:{ fontSize:9, color:T.text2, padding:"2px 0", display:"flex", gap:6, alignItems:"center" } },
-              e("span", { style:{ color:T.coral, fontSize:8 } }, "✗"), t
+              e("i", { className:"lni lni-xmark", style:{ color:T.coral, fontSize:10 } }), t
             )
           )
         ),
@@ -803,7 +804,7 @@ const SceneViz = ({ scene }) => {
             "Provides DOMHighResTimestamp",
           ].map((t,i) =>
             e("div", { key:i, style:{ fontSize:9, color:T.text2, padding:"2px 0", display:"flex", gap:6, alignItems:"center" } },
-              e("span", { style:{ color:T.teal, fontSize:8 } }, "✓"), t
+              e("i", { className:"lni lni-check", style:{ color:T.teal, fontSize:10 } }), t
             )
           )
         ),
