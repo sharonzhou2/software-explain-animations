@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Debounce vs Throttle</title>
+<link href="https://cdn.lineicons.com/5.0/lineicons.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111118;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px 16px 24px 196px;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-size: 15px;
+  }
+  #root { width: 100%; max-width: 1459px; }
+  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: 'Inter', system-ui, sans-serif; }
+  .topnav a { text-decoration: none; color: #8888aa; font-size: 13px; transition: color 0.2s; }
+  .topnav a:hover { color: #e8e8f0; }
+  .topnav .name { font-weight: 600; color: #e8e8f0; font-size: 13px; }
+  .topnav .sep { color: #38384a; font-size: 12px; }
+  .topnav .current { color: #7c6fcd; font-size: 13px; font-weight: 500; }
+  .sidenav { position: fixed; top: 38px; left: 0; width: 180px; height: calc(100vh - 38px); background: #111118; border-right: 1px solid #2a2a38; padding: 14px 0; overflow-y: auto; z-index: 200; font-family: 'Inter', system-ui, sans-serif; }
+  .sidenav a { display: block; padding: 6px 16px; font-size: 11px; color: #8888aa; text-decoration: none; transition: color 0.2s, background 0.2s; border-left: 2px solid transparent; }
+  .sidenav a:hover { color: #e8e8f0; background: rgba(124,111,205,0.06); }
+  .sidenav a.active { color: #a99cf0; border-left-color: #7c6fcd; background: rgba(124,111,205,0.1); font-weight: 600; }
+  .sidenav .nav-section { padding: 8px 16px 4px; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #44445a; }
+  .sidenav .nav-section:first-child { padding-top: 4px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="../" class="name">Sharon Zhou</a>
+  <span class="sep">/</span>
+  <a href="../">Animations</a>
+  <span class="sep">/</span>
+  <span class="current">Debounce vs Throttle</span>
+</nav>
+<nav class="sidenav">
+  <div class="nav-section">JavaScript</div>
+  <a href="../event-loop/">Event Loop</a>
+  <a href="../this-keyword/">this Keyword</a>
+  <a href="../hoisting/">Hoisting</a>
+  <a href="../closures/">Closures</a>
+  <a href="../garbage-collection/">Garbage Collection</a>
+  <a href="../event-delegation/">Event Delegation</a>
+  <a href="../iterators-generators/">Iterators & Generators</a>
+  <a href="../xhr-vs-fetch/">XHR vs fetch()</a>
+  <a href="../error-propagation/">Error Propagation</a>
+  <a href="../web-workers/">Web Workers</a>
+  <a href="../prototypal-inheritance/">Prototypal Inheritance</a>
+  <div class="nav-section">Browser</div>
+  <a href="../critical-rendering-path/">Critical Rendering Path</a>
+  <a href="../reflow-vs-repaint/">Reflow vs Repaint</a>
+  <a href="../css-box-model/">CSS Box Model & Layout</a>
+  <a href="../web-security/">Web Security</a>
+  <a href="../request-animation-frame/">requestAnimationFrame</a>
+  <a href="../cors/">CORS</a>
+  <a href="../websocket-vs-sse/">WebSocket vs SSE</a>
+  <a href="../debounce-vs-throttle/" class="active">Debounce vs Throttle</a>
+  <div class="nav-section">Infrastructure</div>
+  <a href="../vms-vs-docker/">VMs vs Docker</a>
+  <a href="../opentelemetry/">OpenTelemetry</a>
+  <a href="../kubernetes/">Kubernetes</a>
+  <a href="../kafka/">Kafka</a>
+  <a href="../database-indexing/">Database Indexing</a>
+  <a href="../sql-vs-nosql/">SQL vs NoSQL</a>
+  <a href="../load-balancing/">Load Balancing</a>
+  <a href="../http-versions/">HTTP Versions</a>
+  <a href="../authentication/">Authentication</a>
+  <a href="../rate-limiting/">Rate Limiting</a>
+  <a href="../caching-strategies/">Caching Strategies</a>
+  <a href="../database-sharding/">Database Sharding</a>
+  <a href="../microservices-vs-monolith/">Microservices vs Monolith</a>
+</nav>
+<div id="root" style="margin-top: 36px;"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/framer-motion@11/dist/framer-motion.js"></script>
+<script>
+const { useState, useEffect, useRef } = React;
+const { motion, AnimatePresence } = window.Motion;
+const e = React.createElement;
+const M = motion;
+const AP = AnimatePresence;
+const sp = (s=380,d=28) => ({ type:"spring", stiffness:s, damping:d });
+const ez = { duration:0.32, ease:[0.22,1,0.36,1] };
+
+const T = {
+  bg:"#111118", surface:"#18181f", surface2:"#1e1e28",
+  border:"#2a2a38", border2:"#38384a",
+  text1:"#e8e8f0", text2:"#8888aa", text3:"#44445a",
+  purple:"#7c6fcd", purpleL:"#a99cf0",
+  teal:"#3db89a", tealL:"#6dd4b8",
+  coral:"#c4694a", coralL:"#e08a6a",
+  blue:"#4a8fd4", blueL:"#82b4e8",
+  amber:"#d4a84a", amberL:"#e8c86a",
+  pink:"#c45a8a", pinkL:"#e87aaa",
+  codeBase:"#141428",
+};
+
+const TS = {
+  fn:    { color:"#82aaff" },
+  meth:  { color:"#89ddff" },
+  str:   { color:"#c3e88d" },
+  kw:    { color:"#c792ea" },
+  num:   { color:"#f78c6c" },
+  punc:  { color:"#89ddff" },
+  plain: { color:"#a6accd" },
+  this:  { color:"#ff5370", fontWeight:"bold" },
+  cmt:   { color:"#546e7a", fontStyle:"italic" },
+};
+
+/* ─── Event stream for visualizations ─── */
+/* positions 0..100 on a timeline. Each number = ms position of an event. */
+const EVENT_STREAM = [5, 9, 13, 18, 24, 31, 38, 52, 56, 60, 65, 78, 83, 90];
+const WINDOW_MS = 12; // visual window size (for both debounce wait and throttle interval)
+
+/* Compute which events the debounced handler would fire for.
+   Debounce: fire at position of last event + WINDOW, only if no event in between.
+   Return array of {pos} for fires. */
+function computeDebounce(events, wait) {
+  const fires = [];
+  for (let i=0; i<events.length; i++) {
+    const next = events[i+1];
+    if (next === undefined || next - events[i] >= wait) {
+      fires.push({ pos: events[i] + wait });
+    }
+  }
+  return fires;
+}
+
+/* Throttle (leading): fire immediately, then ignore until interval elapses. */
+function computeThrottle(events, interval) {
+  const fires = [];
+  let lastFire = -Infinity;
+  for (const ev of events) {
+    if (ev - lastFire >= interval) {
+      fires.push({ pos: ev });
+      lastFire = ev;
+    }
+  }
+  return fires;
+}
+
+const DEBOUNCE_FIRES = computeDebounce(EVENT_STREAM, WINDOW_MS);
+const THROTTLE_FIRES = computeThrottle(EVENT_STREAM, WINDOW_MS);
+
+/* ─── SCENES ─── */
+const SCENES = [
+  {
+    id:0, act:"01",
+    title:"The problem: event floods",
+    sub:"Events like scroll, resize, input, and mousemove can fire hundreds of times per second. If your handler is expensive — a network call, a layout recalculation — that's a recipe for jank.",
+    code:[
+      [["plain","window"],["punc","."],["fn","addEventListener"],["punc","("],["str","'scroll'"],["punc",","],["plain"," "],["fn","handler"],["punc",")"]],
+      [["cmt","// handler runs 100+ times per second"]],
+      [["cmt","// → expensive work = dropped frames"]],
+    ],
+    show:"raw",
+    showDebounce:false,
+    showThrottle:false,
+    metric:{ raw: EVENT_STREAM.length, deb:null, thr:null, label:"events fired" },
+  },
+  {
+    id:1, act:"02",
+    title:"The naive approach",
+    sub:"Without any rate-limiting, every event becomes a call. Network thrashing, reflow storms, wasted CPU — and your user interface stutters under load.",
+    code:[
+      [["kw","function"],["plain"," "],["fn","onScroll"],["punc","() {"]],
+      [["plain","  "],["fn","updateLayout"],["punc","()  "],["cmt","// heavy!"]],
+      [["plain","  "],["fn","trackAnalytics"],["punc","()  "],["cmt","// network!"]],
+      [["punc","}"]],
+      [["plain","window"],["punc","."],["fn","addEventListener"],["punc","("],["str","'scroll'"],["punc",", onScroll)"]],
+    ],
+    show:"raw",
+    showDebounce:false,
+    showThrottle:false,
+    metric:{ raw: EVENT_STREAM.length, deb:null, thr:null, label:"calls = events (1:1)" },
+  },
+  {
+    id:2, act:"03",
+    title:"Debounce — wait for silence",
+    sub:"Debounce collapses a burst of events into a single call. It only fires AFTER the user has been quiet for N milliseconds. Every new event resets the timer.",
+    code:[
+      [["cmt","// wait until the storm is over"]],
+      [["kw","const"],["plain"," debounced "],["punc","= "],["fn","debounce"],["punc","("],["plain","handler"],["punc",", "],["num","300"],["punc",")"]],
+      [["cmt","// debounced() fires once, N ms after"]],
+      [["cmt","// the LAST call"]],
+    ],
+    show:"both",
+    showDebounce:true,
+    showThrottle:false,
+    metric:{ raw: EVENT_STREAM.length, deb: DEBOUNCE_FIRES.length, thr:null, label:"debounce: far fewer calls" },
+  },
+  {
+    id:3, act:"04",
+    title:"Debounce step-by-step",
+    sub:"Each event schedules a timer for now + 300ms. If another event arrives before it fires, the old timer is cleared and a new one starts. Only the quiet period triggers execution.",
+    code:[
+      [["num","1."],["plain"," event → start 300ms timer"]],
+      [["num","2."],["plain"," event → clear, restart timer"]],
+      [["num","3."],["plain"," event → clear, restart timer"]],
+      [["num","4."],["plain"," ..."],["plain"," silence"],["plain"," ..."]],
+      [["num","5."],["plain"," timer fires → "],["fn","handler"],["punc","()"]],
+    ],
+    show:"both",
+    showDebounce:true,
+    showThrottle:false,
+    metric:{ raw: EVENT_STREAM.length, deb: DEBOUNCE_FIRES.length, thr:null, label:"timer resets per event" },
+  },
+  {
+    id:4, act:"05",
+    title:"Debounce — the implementation",
+    sub:"A closure captures the timer ID. Each call clears the pending timer and schedules a new one. Classic 8-line recipe.",
+    code:[
+      [["kw","function"],["plain"," "],["fn","debounce"],["punc","(fn, wait) {"]],
+      [["plain","  "],["kw","let"],["plain"," timer"]],
+      [["plain","  "],["kw","return function"],["punc","(..."],["plain","args"],["punc",") {"]],
+      [["plain","    "],["fn","clearTimeout"],["punc","(timer)"]],
+      [["plain","    timer "],["punc","= "],["fn","setTimeout"],["punc","(() => {"]],
+      [["plain","      fn"],["punc","."],["fn","apply"],["punc","("],["this","this"],["punc",", args)"]],
+      [["plain","    "],["punc","}, wait)"]],
+      [["plain","  "],["punc","}"]],
+      [["punc","}"]],
+    ],
+    show:"both",
+    showDebounce:true,
+    showThrottle:false,
+    metric:{ raw: EVENT_STREAM.length, deb: DEBOUNCE_FIRES.length, thr:null, label:"closure + setTimeout" },
+  },
+  {
+    id:5, act:"06",
+    title:"Throttle — fire on a schedule",
+    sub:"Throttle guarantees the handler runs at most once per N milliseconds. Unlike debounce, it doesn't wait for silence — it fires at regular intervals while events keep coming.",
+    code:[
+      [["cmt","// at most once every 300ms"]],
+      [["kw","const"],["plain"," throttled "],["punc","= "],["fn","throttle"],["punc","("],["plain","handler"],["punc",", "],["num","300"],["punc",")"]],
+      [["cmt","// first event: fires"]],
+      [["cmt","// events within 300ms: ignored"]],
+      [["cmt","// after 300ms: next event fires"]],
+    ],
+    show:"both",
+    showDebounce:false,
+    showThrottle:true,
+    metric:{ raw: EVENT_STREAM.length, deb:null, thr: THROTTLE_FIRES.length, label:"throttle: steady rate" },
+  },
+  {
+    id:6, act:"07",
+    title:"Throttle step-by-step",
+    sub:"A timestamp gates each call. If enough time has passed since the last fire, run the handler and remember the new timestamp. Otherwise, skip.",
+    code:[
+      [["num","1."],["plain"," event → fire, record time t₀"]],
+      [["num","2."],["plain"," event at t₀+50ms → ignored"]],
+      [["num","3."],["plain"," event at t₀+100ms → ignored"]],
+      [["num","4."],["plain"," event at t₀+300ms → fire!"]],
+      [["num","5."],["plain"," (and so on...)"]],
+    ],
+    show:"both",
+    showDebounce:false,
+    showThrottle:true,
+    metric:{ raw: EVENT_STREAM.length, deb:null, thr: THROTTLE_FIRES.length, label:"gated by timestamp" },
+  },
+  {
+    id:7, act:"08",
+    title:"Throttle — the implementation",
+    sub:"Track the last fire time in a closure variable. Compare against now. Simpler than debounce — no timer to clear.",
+    code:[
+      [["kw","function"],["plain"," "],["fn","throttle"],["punc","(fn, wait) {"]],
+      [["plain","  "],["kw","let"],["plain"," last "],["punc","= "],["num","0"]],
+      [["plain","  "],["kw","return function"],["punc","(..."],["plain","args"],["punc",") {"]],
+      [["plain","    "],["kw","const"],["plain"," now "],["punc","= "],["fn","Date"],["punc","."],["fn","now"],["punc","()"]],
+      [["plain","    "],["kw","if"],["punc"," (now - last >= wait) {"]],
+      [["plain","      last "],["punc","= now"]],
+      [["plain","      fn"],["punc","."],["fn","apply"],["punc","("],["this","this"],["punc",", args)"]],
+      [["plain","    "],["punc","}"]],
+      [["plain","  "],["punc","}"]],
+      [["punc","}"]],
+    ],
+    show:"both",
+    showDebounce:false,
+    showThrottle:true,
+    metric:{ raw: EVENT_STREAM.length, deb:null, thr: THROTTLE_FIRES.length, label:"timestamp comparison" },
+  },
+  {
+    id:8, act:"09",
+    title:"Leading vs trailing edge",
+    sub:"Should the handler fire at the START of a burst (leading) or the END (trailing)? Debounce defaults to trailing. Throttle defaults to leading. Both variants exist for both.",
+    code:[
+      [["cmt","// trailing (default debounce):"]],
+      [["cmt","//   wait for silence, then fire"]],
+      [["cmt","// leading (default throttle):"]],
+      [["cmt","//   fire immediately, then wait"]],
+      [["cmt","// lodash supports both:"]],
+      [["fn","_"],["punc","."],["fn","debounce"],["punc","(fn, "],["num","300"],["punc",", {"]],
+      [["plain","  leading"],["punc",": "],["kw","true"],["punc",","],["plain"," trailing"],["punc",": "],["kw","false"]],
+      [["punc","})"]],
+    ],
+    show:"both",
+    showDebounce:true,
+    showThrottle:true,
+    metric:{ raw: EVENT_STREAM.length, deb: DEBOUNCE_FIRES.length, thr: THROTTLE_FIRES.length, label:"edge choice matters" },
+  },
+  {
+    id:9, act:"10",
+    title:"Side-by-side",
+    sub:"Same event stream, three different outputs. Debounce gives you one call per burst. Throttle gives you a steady drip. Raw gives you chaos.",
+    code:[
+      [["cmt","// events:   ● ● ● ●   ● ● ●   ● ●"]],
+      [["cmt","// debounce:        ▼          ▼     ▼"]],
+      [["cmt","// throttle:  ▲   ▲     ▲   ▲   ▲"]],
+      [["cmt","// debounce = last word"]],
+      [["cmt","// throttle = regular rhythm"]],
+    ],
+    show:"both",
+    showDebounce:true,
+    showThrottle:true,
+    metric:{ raw: EVENT_STREAM.length, deb: DEBOUNCE_FIRES.length, thr: THROTTLE_FIRES.length, label:"same input, 2 strategies" },
+  },
+  {
+    id:10, act:"11",
+    title:"Use cases",
+    sub:"Choose debounce when you only care about the final value. Choose throttle when you need regular sampling during the action.",
+    code:[
+      [["cmt","// DEBOUNCE — wait for done"]],
+      [["plain","• search input → API call"]],
+      [["plain","• window resize → layout recalc"]],
+      [["plain","• form autosave"]],
+      [["cmt","// THROTTLE — sample over time"]],
+      [["plain","• scroll → parallax, infinite load"]],
+      [["plain","• mousemove → drag tracking"]],
+      [["plain","• API rate-limiting"]],
+    ],
+    show:"both",
+    showDebounce:true,
+    showThrottle:true,
+    metric:{ raw: EVENT_STREAM.length, deb: DEBOUNCE_FIRES.length, thr: THROTTLE_FIRES.length, label:"pick the right tool" },
+  },
+  {
+    id:11, act:"12",
+    title:"Use a library",
+    sub:"Rolling your own is educational. In production, reach for lodash. It handles leading/trailing edges, cancel(), flush(), and maxWait correctly.",
+    code:[
+      [["kw","import"],["plain"," { debounce, throttle } "],["kw","from"],["plain"," "],["str","'lodash'"]],
+      [["kw","const"],["plain"," search "],["punc","= "],["fn","debounce"],["punc","(query, "],["num","300"],["punc",")"]],
+      [["kw","const"],["plain"," track "],["punc","= "],["fn","throttle"],["punc","(onScroll, "],["num","100"],["punc",")"]],
+      [["cmt","// bonus methods:"]],
+      [["plain","search"],["punc","."],["fn","cancel"],["punc","()  "],["cmt","// drop pending call"]],
+      [["plain","search"],["punc","."],["fn","flush"],["punc","()   "],["cmt","// fire now"]],
+    ],
+    show:"both",
+    showDebounce:true,
+    showThrottle:true,
+    metric:{ raw: EVENT_STREAM.length, deb: DEBOUNCE_FIRES.length, thr: THROTTLE_FIRES.length, label:"lodash: battle-tested" },
+  },
+  {
+    id:12, act:"DONE",
+    title:"Debounce vs Throttle",
+    sub:"One pattern says \"tell me when you're done.\" The other says \"check in on me regularly.\" Both tame event floods — pick based on what the user actually needs.",
+    code:[],
+    show:"both",
+    showDebounce:true,
+    showThrottle:true,
+    metric:null,
+    finale:true,
+  },
+];
+
+/* ─── DETAILS ─── */
+const DETAILS = {
+  debounce: {
+    title:"Debounce",
+    color:T.tealL,
+    sections:[
+      {heading:"Definition",body:"Debouncing delays the invocation of a function until after a specified period of inactivity. Each new event cancels the previous pending invocation and restarts the clock."},
+      {heading:"Mental model",body:"Imagine an elevator that waits to close its doors. Every time someone new steps in, the timer resets. It only closes when nobody has entered for N seconds."},
+      {heading:"When to use",body:"• Search-as-you-type: only query when the user pauses\n• Window resize: only reflow when they stop dragging\n• Form autosave: only save when typing stops\n• Validation on blur with typeahead"},
+      {heading:"Watch out for",body:"If events never stop, the handler never fires. Use lodash's maxWait option to guarantee periodic firing even under continuous input."},
+    ]
+  },
+  throttle: {
+    title:"Throttle",
+    color:T.amberL,
+    sections:[
+      {heading:"Definition",body:"Throttling ensures a function runs at most once per N milliseconds. Events arriving within the cooldown window are dropped (or queued for the end of the window, depending on the variant)."},
+      {heading:"Mental model",body:"A water valve that only opens for a fraction of a second, then closes for a fixed duration regardless of how much water is pushing on it."},
+      {heading:"When to use",body:"• Scroll listeners that drive visual effects\n• Mousemove for drag-and-drop or canvas drawing\n• API calls you want to sample uniformly\n• Game input polling"},
+      {heading:"Watch out for",body:"Leading-edge throttle fires immediately and may miss the final state. Trailing-edge throttle misses the initial event. Many libraries fire on both edges by default."},
+    ]
+  },
+  leading: {
+    title:"Leading Edge",
+    color:T.blueL,
+    sections:[
+      {heading:"What it means",body:"The handler runs on the FIRST event of a burst, before the wait period begins. Subsequent events within the window are suppressed."},
+      {heading:"Good for",body:"• Immediate feedback (e.g., button click that shouldn't be debounced)\n• Throttled scroll: you want updates as soon as scrolling starts\n• Preventing double-submit on a button"},
+      {heading:"Trade-off",body:"You may miss the final state. If the user's last keystroke was the one that matters, a purely leading-edge debounce would drop it."},
+    ]
+  },
+  trailing: {
+    title:"Trailing Edge",
+    color:T.pinkL,
+    sections:[
+      {heading:"What it means",body:"The handler runs at the END of the burst — after the last event, once the wait period has elapsed with no new events."},
+      {heading:"Good for",body:"• Search inputs: you want the final query, not each keystroke\n• Autosave: capture the end state\n• Window resize: one layout pass after dragging stops"},
+      {heading:"Trade-off",body:"There's always a delay. The user sees a small pause between finishing their action and seeing results."},
+    ]
+  },
+  usecases: {
+    title:"Use Cases",
+    color:T.purpleL,
+    sections:[
+      {heading:"Debounce examples",body:"• Search-as-you-type (wait for pause, then query API)\n• Window resize handlers (reflow once after drag ends)\n• Form field validation (check after user stops typing)\n• Autosave editors (persist after idle period)"},
+      {heading:"Throttle examples",body:"• Scroll-driven animations (sample position at 60fps max)\n• Infinite scroll loaders (check once every 200ms)\n• Mousemove tracking (e.g., drag, canvas draw)\n• Rate-limited API polling"},
+      {heading:"Rule of thumb",body:"Ask: 'Do I need the final value only, or continuous updates?' Final value → debounce. Continuous → throttle."},
+    ]
+  },
+  code: {
+    title:"Source Code",
+    color:T.purpleL,
+    sections:[
+      {heading:"Both are closures",body:"Both patterns use a closure to retain state (a timer ID or a timestamp) across calls. The returned function is what you attach to your event listener."},
+      {heading:"Debounce core",body:"clearTimeout on every call, then schedule a new setTimeout. The timer is the state that gets reset."},
+      {heading:"Throttle core",body:"Store a lastFire timestamp. On each call, compare Date.now() - lastFire against the wait. Only fire and update if the window has elapsed."},
+      {heading:"this and args",body:"Use fn.apply(this, args) so the wrapped function sees the correct context and forwarded arguments."},
+    ]
+  },
+};
+
+/* ─── COMPONENTS ─── */
+const CodePanel = ({ tokens }) =>
+  e("div", { style:{ background:T.codeBase, borderRadius:12, overflow:"hidden", border:`1px solid ${T.border}` } },
+    e("div", { style:{ padding:"10px 14px 8px", borderBottom:`1px solid ${T.border}`, display:"flex", gap:7 } },
+      ...["#ff5f57","#febc2e","#28c840"].map((c,i) =>
+        e("div", { key:i, style:{ width:11, height:11, borderRadius:"50%", background:c } })
+      )
+    ),
+    e("div", { style:{ padding:"14px 18px 18px", fontFamily:"'SF Mono','Fira Code','Consolas',monospace", fontSize:11.5, lineHeight:1.85, minHeight:160 } },
+      tokens.length === 0
+        ? e("div", { style:{ color:T.text3, fontStyle:"italic" } }, "// fin.")
+        : tokens.map((line, li) =>
+            e("div", { key:li, style:{ display:"block" } },
+              line.length === 0
+                ? e("span", null, " ")
+                : line.map(([cls, txt], ti) =>
+                    e("span", { key:ti, style:{ ...TS[cls], whiteSpace:"pre" } }, txt)
+                  )
+            )
+          )
+    )
+  );
+
+const Panel = ({ label, children, style={}, focused=false, onClick }) =>
+  e(M.div, {
+    onClick,
+    animate:{
+      borderColor: focused ? T.purple : T.border2,
+      boxShadow: focused ? `0 0 16px ${T.purple}30, inset 0 0 12px ${T.purple}08` : "0 0 0px transparent"
+    },
+    transition:{ duration:0.4 },
+    style:{ borderRadius:12, border:"1.5px solid", background:T.surface, overflow:"hidden", cursor:onClick?"pointer":"default", ...style }
+  },
+    label && e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, label)
+    ),
+    e("div", { style:{ padding:12 } }, children)
+  );
+
+/* Timeline visualization — raw / debounced / throttled rows */
+const Timeline = ({ scene, sceneKey, onClickDeb, onClickThr }) => {
+  const [tick, setTick] = useState(0);
+  const raf = useRef(null);
+  const start = useRef(0);
+  const DURATION = 2800; // ms for full sweep
+
+  useEffect(() => {
+    start.current = performance.now();
+    setTick(0);
+    const loop = (now) => {
+      const elapsed = now - start.current;
+      const p = Math.min(1, elapsed / DURATION);
+      setTick(p);
+      if (p < 1) raf.current = requestAnimationFrame(loop);
+    };
+    raf.current = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf.current);
+  }, [sceneKey]);
+
+  const W = 100; // percent, we use percent positioning
+  const progress = tick * W;
+
+  const Row = ({ label, color, children, hintKey, onClick }) =>
+    e("div", {
+      onClick,
+      style:{ cursor: onClick ? "pointer" : "default", marginBottom:10, transition:"transform 0.2s" }
+    },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginBottom:5 } },
+        e("div", { style:{ width:8, height:8, borderRadius:"50%", background:color, boxShadow:`0 0 8px ${color}` } }),
+        e("div", { style:{ fontSize:10, fontWeight:600, color:T.text2, letterSpacing:"0.04em", textTransform:"uppercase" } }, label)
+      ),
+      e("div", { style:{
+        position:"relative", height:28, background:T.surface2, borderRadius:7,
+        border:`1px solid ${T.border}`, overflow:"hidden"
+      } },
+        /* timeline base line */
+        e("div", { style:{
+          position:"absolute", top:"50%", left:8, right:8, height:1,
+          background:T.border2, transform:"translateY(-0.5px)"
+        } }),
+        /* progress sweep */
+        e(M.div, {
+          style:{
+            position:"absolute", top:0, bottom:0, left:0,
+            width:`${progress}%`,
+            background:`linear-gradient(90deg, transparent, ${color}10)`,
+            borderRight:`1px solid ${color}55`,
+          }
+        }),
+        children
+      )
+    );
+
+  const EventDot = ({ pos, color, size=8, delay=0, shape="circle" }) => {
+    const visible = progress >= pos;
+    return e(M.div, {
+      initial:{ scale:0, opacity:0 },
+      animate:{ scale: visible ? 1 : 0, opacity: visible ? 1 : 0 },
+      transition:{ duration:0.25, delay:0 },
+      style:{
+        position:"absolute",
+        left:`calc(${pos}% - ${size/2}px)`,
+        top:`calc(50% - ${size/2}px)`,
+        width:size, height:size,
+        borderRadius: shape === "circle" ? "50%" : 2,
+        background:color,
+        boxShadow:`0 0 8px ${color}99`,
+      }
+    });
+  };
+
+  const DebounceTimer = () => {
+    // Find active debounce timer position: from last event before progress, ending at event + WINDOW
+    let activeStart = null, activeEnd = null;
+    for (let i=0; i<EVENT_STREAM.length; i++) {
+      const ev = EVENT_STREAM[i];
+      if (ev > progress) break;
+      const next = EVENT_STREAM[i+1];
+      const fireAt = ev + WINDOW_MS;
+      if (next === undefined || next > progress) {
+        // this event's timer is still running (or just fired)
+        if (progress <= fireAt) {
+          activeStart = ev;
+          activeEnd = fireAt;
+        }
+        break;
+      }
+    }
+    if (activeStart === null) return null;
+    const width = Math.min(progress, activeEnd) - activeStart;
+    if (width <= 0) return null;
+    return e("div", {
+      style:{
+        position:"absolute",
+        left:`${activeStart}%`,
+        top:2, bottom:2,
+        width:`${width}%`,
+        background:`${T.tealL}14`,
+        borderLeft:`1.5px dashed ${T.tealL}88`,
+        borderRight: progress >= activeEnd ? `1.5px solid ${T.tealL}` : "none",
+      }
+    });
+  };
+
+  const ThrottleWindow = () => {
+    // Show the latest cooldown window
+    let lastFire = null;
+    for (const f of THROTTLE_FIRES) {
+      if (f.pos <= progress) lastFire = f.pos;
+    }
+    if (lastFire === null) return null;
+    const end = lastFire + WINDOW_MS;
+    const width = Math.min(progress, end) - lastFire;
+    if (width <= 0) return null;
+    return e("div", {
+      style:{
+        position:"absolute",
+        left:`${lastFire}%`,
+        top:2, bottom:2,
+        width:`${width}%`,
+        background:`${T.amberL}10`,
+        borderLeft:`1.5px solid ${T.amberL}88`,
+        borderRight: progress >= end ? `1.5px dashed ${T.amberL}66` : "none",
+      }
+    });
+  };
+
+  return e("div", { style:{ padding:"4px 2px" } },
+    /* Raw events row */
+    e(Row, { label:"Raw events", color:T.coralL },
+      EVENT_STREAM.map((pos, i) =>
+        e(EventDot, { key:i, pos, color:T.coralL, size:8 })
+      )
+    ),
+    /* Debounced row */
+    scene.show !== "raw" && e(Row, { label:"Debounced output", color:T.tealL, onClick: onClickDeb },
+      scene.showDebounce && e(DebounceTimer),
+      /* tiny event ticks at raw positions for reference */
+      EVENT_STREAM.map((pos, i) =>
+        e("div", { key:"e"+i, style:{
+          position:"absolute", left:`calc(${pos}% - 1px)`, top:"50%",
+          width:2, height:4, background:T.text3, transform:"translateY(-50%)", opacity: progress >= pos ? 0.5 : 0
+        } })
+      ),
+      scene.showDebounce && DEBOUNCE_FIRES.map((f, i) =>
+        e(EventDot, { key:"f"+i, pos:f.pos, color:T.tealL, size:12, shape:"square" })
+      )
+    ),
+    /* Throttled row */
+    scene.show !== "raw" && e(Row, { label:"Throttled output", color:T.amberL, onClick: onClickThr },
+      scene.showThrottle && e(ThrottleWindow),
+      EVENT_STREAM.map((pos, i) =>
+        e("div", { key:"e"+i, style:{
+          position:"absolute", left:`calc(${pos}% - 1px)`, top:"50%",
+          width:2, height:4, background:T.text3, transform:"translateY(-50%)", opacity: progress >= pos ? 0.5 : 0
+        } })
+      ),
+      scene.showThrottle && THROTTLE_FIRES.map((f, i) =>
+        e(EventDot, { key:"f"+i, pos:f.pos, color:T.amberL, size:12, shape:"square" })
+      )
+    ),
+
+    /* Legend */
+    e("div", { style:{ display:"flex", gap:14, marginTop:8, paddingTop:8, borderTop:`1px solid ${T.border}`, fontSize:10, color:T.text3 } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:5 } },
+        e("div", { style:{ width:7, height:7, borderRadius:"50%", background:T.coralL } }),
+        "event fired"
+      ),
+      e("div", { style:{ display:"flex", alignItems:"center", gap:5 } },
+        e("div", { style:{ width:8, height:8, background:T.tealL } }),
+        "debounce fires"
+      ),
+      e("div", { style:{ display:"flex", alignItems:"center", gap:5 } },
+        e("div", { style:{ width:8, height:8, background:T.amberL } }),
+        "throttle fires"
+      )
+    )
+  );
+};
+
+const MetricPanel = ({ metric, onClick }) => {
+  if (!metric) return null;
+  const rows = [
+    { label:"events in", value: metric.raw, color: T.coralL },
+    metric.deb !== null && { label:"debounce out", value: metric.deb, color: T.tealL },
+    metric.thr !== null && { label:"throttle out", value: metric.thr, color: T.amberL },
+  ].filter(Boolean);
+  return e(Panel, { label: metric.label, onClick },
+    e("div", { style:{ display:"flex", gap:14, flexWrap:"wrap", minHeight:44 } },
+      rows.map((r, i) =>
+        e(M.div, {
+          key: r.label,
+          initial:{ opacity:0, y:6 },
+          animate:{ opacity:1, y:0 },
+          transition:{ delay: i*0.1, ...ez },
+          style:{
+            flex:1, minWidth:80,
+            padding:"8px 10px",
+            borderRadius:8,
+            border:`1px solid ${r.color}33`,
+            background:`${r.color}08`,
+          }
+        },
+          e("div", { style:{ fontSize:9, color:T.text3, textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:3 } }, r.label),
+          e("div", { style:{ fontSize:20, fontWeight:700, color: r.color, fontFamily:"'SF Mono',monospace" } }, r.value)
+        )
+      )
+    )
+  );
+};
+
+const Finale = () => {
+  const rows = [
+    { icon:"⏱", label:"Debounce", sub:"Fire ONCE after N ms of silence. Every event resets the timer.", c:T.tealL, tag:"wait for done" },
+    { icon:"⏲", label:"Throttle", sub:"Fire at most ONCE per N ms. Ignore events within the window.", c:T.amberL, tag:"steady rhythm" },
+    { icon:"◐", label:"Leading edge", sub:"Fire on the first event of a burst. Good for immediate feedback.", c:T.blueL, tag:"front" },
+    { icon:"◑", label:"Trailing edge", sub:"Fire after the burst ends. Good for capturing the final state.", c:T.pinkL, tag:"back" },
+    { icon:"★", label:"Rule of thumb", sub:"Final value only? debounce. Continuous sampling? throttle.", c:T.purpleL, tag:"decision" },
+  ];
+  return e("div", { style:{ padding:"8px 0" } },
+    rows.map((r,i) => e(M.div, { key:i, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.12,...ez},
+      style:{ display:"flex", alignItems:"flex-start", gap:12, padding:"11px 14px", marginBottom:8, borderRadius:10, border:`1px solid ${r.c}28`, background:`${r.c}08` }
+    },
+      e("div", { style:{ width:28, height:28, borderRadius:"50%", border:`1.5px solid ${r.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:14, fontWeight:700, color:r.c } }, r.icon),
+      e("div", { style:{ flex:1 } },
+        e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginBottom:2 } },
+          e("div", { style:{ fontSize:13, fontWeight:600, color:r.c } }, r.label),
+          e("div", { style:{ fontSize:9, color:T.text3, padding:"1px 6px", border:`1px solid ${T.border2}`, borderRadius:10, textTransform:"uppercase", letterSpacing:"0.05em" } }, r.tag)
+        ),
+        e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.5 } }, r.sub)
+      )
+    ))
+  );
+};
+
+const DetailPanel = ({ detailKey, onClose }) => {
+  const d = DETAILS[detailKey];
+  if (!d) return null;
+  return e("div", {
+    style:{ width:340, flexShrink:0, background:T.surface, borderRadius:14, border:`1.5px solid ${d.color}44`, overflow:"hidden", alignSelf:"flex-start", position:"sticky", top:56 }
+  },
+    e("div", { style:{ padding:"14px 18px 12px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:8 } },
+        e("div", { style:{ width:8, height:8, borderRadius:"50%", background:d.color } }),
+        e("span", { style:{ fontSize:14, fontWeight:600, color:T.text1 } }, d.title)
+      ),
+      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6 } }, e("i", { className:"lni lni-xmark" }))
+    ),
+    e("div", { style:{ padding:"16px 18px 20px", maxHeight:"calc(100vh - 140px)", overflowY:"auto" } },
+      d.sections.map((s, i) =>
+        e("div", { key:i, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
+          e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
+        )
+      )
+    )
+  );
+};
+
+/* ─── APP ─── */
+function App() {
+  const [si, setSi] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [detail, setDetail] = useState(null);
+  const timer = useRef(null);
+  const sc = SCENES[si];
+
+  useEffect(() => { setPlaying(true); }, []);
+
+  useEffect(() => {
+    if (!playing) return;
+    const d = si===0 ? 3200 : sc.finale ? 99999 : 3600;
+    timer.current = setTimeout(() => { si < SCENES.length-1 ? setSi(i=>i+1) : setPlaying(false); }, d);
+    return () => clearTimeout(timer.current);
+  }, [playing, si]);
+
+  const go = d => { clearTimeout(timer.current); setPlaying(false); setSi(i=>Math.max(0,Math.min(SCENES.length-1,i+d))); };
+  const jump = i => { clearTimeout(timer.current); setPlaying(false); setSi(i); };
+  const togglePlay = () => { if(si===SCENES.length-1){setSi(0);setPlaying(true);}else setPlaying(p=>!p); };
+  const toggleDetail = key => { setDetail(d => d===key ? null : key); clearTimeout(timer.current); setPlaying(false); };
+
+  return e("div", { style:{ display:"flex", gap:16, alignItems:"flex-start", justifyContent: detail ? "flex-start" : "center" } },
+  e("div", { style:{ width:760, flexShrink:0, background:T.bg, fontFamily:"'Inter', system-ui, sans-serif", padding:20, borderRadius:16 } },
+
+    /* header */
+    e("div", { style:{ marginBottom:18 } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:10, marginBottom:11 } },
+        e(AP, { mode:"wait" },
+          e(M.div, { key:sc.act, initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, exit:{opacity:0}, transition:sp(400,28),
+            style:{ fontSize:9,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:T.purple,background:`${T.purple}14`,padding:"3px 10px",borderRadius:20,border:`1px solid ${T.purple}30`,flexShrink:0 }
+          }, sc.act)
+        ),
+        e("div", { style:{ flex:1, height:1, background:T.border, borderRadius:99, overflow:"hidden" } },
+          e(M.div, { animate:{width:`${si/(SCENES.length-1)*100}%`}, transition:{duration:0.5}, style:{height:"100%",background:T.purple,borderRadius:99} })
+        ),
+        e("span", { style:{ fontSize:10, color:T.text3 } }, `${si+1} / ${SCENES.length}`)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.title, initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, exit:{opacity:0,y:-8}, transition:ez,
+          style:{ fontSize:20,fontWeight:600,color:T.text1,marginBottom:4,letterSpacing:"-0.02em" }
+        }, sc.title)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
+          style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
+        }, sc.sub)
+      )
+    ),
+
+    e("div", { style:{ minHeight:460 } },
+    /* finale */
+    sc.finale && e(Finale),
+
+    /* main grid */
+    !sc.finale && e("div", null,
+
+      /* row 1: code + timeline */
+      e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:10 } },
+        e("div", { onClick:()=>toggleDetail("code"), style:{cursor:"pointer"} },
+          e(CodePanel, { tokens: sc.code })
+        ),
+        e(Panel, { label:"timeline" },
+          e(Timeline, {
+            scene: sc,
+            sceneKey: si,
+            onClickDeb: () => toggleDetail("debounce"),
+            onClickThr: () => toggleDetail("throttle"),
+          })
+        )
+      ),
+
+      /* row 2: metrics + decision */
+      e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 } },
+        sc.metric
+          ? e(MetricPanel, { metric: sc.metric, onClick: () => toggleDetail("usecases") })
+          : e(Panel, { label:"tally", onClick: () => toggleDetail("usecases") },
+              e("div", { style:{ fontSize:11, color:T.text3, minHeight:44 } }, "—")
+            ),
+        e(Panel, { label:"strategy", onClick: () => toggleDetail(sc.id >= 5 && sc.id <= 7 ? "throttle" : sc.id === 8 ? "leading" : "debounce") },
+          e("div", { style:{ minHeight:44, display:"flex", alignItems:"center", gap:10 } },
+            e("div", {
+              style:{
+                width:8, height:8, borderRadius:"50%",
+                background: sc.showDebounce && sc.showThrottle ? T.purpleL : sc.showDebounce ? T.tealL : sc.showThrottle ? T.amberL : T.coralL,
+                boxShadow: `0 0 10px ${sc.showDebounce && sc.showThrottle ? T.purpleL : sc.showDebounce ? T.tealL : sc.showThrottle ? T.amberL : T.coralL}`
+              }
+            }),
+            e("div", null,
+              e("div", { style:{ fontSize:12, fontWeight:600, color: T.text1, marginBottom:2 } },
+                sc.showDebounce && sc.showThrottle ? "comparing both"
+                : sc.showDebounce ? "debounce active"
+                : sc.showThrottle ? "throttle active"
+                : "no rate limiting"
+              ),
+              e("div", { style:{ fontSize:10.5, color:T.text2, lineHeight:1.5 } },
+                sc.showDebounce && sc.showThrottle ? "same stream → two outputs"
+                : sc.showDebounce ? "wait for silence, then fire"
+                : sc.showThrottle ? "fire at most once per window"
+                : "1 event = 1 handler call"
+              )
+            )
+          )
+        )
+      )
+    ),
+    ), /* close minHeight wrapper */
+
+    /* controls */
+    e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginTop:16 } },
+      e("button", { onClick:()=>go(-1), disabled:si===0,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===0?T.text3:T.text2,cursor:si===0?"not-allowed":"pointer",fontSize:11,transition:"color 0.2s" }
+      }, "← Back"),
+      e("button", { onClick:togglePlay,
+        style:{ padding:"6px 18px",borderRadius:8,border:`1px solid ${playing?T.coral:T.purple}44`,background:playing?`${T.coral}14`:`${T.purple}14`,color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all 0.2s" }
+      }, playing ? "⏸  Pause" : si===SCENES.length-1 ? "↺  Replay" : "▶  Play"),
+      e("button", { onClick:()=>go(1), disabled:si===SCENES.length-1,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
+      }, "Next →"),
+      e("div", { style:{ flex:1 } }),
+      e("div", { style:{ display:"flex", gap:4, alignItems:"center" } },
+        SCENES.map((_,i) =>
+          e("button", { key:i, onClick:()=>jump(i),
+            style:{ width:i===si?16:5,height:5,borderRadius:99,border:"none",padding:0,background:i===si?T.purple:i<si?`${T.purple}55`:T.border,cursor:"pointer",transition:"all 0.25s" }
+          })
+        )
+      )
+    )
+  ),
+  detail && e(DetailPanel, { detailKey:detail, onClose:()=>setDetail(null) })
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(e(App));
+</script>
+</body>
+</html>

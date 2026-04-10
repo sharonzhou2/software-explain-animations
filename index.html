@@ -5,12 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Software Explain Animations</title>
 <link href="https://cdn.lineicons.com/5.0/lineicons.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     background: #111118;
     color: #e8e8f0;
-    font-family: system-ui, -apple-system, sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
     min-height: 100vh;
     padding: 24px 16px 24px 196px;
   }
@@ -21,7 +22,7 @@
   .topnav .sep { color: #38384a; font-size: 12px; }
   .topnav .current { color: #7c6fcd; font-size: 13px; font-weight: 500; }
 
-  .sidenav { position: fixed; top: 38px; left: 0; width: 180px; height: calc(100vh - 38px); background: #111118; border-right: 1px solid #2a2a38; padding: 14px 0; overflow-y: auto; z-index: 200; font-family: system-ui, sans-serif; }
+  .sidenav { position: fixed; top: 38px; left: 0; width: 180px; height: calc(100vh - 38px); background: #111118; border-right: 1px solid #2a2a38; padding: 14px 0; overflow-y: auto; z-index: 200; font-family: 'Inter', system-ui, sans-serif; }
   .sidenav a { display: block; padding: 6px 16px; font-size: 11px; color: #8888aa; text-decoration: none; transition: color 0.2s, background 0.2s; border-left: 2px solid transparent; }
   .sidenav a:hover { color: #e8e8f0; background: rgba(124,111,205,0.06); }
   .sidenav a.active { color: #a99cf0; border-left-color: #7c6fcd; background: rgba(124,111,205,0.1); font-weight: 600; }
@@ -148,6 +149,7 @@ const ARTICLES = [
   { cat: "Browser", tag: "browser", title: "requestAnimationFrame", href: "request-animation-frame/", desc: "Compare rAF vs setTimeout for animation — frame timing, sync with display refresh, delta time, and where rAF fits." },
   { cat: "Browser", tag: "browser", title: "CORS", href: "cors/", desc: "Follow the preflight dance — same-origin policy, OPTIONS requests, Access-Control headers, credentials, and common errors." },
   { cat: "Browser", tag: "browser", title: "WebSocket vs SSE", href: "websocket-vs-sse/", desc: "Compare full-duplex WebSocket with server-push SSE — handshake, protocols, reconnection, and when to use each." },
+  { cat: "Browser", tag: "browser", title: "Debounce vs Throttle", href: "debounce-vs-throttle/", desc: "Tame rapid events — how each pattern works on a timeline, leading vs trailing edge, and when to use which." },
   { cat: "Infrastructure", tag: "infra", title: "VMs vs Docker", href: "vms-vs-docker/", desc: "Build up both architectures layer by layer — hypervisors vs container engines, guest OSes vs shared kernels." },
   { cat: "Infrastructure", tag: "infra", title: "OpenTelemetry", href: "opentelemetry/", desc: "Follow telemetry from instrumentation to backend — traces, metrics, logs, context propagation, and the OTel Collector." },
   { cat: "Infrastructure", tag: "infra", title: "Kubernetes", href: "kubernetes/", desc: "Orchestrate containers at scale — control plane, pods, deployments, services, autoscaling, and the reconciliation loop." },
