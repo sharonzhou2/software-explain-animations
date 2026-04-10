@@ -678,9 +678,9 @@ const SagaView = ({ onClick }) =>
     ),
     e("div", { style:{ padding:18, display:"flex", flexDirection:"column", gap:10, minHeight:260 } },
       [
-        { step:"1", name:"Reserve inventory", ok:"✓", comp:"release stock",    c:T.teal },
-        { step:"2", name:"Charge card",       ok:"✓", comp:"refund charge",    c:T.amber },
-        { step:"3", name:"Ship package",      ok:"✗", comp:"recall shipment",  c:T.red },
+        { step:"1", name:"Reserve inventory", ok:true,  comp:"release stock",    c:T.teal },
+        { step:"2", name:"Charge card",       ok:true,  comp:"refund charge",    c:T.amber },
+        { step:"3", name:"Ship package",      ok:false, comp:"recall shipment",  c:T.red },
       ].map((s,i) =>
         e(M.div, { key:s.step,
           initial:{opacity:0,x:-12}, animate:{opacity:1,x:0}, transition:{...ez, delay:i*0.15},
@@ -689,9 +689,9 @@ const SagaView = ({ onClick }) =>
           e("div", { style:{ width:22, height:22, borderRadius:"50%", border:`1.5px solid ${s.c}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:700, color:s.c, flexShrink:0 } }, s.step),
           e("div", { style:{ flex:1 } },
             e("div", { style:{ fontSize:11, fontWeight:600, color:s.c } }, s.name),
-            e("div", { style:{ fontSize:9, color:T.text3, marginTop:2 } }, "↺ compensate: "+s.comp)
+            e("div", { style:{ fontSize:9, color:T.text3, marginTop:2, display:"flex", alignItems:"center", gap:4 } }, e("i", { className:"lni lni-refresh-circle-1-clockwise" }), "compensate: "+s.comp)
           ),
-          e("div", { style:{ fontSize:13, fontWeight:700, color: s.ok==="✓" ? T.green : T.red } }, s.ok)
+          e("div", { style:{ fontSize:14, fontWeight:700, color: s.ok ? T.green : T.red } }, e("i", { className:"lni " + (s.ok ? "lni-check" : "lni-xmark") }))
         )
       ),
       e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.6,...ez},
@@ -955,7 +955,7 @@ function App() {
       }, "← Back"),
       e("button", { onClick:togglePlay,
         style:{ padding:"6px 18px",borderRadius:8,border:`1px solid ${playing?T.coral:T.purple}44`,background:playing?`${T.coral}14`:`${T.purple}14`,color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all 0.2s" }
-      }, playing ? "⏸  Pause" : si===SCENES.length-1 ? "↺  Replay" : "▶  Play"),
+      }, playing ? e("span", { style:{ display:"inline-flex", alignItems:"center", gap:6 } }, e("i", { className:"lni lni-pause" }), "Pause") : si===SCENES.length-1 ? e("span", { style:{ display:"inline-flex", alignItems:"center", gap:6 } }, e("i", { className:"lni lni-refresh-circle-1-clockwise" }), "Replay") : e("span", { style:{ display:"inline-flex", alignItems:"center", gap:6 } }, e("i", { className:"lni lni-play" }), "Play")),
       e("button", { onClick:()=>go(1), disabled:si===SCENES.length-1,
         style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
       }, "Next →"),

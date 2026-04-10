@@ -156,7 +156,21 @@ const THROTTLE_FIRES = computeThrottle(EVENT_STREAM, WINDOW_MS);
 const SCENES = [
   {
     id:0, act:"01",
-    title:"The problem: event floods",
+    title:"Debounce vs Throttle",
+    sub:"Two techniques for taming rapid-fire events. Both limit how often a function runs — but they do it very differently. Let's see how each one works and when to reach for which.",
+    code:[
+      [["cmt","// when events fire faster than you can handle:"]],
+      [["kw","const"],["plain"," debounced "],["punc","= "],["fn","debounce"],["punc","(fn, "],["num","300"],["punc",")"],["plain","  "],["cmt","// wait for silence"]],
+      [["kw","const"],["plain"," throttled "],["punc","= "],["fn","throttle"],["punc","(fn, "],["num","300"],["punc",")"],["plain","  "],["cmt","// steady rhythm"]],
+    ],
+    show:"raw",
+    showDebounce:false,
+    showThrottle:false,
+    metric:null,
+  },
+  {
+    id:1, act:"02",
+    title:"The problem — rapid events",
     sub:"Events like scroll, resize, input, and mousemove can fire hundreds of times per second. If your handler is expensive — a network call, a layout recalculation — that's a recipe for jank.",
     code:[
       [["plain","window"],["punc","."],["fn","addEventListener"],["punc","("],["str","'scroll'"],["punc",","],["plain"," "],["fn","handler"],["punc",")"]],
@@ -169,7 +183,7 @@ const SCENES = [
     metric:{ raw: EVENT_STREAM.length, deb:null, thr:null, label:"events fired" },
   },
   {
-    id:1, act:"02",
+    id:2, act:"03",
     title:"The naive approach",
     sub:"Without any rate-limiting, every event becomes a call. Network thrashing, reflow storms, wasted CPU — and your user interface stutters under load.",
     code:[
@@ -185,7 +199,7 @@ const SCENES = [
     metric:{ raw: EVENT_STREAM.length, deb:null, thr:null, label:"calls = events (1:1)" },
   },
   {
-    id:2, act:"03",
+    id:3, act:"04",
     title:"Debounce — wait for silence",
     sub:"Debounce collapses a burst of events into a single call. It only fires AFTER the user has been quiet for N milliseconds. Every new event resets the timer.",
     code:[
@@ -200,7 +214,7 @@ const SCENES = [
     metric:{ raw: EVENT_STREAM.length, deb: DEBOUNCE_FIRES.length, thr:null, label:"debounce: far fewer calls" },
   },
   {
-    id:3, act:"04",
+    id:4, act:"05",
     title:"Debounce step-by-step",
     sub:"Each event schedules a timer for now + 300ms. If another event arrives before it fires, the old timer is cleared and a new one starts. Only the quiet period triggers execution.",
     code:[
@@ -216,7 +230,7 @@ const SCENES = [
     metric:{ raw: EVENT_STREAM.length, deb: DEBOUNCE_FIRES.length, thr:null, label:"timer resets per event" },
   },
   {
-    id:4, act:"05",
+    id:5, act:"06",
     title:"Debounce — the implementation",
     sub:"A closure captures the timer ID. Each call clears the pending timer and schedules a new one. Classic 8-line recipe.",
     code:[
@@ -236,7 +250,7 @@ const SCENES = [
     metric:{ raw: EVENT_STREAM.length, deb: DEBOUNCE_FIRES.length, thr:null, label:"closure + setTimeout" },
   },
   {
-    id:5, act:"06",
+    id:6, act:"07",
     title:"Throttle — fire on a schedule",
     sub:"Throttle guarantees the handler runs at most once per N milliseconds. Unlike debounce, it doesn't wait for silence — it fires at regular intervals while events keep coming.",
     code:[
@@ -252,7 +266,7 @@ const SCENES = [
     metric:{ raw: EVENT_STREAM.length, deb:null, thr: THROTTLE_FIRES.length, label:"throttle: steady rate" },
   },
   {
-    id:6, act:"07",
+    id:7, act:"08",
     title:"Throttle step-by-step",
     sub:"A timestamp gates each call. If enough time has passed since the last fire, run the handler and remember the new timestamp. Otherwise, skip.",
     code:[
@@ -268,7 +282,7 @@ const SCENES = [
     metric:{ raw: EVENT_STREAM.length, deb:null, thr: THROTTLE_FIRES.length, label:"gated by timestamp" },
   },
   {
-    id:7, act:"08",
+    id:8, act:"09",
     title:"Throttle — the implementation",
     sub:"Track the last fire time in a closure variable. Compare against now. Simpler than debounce — no timer to clear.",
     code:[
@@ -289,7 +303,7 @@ const SCENES = [
     metric:{ raw: EVENT_STREAM.length, deb:null, thr: THROTTLE_FIRES.length, label:"timestamp comparison" },
   },
   {
-    id:8, act:"09",
+    id:9, act:"10",
     title:"Leading vs trailing edge",
     sub:"Should the handler fire at the START of a burst (leading) or the END (trailing)? Debounce defaults to trailing. Throttle defaults to leading. Both variants exist for both.",
     code:[
@@ -308,7 +322,7 @@ const SCENES = [
     metric:{ raw: EVENT_STREAM.length, deb: DEBOUNCE_FIRES.length, thr: THROTTLE_FIRES.length, label:"edge choice matters" },
   },
   {
-    id:9, act:"10",
+    id:10, act:"11",
     title:"Side-by-side",
     sub:"Same event stream, three different outputs. Debounce gives you one call per burst. Throttle gives you a steady drip. Raw gives you chaos.",
     code:[
@@ -324,7 +338,7 @@ const SCENES = [
     metric:{ raw: EVENT_STREAM.length, deb: DEBOUNCE_FIRES.length, thr: THROTTLE_FIRES.length, label:"same input, 2 strategies" },
   },
   {
-    id:10, act:"11",
+    id:11, act:"12",
     title:"Use cases",
     sub:"Choose debounce when you only care about the final value. Choose throttle when you need regular sampling during the action.",
     code:[
@@ -341,23 +355,6 @@ const SCENES = [
     showDebounce:true,
     showThrottle:true,
     metric:{ raw: EVENT_STREAM.length, deb: DEBOUNCE_FIRES.length, thr: THROTTLE_FIRES.length, label:"pick the right tool" },
-  },
-  {
-    id:11, act:"12",
-    title:"Use a library",
-    sub:"Rolling your own is educational. In production, reach for lodash. It handles leading/trailing edges, cancel(), flush(), and maxWait correctly.",
-    code:[
-      [["kw","import"],["plain"," { debounce, throttle } "],["kw","from"],["plain"," "],["str","'lodash'"]],
-      [["kw","const"],["plain"," search "],["punc","= "],["fn","debounce"],["punc","(query, "],["num","300"],["punc",")"]],
-      [["kw","const"],["plain"," track "],["punc","= "],["fn","throttle"],["punc","(onScroll, "],["num","100"],["punc",")"]],
-      [["cmt","// bonus methods:"]],
-      [["plain","search"],["punc","."],["fn","cancel"],["punc","()  "],["cmt","// drop pending call"]],
-      [["plain","search"],["punc","."],["fn","flush"],["punc","()   "],["cmt","// fire now"]],
-    ],
-    show:"both",
-    showDebounce:true,
-    showThrottle:true,
-    metric:{ raw: EVENT_STREAM.length, deb: DEBOUNCE_FIRES.length, thr: THROTTLE_FIRES.length, label:"lodash: battle-tested" },
   },
   {
     id:12, act:"DONE",
@@ -686,17 +683,17 @@ const MetricPanel = ({ metric, onClick }) => {
 
 const Finale = () => {
   const rows = [
-    { icon:"⏱", label:"Debounce", sub:"Fire ONCE after N ms of silence. Every event resets the timer.", c:T.tealL, tag:"wait for done" },
-    { icon:"⏲", label:"Throttle", sub:"Fire at most ONCE per N ms. Ignore events within the window.", c:T.amberL, tag:"steady rhythm" },
-    { icon:"◐", label:"Leading edge", sub:"Fire on the first event of a burst. Good for immediate feedback.", c:T.blueL, tag:"front" },
-    { icon:"◑", label:"Trailing edge", sub:"Fire after the burst ends. Good for capturing the final state.", c:T.pinkL, tag:"back" },
-    { icon:"★", label:"Rule of thumb", sub:"Final value only? debounce. Continuous sampling? throttle.", c:T.purpleL, tag:"decision" },
+    { icon:"lni-stopwatch", label:"Debounce", sub:"Fire ONCE after N ms of silence. Every event resets the timer.", c:T.tealL, tag:"wait for done" },
+    { icon:"lni-hourglass", label:"Throttle", sub:"Fire at most ONCE per N ms. Ignore events within the window.", c:T.amberL, tag:"steady rhythm" },
+    { icon:"lni-arrow-right", label:"Leading edge", sub:"Fire on the first event of a burst. Good for immediate feedback.", c:T.blueL, tag:"front" },
+    { icon:"lni-arrow-left", label:"Trailing edge", sub:"Fire after the burst ends. Good for capturing the final state.", c:T.pinkL, tag:"back" },
+    { icon:"lni-star-fat", label:"Rule of thumb", sub:"Final value only? debounce. Continuous sampling? throttle.", c:T.purpleL, tag:"decision" },
   ];
   return e("div", { style:{ padding:"8px 0" } },
     rows.map((r,i) => e(M.div, { key:i, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.12,...ez},
       style:{ display:"flex", alignItems:"flex-start", gap:12, padding:"11px 14px", marginBottom:8, borderRadius:10, border:`1px solid ${r.c}28`, background:`${r.c}08` }
     },
-      e("div", { style:{ width:28, height:28, borderRadius:"50%", border:`1.5px solid ${r.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:14, fontWeight:700, color:r.c } }, r.icon),
+      e("div", { style:{ width:28, height:28, borderRadius:"50%", border:`1.5px solid ${r.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:13, fontWeight:700, color:r.c } }, e("i", { className:"lni " + r.icon })),
       e("div", { style:{ flex:1 } },
         e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginBottom:2 } },
           e("div", { style:{ fontSize:13, fontWeight:600, color:r.c } }, r.label),
@@ -755,7 +752,7 @@ function App() {
   const toggleDetail = key => { setDetail(d => d===key ? null : key); clearTimeout(timer.current); setPlaying(false); };
 
   return e("div", { style:{ display:"flex", gap:16, alignItems:"flex-start", justifyContent: detail ? "flex-start" : "center" } },
-  e("div", { style:{ width:760, flexShrink:0, background:T.bg, fontFamily:"'Inter', system-ui, sans-serif", padding:20, borderRadius:16 } },
+  e("div", { style:{ width:760, flexShrink:0, background:T.bg, fontFamily:"system-ui,sans-serif", padding:20, borderRadius:16 } },
 
     /* header */
     e("div", { style:{ marginBottom:18 } },
@@ -811,7 +808,7 @@ function App() {
           : e(Panel, { label:"tally", onClick: () => toggleDetail("usecases") },
               e("div", { style:{ fontSize:11, color:T.text3, minHeight:44 } }, "—")
             ),
-        e(Panel, { label:"strategy", onClick: () => toggleDetail(sc.id >= 5 && sc.id <= 7 ? "throttle" : sc.id === 8 ? "leading" : "debounce") },
+        e(Panel, { label:"strategy", onClick: () => toggleDetail(sc.id >= 6 && sc.id <= 8 ? "throttle" : sc.id === 9 ? "leading" : sc.id === 11 ? "usecases" : "debounce") },
           e("div", { style:{ minHeight:44, display:"flex", alignItems:"center", gap:10 } },
             e("div", {
               style:{
@@ -847,7 +844,7 @@ function App() {
       }, "← Back"),
       e("button", { onClick:togglePlay,
         style:{ padding:"6px 18px",borderRadius:8,border:`1px solid ${playing?T.coral:T.purple}44`,background:playing?`${T.coral}14`:`${T.purple}14`,color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all 0.2s" }
-      }, playing ? "⏸  Pause" : si===SCENES.length-1 ? "↺  Replay" : "▶  Play"),
+      }, playing ? e("span", { style:{ display:"inline-flex", alignItems:"center", gap:6 } }, e("i", { className:"lni lni-pause" }), "Pause") : si===SCENES.length-1 ? e("span", { style:{ display:"inline-flex", alignItems:"center", gap:6 } }, e("i", { className:"lni lni-refresh-circle-1-clockwise" }), "Replay") : e("span", { style:{ display:"inline-flex", alignItems:"center", gap:6 } }, e("i", { className:"lni lni-play" }), "Play")),
       e("button", { onClick:()=>go(1), disabled:si===SCENES.length-1,
         style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
       }, "Next →"),

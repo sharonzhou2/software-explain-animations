@@ -143,9 +143,9 @@ const SCENES = [
     sub:"Fixed windows have a nasty edge case: a client can fire 10 requests at the end of one window and 10 more at the start of the next — 20 requests in a few seconds, all legal. That's 2x the intended rate.",
     code:[
       [["cmt","// Window 1 (00:00–01:00)"]],
-      [["cmt","//   10 reqs at 00:59.9  ✓"]],
+      [["cmt","//   10 reqs at 00:59.9  [ok]"]],
       [["cmt","// Window 2 (01:00–02:00)"]],
-      [["cmt","//   10 reqs at 01:00.1  ✓"]],
+      [["cmt","//   10 reqs at 01:00.1  [ok]"]],
       [["cmt","// → 20 reqs in ~0.2s !!"]],
     ],
     viz:"boundary",
@@ -688,9 +688,9 @@ const TokenBucketAnimViz = () => {
             background: lastReq.ok ? `${T.green}22` : `${T.red}22`,
             border:`1px solid ${lastReq.ok ? T.green : T.red}66`,
             color: lastReq.ok ? T.greenL : T.redL,
-            fontSize:11, fontWeight:700, fontFamily:"monospace"
+            fontSize:11, fontWeight:700, fontFamily:"monospace", display:"inline-flex", alignItems:"center", gap:5
           }
-        }, lastReq.ok ? "✓ 200" : "✗ 429")
+        }, e("i", { className:"lni " + (lastReq.ok ? "lni-check" : "lni-xmark") }), lastReq.ok ? "200" : "429")
       )
     )
   );
@@ -1041,7 +1041,7 @@ function App() {
       }, "← Back"),
       e("button", { onClick:togglePlay,
         style:{ padding:"6px 18px",borderRadius:8,border:`1px solid ${playing?T.coral:T.purple}44`,background:playing?`${T.coral}14`:`${T.purple}14`,color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all 0.2s" }
-      }, playing ? "⏸  Pause" : si===SCENES.length-1 ? "↺  Replay" : "▶  Play"),
+      }, playing ? e("span", { style:{ display:"inline-flex", alignItems:"center", gap:6 } }, e("i", { className:"lni lni-pause" }), "Pause") : si===SCENES.length-1 ? e("span", { style:{ display:"inline-flex", alignItems:"center", gap:6 } }, e("i", { className:"lni lni-refresh-circle-1-clockwise" }), "Replay") : e("span", { style:{ display:"inline-flex", alignItems:"center", gap:6 } }, e("i", { className:"lni lni-play" }), "Play")),
       e("button", { onClick:()=>go(1), disabled:si===SCENES.length-1,
         style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
       }, "Next →"),

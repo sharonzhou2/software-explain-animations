@@ -173,8 +173,8 @@ const SCENES = [
       [["cmt","// T=0ms  — write to primary"]],
       [["kw","UPDATE"],["plain"," users "],["kw","SET"],["plain"," name"],["punc","="],["str","'Alice'"]],
       [["cmt","// T=5ms  — read from replica"]],
-      [["cmt","// still sees old 'Alicia' 😬"]],
-      [["cmt","// T=50ms — replica catches up ✓"]],
+      [["cmt","// still sees old 'Alicia' (oops)"]],
+      [["cmt","// T=50ms — replica catches up [ok]"]],
     ],
     view:"lag",
     detail:"replication",
@@ -231,8 +231,8 @@ const SCENES = [
       [["kw","function"],["plain"," "],["fn","shardFor"],["punc","("],["plain","key"],["punc",") {"]],
       [["plain","  "],["kw","return"],["plain"," "],["fn","hash"],["punc","("],["plain","key"],["punc",") "],["punc","%"],["plain"," N"],["punc",";"]],
       [["punc","}"]],
-      [["cmt","// Even distribution ✓"]],
-      [["cmt","// Range scans ✗"]],
+      [["cmt","// Even distribution [ok]"]],
+      [["cmt","// Range scans [no]"]],
     ],
     view:"hash",
     detail:"hash",
@@ -245,7 +245,7 @@ const SCENES = [
       [["cmt","// N = 4  → N = 5"]],
       [["fn","hash"],["punc","("],["str","'alice'"],["punc",") % "],["num","4"],["plain"," = "],["num","2"]],
       [["fn","hash"],["punc","("],["str","'alice'"],["punc",") % "],["num","5"],["plain"," = "],["num","0"],["cmt","  // moved!"]],
-      [["cmt","// ~80% of keys relocate 💥"]],
+      [["cmt","// ~80% of keys relocate (boom)"]],
     ],
     view:"rebalance",
     detail:"hash",
@@ -269,9 +269,9 @@ const SCENES = [
     title:"Cross-shard queries are hard",
     sub:"A JOIN between users on shard 1 and orders on shard 3 can't happen inside a single database. You have to query every shard, ship the results back, and merge in the application — or denormalize to avoid the join entirely.",
     code:[
-      [["cmt","// Single-shard query ✓"]],
+      [["cmt","// Single-shard query [ok]"]],
       [["kw","SELECT"],["plain"," * "],["kw","FROM"],["plain"," users "],["kw","WHERE"],["plain"," id"],["punc","="],["num","42"]],
-      [["cmt","// Cross-shard query ✗"]],
+      [["cmt","// Cross-shard query [no]"]],
       [["kw","SELECT"],["plain"," u.name, "],["fn","SUM"],["punc","("],["plain","o.total"],["punc",")"]],
       [["kw","FROM"],["plain"," users u "],["kw","JOIN"],["plain"," orders o "],["punc","..."]],
       [["cmt","// Must scatter-gather across shards"]],
@@ -458,7 +458,7 @@ const ViewSingle = () =>
     },
       e("i", { className:"lni lni-database", style:{ color:T.red, fontSize:28 } }),
       e("div", { style:{ fontSize:12, fontWeight:700, color:T.redL, fontFamily:"'SF Mono',monospace" } }, "single DB"),
-      e("div", { style:{ fontSize:10, color:T.red+"cc", fontWeight:600 } }, "🔥 at capacity"),
+      e("div", { style:{ fontSize:10, color:T.red+"cc", fontWeight:600, display:"flex", alignItems:"center", gap:4 } }, e("i", { className:"lni lni-bolt-3" }), "at capacity"),
     )
   );
 
@@ -535,7 +535,7 @@ const ViewReplication = ({ replicaCount=3, showWrites=false }) => {
           fill:`${T.red}14`, stroke:T.red, strokeWidth:2 }),
         e("text", { x:primaryX, y:primaryY-12, textAnchor:"middle", fontSize:11, fontWeight:700, fill:T.redL, fontFamily:"'SF Mono',monospace" }, "PRIMARY"),
         e("text", { x:primaryX, y:primaryY+4, textAnchor:"middle", fontSize:9, fill:T.text2 }, "accepts writes"),
-        e("text", { x:primaryX, y:primaryY+20, textAnchor:"middle", fontSize:18, fill:T.red }, "⬤")
+        e("circle", { cx:primaryX, cy:primaryY+18, r:6, fill:T.red })
       ),
       /* Replication arrows */
       replicas.map((r,i)=>
@@ -581,7 +581,7 @@ const ViewLag = () => {
       e("g", null,
         e("rect", { x:500, y:250, width:160, height:40, rx:8, fill:`${T.coral}10`, stroke:T.coral, strokeWidth:1.2, strokeDasharray:"4 4" }),
         e("text", { x:580, y:266, textAnchor:"middle", fontSize:10, fill:T.coralL, fontWeight:700 }, "client reads replica"),
-        e("text", { x:580, y:280, textAnchor:"middle", fontSize:9, fill:T.text3, fontFamily:"'SF Mono',monospace" }, "sees stale 'Alicia' 😬"),
+        e("text", { x:580, y:280, textAnchor:"middle", fontSize:9, fill:T.text3, fontFamily:"'SF Mono',monospace" }, "sees stale 'Alicia'"),
       ),
       /* Arrow from replica to client */
       e("line", { x1:580, y1:190, x2:580, y2:250, stroke:T.coral, strokeWidth:1.2, strokeDasharray:"3 3" }),
@@ -618,7 +618,7 @@ const ViewMultiPrimary = () => {
       /* Conflict marker */
       e(M.g, { initial:{opacity:0,scale:0.6}, animate:{opacity:1,scale:1}, transition:{delay:1.2,...sp()} },
         e("circle", { cx:350, cy:270, r:26, fill:`${T.red}18`, stroke:T.red, strokeWidth:1.5 }),
-        e("text", { x:350, y:275, textAnchor:"middle", fontSize:18 }, "⚡"),
+        e("text", { x:350, y:278, textAnchor:"middle", fontSize:22, fontWeight:700, fill:T.red }, "!"),
         e("text", { x:350, y:304, textAnchor:"middle", fontSize:10, fill:T.redL, fontWeight:700 }, "CONFLICT")
       )
     )
@@ -1049,7 +1049,7 @@ function App() {
       }, "← Back"),
       e("button", { onClick:togglePlay,
         style:{ padding:"6px 18px",borderRadius:8,border:`1px solid ${playing?T.coral:T.purple}44`,background:playing?`${T.coral}14`:`${T.purple}14`,color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all 0.2s" }
-      }, playing ? "⏸  Pause" : si===SCENES.length-1 ? "↺  Replay" : "▶  Play"),
+      }, playing ? e("span", { style:{ display:"inline-flex", alignItems:"center", gap:6 } }, e("i", { className:"lni lni-pause" }), "Pause") : si===SCENES.length-1 ? e("span", { style:{ display:"inline-flex", alignItems:"center", gap:6 } }, e("i", { className:"lni lni-refresh-circle-1-clockwise" }), "Replay") : e("span", { style:{ display:"inline-flex", alignItems:"center", gap:6 } }, e("i", { className:"lni lni-play" }), "Play")),
       e("button", { onClick:()=>go(1), disabled:si===SCENES.length-1,
         style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
       }, "Next →"),

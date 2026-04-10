@@ -209,7 +209,7 @@ const SCENES = [
       [["cmt","// Searching for 'Grace':"]],
       [["plain","  root"],["punc"," → "],["cmt","Grace < Eve? no"]],
       [["plain","       "],["cmt","Grace < Ivan? yes → middle"]],
-      [["plain","  mid "],["punc"," → "],["cmt","scan keys → Grace ✓"]],
+      [["plain","  mid "],["punc"," → "],["cmt","scan keys → Grace [ok]"]],
       [["plain","  row "],["punc"," → "],["cmt","follow pointer to row 7"]],
     ],
     show:"btree", highlight:"btree", btreeStep:"traverse",
@@ -250,10 +250,10 @@ const SCENES = [
     code:[
       [["kw","CREATE INDEX"],["plain"," idx "],["kw","ON"],["plain"," users(country, city, age)"],["punc",";"]],
       [["cmt",""]],
-      [["cmt","// ✓ WHERE country = 'US'"]],
-      [["cmt","// ✓ WHERE country = 'US' AND city = 'SF'"]],
-      [["cmt","// ✗ WHERE city = 'SF'              (skips left)"]],
-      [["cmt","// ✗ WHERE age = 30                  (skips left)"]],
+      [["cmt","// [ok] WHERE country = 'US'"]],
+      [["cmt","// [ok] WHERE country = 'US' AND city = 'SF'"]],
+      [["cmt","// [no] WHERE city = 'SF'              (skips left)"]],
+      [["cmt","// [no] WHERE age = 30                  (skips left)"]],
     ],
     show:"composite", highlight:"composite",
   },
@@ -318,11 +318,11 @@ const SCENES = [
     title:"Common pitfalls",
     sub:"Indexes quietly stop working if you wrap the column in a function, use leading wildcards, or combine conditions with OR. The index exists, but the planner can't use it.",
     code:[
-      [["cmt","// ✗ Function on indexed column:"]],
+      [["cmt","// [no] Function on indexed column:"]],
       [["kw","WHERE"],["plain"," "],["fn","LOWER"],["punc","("],["plain","name"],["punc",") = "],["str","'grace'"]],
-      [["cmt","// ✗ Leading wildcard:"]],
+      [["cmt","// [no] Leading wildcard:"]],
       [["kw","WHERE"],["plain"," name "],["kw","LIKE"],["plain"," "],["str","'%race'"]],
-      [["cmt","// ✗ OR across different columns:"]],
+      [["cmt","// [no] OR across different columns:"]],
       [["kw","WHERE"],["plain"," name="],["str","'Grace'"],["plain"," "],["kw","OR"],["plain"," city="],["str","'SF'"]],
     ],
     show:"pitfalls", highlight:"pitfalls",
@@ -362,7 +362,7 @@ const DETAILS = {
     color:T.blue,
     sections:[
       {heading:"What it is",body:"An index built on multiple columns, e.g. (country, city, age). The DB sorts first by country, then within each country by city, then within each city by age."},
-      {heading:"Leftmost prefix rule",body:"The index can serve queries that filter on a left-anchored prefix of the column list:\n\n✓ country\n✓ country + city\n✓ country + city + age\n✗ city alone\n✗ age alone\n✗ city + age"},
+      {heading:"Leftmost prefix rule",body:"The index can serve queries that filter on a left-anchored prefix of the column list:\n\n[ok] country\n[ok] country + city\n[ok] country + city + age\n[no] city alone\n[no] age alone\n[no] city + age"},
       {heading:"Column order matters",body:"Put the most selective column first, or the column most often filtered alone. The order of columns in the index definition is a real performance decision — it can't be reshuffled on the fly."},
       {heading:"Equality vs range",body:"Equality filters can fully use the index for columns to their right. A range filter (>, <, BETWEEN) usually stops further index use — put range columns last."},
     ]
@@ -972,7 +972,7 @@ function App() {
       }, "← Back"),
       e("button", { onClick:togglePlay,
         style:{ padding:"6px 18px",borderRadius:8,border:`1px solid ${playing?T.coral:T.purple}44`,background:playing?`${T.coral}14`:`${T.purple}14`,color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all 0.2s" }
-      }, playing ? "⏸  Pause" : si===SCENES.length-1 ? "↺  Replay" : "▶  Play"),
+      }, playing ? e("span", { style:{ display:"inline-flex", alignItems:"center", gap:6 } }, e("i", { className:"lni lni-pause" }), "Pause") : si===SCENES.length-1 ? e("span", { style:{ display:"inline-flex", alignItems:"center", gap:6 } }, e("i", { className:"lni lni-refresh-circle-1-clockwise" }), "Replay") : e("span", { style:{ display:"inline-flex", alignItems:"center", gap:6 } }, e("i", { className:"lni lni-play" }), "Play")),
       e("button", { onClick:()=>go(1), disabled:si===SCENES.length-1,
         style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
       }, "Next →"),

@@ -149,8 +149,8 @@ const SCENES = [
     code:[
       [["kw","async function"],["plain"," "],["fn","getUser"],["punc","("],["plain","id"],["punc",") {"]],
       [["plain","  "],["kw","const"],["plain"," cached "],["punc","="],["plain"," "],["kw","await"],["plain"," cache."],["meth","get"],["punc","("],["plain","id"],["punc",")"]],
-      [["plain","  "],["kw","if"],["plain"," "],["punc","("],["plain","cached"],["punc",") "],["kw","return"],["plain"," cached  "],["cmt","// HIT ⚡"]],
-      [["plain","  "],["kw","const"],["plain"," row "],["punc","="],["plain"," "],["kw","await"],["plain"," db."],["meth","query"],["punc","("],["plain","id"],["punc",")  "],["cmt","// MISS 🐌"]],
+      [["plain","  "],["kw","if"],["plain"," "],["punc","("],["plain","cached"],["punc",") "],["kw","return"],["plain"," cached  "],["cmt","// HIT (fast)"]],
+      [["plain","  "],["kw","const"],["plain"," row "],["punc","="],["plain"," "],["kw","await"],["plain"," db."],["meth","query"],["punc","("],["plain","id"],["punc",")  "],["cmt","// MISS (slow)"]],
       [["plain","  "],["kw","await"],["plain"," cache."],["meth","set"],["punc","("],["plain","id"],["punc",", row"],["punc",")"]],
       [["plain","  "],["kw","return"],["plain"," row"]],
       [["punc","}"]],
@@ -278,7 +278,7 @@ const SCENES = [
     code:[
       [["cmt","// Bad: all misses hit DB"]],
       [["kw","if"],["plain"," "],["punc","(!"],["plain","cache."],["meth","get"],["punc","("],["plain","key"],["punc","))"]],
-      [["plain","  data "],["punc","="],["plain"," db."],["meth","query"],["punc","("],["plain","key"],["punc",")  "],["cmt","// 🚨 10k at once"]],
+      [["plain","  data "],["punc","="],["plain"," db."],["meth","query"],["punc","("],["plain","key"],["punc",")  "],["cmt","// (!) 10k at once"]],
       [["cmt",""]],
       [["cmt","// Better: single-flight"]],
       [["kw","const"],["plain"," data "],["punc","="],["plain"," "],["kw","await"],["plain"," "],["fn","singleflight"],["punc","("],["plain","key"],["punc",","]],
@@ -291,7 +291,7 @@ const SCENES = [
     title:"Common pitfalls",
     sub:"Caching bugs are sneaky because the app still \"works\" — just wrong. Stale reads, inconsistent views across replicas, cold-cache latency spikes after deploys, and unbounded memory growth are the usual suspects.",
     code:[
-      [["cmt","// ⚠️  Pitfalls"]],
+      [["cmt","// (warn)  Pitfalls"]],
       [["cmt","//   • Stale data — old snapshot"]],
       [["cmt","//   • Inconsistency — replica drift"]],
       [["cmt","//   • Cold cache — slow after restart"]],
@@ -516,8 +516,8 @@ const HitMissView = () => {
   return e("div", { style:{ padding:"6px 0" } },
     e("div", { style:{ display:"flex", justifyContent:"center", marginBottom:10 } },
       e(M.div, { animate:{ color:labelColor, borderColor:labelColor, background:`${labelColor}14` }, transition:{ duration:0.3 },
-        style:{ padding:"4px 14px", borderRadius:20, border:"1.5px solid", fontSize:11, fontWeight:700, letterSpacing:"0.1em" }
-      }, label + (isHit ? " ⚡" : " 🐌"))
+        style:{ padding:"4px 14px", borderRadius:20, border:"1.5px solid", fontSize:11, fontWeight:700, letterSpacing:"0.1em", display:"inline-flex", alignItems:"center", gap:6 }
+      }, label, e("i", { className:"lni " + (isHit ? "lni-bolt-3" : "lni-hourglass") }))
     ),
     e("div", { style:{ position:"relative", height:150, background:T.surface2, borderRadius:12, border:`1px solid ${T.border}` } },
       e(Box, { x:16, w:120, c:T.text2, label:"app", icon:"lni-rocket-5" }),
@@ -1066,7 +1066,7 @@ function App() {
       }, "← Back"),
       e("button", { onClick:togglePlay,
         style:{ padding:"6px 18px",borderRadius:8,border:`1px solid ${playing?T.coral:T.purple}44`,background:playing?`${T.coral}14`:`${T.purple}14`,color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600 }
-      }, playing ? "⏸  Pause" : si===SCENES.length-1 ? "↺  Replay" : "▶  Play"),
+      }, playing ? e("span", { style:{ display:"inline-flex", alignItems:"center", gap:6 } }, e("i", { className:"lni lni-pause" }), "Pause") : si===SCENES.length-1 ? e("span", { style:{ display:"inline-flex", alignItems:"center", gap:6 } }, e("i", { className:"lni lni-refresh-circle-1-clockwise" }), "Replay") : e("span", { style:{ display:"inline-flex", alignItems:"center", gap:6 } }, e("i", { className:"lni lni-play" }), "Play")),
       e("button", { onClick:()=>go(1), disabled:si===SCENES.length-1,
         style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
       }, "Next →"),
