@@ -151,13 +151,9 @@ const SCENES = [
     id:0, act:"01",
     title:"JavaScript is single-threaded",
     sub:"JS runs on one thread with one call stack. But what if you need real parallelism — heavy computation without freezing the UI?",
-    code:[
-      [["cmt","// JavaScript has a single thread"]],
-      [["cmt","// one call stack, one task at a time"]],
-      [["cmt","// but what about CPU-heavy work?"]],
-    ],
     viz:"intro",
     detail_hint:"concept",
+    noCode:true,
   },
   {
     id:1, act:"02",
@@ -179,16 +175,9 @@ const SCENES = [
     id:2, act:"03",
     title:"Web Workers: a separate thread",
     sub:"A Web Worker runs JavaScript in a background thread with its own event loop. The main thread stays free to handle UI, events, and rendering.",
-    code:[
-      [["cmt","// Main thread          Worker thread"]],
-      [["cmt","// ┌──────────┐        ┌──────────┐"]],
-      [["cmt","// │ UI, DOM  │  msg   │ heavy    │"]],
-      [["cmt","// │ events   │ ←────→ │ compute  │"]],
-      [["cmt","// │ render   │        │ own loop │"]],
-      [["cmt","// └──────────┘        └──────────┘"]],
-    ],
     viz:"two-threads",
     detail_hint:"concept",
+    noCode:true,
   },
   {
     id:3, act:"04",
@@ -1000,16 +989,18 @@ function App() {
     /* finale */
     sc.finale && e(Finale),
 
-    /* main grid — code on left, thread viz on right */
-    !sc.finale && e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1.2fr", gap:10 } },
+    /* code panel — only when scene actually has meaningful code */
+    !sc.finale && !sc.noCode && sc.code && e("div", { style:{ marginBottom:10 } },
       e("div", { onClick:()=>toggleDetail("code"), style:{cursor:"pointer"} },
         e(CodePanel, { tokens: sc.code })
-      ),
-      e(Panel, { label:"Thread Visualization", onClick:()=>toggleDetail("threads") },
-        e(AP, { mode:"wait" },
-          e(M.div, { key:sc.id, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.15} },
-            e(SceneViz, { scene:sc })
-          )
+      )
+    ),
+
+    /* thread visualization — always full width */
+    !sc.finale && e(Panel, { label:"Thread Visualization", onClick:()=>toggleDetail("threads") },
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.id, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.15} },
+          e(SceneViz, { scene:sc })
         )
       )
     ),
