@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Authentication</title>
+<link href="https://cdn.lineicons.com/5.0/lineicons.css" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111118;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px 16px 24px 196px;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  #root { width: 100%; max-width: 1120px; }
+  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: system-ui, sans-serif; }
+  .topnav a { text-decoration: none; color: #8888aa; font-size: 13px; transition: color 0.2s; }
+  .topnav a:hover { color: #e8e8f0; }
+  .topnav .name { font-weight: 600; color: #e8e8f0; font-size: 13px; }
+  .topnav .sep { color: #38384a; font-size: 12px; }
+  .topnav .current { color: #7c6fcd; font-size: 13px; font-weight: 500; }
+  .sidenav { position: fixed; top: 38px; left: 0; width: 180px; height: calc(100vh - 38px); background: #111118; border-right: 1px solid #2a2a38; padding: 14px 0; overflow-y: auto; z-index: 200; font-family: system-ui, sans-serif; }
+  .sidenav a { display: block; padding: 6px 16px; font-size: 11px; color: #8888aa; text-decoration: none; transition: color 0.2s, background 0.2s; border-left: 2px solid transparent; }
+  .sidenav a:hover { color: #e8e8f0; background: rgba(124,111,205,0.06); }
+  .sidenav a.active { color: #a99cf0; border-left-color: #7c6fcd; background: rgba(124,111,205,0.1); font-weight: 600; }
+  .sidenav .nav-section { padding: 8px 16px 4px; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #44445a; }
+  .sidenav .nav-section:first-child { padding-top: 4px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="../" class="name">Sharon Zhou</a>
+  <span class="sep">/</span>
+  <a href="../">Animations</a>
+  <span class="sep">/</span>
+  <span class="current">Authentication</span>
+</nav>
+<nav class="sidenav">
+  <div class="nav-section">JavaScript</div>
+  <a href="../event-loop/">Event Loop</a>
+  <a href="../this-keyword/">this Keyword</a>
+  <a href="../hoisting/">Hoisting</a>
+  <a href="../closures/">Closures</a>
+  <a href="../garbage-collection/">Garbage Collection</a>
+  <a href="../event-delegation/">Event Delegation</a>
+  <a href="../iterators-generators/">Iterators & Generators</a>
+  <a href="../xhr-vs-fetch/">XHR vs fetch()</a>
+  <a href="../error-propagation/">Error Propagation</a>
+  <a href="../web-workers/">Web Workers</a>
+  <a href="../prototypal-inheritance/">Prototypal Inheritance</a>
+  <div class="nav-section">Browser</div>
+  <a href="../critical-rendering-path/">Critical Rendering Path</a>
+  <a href="../reflow-vs-repaint/">Reflow vs Repaint</a>
+  <a href="../css-box-model/">CSS Box Model & Layout</a>
+  <a href="../web-security/">Web Security</a>
+  <a href="../request-animation-frame/">requestAnimationFrame</a>
+  <a href="../cors/">CORS</a>
+  <a href="../websocket-vs-sse/">WebSocket vs SSE</a>
+  <a href="../debounce-vs-throttle/">Debounce vs Throttle</a>
+  <div class="nav-section">Infrastructure</div>
+  <a href="../vms-vs-docker/">VMs vs Docker</a>
+  <a href="../opentelemetry/">OpenTelemetry</a>
+  <a href="../kubernetes/">Kubernetes</a>
+  <a href="../kafka/">Kafka</a>
+  <a href="../database-indexing/">Database Indexing</a>
+  <a href="../sql-vs-nosql/">SQL vs NoSQL</a>
+  <a href="../load-balancing/">Load Balancing</a>
+  <a href="../caching-strategies/">Caching Strategies</a>
+  <a href="../http-versions/">HTTP Versions</a>
+  <a href="../authentication/" class="active">Authentication</a>
+  <a href="../rate-limiting/">Rate Limiting</a>
+  <a href="../database-sharding/">Database Sharding</a>
+  <a href="../microservices-vs-monolith/">Microservices vs Monolith</a>
+</nav>
+<div id="root" style="margin-top: 36px;"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/framer-motion@11/dist/framer-motion.js"></script>
+<script>
+const { useState, useEffect, useRef } = React;
+const { motion, AnimatePresence } = window.Motion;
+const e = React.createElement;
+const M = motion;
+const AP = AnimatePresence;
+const sp = (s=380,d=28) => ({ type:"spring", stiffness:s, damping:d });
+const ez = { duration:0.32, ease:[0.22,1,0.36,1] };
+
+const T = {
+  bg:"#111118", surface:"#18181f", surface2:"#1e1e28",
+  border:"#2a2a38", border2:"#38384a",
+  text1:"#e8e8f0", text2:"#8888aa", text3:"#44445a",
+  purple:"#7c6fcd", purpleL:"#a99cf0",
+  teal:"#3db89a", tealL:"#6dd4b8",
+  coral:"#c4694a", coralL:"#e08a6a",
+  blue:"#4a8fd4", blueL:"#82b4e8",
+  amber:"#d4a84a", amberL:"#e8c86a",
+  green:"#4ac46a", greenL:"#6ae88a",
+  red:"#e05555", redL:"#ff7777",
+  session:"#4a8fd4", sessionL:"#82b4e8",
+  jwt:"#3db89a", jwtL:"#6dd4b8",
+  oauth:"#c4694a", oauthL:"#e08a6a",
+  codeBase:"#141428",
+};
+
+const TS = {
+  fn:{color:"#82aaff"}, meth:{color:"#89ddff"}, str:{color:"#c3e88d"},
+  kw:{color:"#c792ea"}, num:{color:"#f78c6c"}, punc:{color:"#89ddff"},
+  plain:{color:"#a6accd"}, cmt:{color:"#546e7a",fontStyle:"italic"},
+  hdr:{color:"#e05555"}, pld:{color:"#c792ea"}, sig:{color:"#3db89a"},
+};
+
+const SCENES = [
+  {
+    id:0, act:"01",
+    title:"Who are you? Prove it.",
+    sub:"Authentication is how a server knows who is making a request. It's the foundation of every login, every API call, every session. Let's explore the three dominant approaches: sessions, JWTs, and OAuth 2.0.",
+    code:[
+      [["cmt","// Authentication (AuthN): Who are you?"]],
+      [["cmt","// Authorization (AuthZ): What can you do?"]],
+      [["cmt","//"]],
+      [["cmt","// This animation focuses on AuthN —"]],
+      [["cmt","// how the server proves your identity"]],
+      [["cmt","// across stateless HTTP requests."]],
+    ],
+    scene:"intro",
+  },
+  {
+    id:1, act:"02",
+    title:"AuthN vs AuthZ",
+    sub:"Authentication verifies identity (who you are). Authorization decides permissions (what you can do). They work together but solve different problems — every app needs both.",
+    code:[
+      [["cmt","// AuthN — verify identity"]],
+      [["fn","login"],["punc","("],["str","'alice'"],["punc",", "],["str","'pw123'"],["punc",")"]],
+      [["cmt","//  → issue a credential (cookie/token)"]],
+      [["cmt",""]],
+      [["cmt","// AuthZ — check permissions"]],
+      [["kw","if"],["plain"," "],["punc","("],["fn","user"],["punc","."],["meth","role"],["plain"," === "],["str","'admin'"],["punc",")"],["plain"," "],["punc","{"],["plain"," "],["meth","allow"],["punc","()"],["plain"," "],["punc","}"]],
+    ],
+    scene:"authn-authz",
+  },
+  {
+    id:2, act:"03",
+    title:"Sessions — server remembers you",
+    sub:"The classic approach. After login, the server stores session state (user id, expiry, etc.) in memory or a database, and hands the browser a cookie containing just a session ID.",
+    code:[
+      [["cmt","// Server-side session store"]],
+      [["fn","sessions"],["punc","["],["str","'abc123'"],["punc","] = {"]],
+      [["plain","  userId"],["punc",": "],["num","42"],["punc",","]],
+      [["plain","  expires"],["punc",": "],["fn","Date"],["punc","."],["meth","now"],["punc","() + "],["num","3600000"]],
+      [["punc","}"]],
+    ],
+    scene:"session-static",
+    clickable:"session",
+  },
+  {
+    id:3, act:"04",
+    title:"Session flow — step by step",
+    sub:"Browser sends credentials. Server verifies, creates a session row, returns a Set-Cookie header. Every subsequent request carries that cookie — the server looks up the session to identify the user.",
+    code:[
+      [["cmt","// 1. POST /login (email + password)"]],
+      [["cmt","// 2. Server creates session row"]],
+      [["cmt","// 3. Set-Cookie: sid=abc123"]],
+      [["cmt","// 4. Browser auto-sends cookie"]],
+      [["cmt","// 5. Server looks up sid → user"]],
+    ],
+    scene:"session-flow",
+    clickable:"session",
+  },
+  {
+    id:4, act:"05",
+    title:"Sessions — pros & cons",
+    sub:"Sessions are simple and revocable — delete the row, the user is logged out instantly. But they require a shared store (Redis, DB) across every server, which hurts horizontal scaling.",
+    code:[
+      [["cmt","// + Simple mental model"]],
+      [["cmt","// + Instantly revocable"]],
+      [["cmt","// + Small cookie (just an ID)"]],
+      [["cmt","//"]],
+      [["cmt","// − Server must store state"]],
+      [["cmt","// − Sticky sessions or shared store"]],
+      [["cmt","// − Harder across multiple services"]],
+    ],
+    scene:"session-proscons",
+    clickable:"session",
+  },
+  {
+    id:5, act:"06",
+    title:"JWT — the server forgets",
+    sub:"A JSON Web Token is a signed, self-contained credential. The server doesn't remember anything — it puts the user's identity inside the token, signs it, and trusts the signature on every request.",
+    code:[
+      [["cmt","// No server-side store!"]],
+      [["kw","const"],["plain"," token = "],["fn","jwt"],["punc","."],["meth","sign"],["punc","("],["punc","{"]],
+      [["plain","  sub"],["punc",": "],["num","42"],["punc",","],["plain"," name"],["punc",": "],["str","'alice'"]],
+      [["punc","}, "],["fn","SECRET"],["punc",")"]],
+    ],
+    scene:"jwt-static",
+    clickable:"jwt",
+  },
+  {
+    id:6, act:"07",
+    title:"Three parts, dot-separated",
+    sub:"A JWT is three base64url segments joined by dots: header (algorithm), payload (claims), signature (HMAC of the first two with a secret). The signature is what makes it tamper-proof.",
+    code:[
+      [["cmt","// header.payload.signature"]],
+      [["hdr","eyJhbGciOiJIUzI1NiJ9"]],
+      [["punc","."]],
+      [["pld","eyJzdWIiOiI0MiIsIm5hbWUiOiJhbGljZSJ9"]],
+      [["punc","."]],
+      [["sig","dBjftJeZ4CVP-mB92K27uhbUJU1..."]],
+    ],
+    scene:"jwt-parts",
+    clickable:"jwt",
+  },
+  {
+    id:7, act:"08",
+    title:"JWT flow — bearer token",
+    sub:"Login once, get a signed token. Store it (usually in memory or an httpOnly cookie). Send it in the Authorization header on every request. The server verifies the signature — no database lookup needed.",
+    code:[
+      [["cmt","// Request"]],
+      [["plain","GET /api/me"]],
+      [["plain","Authorization: "],["kw","Bearer"],["plain"," eyJhbGci..."]],
+      [["cmt",""]],
+      [["cmt","// Server verifies signature, reads claims"]],
+      [["fn","jwt"],["punc","."],["meth","verify"],["punc","(token, "],["fn","SECRET"],["punc",")"]],
+    ],
+    scene:"jwt-flow",
+    clickable:"jwt",
+  },
+  {
+    id:8, act:"09",
+    title:"JWT — pros & cons",
+    sub:"Stateless and fast — any server with the secret can verify without a DB hit. But you can't easily revoke a JWT before it expires, and a leaked secret compromises every token.",
+    code:[
+      [["cmt","// + Stateless, scales horizontally"]],
+      [["cmt","// + Works across microservices"]],
+      [["cmt","// + No DB lookup per request"]],
+      [["cmt",""]],
+      [["cmt","// − Can't revoke until expiry"]],
+      [["cmt","// − Bigger than a session ID"]],
+      [["cmt","// − Secret management is critical"]],
+    ],
+    scene:"jwt-proscons",
+    clickable:"jwt",
+  },
+  {
+    id:9, act:"10",
+    title:"OAuth 2.0 — delegated auth",
+    sub:"OAuth solves a different problem: letting a third-party app access your data on another service (like 'Sign in with Google') without sharing your password. It's a delegation protocol, not a login protocol.",
+    code:[
+      [["cmt","// OAuth actors:"]],
+      [["cmt","//   Resource Owner  = the user"]],
+      [["cmt","//   Client          = your app"]],
+      [["cmt","//   Auth Server     = Google, GitHub…"]],
+      [["cmt","//   Resource Server = the API"]],
+    ],
+    scene:"oauth-static",
+    clickable:"oauth",
+  },
+  {
+    id:10, act:"11",
+    title:"Authorization Code flow",
+    sub:"The most common OAuth flow. App redirects user to the auth server, user approves, auth server sends a short-lived code back, app exchanges the code (plus its secret) for an access token.",
+    code:[
+      [["cmt","// 1. Redirect → auth server (with client_id)"]],
+      [["cmt","// 2. User logs in & approves scopes"]],
+      [["cmt","// 3. Redirect back with ?code=xyz"]],
+      [["cmt","// 4. POST /token (code + client_secret)"]],
+      [["cmt","// 5. Receive access_token + refresh_token"]],
+      [["cmt","// 6. Call API with Bearer <access_token>"]],
+    ],
+    scene:"oauth-flow",
+    clickable:"oauth",
+  },
+  {
+    id:11, act:"12",
+    title:"OAuth vs OIDC",
+    sub:"OAuth 2.0 is about authorization — access to resources. OpenID Connect (OIDC) is a thin layer on top that adds an ID token (a JWT) so you can also use it for authentication. 'Sign in with Google' is OIDC.",
+    code:[
+      [["cmt","// OAuth 2.0 — access delegation"]],
+      [["plain","  → access_token"],["plain","  "],["cmt","// API access"]],
+      [["cmt",""]],
+      [["cmt","// OpenID Connect (OIDC)"]],
+      [["plain","  → access_token  "],["cmt","// API access"]],
+      [["plain","  → id_token      "],["cmt","// who the user is"]],
+    ],
+    scene:"oidc",
+    clickable:"oidc",
+  },
+  {
+    id:12, act:"13",
+    title:"Refresh tokens",
+    sub:"Access tokens are short-lived (minutes) to limit damage if stolen. When they expire, the client uses a long-lived refresh token to silently get a new access token — no re-login required.",
+    code:[
+      [["cmt","// access_token:  ~15 minutes"]],
+      [["cmt","// refresh_token: ~30 days"]],
+      [["cmt",""]],
+      [["cmt","// When access expires:"]],
+      [["plain","POST /token"]],
+      [["plain","grant_type=refresh_token"]],
+      [["plain","refresh_token=..."]],
+    ],
+    scene:"refresh",
+    clickable:"refresh",
+  },
+  {
+    id:13, act:"14",
+    title:"Best practices",
+    sub:"Regardless of mechanism, certain defaults keep you safe: httpOnly (JS can't read the cookie), Secure (HTTPS only), SameSite (blocks CSRF), and short token lifetimes with rotation.",
+    code:[
+      [["cmt","// Set-Cookie flags"]],
+      [["kw","Set-Cookie"],["punc",": "],["plain","sid=abc123;"]],
+      [["plain","  "],["kw","HttpOnly"],["punc","; "],["cmt","// no document.cookie"]],
+      [["plain","  "],["kw","Secure"],["punc","; "],["cmt","// HTTPS only"]],
+      [["plain","  "],["kw","SameSite"],["punc","="],["str","Lax"],["punc","; "],["cmt","// CSRF defense"]],
+      [["plain","  "],["kw","Max-Age"],["punc","="],["num","3600"]],
+    ],
+    scene:"security",
+    clickable:"security",
+  },
+  {
+    id:14, act:"DONE",
+    title:"Authentication — summary",
+    sub:"Sessions keep state on the server. JWTs put state in a signed token. OAuth delegates identity to a third party. Pick the right tool for the job — and layer them with httpOnly cookies and short lifetimes.",
+    scene:"finale",
+    finale:true,
+  },
+];
+
+const DETAILS = {
+  session: {
+    title:"Sessions",
+    color:T.session,
+    sections:[
+      {heading:"What is a session?",body:"A session is a server-side record of a logged-in user. The server generates a random, unguessable session ID, stores it in a database (or Redis, or memory), and sends the ID to the browser as a cookie. Every subsequent request carries the cookie automatically, and the server looks up the ID to find the associated user."},
+      {heading:"Where state lives",body:"• Session ID — in an httpOnly cookie on the browser\n• Session data — in a server-side store:\n   − Memory (single server only)\n   − Redis / Memcached (fast, distributed)\n   − SQL / NoSQL database (durable)\n\nThe cookie is just a pointer. All sensitive data stays on the server."},
+      {heading:"Strengths",body:"• Dead simple — every web framework supports it\n• Instantly revocable — delete the row, user is logged out\n• Small cookie (~30 bytes)\n• Easy to store additional per-session data\n• Works perfectly for a single app / single domain"},
+      {heading:"Weaknesses",body:"• Requires shared state across app servers\n• Sticky sessions or a central store needed to scale\n• Cross-domain and mobile/API clients are awkward\n• Every request costs a session-store lookup"},
+    ]
+  },
+  jwt: {
+    title:"JSON Web Tokens",
+    color:T.jwt,
+    sections:[
+      {heading:"Anatomy of a JWT",body:"Three base64url-encoded segments joined by dots:\n\n1. Header — algorithm & token type\n   { \"alg\": \"HS256\", \"typ\": \"JWT\" }\n\n2. Payload — claims (user id, expiry, roles)\n   { \"sub\": \"42\", \"exp\": 1735689600 }\n\n3. Signature — HMAC(header.payload, secret)\n\nAny server that knows the secret can verify the signature. If the header or payload were tampered with, verification fails."},
+      {heading:"Standard claims",body:"• sub — subject (user id)\n• iss — issuer (who created it)\n• aud — audience (who it's for)\n• exp — expiration timestamp\n• iat — issued-at timestamp\n• nbf — not-valid-before timestamp\n• jti — unique token id"},
+      {heading:"Algorithms",body:"• HS256 — HMAC with shared secret (simple, symmetric)\n• RS256 — RSA signature (asymmetric; anyone can verify with public key, only issuer signs)\n• ES256 — ECDSA (smaller keys, same asymmetry as RSA)\n\nNever accept alg: none. Always pin the algorithm server-side."},
+      {heading:"Strengths & pitfalls",body:"+ Stateless — perfect for microservices and APIs\n+ Self-contained — claims travel with the token\n+ Cross-domain friendly\n\n− Revocation is hard (need a blocklist, which re-adds state)\n− Must keep payload small — it's sent every request\n− Don't put secrets in the payload — it's base64, not encrypted"},
+    ]
+  },
+  oauth: {
+    title:"OAuth 2.0",
+    color:T.oauth,
+    sections:[
+      {heading:"The problem OAuth solves",body:"You want to let a third-party app (say, a calendar sync tool) read your Google Calendar — without giving it your Google password. OAuth 2.0 is the protocol that lets the user delegate scoped access to a client app, safely."},
+      {heading:"The four actors",body:"• Resource Owner — the user\n• Client — the third-party app requesting access\n• Authorization Server — issues tokens (Google, GitHub…)\n• Resource Server — the API holding the data\n\nThe auth server and resource server are often operated by the same company."},
+      {heading:"Authorization Code flow",body:"1. Client redirects user to auth server with client_id, scopes, redirect_uri\n2. User logs in and approves the scopes\n3. Auth server redirects back with a one-time code\n4. Client's backend POSTs code + client_secret to /token\n5. Auth server returns access_token (+ refresh_token)\n6. Client calls resource API with Authorization: Bearer <access_token>\n\nPKCE adds a code challenge/verifier so public clients (mobile, SPA) can use this flow safely without a secret."},
+      {heading:"Other grant types",body:"• Client Credentials — server-to-server, no user\n• Device Code — for TVs / CLIs with no browser\n• (deprecated) Implicit — tokens in URL fragment\n• (deprecated) Password — app handles credentials directly"},
+    ]
+  },
+  oidc: {
+    title:"OpenID Connect",
+    color:T.purpleL,
+    sections:[
+      {heading:"OAuth is not login",body:"OAuth 2.0 was designed for authorization (delegated access), not authentication (proving who you are). People kept abusing it for login anyway, so OIDC was created as a standardized identity layer on top."},
+      {heading:"What OIDC adds",body:"• id_token — a JWT describing the user (sub, email, name)\n• /userinfo endpoint — fetch profile data with an access token\n• Standard scopes — openid, profile, email\n• Discovery document — /.well-known/openid-configuration"},
+      {heading:"Sign in with Google",body:"Every 'Sign in with X' button you've ever clicked is OIDC. The client receives an id_token JWT, verifies its signature against the provider's public keys, and trusts the claims inside to identify the user. No password ever touches your server."},
+    ]
+  },
+  refresh: {
+    title:"Refresh Tokens",
+    color:T.amberL,
+    sections:[
+      {heading:"Why two tokens?",body:"There's a tension: long-lived tokens are convenient but dangerous if stolen. Short-lived tokens are safer but require constant re-login. Refresh tokens resolve this by splitting the problem in two."},
+      {heading:"How it works",body:"• access_token — short lifetime (5–15 min), sent on every API call\n• refresh_token — long lifetime (days to months), sent only to the auth server's /token endpoint\n\nWhen the access token expires, the client silently POSTs the refresh token to /token and gets a fresh access token. The user never sees it."},
+      {heading:"Refresh token rotation",body:"Best practice: each refresh issues a new refresh token and invalidates the old one. If an attacker ever uses a stolen refresh token, the legitimate client's next refresh will fail — an unmistakable signal to revoke the whole token family."},
+      {heading:"Where to store them",body:"• Web apps — httpOnly, Secure, SameSite cookies\n• Native mobile — OS keychain / keystore\n• SPAs — avoid refresh tokens in JS if possible; prefer silent re-auth via the auth server or a backend-for-frontend"},
+    ]
+  },
+  security: {
+    title:"Cookie & Token Security",
+    color:T.red,
+    sections:[
+      {heading:"HttpOnly",body:"Prevents document.cookie from reading the cookie. Even if an attacker injects JavaScript via XSS, they can't steal the session or token. Always set HttpOnly on auth cookies."},
+      {heading:"Secure",body:"Browser will only send the cookie over HTTPS. Prevents network sniffers on public Wi-Fi from stealing credentials."},
+      {heading:"SameSite",body:"Controls whether a cookie is sent on cross-site requests:\n• Strict — never sent cross-site (safest, but breaks some flows)\n• Lax — sent on top-level GET navigation (good default)\n• None — sent always (requires Secure; only for intentional cross-site)\n\nSameSite=Lax is the default in modern browsers and blocks most CSRF attacks."},
+      {heading:"CSRF defense",body:"Cross-Site Request Forgery tricks a logged-in user's browser into making an unwanted request. Defenses:\n• SameSite cookies (first line of defense)\n• CSRF tokens — a random value in a hidden form field the server checks\n• Double-submit cookie pattern\n• Origin / Referer header checks"},
+      {heading:"XSS is the real killer",body:"If an attacker can run JavaScript on your page, most defenses fall. Escape output, use a Content-Security-Policy, avoid innerHTML, and never trust user input. A JWT in localStorage is stealable by any XSS; an httpOnly cookie is not."},
+    ]
+  },
+  code: {
+    title:"Source Code",
+    color:T.purpleL,
+    sections:[
+      {heading:"Reading the examples",body:"Each scene shows code or config relevant to its concept — session stores, JWT signing, OAuth redirects, cookie flags. The snippets are illustrative, not copy-paste production code."},
+      {heading:"Common libraries",body:"• express-session, Lucia — session management\n• jsonwebtoken, jose — JWT sign/verify\n• passport.js, Auth.js, Clerk, Auth0 — full auth stacks\n• openid-client — OIDC client"},
+      {heading:"Golden rules",body:"• Never roll your own crypto\n• Always hash passwords (bcrypt, argon2)\n• Rate-limit login endpoints\n• Use httpOnly + Secure + SameSite cookies\n• Rotate refresh tokens\n• Log out = invalidate server-side, not just delete cookie"},
+    ]
+  },
+};
+
+/* ─── COMPONENTS ─── */
+const CodePanel = ({ tokens, onClick }) =>
+  e("div", { onClick, style:{ background:T.codeBase, borderRadius:12, overflow:"hidden", border:`1px solid ${T.border}`, cursor:onClick?"pointer":"default" } },
+    e("div", { style:{ padding:"10px 14px 8px", borderBottom:`1px solid ${T.border}`, display:"flex", gap:7 } },
+      ...["#ff5f57","#febc2e","#28c840"].map((c,i) =>
+        e("div", { key:i, style:{ width:11, height:11, borderRadius:"50%", background:c } })
+      )
+    ),
+    e("div", { style:{ padding:"14px 18px 16px", fontFamily:"'SF Mono','Fira Code','Consolas',monospace", fontSize:12, lineHeight:1.85 } },
+      tokens.map((line, li) =>
+        e("div", { key:li },
+          line.map(([cls, txt], ti) =>
+            e("span", { key:ti, style:{ ...TS[cls], whiteSpace:"pre" } }, txt)
+          )
+        )
+      )
+    )
+  );
+
+/* ─── Box node for browser / server / auth-server ─── */
+const Node = ({ icon, label, color, sub }) =>
+  e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:6, minWidth:110 } },
+    e("div", { style:{ width:92, height:64, borderRadius:12, border:`1.5px solid ${color}66`, background:`${color}14`, display:"flex", alignItems:"center", justifyContent:"center" } },
+      e("i", { className:"lni " + icon, style:{ fontSize:26, color:color } })
+    ),
+    e("div", { style:{ fontSize:11, fontWeight:600, color:color } }, label),
+    sub && e("div", { style:{ fontSize:9, color:T.text3 } }, sub)
+  );
+
+/* A reusable row of nodes with labeled arrows between them */
+const FlowRow = ({ nodes, arrows }) => {
+  return e("div", { style:{ display:"flex", alignItems:"flex-start", justifyContent:"space-around", padding:"20px 10px", gap:4, position:"relative" } },
+    nodes.map((n, i) => [
+      e(Node, { key:`n${i}`, ...n }),
+      i < nodes.length - 1 && e("div", { key:`a${i}`, style:{ flex:1, position:"relative", marginTop:24, minWidth:60 } },
+        arrows && arrows[i] ? arrows[i].map((lbl, li) => e("div", { key:li, style:{ fontSize:9, color:lbl.color || T.text2, textAlign:"center", marginBottom:2, fontFamily:"'SF Mono',monospace" } }, lbl.text)) : null,
+        e("div", { style:{ height:2, background:T.border2, position:"relative", borderRadius:1 } },
+          e("div", { style:{ position:"absolute", right:-1, top:-3, width:0, height:0, borderLeft:`6px solid ${T.border2}`, borderTop:"4px solid transparent", borderBottom:"4px solid transparent" } })
+        )
+      )
+    ])
+  );
+};
+
+/* Animated token/cookie badge */
+const Badge = ({ label, color, delay=0 }) =>
+  e(M.div, {
+    initial:{ opacity:0, scale:0.6 },
+    animate:{ opacity:1, scale:1 },
+    transition:{ ...sp(360,22), delay },
+    style:{
+      display:"inline-flex", alignItems:"center", gap:5,
+      padding:"4px 10px", borderRadius:20,
+      border:`1px solid ${color}66`, background:`${color}22`,
+      fontSize:10, fontWeight:600, color:color,
+      fontFamily:"'SF Mono',monospace"
+    }
+  },
+    e("i", { className:"lni lni-key-3", style:{ fontSize:10 } }),
+    label
+  );
+
+/* ─── Scene renderers ─── */
+
+const IntroScene = () =>
+  e("div", { style:{ display:"flex", gap:10 } },
+    [
+      { title:"Sessions", color:T.session, icon:"lni-database", sub:"Server stores state. Cookie holds ID." },
+      { title:"JWT", color:T.jwt, icon:"lni-ticket", sub:"Signed self-contained token. Stateless." },
+      { title:"OAuth 2.0", color:T.oauth, icon:"lni-link-2-angular-right", sub:"Delegated access via a trusted 3rd party." },
+    ].map((c,i) => e(M.div, {
+      key:i,
+      initial:{ opacity:0, y:20 }, animate:{ opacity:1, y:0 },
+      transition:{ ...sp(340,26), delay:i*0.12 },
+      style:{ flex:1, borderRadius:12, border:`1.5px solid ${c.color}44`, background:`${c.color}0c`, padding:16, display:"flex", flexDirection:"column", alignItems:"center", textAlign:"center", gap:8, minHeight:150 }
+    },
+      e("div", { style:{ width:48, height:48, borderRadius:"50%", border:`1.5px solid ${c.color}`, display:"flex", alignItems:"center", justifyContent:"center" } },
+        e("i", { className:"lni " + c.icon, style:{ fontSize:22, color:c.color } })
+      ),
+      e("div", { style:{ fontSize:14, fontWeight:700, color:c.color } }, c.title),
+      e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.55 } }, c.sub)
+    ))
+  );
+
+const AuthnAuthzScene = () =>
+  e("div", { style:{ display:"flex", gap:10 } },
+    [
+      { t:"AuthN — Authentication", q:"Who are you?", sub:"Verify identity. Login, password check, token signature.", c:T.blue, icon:"lni-user-4" },
+      { t:"AuthZ — Authorization", q:"What can you do?", sub:"Check permissions. Role, scope, ACL, policy.", c:T.amber, icon:"lni-shield-2" },
+    ].map((c,i) => e(M.div, {
+      key:i,
+      initial:{ opacity:0, x:i===0?-20:20 }, animate:{ opacity:1, x:0 },
+      transition:{ ...sp(340,26), delay:i*0.12 },
+      style:{ flex:1, borderRadius:12, border:`1.5px solid ${c.c}44`, background:`${c.c}0c`, padding:18, minHeight:180 }
+    },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:10, marginBottom:10 } },
+        e("i", { className:"lni " + c.icon, style:{ fontSize:20, color:c.c } }),
+        e("div", { style:{ fontSize:13, fontWeight:700, color:c.c } }, c.t)
+      ),
+      e("div", { style:{ fontSize:18, fontWeight:600, color:T.text1, marginBottom:8, letterSpacing:"-0.01em" } }, c.q),
+      e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.6 } }, c.sub)
+    ))
+  );
+
+const SessionStaticScene = () =>
+  e("div", { style:{ display:"flex", gap:12, alignItems:"stretch" } },
+    e("div", { style:{ flex:1, borderRadius:12, border:`1.5px solid ${T.session}44`, background:`${T.session}0c`, padding:16 } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginBottom:12 } },
+        e("i", { className:"lni lni-chrome", style:{ fontSize:18, color:T.session } }),
+        e("div", { style:{ fontSize:12, fontWeight:700, color:T.session } }, "Browser")
+      ),
+      e("div", { style:{ padding:10, borderRadius:8, background:T.codeBase, border:`1px solid ${T.border}`, fontFamily:"'SF Mono',monospace", fontSize:10, color:T.text2 } },
+        e("div", { style:{ color:T.text3, marginBottom:4 } }, "// Cookie"),
+        e("div", null, e("span", { style:{ color:T.sessionL } }, "sid="), e("span", { style:{ color:T.text1 } }, "abc123"))
+      )
+    ),
+    e("div", { style:{ flex:1, borderRadius:12, border:`1.5px solid ${T.session}44`, background:`${T.session}0c`, padding:16 } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginBottom:12 } },
+        e("i", { className:"lni lni-server-4", style:{ fontSize:18, color:T.session } }),
+        e("div", { style:{ fontSize:12, fontWeight:700, color:T.session } }, "Server session store")
+      ),
+      e("div", { style:{ padding:10, borderRadius:8, background:T.codeBase, border:`1px solid ${T.border}`, fontFamily:"'SF Mono',monospace", fontSize:10, color:T.text2, lineHeight:1.7 } },
+        e("div", null, e("span", { style:{ color:T.sessionL } }, "\"abc123\""), e("span", null, ": {")),
+        e("div", null, "  userId: ", e("span", { style:{ color:T.amber } }, "42")),
+        e("div", null, "  expires: ", e("span", { style:{ color:T.amber } }, "…")),
+        e("div", null, "}")
+      )
+    )
+  );
+
+const SessionFlowScene = () => {
+  const steps = [
+    { at:"browser", text:"POST /login", badge:null, color:T.text2 },
+    { at:"server",  text:"create sid",  badge:null, color:T.session },
+    { at:"browser", text:"Set-Cookie",  badge:"sid=abc123", color:T.session },
+    { at:"browser", text:"GET /api",    badge:"sid=abc123", color:T.session },
+    { at:"server",  text:"lookup → user=42", badge:null, color:T.session },
+  ];
+  return e("div", null,
+    e("div", { style:{ display:"flex", justifyContent:"space-around", marginBottom:14 } },
+      e(Node, { icon:"lni-chrome", label:"Browser", color:T.session }),
+      e(Node, { icon:"lni-server-4", label:"App Server", color:T.session, sub:"+ session store" })
+    ),
+    e("div", { style:{ display:"flex", flexDirection:"column", gap:6 } },
+      steps.map((s,i) => e(M.div, {
+        key:i,
+        initial:{ opacity:0, x:-10 }, animate:{ opacity:1, x:0 },
+        transition:{ ...ez, delay:i*0.15 },
+        style:{ display:"flex", alignItems:"center", gap:10, padding:"7px 12px", borderRadius:8, border:`1px solid ${s.color}33`, background:`${s.color}08` }
+      },
+        e("div", { style:{ width:18, height:18, borderRadius:"50%", background:`${s.color}22`, color:s.color, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:700, flexShrink:0 } }, i+1),
+        e("div", { style:{ fontSize:11, color:T.text1, fontFamily:"'SF Mono',monospace", flex:1 } }, s.text),
+        s.badge && e(Badge, { label:s.badge, color:s.color })
+      ))
+    )
+  );
+};
+
+const ProsConsScene = ({ pros, cons, color }) =>
+  e("div", { style:{ display:"flex", gap:10 } },
+    e("div", { style:{ flex:1, borderRadius:12, border:`1px solid ${T.green}33`, background:`${T.green}08`, padding:14 } },
+      e("div", { style:{ fontSize:12, fontWeight:700, color:T.greenL, marginBottom:10, display:"flex", alignItems:"center", gap:6 } },
+        e("i", { className:"lni lni-checkmark-circle-1" }), "Pros"),
+      pros.map((p,i) => e(M.div, {
+        key:i, initial:{ opacity:0, x:-10 }, animate:{ opacity:1, x:0 }, transition:{ ...ez, delay:i*0.08 },
+        style:{ fontSize:11, color:T.text2, padding:"4px 0", display:"flex", gap:6, lineHeight:1.5 }
+      }, e("span", { style:{ color:T.green, flexShrink:0 } }, "+"), p))
+    ),
+    e("div", { style:{ flex:1, borderRadius:12, border:`1px solid ${T.coral}33`, background:`${T.coral}08`, padding:14 } },
+      e("div", { style:{ fontSize:12, fontWeight:700, color:T.coralL, marginBottom:10, display:"flex", alignItems:"center", gap:6 } },
+        e("i", { className:"lni lni-warning" }), "Cons"),
+      cons.map((c,i) => e(M.div, {
+        key:i, initial:{ opacity:0, x:-10 }, animate:{ opacity:1, x:0 }, transition:{ ...ez, delay:i*0.08 },
+        style:{ fontSize:11, color:T.text2, padding:"4px 0", display:"flex", gap:6, lineHeight:1.5 }
+      }, e("span", { style:{ color:T.coral, flexShrink:0 } }, "−"), c))
+    )
+  );
+
+const JwtStaticScene = () =>
+  e("div", { style:{ display:"flex", gap:12, alignItems:"stretch" } },
+    e("div", { style:{ flex:1, borderRadius:12, border:`1.5px solid ${T.jwt}44`, background:`${T.jwt}0c`, padding:16 } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginBottom:12 } },
+        e("i", { className:"lni lni-chrome", style:{ fontSize:18, color:T.jwt } }),
+        e("div", { style:{ fontSize:12, fontWeight:700, color:T.jwt } }, "Browser")
+      ),
+      e(M.div, { animate:{ scale:[1,1.03,1] }, transition:{ duration:2, repeat:Infinity },
+        style:{ padding:10, borderRadius:8, background:T.codeBase, border:`1px solid ${T.jwt}44`, fontFamily:"'SF Mono',monospace", fontSize:9, wordBreak:"break-all", lineHeight:1.5 } },
+        e("span", { style:TS.hdr }, "eyJhbGciOiJI"),
+        e("span", { style:TS.plain }, "."),
+        e("span", { style:TS.pld }, "eyJzdWIiOiI0Mi"),
+        e("span", { style:TS.plain }, "."),
+        e("span", { style:TS.sig }, "dBjftJeZ4C...")
+      )
+    ),
+    e("div", { style:{ flex:1, borderRadius:12, border:`1.5px solid ${T.jwt}44`, background:`${T.jwt}0c`, padding:16 } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginBottom:12 } },
+        e("i", { className:"lni lni-server-4", style:{ fontSize:18, color:T.jwt } }),
+        e("div", { style:{ fontSize:12, fontWeight:700, color:T.jwt } }, "Server")
+      ),
+      e("div", { style:{ padding:10, borderRadius:8, background:T.codeBase, border:`1px dashed ${T.border2}`, fontFamily:"'SF Mono',monospace", fontSize:10, color:T.text3, textAlign:"center" } },
+        "∅ no session store"
+      ),
+      e("div", { style:{ marginTop:8, padding:10, borderRadius:8, background:T.codeBase, border:`1px solid ${T.border}`, fontFamily:"'SF Mono',monospace", fontSize:10, color:T.text2 } },
+        e("div", { style:{ color:T.text3, marginBottom:3 } }, "// secret only"),
+        e("div", null, "SECRET = ", e("span", { style:{ color:T.jwtL } }, "\"****\""))
+      )
+    )
+  );
+
+const JwtPartsScene = () => {
+  const parts = [
+    { name:"HEADER", color:T.red, content:'{\n  "alg": "HS256",\n  "typ": "JWT"\n}', desc:"Algorithm" },
+    { name:"PAYLOAD", color:T.purpleL, content:'{\n  "sub": "42",\n  "name": "alice",\n  "exp": 1735689600\n}', desc:"Claims" },
+    { name:"SIGNATURE", color:T.jwt, content:'HMACSHA256(\n  base64url(header) + "." +\n  base64url(payload),\n  SECRET\n)', desc:"Verification" },
+  ];
+  return e("div", null,
+    e("div", { style:{ display:"flex", gap:8, marginBottom:12, alignItems:"stretch" } },
+      parts.map((p,i) => [
+        e(M.div, {
+          key:p.name,
+          initial:{ opacity:0, y:12 }, animate:{ opacity:1, y:0 },
+          transition:{ ...sp(360,24), delay:i*0.15 },
+          style:{ flex:1, borderRadius:10, border:`1.5px solid ${p.color}66`, background:`${p.color}10`, padding:12 }
+        },
+          e("div", { style:{ fontSize:9, fontWeight:700, letterSpacing:"0.1em", color:p.color, marginBottom:6 } }, p.name),
+          e("div", { style:{ fontFamily:"'SF Mono',monospace", fontSize:9, color:T.text2, whiteSpace:"pre", lineHeight:1.5 } }, p.content),
+          e("div", { style:{ fontSize:9, color:T.text3, marginTop:6 } }, p.desc)
+        ),
+        i < parts.length - 1 && e(M.div, {
+          key:`dot${i}`,
+          initial:{ opacity:0 }, animate:{ opacity:1 }, transition:{ delay:0.5+i*0.1 },
+          style:{ display:"flex", alignItems:"center", fontSize:24, fontWeight:700, color:T.text2 }
+        }, ".")
+      ])
+    ),
+    e("div", { style:{ padding:10, borderRadius:8, background:T.codeBase, border:`1px solid ${T.border}`, fontFamily:"'SF Mono',monospace", fontSize:10, wordBreak:"break-all", lineHeight:1.7 } },
+      e("span", { style:TS.hdr }, "eyJhbGciOiJIUzI1NiJ9"),
+      e("span", { style:TS.plain }, "."),
+      e("span", { style:TS.pld }, "eyJzdWIiOiI0MiIsIm5hbWUiOiJhbGljZSJ9"),
+      e("span", { style:TS.plain }, "."),
+      e("span", { style:TS.sig }, "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk")
+    )
+  );
+};
+
+const JwtFlowScene = () => {
+  const steps = [
+    { text:"POST /login (email + pw)", from:"browser", color:T.text2 },
+    { text:"sign(payload, SECRET)", from:"server", color:T.jwt },
+    { text:"200 OK", from:"server", badge:"JWT", color:T.jwt },
+    { text:"GET /api/me", from:"browser", badge:"Bearer JWT", color:T.jwt },
+    { text:"verify(JWT) → user=42", from:"server", color:T.jwt },
+  ];
+  return e("div", null,
+    e("div", { style:{ display:"flex", justifyContent:"space-around", marginBottom:14 } },
+      e(Node, { icon:"lni-chrome", label:"Browser", color:T.jwt }),
+      e(Node, { icon:"lni-server-4", label:"API Server", color:T.jwt, sub:"no store" })
+    ),
+    e("div", { style:{ display:"flex", flexDirection:"column", gap:6 } },
+      steps.map((s,i) => e(M.div, {
+        key:i,
+        initial:{ opacity:0, x:-10 }, animate:{ opacity:1, x:0 },
+        transition:{ ...ez, delay:i*0.15 },
+        style:{ display:"flex", alignItems:"center", gap:10, padding:"7px 12px", borderRadius:8, border:`1px solid ${s.color}33`, background:`${s.color}08` }
+      },
+        e("div", { style:{ width:18, height:18, borderRadius:"50%", background:`${s.color}22`, color:s.color, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:700, flexShrink:0 } }, i+1),
+        e("div", { style:{ fontSize:11, color:T.text1, fontFamily:"'SF Mono',monospace", flex:1 } }, s.text),
+        s.badge && e(Badge, { label:s.badge, color:s.color })
+      ))
+    )
+  );
+};
+
+const OAuthStaticScene = () => {
+  const actors = [
+    { icon:"lni-user-4", label:"Resource Owner", sub:"the user", color:T.oauth },
+    { icon:"lni-layers-1", label:"Client App", sub:"your app", color:T.blue },
+    { icon:"lni-shield-2", label:"Auth Server", sub:"Google / GitHub", color:T.purple },
+    { icon:"lni-database", label:"Resource Server", sub:"the API", color:T.teal },
+  ];
+  return e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 } },
+    actors.map((a,i) => e(M.div, {
+      key:i,
+      initial:{ opacity:0, scale:0.9 }, animate:{ opacity:1, scale:1 },
+      transition:{ ...sp(340,24), delay:i*0.1 },
+      style:{ borderRadius:12, border:`1.5px solid ${a.color}44`, background:`${a.color}0c`, padding:14, display:"flex", alignItems:"center", gap:12 }
+    },
+      e("div", { style:{ width:44, height:44, borderRadius:10, border:`1.5px solid ${a.color}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 } },
+        e("i", { className:"lni " + a.icon, style:{ fontSize:20, color:a.color } })
+      ),
+      e("div", null,
+        e("div", { style:{ fontSize:12, fontWeight:700, color:a.color } }, a.label),
+        e("div", { style:{ fontSize:10, color:T.text2, marginTop:2 } }, a.sub)
+      )
+    ))
+  );
+};
+
+const OAuthFlowScene = () => {
+  const steps = [
+    { text:"Redirect → auth server (client_id, scopes)", color:T.oauth },
+    { text:"User logs in & approves scopes", color:T.purple },
+    { text:"Redirect back ?code=xyz", color:T.oauth, badge:"code" },
+    { text:"POST /token (code + client_secret)", color:T.oauth },
+    { text:"Receive access_token + refresh_token", color:T.jwt, badge:"access_token" },
+    { text:"GET /api — Bearer <access_token>", color:T.teal },
+  ];
+  return e("div", null,
+    e("div", { style:{ display:"flex", justifyContent:"space-around", marginBottom:10 } },
+      e(Node, { icon:"lni-chrome", label:"Browser", color:T.oauth }),
+      e(Node, { icon:"lni-layers-1", label:"Client App", color:T.blue }),
+      e(Node, { icon:"lni-shield-2", label:"Auth Server", color:T.purple })
+    ),
+    e("div", { style:{ display:"flex", flexDirection:"column", gap:5 } },
+      steps.map((s,i) => e(M.div, {
+        key:i,
+        initial:{ opacity:0, x:-10 }, animate:{ opacity:1, x:0 },
+        transition:{ ...ez, delay:i*0.13 },
+        style:{ display:"flex", alignItems:"center", gap:10, padding:"6px 12px", borderRadius:8, border:`1px solid ${s.color}33`, background:`${s.color}08` }
+      },
+        e("div", { style:{ width:18, height:18, borderRadius:"50%", background:`${s.color}22`, color:s.color, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:700, flexShrink:0 } }, i+1),
+        e("div", { style:{ fontSize:11, color:T.text1, fontFamily:"'SF Mono',monospace", flex:1 } }, s.text),
+        s.badge && e(Badge, { label:s.badge, color:s.color })
+      ))
+    )
+  );
+};
+
+const OidcScene = () =>
+  e("div", { style:{ display:"flex", gap:10 } },
+    [
+      { title:"OAuth 2.0", sub:"Authorization — access delegation", c:T.oauth, tokens:[{ label:"access_token", desc:"API access" }] },
+      { title:"OIDC", sub:"OAuth + Identity layer", c:T.purple, tokens:[{ label:"access_token", desc:"API access" }, { label:"id_token", desc:"who the user is (JWT)" }] },
+    ].map((x,i) => e(M.div, {
+      key:i,
+      initial:{ opacity:0, y:15 }, animate:{ opacity:1, y:0 },
+      transition:{ ...sp(340,24), delay:i*0.15 },
+      style:{ flex:1, borderRadius:12, border:`1.5px solid ${x.c}44`, background:`${x.c}0c`, padding:16, minHeight:180 }
+    },
+      e("div", { style:{ fontSize:14, fontWeight:700, color:x.c, marginBottom:4 } }, x.title),
+      e("div", { style:{ fontSize:11, color:T.text2, marginBottom:14 } }, x.sub),
+      e("div", { style:{ display:"flex", flexDirection:"column", gap:8 } },
+        x.tokens.map((t,ti) => e("div", { key:ti, style:{ display:"flex", alignItems:"center", gap:8, padding:"8px 10px", borderRadius:8, background:T.codeBase, border:`1px solid ${x.c}33` } },
+          e("i", { className:"lni lni-ticket", style:{ fontSize:14, color:x.c } }),
+          e("div", null,
+            e("div", { style:{ fontSize:11, fontWeight:700, color:x.c, fontFamily:"'SF Mono',monospace" } }, t.label),
+            e("div", { style:{ fontSize:9, color:T.text3 } }, t.desc)
+          )
+        ))
+      )
+    ))
+  );
+
+const RefreshScene = () =>
+  e("div", null,
+    e("div", { style:{ display:"flex", gap:10, marginBottom:12 } },
+      [
+        { label:"access_token", life:"~15 min", pct:5, color:T.jwt, icon:"lni-bolt-2", desc:"Sent on every API call" },
+        { label:"refresh_token", life:"~30 days", pct:90, color:T.amber, icon:"lni-reload-1", desc:"Used only at /token" },
+      ].map((t,i) => e("div", { key:i, style:{ flex:1, borderRadius:12, border:`1.5px solid ${t.color}44`, background:`${t.color}0c`, padding:14 } },
+        e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginBottom:8 } },
+          e("i", { className:"lni " + t.icon, style:{ fontSize:16, color:t.color } }),
+          e("div", { style:{ fontSize:12, fontWeight:700, color:t.color, fontFamily:"'SF Mono',monospace" } }, t.label)
+        ),
+        e("div", { style:{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:5 } },
+          e("span", { style:{ fontSize:10, color:T.text3 } }, "lifetime"),
+          e("span", { style:{ fontSize:11, fontWeight:700, color:t.color, fontFamily:"monospace" } }, t.life)
+        ),
+        e("div", { style:{ height:6, background:T.border, borderRadius:99, overflow:"hidden", marginBottom:6 } },
+          e(M.div, { initial:{ width:0 }, animate:{ width:`${t.pct}%` }, transition:{ duration:0.9, ease:[0.22,1,0.36,1] }, style:{ height:"100%", background:t.color, borderRadius:99 } })
+        ),
+        e("div", { style:{ fontSize:10, color:T.text2 } }, t.desc)
+      ))
+    ),
+    e("div", { style:{ padding:12, borderRadius:10, background:T.codeBase, border:`1px solid ${T.border}`, fontFamily:"'SF Mono',monospace", fontSize:10, lineHeight:1.7 } },
+      e("div", { style:{ color:T.text3, marginBottom:4 } }, "// when access token expires"),
+      e("div", null, e("span", { style:TS.kw }, "POST"), e("span", { style:TS.plain }, " /token")),
+      e("div", null, e("span", { style:TS.plain }, "grant_type="), e("span", { style:TS.str }, "refresh_token")),
+      e("div", null, e("span", { style:TS.plain }, "refresh_token="), e("span", { style:TS.sig }, "rt_8f2a…")),
+      e("div", { style:{ color:T.text3, marginTop:4 } }, "// → new access_token (+ rotated refresh)")
+    )
+  );
+
+const SecurityScene = () => {
+  const flags = [
+    { name:"HttpOnly", desc:"JavaScript can't read the cookie — blocks XSS token theft", color:T.red, icon:"lni-eye" },
+    { name:"Secure", desc:"Only sent over HTTPS — blocks network sniffing", color:T.blue, icon:"lni-lock-2" },
+    { name:"SameSite=Lax", desc:"Not sent on cross-site POSTs — blocks most CSRF", color:T.amber, icon:"lni-shield-2" },
+    { name:"Short Max-Age", desc:"Limits damage from stolen tokens", color:T.green, icon:"lni-timer" },
+  ];
+  return e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 } },
+    flags.map((f,i) => e(M.div, {
+      key:i,
+      initial:{ opacity:0, y:10 }, animate:{ opacity:1, y:0 },
+      transition:{ ...ez, delay:i*0.1 },
+      style:{ borderRadius:10, border:`1px solid ${f.color}44`, background:`${f.color}0c`, padding:12 }
+    },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginBottom:6 } },
+        e("i", { className:"lni " + f.icon, style:{ fontSize:16, color:f.color } }),
+        e("div", { style:{ fontSize:12, fontWeight:700, color:f.color, fontFamily:"'SF Mono',monospace" } }, f.name)
+      ),
+      e("div", { style:{ fontSize:10, color:T.text2, lineHeight:1.5 } }, f.desc)
+    ))
+  );
+};
+
+const Finale = () => {
+  const rows = [
+    { icon:"lni-database", label:"Sessions", sub:"Server stores state, cookie holds just an ID — simple, revocable, stateful", c:T.session },
+    { icon:"lni-ticket", label:"JWT", sub:"Signed self-contained tokens — stateless, fast, hard to revoke", c:T.jwt },
+    { icon:"lni-link-2-angular-right", label:"OAuth 2.0", sub:"Delegated access to third-party APIs — scopes, not passwords", c:T.oauth },
+    { icon:"lni-user-4", label:"OIDC", sub:"OAuth + id_token — 'Sign in with Google' and friends", c:T.purple },
+    { icon:"lni-reload-1", label:"Refresh tokens", sub:"Short access + long refresh = safe AND convenient", c:T.amber },
+    { icon:"lni-shield-2", label:"HttpOnly + Secure + SameSite", sub:"The three flags that keep cookies (and you) safe", c:T.red },
+  ];
+  return e("div", { style:{ padding:"8px 0" } },
+    rows.map((r,i) => e(M.div, { key:i, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.1,...ez},
+      style:{ display:"flex", alignItems:"flex-start", gap:12, padding:"11px 14px", marginBottom:8, borderRadius:10, border:`1px solid ${r.c}28`, background:`${r.c}08` }
+    },
+      e("div", { style:{ width:28, height:28, borderRadius:"50%", border:`1.5px solid ${r.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, color:r.c } },
+        e("i", { className:"lni " + r.icon, style:{ fontSize:13 } })
+      ),
+      e("div", null,
+        e("div", { style:{ fontSize:13, fontWeight:600, color:r.c, marginBottom:2 } }, r.label),
+        e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.5 } }, r.sub)
+      )
+    ))
+  );
+};
+
+const DetailPanel = ({ detailKey, onClose }) => {
+  const d = DETAILS[detailKey];
+  if (!d) return null;
+  return e("div", {
+    style:{ width:340, flexShrink:0, background:T.surface, borderRadius:14, border:`1.5px solid ${d.color}44`, overflow:"hidden", alignSelf:"flex-start", position:"sticky", top:56 }
+  },
+    e("div", { style:{ padding:"14px 18px 12px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:8 } },
+        e("div", { style:{ width:8, height:8, borderRadius:"50%", background:d.color } }),
+        e("span", { style:{ fontSize:14, fontWeight:600, color:T.text1 } }, d.title)
+      ),
+      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6, transition:"color 0.2s" }, onMouseEnter:ev=>ev.target.style.color=T.text1, onMouseLeave:ev=>ev.target.style.color=T.text3 }, e("i", { className:"lni lni-xmark" }))
+    ),
+    e("div", { style:{ padding:"16px 18px 20px", maxHeight:"calc(100vh - 140px)", overflowY:"auto" } },
+      d.sections.map((s, i) =>
+        e("div", { key:i, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
+          e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
+        )
+      )
+    )
+  );
+};
+
+/* Scene dispatcher */
+const SceneVisual = ({ sc, toggleDetail }) => {
+  if (sc.finale) return e(Finale);
+  switch(sc.scene){
+    case "intro":         return e(IntroScene);
+    case "authn-authz":   return e(AuthnAuthzScene);
+    case "session-static":return e(SessionStaticScene);
+    case "session-flow":  return e(SessionFlowScene);
+    case "session-proscons":
+      return e(ProsConsScene, {
+        pros:["Simple mental model","Instantly revocable","Tiny cookie (~30 bytes)","Works out of the box"],
+        cons:["Requires shared server state","Sticky sessions or central store","Harder across microservices","DB lookup every request"],
+      });
+    case "jwt-static":    return e(JwtStaticScene);
+    case "jwt-parts":     return e(JwtPartsScene);
+    case "jwt-flow":      return e(JwtFlowScene);
+    case "jwt-proscons":
+      return e(ProsConsScene, {
+        pros:["Stateless — scales horizontally","Works across microservices","No DB lookup to verify","Self-contained claims"],
+        cons:["Can't revoke until expiry","Larger than a session ID","Secret management is critical","Never put secrets in payload"],
+      });
+    case "oauth-static":  return e(OAuthStaticScene);
+    case "oauth-flow":    return e(OAuthFlowScene);
+    case "oidc":          return e(OidcScene);
+    case "refresh":       return e(RefreshScene);
+    case "security":      return e(SecurityScene);
+    default: return null;
+  }
+};
+
+/* ─── APP ─── */
+function App() {
+  const [si, setSi] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [detail, setDetail] = useState(null);
+  const timer = useRef(null);
+  const sc = SCENES[si];
+
+  useEffect(() => { setPlaying(true); }, []);
+
+  useEffect(() => {
+    if (!playing) return;
+    const d = si===0 ? 3000 : sc.finale ? 99999 : 3600;
+    timer.current = setTimeout(() => { si < SCENES.length-1 ? setSi(i=>i+1) : setPlaying(false); }, d);
+    return () => clearTimeout(timer.current);
+  }, [playing, si]);
+
+  const go = d => { clearTimeout(timer.current); setPlaying(false); setSi(i=>Math.max(0,Math.min(SCENES.length-1,i+d))); };
+  const jump = i => { clearTimeout(timer.current); setPlaying(false); setSi(i); };
+  const togglePlay = () => { if(si===SCENES.length-1){setSi(0);setPlaying(true);}else setPlaying(p=>!p); };
+  const toggleDetail = key => { setDetail(d => d===key ? null : key); clearTimeout(timer.current); setPlaying(false); };
+
+  return e("div", { style:{ display:"flex", gap:16, alignItems:"flex-start", justifyContent: detail ? "flex-start" : "center" } },
+  e("div", { style:{ width:760, flexShrink:0, background:T.bg, fontFamily:"system-ui,sans-serif", padding:20, borderRadius:16 } },
+
+    /* header */
+    e("div", { style:{ marginBottom:18 } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:10, marginBottom:11 } },
+        e(AP, { mode:"wait" },
+          e(M.div, { key:sc.act, initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, exit:{opacity:0}, transition:sp(400,28),
+            style:{ fontSize:9,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:T.purple,background:`${T.purple}14`,padding:"3px 10px",borderRadius:20,border:`1px solid ${T.purple}30`,flexShrink:0 }
+          }, sc.act)
+        ),
+        e("div", { style:{ flex:1, height:1, background:T.border, borderRadius:99, overflow:"hidden" } },
+          e(M.div, { animate:{width:`${si/(SCENES.length-1)*100}%`}, transition:{duration:0.5}, style:{height:"100%",background:T.purple,borderRadius:99} })
+        ),
+        e("span", { style:{ fontSize:10, color:T.text3 } }, `${si+1} / ${SCENES.length}`)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.title, initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, exit:{opacity:0,y:-8}, transition:ez,
+          style:{ fontSize:20,fontWeight:600,color:T.text1,marginBottom:4,letterSpacing:"-0.02em" }
+        }, sc.title)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
+          style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
+        }, sc.sub)
+      )
+    ),
+
+    e("div", { style:{ minHeight:460 } },
+
+      /* visual */
+      e("div", { style:{ marginBottom:10 }, onClick: sc.clickable ? (()=>toggleDetail(sc.clickable)) : null },
+        e(SceneVisual, { sc, toggleDetail })
+      ),
+
+      /* code */
+      !sc.finale && sc.code && sc.code.length > 0 && e("div", { style:{ marginBottom:10 } },
+        e(CodePanel, { tokens:sc.code, onClick:()=>toggleDetail("code") })
+      )
+
+    ), /* close minHeight wrapper */
+
+    /* controls */
+    e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginTop:16 } },
+      e("button", { onClick:()=>go(-1), disabled:si===0,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===0?T.text3:T.text2,cursor:si===0?"not-allowed":"pointer",fontSize:11,transition:"color 0.2s" }
+      }, "← Back"),
+      e("button", { onClick:togglePlay,
+        style:{ padding:"6px 18px",borderRadius:8,border:`1px solid ${playing?T.coral:T.purple}44`,background:playing?`${T.coral}14`:`${T.purple}14`,color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all 0.2s" }
+      }, playing ? "⏸  Pause" : si===SCENES.length-1 ? "↺  Replay" : "▶  Play"),
+      e("button", { onClick:()=>go(1), disabled:si===SCENES.length-1,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
+      }, "Next →"),
+      e("div", { style:{ flex:1 } }),
+      e("div", { style:{ display:"flex", gap:4, alignItems:"center" } },
+        SCENES.map((_,i) =>
+          e("button", { key:i, onClick:()=>jump(i),
+            style:{ width:i===si?16:5,height:5,borderRadius:99,border:"none",padding:0,background:i===si?T.purple:i<si?`${T.purple}55`:T.border,cursor:"pointer",transition:"all 0.25s" }
+          })
+        )
+      )
+    )
+  ),
+  detail && e(DetailPanel, { detailKey:detail, onClose:()=>setDetail(null) })
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(e(App));
+</script>
+</body>
+</html>
