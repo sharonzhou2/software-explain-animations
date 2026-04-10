@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CSS Box Model & Layout</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111118;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px 16px 24px 196px;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  #root { width: 100%; max-width: 1120px; }
+  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: system-ui, sans-serif; }
+  .topnav a { text-decoration: none; color: #8888aa; font-size: 13px; transition: color 0.2s; }
+  .topnav a:hover { color: #e8e8f0; }
+  .topnav .name { font-weight: 600; color: #e8e8f0; font-size: 13px; }
+  .topnav .sep { color: #38384a; font-size: 12px; }
+  .topnav .current { color: #7c6fcd; font-size: 13px; font-weight: 500; }
+  .sidenav { position: fixed; top: 38px; left: 0; width: 180px; height: calc(100vh - 38px); background: #111118; border-right: 1px solid #2a2a38; padding: 14px 0; overflow-y: auto; z-index: 200; font-family: system-ui, sans-serif; }
+  .sidenav a { display: block; padding: 6px 16px; font-size: 11px; color: #8888aa; text-decoration: none; transition: color 0.2s, background 0.2s; border-left: 2px solid transparent; }
+  .sidenav a:hover { color: #e8e8f0; background: rgba(124,111,205,0.06); }
+  .sidenav a.active { color: #a99cf0; border-left-color: #7c6fcd; background: rgba(124,111,205,0.1); font-weight: 600; }
+  .sidenav .nav-section { padding: 8px 16px 4px; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #44445a; }
+  .sidenav .nav-section:first-child { padding-top: 4px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="../" class="name">Sharon Zhou</a>
+  <span class="sep">/</span>
+  <a href="../">Animations</a>
+  <span class="sep">/</span>
+  <span class="current">CSS Box Model &amp; Layout</span>
+</nav>
+<nav class="sidenav">
+  <div class="nav-section">JavaScript</div>
+  <a href="../event-loop/">Event Loop</a>
+  <a href="../this-keyword/">this Keyword</a>
+  <a href="../hoisting/">Hoisting</a>
+  <a href="../garbage-collection/">Garbage Collection</a>
+  <a href="../event-delegation/">Event Delegation</a>
+  <a href="../iterators-generators/">Iterators & Generators</a>
+  <a href="../xhr-vs-fetch/">XHR vs fetch()</a>
+  <a href="../error-propagation/">Error Propagation</a>
+  <a href="../web-workers/">Web Workers</a>
+  <div class="nav-section">CSS</div>
+  <a href="../css-box-model/" class="active">CSS Box Model & Layout</a>
+  <a href="../critical-rendering-path/">Critical Rendering Path</a>
+  <a href="../reflow-vs-repaint/">Reflow vs Repaint</a>
+  <a href="../request-animation-frame/">requestAnimationFrame</a>
+  <div class="nav-section">Infrastructure</div>
+  <a href="../vms-vs-docker/">VMs vs Docker</a>
+  <a href="../opentelemetry/">OpenTelemetry</a>
+</nav>
+<div id="root" style="margin-top: 36px;"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/framer-motion@11/dist/framer-motion.js"></script>
+<script>
+const { useState, useEffect, useRef } = React;
+const { motion, AnimatePresence, useMotionValue, animate } = window.Motion;
+const e = React.createElement;
+const M = motion;
+const AP = AnimatePresence;
+const sp = (s=380,d=28) => ({ type:"spring", stiffness:s, damping:d });
+const ez = { duration:0.32, ease:[0.22,1,0.36,1] };
+
+const T = {
+  bg:"#111118", surface:"#18181f", surface2:"#1e1e28",
+  border:"#2a2a38", border2:"#38384a",
+  text1:"#e8e8f0", text2:"#8888aa", text3:"#44445a",
+  purple:"#7c6fcd", purpleL:"#a99cf0",
+  teal:"#3db89a", tealL:"#6dd4b8",
+  coral:"#c4694a", coralL:"#e08a6a",
+  blue:"#4a8fd4", blueL:"#82b4e8",
+  amber:"#d4a84a", amberL:"#e8c86a",
+  pink:"#c45a8a", pinkL:"#e87aaa",
+  codeBase:"#141428",
+};
+
+const TS = {
+  prop:  { color:"#82aaff" },
+  val:   { color:"#c3e88d" },
+  sel:   { color:"#89ddff" },
+  kw:    { color:"#c792ea" },
+  num:   { color:"#f78c6c" },
+  punc:  { color:"#89ddff" },
+  plain: { color:"#a6accd" },
+  unit:  { color:"#f78c6c" },
+  cmt:   { color:"#546e7a", fontStyle:"italic" },
+  fn:    { color:"#82aaff" },
+  tag:   { color:"#f07178" },
+  cls:   { color:"#ffcb6b" },
+};
+
+/* ─── BOX MODEL COLORS ─── */
+const BM = {
+  content: { fill:"#4a8fd4", bg:"#4a8fd418", border:"#4a8fd444", label:"Content" },
+  padding: { fill:"#3db89a", bg:"#3db89a18", border:"#3db89a44", label:"Padding" },
+  border:  { fill:"#d4a84a", bg:"#d4a84a18", border:"#d4a84a44", label:"Border" },
+  margin:  { fill:"#c4694a", bg:"#c4694a18", border:"#c4694a44", label:"Margin" },
+};
+
+/* ─── SCENES ─── */
+const SCENES = [
+  {
+    id:0, act:"01",
+    title:"Every element is a box",
+    sub:"In CSS, every HTML element generates a rectangular box. The box model describes how size, padding, border, and margin combine to form the element's total footprint.",
+    code:[
+      [["cmt","/* every element is a rectangular box */"]],
+      [["sel","div"],["punc"," {"]],
+      [["plain","  "],["prop","width"],["punc",": "],["num","200"],["unit","px"],["punc",";"]],
+      [["plain","  "],["prop","height"],["punc",": "],["num","100"],["unit","px"],["punc",";"]],
+      [["punc","}"]],
+    ],
+    highlight:["content","padding","border","margin"],
+    calc:null,
+    vizType:"intro",
+  },
+  {
+    id:1, act:"02",
+    title:"Content box",
+    sub:"The innermost area holds text, images, or child elements. width and height set the content box dimensions by default.",
+    code:[
+      [["sel",".box"],["punc"," {"]],
+      [["plain","  "],["prop","width"],["punc",": "],["num","200"],["unit","px"],["punc",";"]],
+      [["plain","  "],["prop","height"],["punc",": "],["num","100"],["unit","px"],["punc",";"]],
+      [["plain","  "],["prop","background"],["punc",": "],["val","steelblue"],["punc",";"]],
+      [["punc","}"]],
+    ],
+    highlight:["content"],
+    calc:{ content:"200 × 100", total:"200 × 100" },
+    vizType:"layers",
+  },
+  {
+    id:2, act:"03",
+    title:"Padding",
+    sub:"Padding creates space between the content and the border. It pushes the border outward and expands the element's total size (in content-box mode).",
+    code:[
+      [["sel",".box"],["punc"," {"]],
+      [["plain","  "],["prop","width"],["punc",": "],["num","200"],["unit","px"],["punc",";"]],
+      [["plain","  "],["prop","height"],["punc",": "],["num","100"],["unit","px"],["punc",";"]],
+      [["plain","  "],["prop","padding"],["punc",": "],["num","20"],["unit","px"],["punc",";"]],
+      [["punc","}"]],
+    ],
+    highlight:["content","padding"],
+    calc:{ content:"200 × 100", padding:"20px all sides", total:"240 × 140" },
+    vizType:"layers",
+  },
+  {
+    id:3, act:"04",
+    title:"Border",
+    sub:"The border wraps around the padding. It has its own thickness, style, and color — and adds to the total element size.",
+    code:[
+      [["sel",".box"],["punc"," {"]],
+      [["plain","  "],["prop","width"],["punc",": "],["num","200"],["unit","px"],["punc",";"]],
+      [["plain","  "],["prop","padding"],["punc",": "],["num","20"],["unit","px"],["punc",";"]],
+      [["plain","  "],["prop","border"],["punc",": "],["num","4"],["unit","px"],["plain"," solid "],["val","gold"],["punc",";"]],
+      [["punc","}"]],
+    ],
+    highlight:["content","padding","border"],
+    calc:{ content:"200 × 100", padding:"20px", border:"4px", total:"248 × 148" },
+    vizType:"layers",
+  },
+  {
+    id:4, act:"05",
+    title:"Margin",
+    sub:"Margin is the outermost layer — transparent space that separates the element from its neighbors. It doesn't affect the element's rendered size, but controls spacing.",
+    code:[
+      [["sel",".box"],["punc"," {"]],
+      [["plain","  "],["prop","width"],["punc",": "],["num","200"],["unit","px"],["punc",";"]],
+      [["plain","  "],["prop","padding"],["punc",": "],["num","20"],["unit","px"],["punc",";"]],
+      [["plain","  "],["prop","border"],["punc",": "],["num","4"],["unit","px"],["plain"," solid "],["val","gold"],["punc",";"]],
+      [["plain","  "],["prop","margin"],["punc",": "],["num","16"],["unit","px"],["punc",";"]],
+      [["punc","}"]],
+    ],
+    highlight:["content","padding","border","margin"],
+    calc:{ content:"200 × 100", padding:"20px", border:"4px", margin:"16px", total:"248 × 148 + 32 spacing" },
+    vizType:"layers",
+  },
+  {
+    id:5, act:"06",
+    title:"box-sizing",
+    sub:"content-box (default) sizes width/height to just the content. border-box includes padding and border in the declared width/height — far easier to reason about.",
+    code:[
+      [["cmt","/* content-box (default): */"]],
+      [["cmt","/* width = content only */"]],
+      [["cmt","/* total = width + padding + border */"]],
+      [["plain",""]],
+      [["cmt","/* border-box: */"]],
+      [["sel","*"],["punc"," { "],["prop","box-sizing"],["punc",": "],["val","border-box"],["punc","; }"]],
+      [["cmt","/* width = content + padding + border */"]],
+      [["cmt","/* total = width (always!) */"]],
+    ],
+    highlight:["content","padding","border"],
+    calc:null,
+    vizType:"boxsizing",
+  },
+  {
+    id:6, act:"07",
+    title:"Margin collapse",
+    sub:"When two vertical margins meet, they don't add up — the larger one wins. This only happens vertically, never horizontally.",
+    code:[
+      [["sel",".top"],["punc"," { "],["prop","margin-bottom"],["punc",": "],["num","24"],["unit","px"],["punc","; }"]],
+      [["sel",".bottom"],["punc"," { "],["prop","margin-top"],["punc",": "],["num","16"],["unit","px"],["punc","; }"]],
+      [["plain",""]],
+      [["cmt","/* gap between them = 24px */"]],
+      [["cmt","/* NOT 24 + 16 = 40px */"]],
+      [["cmt","/* the larger margin wins */"]],
+    ],
+    highlight:[],
+    calc:null,
+    vizType:"collapse",
+  },
+  {
+    id:7, act:"08",
+    title:"Display types",
+    sub:"block elements take full width and stack vertically. inline elements flow with text. inline-block combines both — flows inline but accepts width/height.",
+    code:[
+      [["sel","div"],["punc","  { "],["prop","display"],["punc",": "],["val","block"],["punc","; }"]],
+      [["sel","span"],["punc"," { "],["prop","display"],["punc",": "],["val","inline"],["punc","; }"]],
+      [["sel",".btn"],["punc"," { "],["prop","display"],["punc",": "],["val","inline-block"],["punc","; }"]],
+    ],
+    highlight:[],
+    calc:null,
+    vizType:"display",
+  },
+  {
+    id:8, act:"09",
+    title:"Normal flow",
+    sub:"By default, block elements stack top-to-bottom, and inline elements flow left-to-right wrapping at the container edge. This is normal document flow.",
+    code:[
+      [["tag","<div>"],["plain","Block 1"],["tag","</div>"]],
+      [["tag","<div>"],["plain","Block 2"],["tag","</div>"]],
+      [["tag","<span>"],["plain","inline"],["tag","</span>"]],
+      [["tag","<span>"],["plain","text"],["tag","</span>"]],
+      [["tag","<span>"],["plain","flows"],["tag","</span>"]],
+    ],
+    highlight:[],
+    calc:null,
+    vizType:"flow",
+  },
+  {
+    id:9, act:"10",
+    title:"Flexbox",
+    sub:"Flexbox lays out items along one axis — horizontal or vertical. It handles alignment, spacing, and wrapping with simple, powerful properties.",
+    code:[
+      [["sel",".container"],["punc"," {"]],
+      [["plain","  "],["prop","display"],["punc",": "],["val","flex"],["punc",";"]],
+      [["plain","  "],["prop","gap"],["punc",": "],["num","12"],["unit","px"],["punc",";"]],
+      [["plain","  "],["prop","align-items"],["punc",": "],["val","center"],["punc",";"]],
+      [["punc","}"]],
+    ],
+    highlight:[],
+    calc:null,
+    vizType:"flex",
+  },
+  {
+    id:10, act:"11",
+    title:"Grid",
+    sub:"CSS Grid creates a two-dimensional layout — rows and columns simultaneously. It's ideal for page layouts and complex component structures.",
+    code:[
+      [["sel",".grid"],["punc"," {"]],
+      [["plain","  "],["prop","display"],["punc",": "],["val","grid"],["punc",";"]],
+      [["plain","  "],["prop","grid-template-columns"],["punc",": "],["val","1fr 1fr 1fr"],["punc",";"]],
+      [["plain","  "],["prop","gap"],["punc",": "],["num","10"],["unit","px"],["punc",";"]],
+      [["punc","}"]],
+    ],
+    highlight:[],
+    calc:null,
+    vizType:"grid",
+  },
+  {
+    id:11, act:"12",
+    title:"Position",
+    sub:"Position removes or offsets elements from normal flow. static is the default. relative offsets in-place. absolute positions relative to a positioned ancestor. fixed and sticky anchor to the viewport.",
+    code:[
+      [["sel",".rel"],["punc"," { "],["prop","position"],["punc",": "],["val","relative"],["punc","; "],["prop","top"],["punc",": "],["num","10"],["unit","px"],["punc","; }"]],
+      [["sel",".abs"],["punc"," { "],["prop","position"],["punc",": "],["val","absolute"],["punc","; "],["prop","top"],["punc",": "],["num","0"],["punc","; }"]],
+      [["sel",".fix"],["punc"," { "],["prop","position"],["punc",": "],["val","fixed"],["punc","; "],["prop","top"],["punc",": "],["num","0"],["punc","; }"]],
+      [["sel",".stk"],["punc"," { "],["prop","position"],["punc",": "],["val","sticky"],["punc","; "],["prop","top"],["punc",": "],["num","0"],["punc","; }"]],
+    ],
+    highlight:[],
+    calc:null,
+    vizType:"position",
+  },
+  {
+    id:12, act:"✓",
+    title:"The CSS Box Model & Layout",
+    sub:"Every element is a box with content, padding, border, and margin. Layout modes control how boxes relate to each other.",
+    code:[
+      [["cmt","/* The CSS Box Model */"]],
+      [["cmt","/* margin → border → padding → content */"]],
+      [["plain",""]],
+      [["cmt","/* Layout modes: */"]],
+      [["cmt","/* normal flow, flexbox, grid, position */"]],
+      [["plain",""]],
+      [["cmt","/* Pro tip: always use border-box */"]],
+      [["sel","*"],["punc"," { "],["prop","box-sizing"],["punc",": "],["val","border-box"],["punc","; }"]],
+    ],
+    highlight:["content","padding","border","margin"],
+    calc:null,
+    vizType:"layers",
+    finale:true,
+  },
+];
+
+/* ─── DETAIL CONTENT ─── */
+const DETAILS = {
+  code: {
+    title:"CSS Code",
+    color:T.purpleL,
+    sections:[
+      {heading:"What to watch for",body:"Each scene shows CSS properties that control the box model or layout. Watch how changing a single property transforms the visual layout."},
+      {heading:"Common patterns",body:"• width/height → content size\n• padding → inner spacing\n• border → visible edge\n• margin → outer spacing\n• display → layout mode\n• position → flow control"},
+    ]
+  },
+  boxmodel: {
+    title:"Box Model",
+    color:T.amber,
+    sections:[
+      {heading:"Four layers",body:"Every CSS box has four layers, from inside out:\n\n1. Content — the actual text/images\n2. Padding — space inside the border\n3. Border — the visible edge\n4. Margin — space outside the border"},
+      {heading:"Size calculation",body:"In content-box (default):\ntotal width = width + padding-left + padding-right + border-left + border-right\n\nIn border-box:\ntotal width = width (padding and border are included)"},
+      {heading:"Why border-box",body:"border-box is universally recommended because the declared width is the actual rendered width. No mental math needed."},
+    ]
+  },
+  layout: {
+    title:"Layout Modes",
+    color:T.teal,
+    sections:[
+      {heading:"Normal flow",body:"Block elements stack vertically, taking full width. Inline elements flow horizontally like text, wrapping at the edge."},
+      {heading:"Flexbox",body:"One-dimensional layout. Items flow along a main axis (row or column). Great for navigation bars, card rows, centering content."},
+      {heading:"Grid",body:"Two-dimensional layout. Define rows AND columns simultaneously. Perfect for page layouts, dashboards, and complex component structures."},
+      {heading:"Position",body:"• static — default, in normal flow\n• relative — offset from normal position\n• absolute — removed from flow, positioned to ancestor\n• fixed — positioned to viewport\n• sticky — hybrid of relative and fixed"},
+    ]
+  },
+  sizing: {
+    title:"Sizing Details",
+    color:T.tealL,
+    sections:[
+      {heading:"Content-box vs Border-box",body:"content-box: width = content only\nborder-box: width = content + padding + border\n\nMost developers use border-box globally:\n* { box-sizing: border-box; }"},
+      {heading:"Margin collapse",body:"Adjacent vertical margins merge — the larger wins. This only happens with block-level elements in normal flow. Flexbox and grid children do NOT collapse margins."},
+    ]
+  },
+};
+
+/* ─── COMPONENTS ─── */
+const CodePanel = ({ tokens }) =>
+  e("div", { style:{ background:T.codeBase, borderRadius:12, overflow:"hidden", border:`1px solid ${T.border}` } },
+    e("div", { style:{ padding:"10px 14px 8px", borderBottom:`1px solid ${T.border}`, display:"flex", gap:7 } },
+      ...["#ff5f57","#febc2e","#28c840"].map((c,i) =>
+        e("div", { key:i, style:{ width:11, height:11, borderRadius:"50%", background:c } })
+      )
+    ),
+    e("div", { style:{ padding:"18px 22px 22px", fontFamily:"'SF Mono','Fira Code','Consolas',monospace", fontSize:12, lineHeight:1.95 } },
+      tokens.map((line, li) =>
+        e("div", { key:li, style:{ paddingLeft:0, borderRadius:3, display:"block" } },
+          line.map(([cls, txt], ti) =>
+            e("span", { key:ti, style:{ ...TS[cls], whiteSpace:"pre" } }, txt)
+          )
+        )
+      )
+    )
+  );
+
+const Panel = ({ label, children, style={}, focused=false, onClick }) =>
+  e(M.div, {
+    onClick,
+    animate:{
+      borderColor: focused ? T.purple : T.border2,
+      boxShadow: focused ? `0 0 16px ${T.purple}30, inset 0 0 12px ${T.purple}08` : "0 0 0px transparent"
+    },
+    transition:{ duration:0.4 },
+    style:{ borderRadius:12, border:"1.5px solid", background:T.surface, overflow:"hidden", cursor:onClick?"pointer":"default", ...style }
+  },
+    label && e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, label)
+    ),
+    e("div", { style:{ padding:12 } }, children)
+  );
+
+/* ─── BOX MODEL DIAGRAM ─── */
+const BoxModelViz = ({ highlight, onClick }) => {
+  const layers = ["margin","border","padding","content"];
+  const sizes = { margin:16, border:8, padding:20, content:0 };
+  const colors = { margin:BM.margin.fill, border:BM.border.fill, padding:BM.padding.fill, content:BM.content.fill };
+  const active = (name) => highlight.includes(name);
+
+  return e(M.div, {
+    onClick,
+    style:{ borderRadius:12, border:`1.5px solid ${T.border2}`, background:T.surface, overflow:"hidden", cursor:"pointer" }
+  },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, "Box Model")
+    ),
+    e("div", { style:{ padding:16, display:"flex", justifyContent:"center", alignItems:"center" } },
+      e("div", { style:{ position:"relative", width:240, height:180 } },
+        /* margin layer */
+        e(M.div, {
+          animate:{ opacity: active("margin") ? 1 : 0.15, scale: active("margin") ? 1 : 0.98 },
+          transition:{ duration:0.5 },
+          style:{ position:"absolute", inset:0, borderRadius:8, border:`2px dashed ${BM.margin.fill}`, background:BM.margin.bg, display:"flex", alignItems:"center", justifyContent:"center" }
+        },
+          e("span", { style:{ position:"absolute", top:3, left:8, fontSize:9, fontWeight:600, color:BM.margin.fill, opacity:active("margin")?1:0.3 } }, "margin")
+        ),
+        /* border layer */
+        e(M.div, {
+          animate:{ opacity: active("border") ? 1 : 0.15, scale: active("border") ? 1 : 0.98 },
+          transition:{ duration:0.5, delay:0.05 },
+          style:{ position:"absolute", top:sizes.margin, left:sizes.margin, right:sizes.margin, bottom:sizes.margin, borderRadius:6, border:`3px solid ${BM.border.fill}`, background:BM.border.bg }
+        },
+          e("span", { style:{ position:"absolute", top:2, left:6, fontSize:9, fontWeight:600, color:BM.border.fill, opacity:active("border")?1:0.3 } }, "border")
+        ),
+        /* padding layer */
+        e(M.div, {
+          animate:{ opacity: active("padding") ? 1 : 0.15, scale: active("padding") ? 1 : 0.98 },
+          transition:{ duration:0.5, delay:0.1 },
+          style:{ position:"absolute", top:sizes.margin+sizes.border, left:sizes.margin+sizes.border, right:sizes.margin+sizes.border, bottom:sizes.margin+sizes.border, borderRadius:4, border:`2px solid ${BM.padding.fill}`, background:BM.padding.bg }
+        },
+          e("span", { style:{ position:"absolute", top:2, left:6, fontSize:9, fontWeight:600, color:BM.padding.fill, opacity:active("padding")?1:0.3 } }, "padding")
+        ),
+        /* content layer */
+        e(M.div, {
+          animate:{ opacity: active("content") ? 1 : 0.2, scale: active("content") ? 1 : 0.96 },
+          transition:{ duration:0.5, delay:0.15 },
+          style:{ position:"absolute", top:sizes.margin+sizes.border+sizes.padding, left:sizes.margin+sizes.border+sizes.padding, right:sizes.margin+sizes.border+sizes.padding, bottom:sizes.margin+sizes.border+sizes.padding, borderRadius:3, background:`${BM.content.fill}30`, border:`2px solid ${BM.content.fill}`, display:"flex", alignItems:"center", justifyContent:"center" }
+        },
+          e("span", { style:{ fontSize:11, fontWeight:700, color:BM.content.fill } }, "content")
+        )
+      )
+    )
+  );
+};
+
+/* ─── CALC PANEL ─── */
+const CalcPanel = ({ calc, onClick }) =>
+  e(M.div, {
+    onClick,
+    style:{ borderRadius:12, border:`1.5px solid ${T.border2}`, background:T.surface, overflow:"hidden", cursor:"pointer" }
+  },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, "Size Calculation")
+    ),
+    e("div", { style:{ padding:12, fontFamily:"'SF Mono','Fira Code',monospace", fontSize:11 } },
+      calc
+        ? e(AP, { mode:"wait" },
+            e(M.div, { key:JSON.stringify(calc), initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.2} },
+              Object.entries(calc).map(([k,v],i) =>
+                e("div", { key:k, style:{ display:"flex", justifyContent:"space-between", padding:"3px 0", borderBottom: k==="total" ? "none" : `1px solid ${T.border}`, marginTop: k==="total" ? 4 : 0 } },
+                  e("span", { style:{ color: k==="total" ? T.purpleL : T.text2, fontWeight: k==="total" ? 700 : 400, fontSize: k==="total" ? 12 : 11 } }, k),
+                  e("span", { style:{ color: k==="total" ? T.purpleL : T.text1, fontWeight: k==="total" ? 700 : 400, fontSize: k==="total" ? 12 : 11 } }, v)
+                )
+              )
+            )
+          )
+        : e("div", { style:{ color:T.text3, fontSize:11 } }, "—")
+    )
+  );
+
+/* ─── BOX-SIZING VIZ ─── */
+const BoxSizingViz = () => {
+  return e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 } },
+    /* content-box */
+    e(M.div, {
+      initial:{opacity:0,x:-10}, animate:{opacity:1,x:0}, transition:{...ez,delay:0.1},
+      style:{ borderRadius:10, border:`1px solid ${T.coral}44`, background:`${T.coral}08`, padding:14 }
+    },
+      e("div", { style:{ fontSize:11, fontWeight:700, color:T.coralL, marginBottom:10, textAlign:"center" } }, "content-box"),
+      e("div", { style:{ position:"relative", height:100, display:"flex", alignItems:"center", justifyContent:"center" } },
+        e("div", { style:{ width:"100%", height:80, borderRadius:6, border:`2px dashed ${T.coral}66`, display:"flex", alignItems:"center", justifyContent:"center", position:"relative" } },
+          e("div", { style:{ fontSize:9, color:T.coral, position:"absolute", top:-14, left:0 } }, "total: 248px"),
+          e("div", { style:{ background:`${BM.padding.fill}22`, border:`1px solid ${BM.padding.fill}44`, borderRadius:4, padding:8, display:"flex", alignItems:"center", justifyContent:"center" } },
+            e("div", { style:{ background:`${BM.content.fill}30`, border:`1px solid ${BM.content.fill}`, borderRadius:3, padding:"6px 12px", fontSize:10, color:BM.content.fill, fontWeight:600, fontFamily:"monospace" } }, "w: 200px")
+          )
+        )
+      ),
+      e("div", { style:{ fontSize:9, color:T.text2, textAlign:"center", marginTop:6 } }, "width sets content only")
+    ),
+    /* border-box */
+    e(M.div, {
+      initial:{opacity:0,x:10}, animate:{opacity:1,x:0}, transition:{...ez,delay:0.2},
+      style:{ borderRadius:10, border:`1px solid ${T.teal}44`, background:`${T.teal}08`, padding:14 }
+    },
+      e("div", { style:{ fontSize:11, fontWeight:700, color:T.tealL, marginBottom:10, textAlign:"center" } }, "border-box ✓"),
+      e("div", { style:{ position:"relative", height:100, display:"flex", alignItems:"center", justifyContent:"center" } },
+        e("div", { style:{ width:"100%", height:80, borderRadius:6, border:`2px solid ${T.teal}66`, display:"flex", alignItems:"center", justifyContent:"center", position:"relative" } },
+          e("div", { style:{ fontSize:9, color:T.teal, position:"absolute", top:-14, left:0 } }, "total: 200px"),
+          e("div", { style:{ background:`${BM.padding.fill}22`, border:`1px solid ${BM.padding.fill}44`, borderRadius:4, padding:8, display:"flex", alignItems:"center", justifyContent:"center" } },
+            e("div", { style:{ background:`${BM.content.fill}30`, border:`1px solid ${BM.content.fill}`, borderRadius:3, padding:"6px 8px", fontSize:10, color:BM.content.fill, fontWeight:600, fontFamily:"monospace" } }, "w: 152px")
+          )
+        )
+      ),
+      e("div", { style:{ fontSize:9, color:T.text2, textAlign:"center", marginTop:6 } }, "width includes everything")
+    )
+  );
+};
+
+/* ─── MARGIN COLLAPSE VIZ ─── */
+const MarginCollapseViz = () => {
+  return e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:0, padding:"8px 0" } },
+    /* top box */
+    e(M.div, {
+      initial:{opacity:0,y:-10}, animate:{opacity:1,y:0}, transition:{...ez,delay:0.1},
+      style:{ width:180, padding:"12px 16px", background:`${T.blue}18`, border:`1.5px solid ${T.blue}44`, borderRadius:8, textAlign:"center", fontSize:11, color:T.blueL, fontWeight:600 }
+    }, "Element A"),
+    /* margin area - A's margin */
+    e(M.div, {
+      initial:{height:0}, animate:{height:24},
+      transition:{...ez,delay:0.3},
+      style:{ width:120, background:`${T.coral}14`, borderLeft:`1px dashed ${T.coral}44`, borderRight:`1px dashed ${T.coral}44`, display:"flex", alignItems:"center", justifyContent:"center" }
+    },
+      e("span", { style:{ fontSize:8, color:T.coralL, fontFamily:"monospace" } }, "margin-bottom: 24px")
+    ),
+    /* collapsed result indicator */
+    e(M.div, {
+      initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1},
+      transition:{...ez,delay:0.6},
+      style:{ padding:"3px 12px", borderRadius:20, background:`${T.purple}18`, border:`1px solid ${T.purple}44`, fontSize:10, fontWeight:700, color:T.purpleL, margin:"2px 0" }
+    }, "= 24px (collapsed)"),
+    /* margin area - B's margin */
+    e(M.div, {
+      initial:{height:0}, animate:{height:16},
+      transition:{...ez,delay:0.4},
+      style:{ width:120, background:`${T.teal}14`, borderLeft:`1px dashed ${T.teal}44`, borderRight:`1px dashed ${T.teal}44`, display:"flex", alignItems:"center", justifyContent:"center" }
+    },
+      e("span", { style:{ fontSize:8, color:T.tealL, fontFamily:"monospace" } }, "margin-top: 16px")
+    ),
+    /* bottom box */
+    e(M.div, {
+      initial:{opacity:0,y:10}, animate:{opacity:1,y:0}, transition:{...ez,delay:0.2},
+      style:{ width:180, padding:"12px 16px", background:`${T.teal}18`, border:`1.5px solid ${T.teal}44`, borderRadius:8, textAlign:"center", fontSize:11, color:T.tealL, fontWeight:600 }
+    }, "Element B"),
+    e("div", { style:{ marginTop:8, fontSize:10, color:T.text2, textAlign:"center" } }, "Larger margin wins — they don't add up")
+  );
+};
+
+/* ─── DISPLAY TYPES VIZ ─── */
+const DisplayViz = () => {
+  return e("div", { style:{ display:"flex", flexDirection:"column", gap:14 } },
+    /* block */
+    e(M.div, { initial:{opacity:0,x:-10}, animate:{opacity:1,x:0}, transition:{...ez,delay:0.1} },
+      e("div", { style:{ fontSize:9, fontWeight:700, color:T.blueL, marginBottom:4, textTransform:"uppercase", letterSpacing:"0.08em" } }, "block"),
+      e("div", { style:{ display:"flex", flexDirection:"column", gap:4 } },
+        ...[1,2].map(i => e("div", { key:i, style:{ background:`${T.blue}18`, border:`1px solid ${T.blue}44`, borderRadius:4, padding:"6px 10px", fontSize:10, color:T.blueL } }, `<div> — full width, stacks`))
+      )
+    ),
+    /* inline */
+    e(M.div, { initial:{opacity:0,x:-10}, animate:{opacity:1,x:0}, transition:{...ez,delay:0.2} },
+      e("div", { style:{ fontSize:9, fontWeight:700, color:T.tealL, marginBottom:4, textTransform:"uppercase", letterSpacing:"0.08em" } }, "inline"),
+      e("div", { style:{ display:"flex", flexWrap:"wrap", gap:4 } },
+        ...["<span>","flows","with","text"].map((t,i) => e("span", { key:i, style:{ background:`${T.teal}18`, border:`1px solid ${T.teal}44`, borderRadius:4, padding:"4px 8px", fontSize:10, color:T.tealL, display:"inline-block" } }, t))
+      )
+    ),
+    /* inline-block */
+    e(M.div, { initial:{opacity:0,x:-10}, animate:{opacity:1,x:0}, transition:{...ez,delay:0.3} },
+      e("div", { style:{ fontSize:9, fontWeight:700, color:T.amberL, marginBottom:4, textTransform:"uppercase", letterSpacing:"0.08em" } }, "inline-block"),
+      e("div", { style:{ display:"flex", flexWrap:"wrap", gap:4 } },
+        ...["Button A","Button B"].map((t,i) => e("span", { key:i, style:{ background:`${T.amber}18`, border:`1px solid ${T.amber}44`, borderRadius:4, padding:"6px 14px", fontSize:10, color:T.amberL, fontWeight:600 } }, t))
+      ),
+      e("div", { style:{ fontSize:9, color:T.text3, marginTop:4 } }, "flows inline + accepts width/height")
+    )
+  );
+};
+
+/* ─── NORMAL FLOW VIZ ─── */
+const FlowViz = () => {
+  return e("div", { style:{ display:"flex", flexDirection:"column", gap:10 } },
+    e(M.div, { initial:{opacity:0,y:-8}, animate:{opacity:1,y:0}, transition:{...ez,delay:0.1},
+      style:{ padding:"10px 14px", background:`${T.blue}18`, border:`1px solid ${T.blue}44`, borderRadius:6, fontSize:11, color:T.blueL, fontWeight:600 }
+    }, "Block 1 — full width ↔"),
+    e(M.div, { initial:{opacity:0,y:-8}, animate:{opacity:1,y:0}, transition:{...ez,delay:0.2},
+      style:{ padding:"10px 14px", background:`${T.blue}18`, border:`1px solid ${T.blue}44`, borderRadius:6, fontSize:11, color:T.blueL, fontWeight:600 }
+    }, "Block 2 — stacks below ↓"),
+    e(M.div, { initial:{opacity:0,y:-8}, animate:{opacity:1,y:0}, transition:{...ez,delay:0.3},
+      style:{ padding:10, background:`${T.surface2}`, border:`1px solid ${T.border}`, borderRadius:6 }
+    },
+      e("div", { style:{ display:"flex", flexWrap:"wrap", gap:6 } },
+        ...["inline","text","flows","left","to","right","then","wraps"].map((w,i) =>
+          e(M.span, { key:i, initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.35+i*0.06},
+            style:{ background:`${T.teal}18`, border:`1px solid ${T.teal}44`, borderRadius:4, padding:"3px 8px", fontSize:10, color:T.tealL }
+          }, w)
+        )
+      )
+    ),
+    e("div", { style:{ fontSize:9, color:T.text3, textAlign:"center" } }, "↑ normal document flow")
+  );
+};
+
+/* ─── FLEXBOX VIZ ─── */
+const FlexViz = () => {
+  const items = ["A","B","C","D"];
+  return e("div", { style:{ display:"flex", flexDirection:"column", gap:12 } },
+    e("div", { style:{ fontSize:9, fontWeight:700, color:T.purpleL, textTransform:"uppercase", letterSpacing:"0.08em" } }, "display: flex (row)"),
+    e("div", { style:{ display:"flex", gap:8, padding:12, borderRadius:8, border:`1.5px solid ${T.purple}44`, background:`${T.purple}08` } },
+      items.map((item,i) =>
+        e(M.div, { key:i, initial:{opacity:0,scale:0.7}, animate:{opacity:1,scale:1}, transition:{...ez,delay:0.1+i*0.1},
+          style:{ flex:1, padding:"14px 8px", background:`${T.blue}22`, border:`1px solid ${T.blue}55`, borderRadius:6, textAlign:"center", fontSize:13, fontWeight:700, color:T.blueL }
+        }, item)
+      )
+    ),
+    e("div", { style:{ display:"flex", alignItems:"center", gap:6, marginTop:2 } },
+      e("div", { style:{ fontSize:9, color:T.text3 } }, "main axis →"),
+      e("div", { style:{ flex:1, height:1, background:T.border } }),
+      e("div", { style:{ fontSize:14, color:T.purple } }, "→")
+    ),
+    e("div", { style:{ display:"flex", gap:6, flexWrap:"wrap", marginTop:4 } },
+      ["gap","align-items","justify-content","flex-wrap"].map((p,i) =>
+        e("span", { key:i, style:{ padding:"2px 8px", borderRadius:12, background:`${T.purple}14`, border:`1px solid ${T.purple}30`, fontSize:9, color:T.purpleL, fontFamily:"monospace" } }, p)
+      )
+    )
+  );
+};
+
+/* ─── GRID VIZ ─── */
+const GridViz = () => {
+  const cells = [1,2,3,4,5,6];
+  return e("div", { style:{ display:"flex", flexDirection:"column", gap:10 } },
+    e("div", { style:{ fontSize:9, fontWeight:700, color:T.amberL, textTransform:"uppercase", letterSpacing:"0.08em" } }, "display: grid (3 columns)"),
+    e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, padding:12, borderRadius:8, border:`1.5px solid ${T.amber}44`, background:`${T.amber}08` } },
+      cells.map((n,i) =>
+        e(M.div, { key:i, initial:{opacity:0,scale:0.7}, animate:{opacity:1,scale:1}, transition:{...ez,delay:0.1+i*0.08},
+          style:{ padding:"14px 8px", background:`${T.teal}22`, border:`1px solid ${T.teal}55`, borderRadius:6, textAlign:"center", fontSize:12, fontWeight:700, color:T.tealL }
+        }, n)
+      )
+    ),
+    e("div", { style:{ display:"flex", justifyContent:"space-between", fontSize:9, color:T.text3, marginTop:2 } },
+      e("span", null, "← 1fr → ← 1fr → ← 1fr →"),
+      e("span", null, "rows auto")
+    ),
+    e("div", { style:{ display:"flex", gap:6, flexWrap:"wrap", marginTop:4 } },
+      ["grid-template-columns","grid-template-rows","gap","grid-area"].map((p,i) =>
+        e("span", { key:i, style:{ padding:"2px 8px", borderRadius:12, background:`${T.amber}14`, border:`1px solid ${T.amber}30`, fontSize:9, color:T.amberL, fontFamily:"monospace" } }, p)
+      )
+    )
+  );
+};
+
+/* ─── POSITION VIZ ─── */
+const PositionViz = () => {
+  const positions = [
+    { name:"static", desc:"in normal flow", color:T.text2, dashed:true },
+    { name:"relative", desc:"offset from normal", color:T.blue, offset:{top:8,left:12} },
+    { name:"absolute", desc:"to positioned ancestor", color:T.coral, pos:{top:4,right:4} },
+    { name:"fixed", desc:"to viewport", color:T.pink, pos:{bottom:4,right:4} },
+    { name:"sticky", desc:"scrolls then sticks", color:T.amber },
+  ];
+  return e("div", { style:{ display:"flex", flexDirection:"column", gap:6 } },
+    positions.map((p,i) =>
+      e(M.div, { key:p.name, initial:{opacity:0,x:-12}, animate:{opacity:1,x:0}, transition:{...ez,delay:0.1+i*0.1},
+        style:{ display:"flex", alignItems:"center", gap:10, padding:"8px 12px", borderRadius:8, border:`1px solid ${p.color}44`, background:`${p.color}08` }
+      },
+        e("div", { style:{ width:70, fontSize:11, fontWeight:700, color:p.color, fontFamily:"monospace" } }, p.name),
+        e("div", { style:{ fontSize:10, color:T.text2 } }, p.desc),
+        p.offset && e("span", { style:{ marginLeft:"auto", fontSize:9, color:p.color, fontFamily:"monospace" } }, `top:${p.offset.top} left:${p.offset.left}`),
+        p.pos && e("span", { style:{ marginLeft:"auto", fontSize:9, color:p.color, fontFamily:"monospace" } }, Object.entries(p.pos).map(([k,v])=>`${k}:${v}`).join(" "))
+      )
+    )
+  );
+};
+
+/* ─── SCENE VISUALIZATION ROUTER ─── */
+const SceneViz = ({ scene, onToggleDetail }) => {
+  switch(scene.vizType) {
+    case "intro":
+    case "layers":
+      return e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 } },
+        e(BoxModelViz, { highlight:scene.highlight, onClick:()=>onToggleDetail("boxmodel") }),
+        e(CalcPanel, { calc:scene.calc, onClick:()=>onToggleDetail("sizing") })
+      );
+    case "boxsizing":
+      return e(BoxSizingViz);
+    case "collapse":
+      return e(MarginCollapseViz);
+    case "display":
+      return e(DisplayViz);
+    case "flow":
+      return e(FlowViz);
+    case "flex":
+      return e(FlexViz);
+    case "grid":
+      return e(GridViz);
+    case "position":
+      return e(PositionViz);
+    default:
+      return null;
+  }
+};
+
+/* ─── FINALE ─── */
+const Finale = () => {
+  const rows = [
+    { n:1, label:"Content", sub:"The innermost area — holds text, images, children", c:BM.content.fill },
+    { n:2, label:"Padding", sub:"Space between content and border — expands the box", c:BM.padding.fill },
+    { n:3, label:"Border", sub:"The visible edge — has thickness, style, and color", c:BM.border.fill },
+    { n:4, label:"Margin", sub:"Outer spacing — separates elements, can collapse vertically", c:BM.margin.fill },
+    { n:"⤷", label:"border-box", sub:"Always use box-sizing: border-box — width includes padding + border", c:T.purple },
+    { n:"✦", label:"Layout", sub:"Normal flow → Flexbox (1D) → Grid (2D) → Position for exceptions", c:T.pink },
+  ];
+  return e("div", { style:{ padding:"8px 0" } },
+    rows.map((r,i) => e(M.div, { key:i, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.12,...ez},
+      style:{ display:"flex", alignItems:"flex-start", gap:12, padding:"11px 14px", marginBottom:8, borderRadius:10, border:`1px solid ${r.c}28`, background:`${r.c}08` }
+    },
+      e("div", { style:{ width:26, height:26, borderRadius:"50%", border:`1.5px solid ${r.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:12, fontWeight:700, color:r.c } }, r.n),
+      e("div", null,
+        e("div", { style:{ fontSize:13, fontWeight:600, color:r.c, marginBottom:2 } }, r.label),
+        e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.5 } }, r.sub)
+      )
+    ))
+  );
+};
+
+/* ─── DETAIL PANEL ─── */
+const DetailPanel = ({ detailKey, onClose }) => {
+  const d = DETAILS[detailKey];
+  if (!d) return null;
+  return e("div", {
+    style:{ width:340, flexShrink:0, background:T.surface, borderRadius:14, border:`1.5px solid ${d.color}44`, overflow:"hidden", alignSelf:"flex-start", position:"sticky", top:56 }
+  },
+    e("div", { style:{ padding:"14px 18px 12px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:8 } },
+        e("div", { style:{ width:8, height:8, borderRadius:"50%", background:d.color } }),
+        e("span", { style:{ fontSize:14, fontWeight:600, color:T.text1 } }, d.title)
+      ),
+      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6, transition:"color 0.2s" }, onMouseEnter:ev=>ev.target.style.color=T.text1, onMouseLeave:ev=>ev.target.style.color=T.text3 }, "✕")
+    ),
+    e("div", { style:{ padding:"16px 18px 20px", maxHeight:"calc(100vh - 140px)", overflowY:"auto" } },
+      d.sections.map((s, i) =>
+        e("div", { key:i, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
+          e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
+        )
+      )
+    )
+  );
+};
+
+/* ─── APP ─── */
+function App() {
+  const [si, setSi] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [detail, setDetail] = useState(null);
+  const timer = useRef(null);
+  const sc = SCENES[si];
+
+  useEffect(() => { setPlaying(true); }, []);
+
+  useEffect(() => {
+    if (!playing) return;
+    const d = si===0 ? 3000 : sc.finale ? 99999 : 3200;
+    timer.current = setTimeout(() => { si < SCENES.length-1 ? setSi(i=>i+1) : setPlaying(false); }, d);
+    return () => clearTimeout(timer.current);
+  }, [playing, si]);
+
+  const go = d => { clearTimeout(timer.current); setPlaying(false); setSi(i=>Math.max(0,Math.min(SCENES.length-1,i+d))); };
+  const jump = i => { clearTimeout(timer.current); setPlaying(false); setSi(i); };
+  const togglePlay = () => { if(si===SCENES.length-1){setSi(0);setPlaying(true);}else setPlaying(p=>!p); };
+  const toggleDetail = key => { setDetail(d => d===key ? null : key); clearTimeout(timer.current); setPlaying(false); };
+
+  return e("div", { style:{ display:"flex", gap:16, alignItems:"flex-start", justifyContent: detail ? "flex-start" : "center" } },
+  e("div", { style:{ width:760, flexShrink:0, background:T.bg, fontFamily:"system-ui,sans-serif", padding:20, borderRadius:16 } },
+
+    /* header */
+    e("div", { style:{ marginBottom:18 } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:10, marginBottom:11 } },
+        e(AP, { mode:"wait" },
+          e(M.div, { key:sc.act, initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, exit:{opacity:0}, transition:sp(400,28),
+            style:{ fontSize:9,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:T.purple,background:`${T.purple}14`,padding:"3px 10px",borderRadius:20,border:`1px solid ${T.purple}30`,flexShrink:0 }
+          }, sc.act)
+        ),
+        e("div", { style:{ flex:1, height:1, background:T.border, borderRadius:99, overflow:"hidden" } },
+          e(M.div, { animate:{width:`${si/(SCENES.length-1)*100}%`}, transition:{duration:0.5}, style:{height:"100%",background:T.purple,borderRadius:99} })
+        ),
+        e("span", { style:{ fontSize:10, color:T.text3 } }, `${si+1} / ${SCENES.length}`)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.title, initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, exit:{opacity:0,y:-8}, transition:ez,
+          style:{ fontSize:20,fontWeight:600,color:T.text1,marginBottom:4,letterSpacing:"-0.02em" }
+        }, sc.title)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
+          style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
+        }, sc.sub)
+      )
+    ),
+
+    e("div", { style:{ minHeight:460 } },
+    /* finale */
+    sc.finale && e(Finale),
+
+    /* main content */
+    !sc.finale && e("div", null,
+      /* code panel */
+      e("div", { onClick:()=>toggleDetail("code"), style:{cursor:"pointer", marginBottom:10} },
+        e(CodePanel, { tokens: sc.code })
+      ),
+      /* visualization */
+      e(SceneViz, { scene:sc, onToggleDetail:toggleDetail })
+    ),
+    ), /* close minHeight wrapper */
+
+    /* controls */
+    e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginTop:16 } },
+      e("button", { onClick:()=>go(-1), disabled:si===0,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===0?T.text3:T.text2,cursor:si===0?"not-allowed":"pointer",fontSize:11,transition:"color 0.2s" }
+      }, "\u2190 Back"),
+      e("button", { onClick:togglePlay,
+        style:{ padding:"6px 18px",borderRadius:8,border:`1px solid ${playing?T.coral:T.purple}44`,background:playing?`${T.coral}14`:`${T.purple}14`,color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all 0.2s" }
+      }, playing ? "\u23f8  Pause" : si===SCENES.length-1 ? "\u21ba  Replay" : "\u25b6  Play"),
+      e("button", { onClick:()=>go(1), disabled:si===SCENES.length-1,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
+      }, "Next \u2192"),
+      e("div", { style:{ flex:1 } }),
+      e("div", { style:{ display:"flex", gap:4, alignItems:"center" } },
+        SCENES.map((_,i) =>
+          e("button", { key:i, onClick:()=>jump(i),
+            style:{ width:i===si?16:5,height:5,borderRadius:99,border:"none",padding:0,background:i===si?T.purple:i<si?`${T.purple}55`:T.border,cursor:"pointer",transition:"all 0.25s" }
+          })
+        )
+      )
+    )
+  ),
+  detail && e(DetailPanel, { detailKey:detail, onClose:()=>setDetail(null) })
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(e(App));
+</script>
+</body>
+</html>

