@@ -359,7 +359,7 @@ const DETAILS = {
     title:"Event Bubbling",
     color:T.tealL,
     sections:[
-      {heading:"How bubbling works",body:"When an event fires on an element, it first runs the handler on that element, then on its parent, then all the way up to <html> and document.\n\nThis is the default behavior for most **DOM** events (click, input, keydown, etc.)."},
+      {heading:"How bubbling works",body:"When an event fires on an element, it first runs the handler on that element, then on its parent, then all the way up to <html> and document.\n\nThis is the default behavior for most DOM events (click, input, keydown, etc.)."},
       {heading:"Which events bubble",body:"Most events bubble: click, mousedown, mouseup, keydown, keyup, input, change, submit, focus (as focusin), blur (as focusout).\n\nSome do NOT bubble: focus, blur, load, unload, scroll (on non-document elements), resize."},
     ]
   },
@@ -383,17 +383,17 @@ const DETAILS = {
     title:"target vs currentTarget",
     color:T.purpleL,
     sections:[
-      {heading:"event.target",body:"The element that actually triggered the event. The element the user clicked on. This is the deepest element in the **DOM** tree where the event originated."},
-      {heading:"event.currentTarget",body:"The element that the event listener is attached to. Inside a handler, this is the element you called addEventListener() on.\n\nDuring delegation, target and currentTarget are **always** different: target is the child, currentTarget is the parent."},
-      {heading:"Key insight",body:"event.target stays the same as the event bubbles.\nevent.currentTarget changes at each level. It is **always** the element currently handling the event."},
+      {heading:"event.target",body:"The element that actually triggered the event. The element the user clicked on. This is the deepest element in the DOM tree where the event originated."},
+      {heading:"event.currentTarget",body:"The element that the event listener is attached to. Inside a handler, this is the element you called addEventListener() on.\n\nDuring delegation, target and currentTarget are always different: target is the child, currentTarget is the parent."},
+      {heading:"Key insight",body:"**event.target stays the same as the event bubbles.\nevent.currentTarget changes at each level.** It is always the element currently handling the event."},
     ]
   },
   naive: {
     title:"Naive Approach",
     color:T.coralL,
     sections:[
-      {heading:"Problems with many listeners",body:"- Memory waste: each listener holds a **closure**\n- Setup cost: O(n) time to attach all listeners\n- No dynamic support: new elements are missed\n- Cleanup burden: **must** remove listeners manually\n- Re-render issues: need to re-attach after **DOM** changes"},
-      {heading:"When it is actually fine",body:"The naive approach is okay when:\n- You have a small, fixed number of elements (< 10)\n- Elements **never** change dynamically\n- Each element needs truly unique handler logic\n- You're using a framework that handles cleanup"},
+      {heading:"Problems with many listeners",body:"- Memory waste: each listener holds a closure\n- Setup cost: O(n) time to attach all listeners\n- No dynamic support: new elements are missed\n- Cleanup burden: must remove listeners manually\n- Re-render issues: need to re-attach after DOM changes"},
+      {heading:"When it is actually fine",body:"The naive approach is okay when:\n- You have a small, fixed number of elements (< 10)\n- Elements never change dynamically\n- Each element needs truly unique handler logic\n- You're using a framework that handles cleanup"},
     ]
   },
   delegation: {
@@ -416,7 +416,7 @@ const DETAILS = {
     title:"Target Matching",
     color:T.amberL,
     sections:[
-      {heading:"closest() method",body:"element.closest(selector) walks up the **DOM** tree from the element, testing each ancestor against the selector. Returns the first match or null.\n\nPerfect for delegation because clicks might land on nested elements inside your target."},
+      {heading:"closest() method",body:"element.closest(selector) walks up the DOM tree from the element, testing each ancestor against the selector. Returns the first match or null.\n\nPerfect for delegation because clicks might land on nested elements inside your target."},
       {heading:"matches() method",body:"element.matches(selector) returns true if the element matches the CSS selector.\n\nUseful for simple cases:\nif (e.target.matches('.btn')) { ... }"},
       {heading:"Why closest() is better",body:"If <li> contains a <span>, clicking the <span> means e.target is <span>, not <li>.\n\nclosest('li') walks up from <span> and finds <li>.\nmatches('li') on <span> returns false. It misses!"},
     ]
@@ -426,23 +426,23 @@ const DETAILS = {
     color:T.tealL,
     sections:[
       {heading:"Why delegation wins",body:"With delegation, the listener is on the parent, which already exists. New children automatically participate because their events bubble up to the parent.\n\nNo need to:\n- Track new elements\n- Attach new listeners\n- Clean up old listeners"},
-      {heading:"Frameworks use this",body:"React's event system is built on delegation. React attaches listeners to the root **container**, not individual elements. This is why React can handle thousands of interactive elements efficiently."},
+      {heading:"Frameworks use this",body:"React's event system is built on delegation. React attaches listeners to the root container, not individual elements. This is why React can handle thousands of interactive elements efficiently."},
     ]
   },
   stopProp: {
     title:"stopPropagation()",
     color:T.pinkL,
     sections:[
-      {heading:"What it does",body:"event.stopPropagation() **prevents** the event from continuing its journey through the **DOM**. In the bubble phase, it stops the event from reaching ancestors. In capture, it stops it from reaching descendants."},
-      {heading:"Danger with delegation",body:"If a child calls stopPropagation(), the event **never** reaches the delegating parent. The delegation breaks silently.\n\nThis is a common source of bugs in applications mixing direct listeners and delegation."},
-      {heading:"Alternatives",body:"Instead of stopPropagation(), consider:\n- event.stopImmediatePropagation(): also **prevents** same-element listeners\n- Conditional logic in the handler\n- CSS pointer-events: none for non-interactive areas"},
+      {heading:"What it does",body:"event.stopPropagation() prevents the event from continuing its journey through the DOM. In the bubble phase, it stops the event from reaching ancestors. In capture, it stops it from reaching descendants."},
+      {heading:"Danger with delegation",body:"If a child calls stopPropagation(), the event never reaches the delegating parent. The delegation breaks silently.\n\nThis is a common source of bugs in applications mixing direct listeners and delegation."},
+      {heading:"Alternatives",body:"Instead of stopPropagation(), consider:\n- event.stopImmediatePropagation(): also prevents same-element listeners\n- Conditional logic in the handler\n- CSS pointer-events: none for non-interactive areas"},
     ]
   },
   practical: {
     title:"Practical Examples",
     color:T.amberL,
     sections:[
-      {heading:"Todo list",body:"One listener on the list **container** handles:\n- Checkbox toggles (closest('.checkbox'))\n- Delete buttons (closest('.delete-btn'))\n- Edit triggers (closest('.edit-btn'))\n\nAll with a single addEventListener()."},
+      {heading:"Todo list",body:"One listener on the list container handles:\n- Checkbox toggles (closest('.checkbox'))\n- Delete buttons (closest('.delete-btn'))\n- Edit triggers (closest('.edit-btn'))\n\nAll with a single addEventListener()."},
       {heading:"Data tables",body:"One listener on <table> or <tbody>:\n- Row selection (closest('tr'))\n- Cell editing (closest('td'))\n- Sort buttons (closest('th button'))\n\nScales to thousands of rows."},
       {heading:"Navigation menus",body:"One listener on the <nav> element:\n- Link clicks (closest('a'))\n- Dropdown toggles (closest('.dropdown-trigger'))\n- Active state management"},
     ]

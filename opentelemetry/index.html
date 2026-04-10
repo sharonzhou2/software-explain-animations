@@ -406,7 +406,7 @@ const DETAILS = {
     title:"Traces",
     color:T.trace,
     sections:[
-      {heading:"What is a trace?",body:"A trace represents the journey of a single request through a distributed system. It's a directed acyclic graph (tree) of spans, where each span represents a unit of work in one service."},
+      {heading:"What is a trace?",body:"**A trace represents the journey of a single request through a distributed system.** It's a directed acyclic graph (tree) of spans, where each span represents a unit of work in one service."},
       {heading:"Why traces matter",body:"In a microservices architecture, a single user request might hit 10+ services. Without traces, debugging \"why was this request slow?\" means grepping logs across dozens of services. Traces show the exact path and timing."},
       {heading:"Sampling",body:"In high-traffic systems, tracing every request is expensive. OTel supports:\n• Head sampling — decide at request start (fast, simple)\n• Tail sampling — decide after seeing the full trace (can keep errors/slow traces)\n• Probabilistic — keep N% of traces"},
     ]
@@ -434,7 +434,7 @@ const DETAILS = {
     color:T.purple,
     sections:[
       {heading:"Why a collector?",body:"You could export directly from your app to a backend. But a Collector in between gives you:\n• Buffering and retry on failure\n• Processing (filtering, sampling, enrichment)\n• Fan-out to multiple backends\n• Decouples app from backend choice"},
-      {heading:"Deployment modes",body:"• Sidecar — one Collector per **pod** (**Kubernetes**)\n• DaemonSet — one per node\n• Gateway — centralized fleet of Collectors\n• No Collector — SDK exports directly (simple but limited)"},
+      {heading:"Deployment modes",body:"• Sidecar — one Collector per pod (Kubernetes)\n• DaemonSet — one per node\n• Gateway — centralized fleet of Collectors\n• No Collector — SDK exports directly (simple but limited)"},
       {heading:"Pipeline config",body:"A Collector config defines pipelines:\n\nservice:\n  pipelines:\n    traces:\n      receivers: [otlp]\n      processors: [batch, filter]\n      exporters: [jaeger]\n    metrics:\n      receivers: [otlp, prometheus]\n      processors: [batch]\n      exporters: [prometheus]"},
     ]
   },
@@ -451,7 +451,7 @@ const DETAILS = {
     title:"Context Propagation",
     color:T.blue,
     sections:[
-      {heading:"What is propagation?",body:"When Service A calls Service B, the trace **must** continue. Context propagation injects trace metadata into outgoing requests (HTTP headers, gRPC metadata) and extracts it on the receiving side."},
+      {heading:"What is propagation?",body:"When Service A calls Service B, the trace must continue. Context propagation injects trace metadata into outgoing requests (HTTP headers, gRPC metadata) and extracts it on the receiving side."},
       {heading:"W3C Trace Context",body:"The standard format (used by default):\n\ntraceparent: 00-<trace-id>-<parent-span-id>-<flags>\n\n• 00 — version\n• trace-id — 32 hex chars, shared by all spans in the trace\n• parent-span-id — 16 hex chars, the calling span\n• flags — 01 = sampled"},
       {heading:"Propagators",body:"OTel supports multiple propagation formats:\n• W3C TraceContext (default)\n• B3 (Zipkin format)\n• Jaeger propagation\n• AWS X-Ray\n\nYou can use multiple simultaneously for migration."},
     ]

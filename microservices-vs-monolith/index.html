@@ -342,7 +342,7 @@ const DETAILS = {
     title:"Monolith",
     color:T.mono,
     sections:[
-      {heading:"What it is",body:"A single deployable application that contains every feature of the product. All modules live in one repo, compile to one binary (or one **container** image), run as one process, and typically share a single database."},
+      {heading:"What it is",body:"A single deployable application that contains every feature of the product. All modules live in one repo, compile to one binary (or one container image), run as one process, and typically share a single database."},
       {heading:"Strengths",body:"• Dead-simple local development — clone, run, done\n• In-process calls are fast and transactional\n• Easy to refactor across the whole codebase\n• One deploy pipeline to maintain\n• Strong consistency for free (one DB)"},
       {heading:"Weaknesses",body:"• A single hot path forces you to scale the whole app\n• Any change ships the entire codebase\n• Teams step on each other in merges and releases\n• Whole process dies from one memory leak\n• Locked into one language and framework"},
       {heading:"Modular monolith",body:"You can get most of the benefits of microservices by enforcing clean module boundaries inside a single deployable. Many successful products (Shopify, Basecamp, Stack Overflow) run this way at very large scale."},
@@ -363,9 +363,9 @@ const DETAILS = {
     color:T.teal,
     sections:[
       {heading:"Sync — REST / gRPC",body:"Service A makes an HTTP or gRPC call to Service B and waits for the reply. Easy to reason about, easy to test. But A is down whenever B is down, and latency compounds along the call chain."},
-      {heading:"Async — events",body:"Service A publishes a message to a **broker** (**Kafka**, SQS, NATS) and moves on. Other services consume whenever they're ready. Decoupled in time — A doesn't care if B is up — but the world is eventually consistent."},
+      {heading:"Async — events",body:"Service A publishes a message to a broker (Kafka, SQS, NATS) and moves on. Other services consume whenever they're ready. Decoupled in time — A doesn't care if B is up — but the world is eventually consistent."},
       {heading:"Choosing",body:"• Sync when the caller genuinely needs an immediate answer (\"is this card valid?\")\n• Async when you're broadcasting something that happened (\"order was placed\")\n• In practice, most mature systems use both"},
-      {heading:"gRPC vs REST",body:"gRPC uses **HTTP/2** + protobuf — smaller payloads, strongly typed, bidirectional streaming. REST is simpler to debug and plays well with browsers. gRPC is common between services; REST is common at the edge."},
+      {heading:"gRPC vs REST",body:"gRPC uses HTTP/2 + protobuf — smaller payloads, strongly typed, bidirectional streaming. REST is simpler to debug and plays well with browsers. gRPC is common between services; REST is common at the edge."},
     ]
   },
   gateway: {
@@ -384,7 +384,7 @@ const DETAILS = {
     sections:[
       {heading:"The problem",body:"Service instances start, stop, crash, and get rescheduled constantly. Hard-coding IPs is hopeless. Something has to keep a live map of \"which healthy instances of user-service exist right now?\""},
       {heading:"Client-side discovery",body:"The client queries a registry (Consul, Eureka, etcd), gets a list of healthy instances, and picks one. Simple but every client needs discovery logic."},
-      {heading:"Server-side discovery",body:"The client hits a stable name; a load balancer or service mesh forwards to a healthy instance. **Kubernetes** does this with ClusterIP services + kube-dns."},
+      {heading:"Server-side discovery",body:"The client hits a stable name; a load balancer or service mesh forwards to a healthy instance. Kubernetes does this with ClusterIP services + kube-dns."},
       {heading:"In Kubernetes",body:"You just hit http://user-service.default.svc.cluster.local. kube-proxy and CoreDNS handle the rest. This is why k8s made microservices a lot more practical."},
     ]
   },
@@ -393,9 +393,9 @@ const DETAILS = {
     color:T.red,
     sections:[
       {heading:"Tracing a single request",body:"A checkout might hit 12 services. When something is slow, you need distributed tracing (OpenTelemetry, Jaeger, Zipkin) to see the full waterfall — otherwise you're guessing."},
-      {heading:"Data consistency",body:"There's no **ACID** transaction across services. Use sagas, outbox patterns, and event sourcing. Accept that your UI may briefly show stale data."},
+      {heading:"Data consistency",body:"There's no ACID transaction across services. Use sagas, outbox patterns, and event sourcing. Accept that your UI may briefly show stale data."},
       {heading:"Partial failures",body:"B is down, A keeps retrying, the retry storm DOSes B harder. Use timeouts, exponential backoff, circuit breakers, and bulkheads to contain blast radius."},
-      {heading:"Operational cost",body:"You now need: a **container** platform, CI/CD per service, centralized logging, metrics, tracing, a service mesh, secrets management, and a team to run it. Don't underestimate this."},
+      {heading:"Operational cost",body:"You now need: a container platform, CI/CD per service, centralized logging, metrics, tracing, a service mesh, secrets management, and a team to run it. Don't underestimate this."},
     ]
   },
   code: {

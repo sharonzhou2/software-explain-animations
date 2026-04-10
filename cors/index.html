@@ -290,7 +290,7 @@ const DETAILS = {
     title:"Same-Origin Policy",
     color:T.purpleL,
     sections:[
-      {heading:"What it protects",body:"The **same-origin policy** **prevents** a malicious website from reading sensitive data from another site. Without it, any page could make authenticated requests to your bank and read the response."},
+      {heading:"What it protects",body:"The same-origin policy prevents a malicious website from reading sensitive data from another site. Without it, any page could make authenticated requests to your bank and read the response."},
       {heading:"What it doesn't block",body:"The policy only restricts reading responses. Embedding images, scripts, and stylesheets from other origins is still allowed. Forms can submit cross-origin too. It's specifically JavaScript's ability to read the response that's restricted."},
     ]
   },
@@ -306,8 +306,8 @@ const DETAILS = {
     title:"Why Block?",
     color:T.coralL,
     sections:[
-      {heading:"The threat model",body:"If evil.com could fetch('https://bank.com/api/balance'), and the browser attached your bank cookies, the attacker could read your balance. The **same-origin policy** ensures only bank.com's own scripts can read bank.com responses."},
-      {heading:"Browser enforcement",body:"The request often still reaches the server. The server responds normally. But the browser intercepts the response and refuses to let JavaScript read it. **CORS** errors happen at the browser, not the server."},
+      {heading:"The threat model",body:"If evil.com could fetch('https://bank.com/api/balance'), and the browser attached your bank cookies, the attacker could read your balance. The same-origin policy ensures only bank.com's own scripts can read bank.com responses."},
+      {heading:"Browser enforcement",body:"The request often still reaches the server. The server responds normally. But the browser intercepts the response and refuses to let JavaScript read it. CORS errors happen at the browser, not the server."},
     ]
   },
   simple: {
@@ -315,15 +315,15 @@ const DETAILS = {
     color:T.tealL,
     sections:[
       {heading:"What makes a request 'simple'",body:"A simple request meets ALL of these:\n\u2022 Method is GET, HEAD, or POST\n\u2022 Only safe headers: Accept, Accept-Language, Content-Language, Content-Type\n\u2022 Content-Type is only: application/x-www-form-urlencoded, multipart/form-data, or text/plain"},
-      {heading:"No preflight needed",body:"Simple requests go directly to the server. The browser still checks the Access-Control-Allow-Origin header in the response, but it doesn't send a preliminary **OPTIONS** request first."},
+      {heading:"No preflight needed",body:"Simple requests go directly to the server. The browser still checks the Access-Control-Allow-Origin header in the response, but it doesn't send a preliminary OPTIONS request first."},
     ]
   },
   preflight: {
     title:"Preflight Requests",
     color:T.amberL,
     sections:[
-      {heading:"When preflight happens",body:"The browser sends a **preflight** **OPTIONS** request when:\n\u2022 Method is PUT, DELETE, PATCH, etc.\n\u2022 Custom headers like Authorization\n\u2022 Content-Type is application/json\n\u2022 Any non-simple header is included"},
-      {heading:"Why preflight exists",body:"**Preflight** protects servers that existed before **CORS**. Old servers **never** expected cross-origin DELETE or PUT requests. The **preflight** lets the server explicitly opt in to these methods before the browser sends the actual request."},
+      {heading:"When preflight happens",body:"The browser sends a preflight OPTIONS request when:\n\u2022 Method is PUT, DELETE, PATCH, etc.\n\u2022 Custom headers like Authorization\n\u2022 Content-Type is application/json\n\u2022 Any non-simple header is included"},
+      {heading:"Why preflight exists",body:"Preflight protects servers that existed before CORS. Old servers never expected cross-origin DELETE or PUT requests. The preflight lets the server explicitly opt in to these methods before the browser sends the actual request."},
     ]
   },
   preflightSteps: {
@@ -332,7 +332,7 @@ const DETAILS = {
     sections:[
       {heading:"Step 1: OPTIONS request",body:"Browser automatically sends:\nOPTIONS /resource\nOrigin: https://app.com\nAccess-Control-Request-Method: PUT\nAccess-Control-Request-Headers: Authorization"},
       {heading:"Step 2: Server response",body:"Server responds with:\nAccess-Control-Allow-Origin: https://app.com\nAccess-Control-Allow-Methods: GET, PUT\nAccess-Control-Allow-Headers: Authorization\n(204 No Content)"},
-      {heading:"Step 3: Actual request",body:"If the **preflight** succeeds, the browser sends the actual PUT request with the real body and headers. If the **preflight** fails, the actual request is **never** sent."},
+      {heading:"Step 3: Actual request",body:"If the preflight succeeds, the browser sends the actual PUT request with the real body and headers. If the preflight fails, the actual request is never sent."},
     ]
   },
   acao: {
@@ -340,7 +340,7 @@ const DETAILS = {
     color:T.greenL,
     sections:[
       {heading:"Specific origin",body:"Access-Control-Allow-Origin: https://app.com\n\nThe safest approach. Only this exact origin can read the response. The server should dynamically set this based on the request's Origin header."},
-      {heading:"Wildcard",body:"Access-Control-Allow-Origin: *\n\nAny origin can read the response. **Cannot** be used with credentials. Good for public APIs (CDNs, open data)."},
+      {heading:"Wildcard",body:"Access-Control-Allow-Origin: *\n\nAny origin can read the response. Cannot be used with credentials. Good for public APIs (CDNs, open data)."},
       {heading:"Dynamic origin",body:"Many servers read the Origin header from the request, check it against an allowlist, and echo it back. This lets multiple origins access the resource while maintaining security."},
     ]
   },
@@ -348,23 +348,23 @@ const DETAILS = {
     title:"Credentials",
     color:T.pinkL,
     sections:[
-      {heading:"What credentials include",body:"Credentials means:\n\u2022 Cookies\n\u2022 Authorization headers\n\u2022 TLS client certificates\n\nBy default, cross-origin fetch() **does NOT** send these."},
-      {heading:"Both sides must opt in",body:"Client: fetch(url, { credentials: 'include' })\n\nServer **must** respond with:\nAccess-Control-Allow-Credentials: true\nAccess-Control-Allow-Origin: https://app.com\n\nWildcard (*) is NOT allowed with credentials."},
+      {heading:"What credentials include",body:"Credentials means:\n\u2022 Cookies\n\u2022 Authorization headers\n\u2022 TLS client certificates\n\nBy default, cross-origin fetch() does NOT send these."},
+      {heading:"Both sides must opt in",body:"Client: fetch(url, { credentials: 'include' })\n\nServer must respond with:\nAccess-Control-Allow-Credentials: true\nAccess-Control-Allow-Origin: https://app.com\n\nWildcard (*) is NOT allowed with credentials."},
     ]
   },
   allowList: {
     title:"Allow-Headers & Methods",
     color:T.amberL,
     sections:[
-      {heading:"Allow-Methods",body:"Access-Control-Allow-Methods: GET, POST, PUT, DELETE\n\nTells the browser which HTTP methods the server accepts for cross-origin requests. Only needed in **preflight** responses."},
-      {heading:"Allow-Headers",body:"Access-Control-Allow-Headers: Authorization, Content-Type, X-Custom\n\nTells the browser which request headers the server accepts. Simple headers (Accept, Content-Language) are **always** allowed."},
+      {heading:"Allow-Methods",body:"Access-Control-Allow-Methods: GET, POST, PUT, DELETE\n\nTells the browser which HTTP methods the server accepts for cross-origin requests. Only needed in preflight responses."},
+      {heading:"Allow-Headers",body:"Access-Control-Allow-Headers: Authorization, Content-Type, X-Custom\n\nTells the browser which request headers the server accepts. Simple headers (Accept, Content-Language) are always allowed."},
     ]
   },
   caching: {
     title:"Preflight Cache",
     color:T.blueL,
     sections:[
-      {heading:"Access-Control-Max-Age",body:"Access-Control-Max-Age: 86400\n\nTells the browser to cache the **preflight** response for 86400 seconds (24 hours). During this time, the same cross-origin request skips the **preflight** **OPTIONS** call."},
+      {heading:"Access-Control-Max-Age",body:"Access-Control-Max-Age: 86400\n\nTells the browser to cache the preflight response for 86400 seconds (24 hours). During this time, the same cross-origin request skips the preflight OPTIONS call."},
       {heading:"Browser limits",body:"Browsers cap max-age:\n\u2022 Chrome: 7200s (2 hours)\n\u2022 Firefox: 86400s (24 hours)\n\nEven if the server sets a higher value, browsers enforce their own maximum."},
     ]
   },
@@ -372,24 +372,24 @@ const DETAILS = {
     title:"CORS Errors",
     color:T.redL,
     sections:[
-      {heading:"Where errors happen",body:"**CORS** errors are **always** browser-side. The server often responds normally (200 OK), but the browser blocks JavaScript from reading the response because the **CORS** headers are missing or incorrect."},
-      {heading:"Debugging tips",body:"\u2022 Check the Network tab for the actual response\n\u2022 Look for the **OPTIONS** **preflight** request\n\u2022 Verify the server sends correct Access-Control-* headers\n\u2022 Check if credentials require a specific origin (not *)\n\u2022 Ensure **preflight** responds with 2xx status"},
+      {heading:"Where errors happen",body:"CORS errors are always browser-side. The server often responds normally (200 OK), but the browser blocks JavaScript from reading the response because the CORS headers are missing or incorrect."},
+      {heading:"Debugging tips",body:"\u2022 Check the Network tab for the actual response\n\u2022 Look for the OPTIONS preflight request\n\u2022 Verify the server sends correct Access-Control-* headers\n\u2022 Check if credentials require a specific origin (not *)\n\u2022 Ensure preflight responds with 2xx status"},
     ]
   },
   proxy: {
     title:"Server-Side Proxy",
     color:T.tealL,
     sections:[
-      {heading:"How it works",body:"Your frontend calls your own backend (same origin). Your backend then calls the external API (server-to-server). **CORS** only applies in browsers, so the backend request has no **CORS** restrictions."},
-      {heading:"When to use",body:"Use a proxy when:\n\u2022 You can't control the external API's **CORS** headers\n\u2022 You need to hide API keys from the browser\n\u2022 You want to add caching or rate limiting\n\u2022 The API doesn't support **CORS** at all"},
+      {heading:"How it works",body:"**Your frontend calls your own backend (same origin).** Your backend then calls the external API (server-to-server). CORS only applies in browsers, so the backend request has no CORS restrictions."},
+      {heading:"When to use",body:"Use a proxy when:\n\u2022 You can't control the external API's CORS headers\n\u2022 You need to hide API keys from the browser\n\u2022 You want to add caching or rate limiting\n\u2022 The API doesn't support CORS at all"},
     ]
   },
   summary: {
     title:"Key Takeaways",
     color:T.purpleL,
     sections:[
-      {heading:"Core concept",body:"**CORS** is a browser security mechanism. The server opts in to cross-origin access by sending specific response headers. Without these headers, the browser blocks the response."},
-      {heading:"Essential headers",body:"\u2022 Access-Control-Allow-Origin — which origins\n\u2022 Access-Control-Allow-Methods — which methods\n\u2022 Access-Control-Allow-Headers — which headers\n\u2022 Access-Control-Allow-Credentials — cookies/auth\n\u2022 Access-Control-Max-Age — **preflight** cache time"},
+      {heading:"Core concept",body:"CORS is a browser security mechanism. The server opts in to cross-origin access by sending specific response headers. Without these headers, the browser blocks the response."},
+      {heading:"Essential headers",body:"\u2022 Access-Control-Allow-Origin — which origins\n\u2022 Access-Control-Allow-Methods — which methods\n\u2022 Access-Control-Allow-Headers — which headers\n\u2022 Access-Control-Allow-Credentials — cookies/auth\n\u2022 Access-Control-Max-Age — preflight cache time"},
     ]
   },
 };

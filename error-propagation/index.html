@@ -464,10 +464,10 @@ const DETAILS = {
     title:"Call Stack",
     color:T.blue,
     sections:[
-      { heading:"What is it?", body:"A **LIFO** (last-in, first-out) data structure tracking which function is executing. When a function is called, a frame is pushed. When it returns (or throws), the frame is popped." },
+      { heading:"What is it?", body:"**A LIFO (last-in, first-out) data structure tracking which function is executing.** When a function is called, a frame is pushed. When it returns (or throws), the frame is popped." },
       { heading:"How errors unwind", body:"When throw executes, the engine pops the current frame and checks the caller for a catch. If none, it pops again. This continues up the stack until a catch is found — or the stack is empty (uncaught error)." },
-      { heading:"Stack trace", body:"The error object captures the **call stack** at the moment of the throw. This 'stack trace' shows every function frame from the throw site to the entry point — invaluable for debugging." },
-      { heading:"Key insight", body:"The **call stack** unwind is **synchronous** and immediate. Every frame without a catch is destroyed, and its local variables are lost. You **cannot** resume from where the error was thrown." },
+      { heading:"Stack trace", body:"The error object captures the call stack at the moment of the throw. This 'stack trace' shows every function frame from the throw site to the entry point — invaluable for debugging." },
+      { heading:"Key insight", body:"**The call stack unwind is synchronous and immediate.** Every frame without a catch is destroyed, and its local variables are lost. You cannot resume from where the error was thrown." },
     ]
   },
   code: {
@@ -483,8 +483,8 @@ const DETAILS = {
     color:T.red,
     sections:[
       { heading:"What it does", body:"throw immediately stops the current function and begins the stack unwinding process. You can throw any value, but Error objects are best because they capture a stack trace." },
-      { heading:"Syntax", body:"throw expression;\n\nThe expression can be an Error object, a string, a number, or any value. Best practice: **always** throw Error instances for proper stack traces." },
-      { heading:"throw vs return", body:"return exits the function normally and passes a value to the caller. throw exits abnormally — the caller **never** receives a return value. Instead, the engine searches for a catch block." },
+      { heading:"Syntax", body:"throw expression;\n\nThe expression can be an Error object, a string, a number, or any value. Best practice: always throw Error instances for proper stack traces." },
+      { heading:"throw vs return", body:"return exits the function normally and passes a value to the caller. throw exits abnormally — the caller never receives a return value. Instead, the engine searches for a catch block." },
     ]
   },
   types: {
@@ -492,8 +492,8 @@ const DETAILS = {
     color:"#ffcb6b",
     sections:[
       { heading:"TypeError", body:"Occurs when a value is not the expected type. Common: calling non-functions, accessing properties of null/undefined, using operators on wrong types." },
-      { heading:"ReferenceError", body:"Occurs when referencing a variable that doesn't exist in scope. Common with misspelled variable names or accessing variables before declaration (**TDZ**)." },
-      { heading:"SyntaxError", body:"Occurs at parse time (before execution) when the code structure is invalid. **Cannot** be caught at runtime in the same script — the script fails to load entirely." },
+      { heading:"ReferenceError", body:"Occurs when referencing a variable that doesn't exist in scope. Common with misspelled variable names or accessing variables before declaration (TDZ)." },
+      { heading:"SyntaxError", body:"Occurs at parse time (before execution) when the code structure is invalid. Cannot be caught at runtime in the same script — the script fails to load entirely." },
       { heading:"RangeError", body:"Occurs when a value is outside its allowed range. Examples: invalid array length, too much recursion (stack overflow), invalid Date." },
       { heading:"Custom errors", body:"Extend the Error class to create domain-specific error types. Add properties like statusCode, errorCode, or isOperational. Enables instanceof checks for targeted handling." },
     ]
@@ -504,8 +504,8 @@ const DETAILS = {
     sections:[
       { heading:"try block", body:"Wraps code that might throw. If no error occurs, catch is skipped entirely. The try block creates its own scope for let/const declarations." },
       { heading:"catch block", body:"Receives the thrown error object as its parameter. Only runs if an error was thrown in the try block. You can inspect err.message, err.name, err.stack, and any custom properties." },
-      { heading:"finally block", body:"**Always** runs — after try succeeds, after catch handles an error, even after a return or throw. Use for cleanup: closing connections, releasing resources, clearing timers." },
-      { heading:"Nesting", body:"**try/catch** can be nested. An inner catch handles its own errors. If the inner catch re-throws, the outer catch receives it. This enables layered error handling strategies." },
+      { heading:"finally block", body:"Always runs — after try succeeds, after catch handles an error, even after a return or throw. Use for cleanup: closing connections, releasing resources, clearing timers." },
+      { heading:"Nesting", body:"try/catch can be nested. An inner catch handles its own errors. If the inner catch re-throws, the outer catch receives it. This enables layered error handling strategies." },
     ]
   },
   promise: {
@@ -522,9 +522,9 @@ const DETAILS = {
     title:"async/await Errors",
     color:T.purple,
     sections:[
-      { heading:"How it works", body:"await pauses until the promise settles. If the promise rejects, await throws the rejection reason — converting it into a **synchronous**-style throw that **try/catch** can handle." },
-      { heading:"Re-throwing", body:"catch the error, log it, then re-throw to let callers handle it too. This creates an error handling chain similar to **synchronous** propagation." },
-      { heading:"Common mistake", body:"Forgetting **try/catch** around await. The **unhandled** rejection becomes an UnhandledPromiseRejection warning/error. Every await should be in a **try/catch** or the returned promise should have .catch()." },
+      { heading:"How it works", body:"**await pauses until the promise settles.** If the promise rejects, await throws the rejection reason — converting it into a synchronous-style throw that try/catch can handle." },
+      { heading:"Re-throwing", body:"catch the error, log it, then re-throw to let callers handle it too. This creates an error handling chain similar to synchronous propagation." },
+      { heading:"Common mistake", body:"Forgetting try/catch around await. The unhandled rejection becomes an UnhandledPromiseRejection warning/error. Every await should be in a try/catch or the returned promise should have .catch()." },
       { heading:"Top-level await", body:"In modules, you can use top-level await. Errors propagate to the module loader. In scripts, wrap in an async IIFE with .catch() on the returned promise." },
     ]
   },
@@ -534,7 +534,7 @@ const DETAILS = {
     sections:[
       { heading:"Always runs", body:"finally executes no matter what: after normal completion, after catch, after return, after throw. The only exceptions: process.exit() or an infinite loop." },
       { heading:"With return", body:"If try has a return statement, the value is set aside. finally runs, then the saved return value is used. If finally also has a return, it overrides the try's return." },
-      { heading:"Use cases", body:"Close database connections, release file handles, clear intervals/timeouts, hide loading spinners, release locks, restore state. Anything that **must** happen regardless of success or failure." },
+      { heading:"Use cases", body:"Close database connections, release file handles, clear intervals/timeouts, hide loading spinners, release locks, restore state. Anything that must happen regardless of success or failure." },
     ]
   },
 };

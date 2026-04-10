@@ -314,7 +314,7 @@ const DETAILS = {
     title:"Fixed Window Counter",
     color:T.blue,
     sections:[
-      {heading:"How it works",body:"Time is chopped into fixed windows (e.g. 1-minute buckets). A counter tracks how many requests happened in the current window. When the window ends, the counter resets to zero."},
+      {heading:"How it works",body:"**Time is chopped into fixed windows (e.g.** 1-minute buckets). A counter tracks how many requests happened in the current window. When the window ends, the counter resets to zero."},
       {heading:"Strengths",body:"• Trivial to implement — one integer per key\n• Constant memory\n• Counter stored easily in Redis with INCR + EXPIRE\n• Intuitive to reason about"},
       {heading:"Weakness: the boundary problem",body:"A client can burst at the very end of one window and again at the start of the next, effectively getting 2x the intended limit over a short span. Fine for coarse throttling, bad for strict guarantees."},
       {heading:"Use it when",body:"You need a simple, cheap limiter and minor burst allowances are OK — e.g. \"100 API calls/min per user\" where a 2x burst at the boundary is acceptable."},
@@ -334,7 +334,7 @@ const DETAILS = {
     title:"Token Bucket",
     color:T.amber,
     sections:[
-      {heading:"The model",body:"A bucket with capacity N starts full. Every request takes one token. Tokens refill at a steady rate (e.g. 1/sec). If the bucket is empty, reject the request.\n\nThe bucket **never** overflows — tokens are capped at capacity."},
+      {heading:"The model",body:"A bucket with capacity N starts full. Every request takes one token. Tokens refill at a steady rate (e.g. 1/sec). If the bucket is empty, reject the request.\n\nThe bucket never overflows — tokens are capped at capacity."},
       {heading:"Why bursts work",body:"Because tokens accumulate during quiet periods, clients can burst up to the bucket size at any time. After the burst, the effective sustained rate is the refill rate. This matches real user behavior."},
       {heading:"Implementation",body:"Store two numbers: { tokens, lastRefill }\nOn each request:\n  1. tokens += (now - lastRefill) * refillRate\n  2. tokens = min(tokens, capacity)\n  3. if tokens >= 1 → tokens--, allow\n  4. else → reject"},
       {heading:"Used by",body:"AWS API Gateway, Stripe, GitHub API — anywhere you want a sustained rate with sensible burst handling."},
@@ -344,9 +344,9 @@ const DETAILS = {
     title:"Leaky Bucket",
     color:T.coral,
     sections:[
-      {heading:"The model",body:"Picture a bucket with a hole in the bottom. Incoming requests pour in at the top into a **FIFO** queue. Requests drip out of the hole at a fixed rate — **always**. If the queue is full when a new request arrives, it overflows and is rejected."},
-      {heading:"Output is always smooth",body:"Unlike **token bucket**, **leaky bucket** **does not** allow output bursts. The drain rate is constant — perfect for protecting a downstream service that hates bursty traffic (a database, a third-party API with strict QPS caps)."},
-      {heading:"Trade-off vs token bucket",body:"• Leaky: smooths traffic, adds latency (queuing)\n• Token: allows bursts, zero queuing latency\n\nChoose leaky when the bottleneck **cannot** absorb bursts; choose token when clients legitimately need to burst."},
+      {heading:"The model",body:"Picture a bucket with a hole in the bottom. Incoming requests pour in at the top into a FIFO queue. Requests drip out of the hole at a fixed rate — always. If the queue is full when a new request arrives, it overflows and is rejected."},
+      {heading:"Output is always smooth",body:"Unlike token bucket, leaky bucket does not allow output bursts. The drain rate is constant — perfect for protecting a downstream service that hates bursty traffic (a database, a third-party API with strict QPS caps)."},
+      {heading:"Trade-off vs token bucket",body:"• Leaky: smooths traffic, adds latency (queuing)\n• Token: allows bursts, zero queuing latency\n\nChoose leaky when the bottleneck cannot absorb bursts; choose token when clients legitimately need to burst."},
       {heading:"Implementation",body:"A queue + a worker that dequeues on an interval. In distributed systems, approximated by a counter that decrements on a schedule."},
     ]
   },
@@ -356,7 +356,7 @@ const DETAILS = {
     sections:[
       {heading:"The problem",body:"One server = one counter, easy. But production has N API servers behind a load balancer. If each tracks its own counter, a user with limit 100 could actually get 100*N requests through."},
       {heading:"The solution: shared store",body:"Put the counter in a single source of truth — typically Redis — that all servers query. Redis INCR is atomic, and with EXPIRE you get a fixed window limiter in 2 commands."},
-      {heading:"Performance concerns",body:"• Every request → one round-trip to Redis\n• Redis becomes a bottleneck and SPOF\n• Mitigations: local pre-check cache, Lua scripts for atomic multi-op, **sharding** by key"},
+      {heading:"Performance concerns",body:"• Every request → one round-trip to Redis\n• Redis becomes a bottleneck and SPOF\n• Mitigations: local pre-check cache, Lua scripts for atomic multi-op, sharding by key"},
       {heading:"Other approaches",body:"• Gossip counters (eventually consistent)\n• Token buckets pre-issued to each server\n• Sidecar proxies like Envoy with a global rate limit service"},
     ]
   },
@@ -366,7 +366,7 @@ const DETAILS = {
     sections:[
       {heading:"Standard response headers",body:"X-RateLimit-Limit — total allowed\nX-RateLimit-Remaining — how many left\nX-RateLimit-Reset — unix ts when counter resets\n\nThe IETF draft 'RateLimit' header uses: RateLimit-Limit, RateLimit-Remaining, RateLimit-Reset."},
       {heading:"The 429 response",body:"When the limit is exceeded, return:\n\nHTTP/1.1 429 Too Many Requests\nRetry-After: 30\n\nRetry-After can be a delta-seconds number or an HTTP-date. Well-behaved clients will back off."},
-      {heading:"Client best practices",body:"• Respect Retry-After\n• Exponential backoff with jitter on retries\n• Track remaining count, slow down proactively\n• **Never** hammer after a 429 — you'll get IP-banned next"},
+      {heading:"Client best practices",body:"• Respect Retry-After\n• Exponential backoff with jitter on retries\n• Track remaining count, slow down proactively\n• Never hammer after a 429 — you'll get IP-banned next"},
     ]
   },
 };

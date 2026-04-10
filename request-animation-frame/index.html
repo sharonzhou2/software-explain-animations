@@ -372,8 +372,8 @@ const DETAILS = {
     color:T.tealL,
     sections:[
       {heading:"60 Hz refresh rate",body:"Most displays refresh 60 times per second. Each frame has a budget of ~16.67ms (1000ms / 60). If your code takes longer than that, you drop a frame and users see jank."},
-      {heading:"Why setTimeout drifts",body:"setTimeout(fn, 16) doesn't guarantee 16ms. The **event loop** might be busy with other tasks. The callback fires at the next available opportunity — which might be 18ms, 22ms, or later. These tiny delays compound into visible stuttering."},
-      {heading:"rAF alignment",body:"requestAnimationFrame callbacks are called by the browser at the optimal time — right before it needs to **repaint**. The browser knows its own refresh rate and schedules accordingly, even on 120Hz or 144Hz displays."},
+      {heading:"Why setTimeout drifts",body:"setTimeout(fn, 16) doesn't guarantee 16ms. The event loop might be busy with other tasks. The callback fires at the next available opportunity — which might be 18ms, 22ms, or later. These tiny delays compound into visible stuttering."},
+      {heading:"rAF alignment",body:"requestAnimationFrame callbacks are called by the browser at the optimal time — right before it needs to repaint. The browser knows its own refresh rate and schedules accordingly, even on 120Hz or 144Hz displays."},
     ]
   },
   performance: {
@@ -382,7 +382,7 @@ const DETAILS = {
     sections:[
       {heading:"Background tab behavior",body:"A huge advantage of rAF: it automatically pauses when the tab is in the background. setTimeout keeps firing, wasting CPU and battery on invisible animations."},
       {heading:"Batching",body:"If you call rAF multiple times before a paint, all callbacks run in the same frame. The browser batches them efficiently. With setTimeout, each timer is independent and can cause layout thrashing."},
-      {heading:"Frame budget",body:"At 60 fps, you have 16.67ms per frame. Your rAF callback (JS execution) + style calculation + layout + paint **must** all fit. If JS takes 10ms, you have ~6ms for the browser's work."},
+      {heading:"Frame budget",body:"At 60 fps, you have 16.67ms per frame. Your rAF callback (JS execution) + style calculation + layout + paint must all fit. If JS takes 10ms, you have ~6ms for the browser's work."},
     ]
   },
   viz: {

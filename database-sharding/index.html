@@ -338,10 +338,10 @@ const DETAILS = {
     title:"Replication",
     color:T.blue,
     sections:[
-      {heading:"What it is",body:"**Replication** keeps the same data on multiple nodes. It's the primary tool for high availability, disaster recovery, and scaling reads. Every serious database supports it."},
+      {heading:"What it is",body:"Replication keeps the same data on multiple nodes. It's the primary tool for high availability, disaster recovery, and scaling reads. Every serious database supports it."},
       {heading:"Primary-replica (leader-follower)",body:"One node accepts writes (the primary). It ships its change log to one or more replicas, which apply the changes in order. Reads can hit any node. If the primary dies, a replica is promoted — this is called a failover."},
-      {heading:"Sync vs async",body:"**Synchronous** **replication** waits until a replica acknowledges the write before returning success. Safer, but slower and vulnerable if the replica is down.\n\nAsynchronous is fast but can lose writes on primary failure (the replica might not have received them yet)."},
-      {heading:"Replication lag",body:"Under async **replication**, replicas are **always** slightly behind. Typical lag is single-digit milliseconds, but under load it can grow to seconds or minutes. Reading your own write immediately from a replica can return stale data — this is eventual consistency."},
+      {heading:"Sync vs async",body:"Synchronous replication waits until a replica acknowledges the write before returning success. Safer, but slower and vulnerable if the replica is down.\n\nAsynchronous is fast but can lose writes on primary failure (the replica might not have received them yet)."},
+      {heading:"Replication lag",body:"Under async replication, replicas are always slightly behind. Typical lag is single-digit milliseconds, but under load it can grow to seconds or minutes. Reading your own write immediately from a replica can return stale data — this is eventual consistency."},
       {heading:"Multi-primary",body:"Multiple nodes accept writes simultaneously. Good for multi-region latency (every region writes locally), but conflicts happen when two regions edit the same row. Resolution strategies: last-write-wins, vector clocks, CRDTs, or app-level merging."},
     ]
   },
@@ -349,7 +349,7 @@ const DETAILS = {
     title:"Range-Based Sharding",
     color:T.amber,
     sections:[
-      {heading:"How it works",body:"Keys are divided into contiguous ranges, and each range is assigned to a shard. Example: user_id 1-1M on shard 1, 1M-2M on shard 2, etc. HBase and MongoDB (default) use this."},
+      {heading:"How it works",body:"**Keys are divided into contiguous ranges, and each range is assigned to a shard.** Example: user_id 1-1M on shard 1, 1M-2M on shard 2, etc. HBase and MongoDB (default) use this."},
       {heading:"Strengths",body:"• Range scans are efficient — related keys are on the same shard\n• Easy to reason about and debug\n• Works well for keys without a natural skew"},
       {heading:"Weaknesses",body:"• Hot shards: sequential keys (timestamps, auto-increment IDs) all write to one shard\n• Uneven distribution if data isn't uniformly spread across the key space\n• Rebalancing requires splitting and moving ranges"},
       {heading:"When to use",body:"When your queries are range-based (date ranges, alphabetical scans) and your keys are naturally well-distributed, not monotonically increasing."},
@@ -359,7 +359,7 @@ const DETAILS = {
     title:"Hash-Based Sharding",
     color:T.teal,
     sections:[
-      {heading:"How it works",body:"Apply a hash function to the shard key, then mod by the number of shards: shard = hash(key) % N. Same key → same shard. Good hash functions spread keys uniformly, so load is balanced even for sequential input."},
+      {heading:"How it works",body:"**Apply a hash function to the shard key, then mod by the number of shards: shard = hash(key) % N.** Same key → same shard. Good hash functions spread keys uniformly, so load is balanced even for sequential input."},
       {heading:"Strengths",body:"• No hot shards from sequential keys\n• Even load distribution\n• Simple to implement"},
       {heading:"Weaknesses",body:"• Range scans require querying every shard (scatter-gather)\n• Rebalancing is catastrophic — adding a shard changes N, so almost every key moves\n• Hard to colocate related data"},
       {heading:"The rebalancing problem",body:"With modulo hashing, going from N shards to N+1 means (N-1)/N of all keys move to a different shard. For N=4 that's 80% of your data. For a database with terabytes of data this is operationally devastating."},
@@ -389,10 +389,10 @@ const DETAILS = {
     title:"Deciding to Shard",
     color:T.purple,
     sections:[
-      {heading:"Try everything else first",body:"**Sharding** is expensive in engineering time and operational complexity. Exhaust cheaper **options** first:\n• Add proper indexes\n• Cache frequent reads (Redis, Memcached)\n• Scale up to a bigger machine\n• Add read replicas\n• Archive cold data"},
+      {heading:"Try everything else first",body:"Sharding is expensive in engineering time and operational complexity. Exhaust cheaper options first:\n• Add proper indexes\n• Cache frequent reads (Redis, Memcached)\n• Scale up to a bigger machine\n• Add read replicas\n• Archive cold data"},
       {heading:"Signs you actually need it",body:"• Single-node can't hold your working set in memory\n• Write throughput exceeds what one primary can handle\n• Data size exceeds what fits on the largest practical disk\n• You need geographic distribution for latency"},
-      {heading:"Choosing a shard key",body:"This is the most important decision. A bad shard key causes hot shards, cross-shard queries, and painful re-**sharding**. Pick something:\n• High cardinality (many distinct values)\n• Evenly distributed (not timestamp-skewed)\n• Naturally part of your common queries"},
-      {heading:"Managed options",body:"Before rolling your own **sharding**, consider databases that do it for you: Vitess, Citus (Postgres), CockroachDB, Spanner, DynamoDB, Cassandra. They handle rebalancing, routing, and failure recovery."},
+      {heading:"Choosing a shard key",body:"This is the most important decision. A bad shard key causes hot shards, cross-shard queries, and painful re-sharding. Pick something:\n• High cardinality (many distinct values)\n• Evenly distributed (not timestamp-skewed)\n• Naturally part of your common queries"},
+      {heading:"Managed options",body:"Before rolling your own sharding, consider databases that do it for you: Vitess, Citus (Postgres), CockroachDB, Spanner, DynamoDB, Cassandra. They handle rebalancing, routing, and failure recovery."},
     ]
   },
 };

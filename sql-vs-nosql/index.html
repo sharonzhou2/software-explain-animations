@@ -333,9 +333,9 @@ const DETAILS = {
     sections:[
       {heading:"What is SQL?",body:"SQL (Structured Query Language) is a declarative language for working with relational databases. You describe what data you want, and the database's query planner figures out how to get it."},
       {heading:"The relational model",body:"Data lives in tables (relations). Each table has a fixed set of typed columns and zero or more rows. Relationships between tables use foreign keys — a column in one table that references the primary key of another."},
-      {heading:"Schema first",body:"You define the schema up front with CREATE TABLE. Every row in a table **must** match. This gives you type safety, integrity constraints, and predictable query plans — at the cost of flexibility when requirements change."},
+      {heading:"Schema first",body:"You define the schema up front with CREATE TABLE. Every row in a table must match. This gives you type safety, integrity constraints, and predictable query plans — at the cost of flexibility when requirements change."},
       {heading:"Popular engines",body:"• PostgreSQL — feature-rich open source\n• MySQL / MariaDB — widely deployed\n• SQLite — embedded, zero-config\n• SQL Server, Oracle — enterprise\n• CockroachDB, Spanner — distributed SQL"},
-      {heading:"Strengths",body:"• Powerful ad-hoc queries via JOINs\n• **ACID** transactions\n• Mature tooling and ecosystem\n• Strong consistency by default\n• Well-understood for 50+ years"},
+      {heading:"Strengths",body:"• Powerful ad-hoc queries via JOINs\n• ACID transactions\n• Mature tooling and ecosystem\n• Strong consistency by default\n• Well-understood for 50+ years"},
     ]
   },
   nosql: {
@@ -345,7 +345,7 @@ const DETAILS = {
       {heading:"What is NoSQL?",body:"An umbrella term for databases that don't use the relational model. The name is misleading — it really means \"Not Only SQL\". Different NoSQL databases look radically different from each other."},
       {heading:"Four main categories",body:"• Document — self-contained JSON-like docs (MongoDB, Couchbase)\n• Key-Value — pure key → value lookups (Redis, DynamoDB)\n• Wide-Column — partitioned rows with huge column sets (Cassandra, BigTable, HBase)\n• Graph — nodes and edges with traversal queries (Neo4j, Neptune)"},
       {heading:"Schema flexibility",body:"Most NoSQL stores are schemaless or schema-on-read. Each document or record can have different fields. This is a superpower for evolving data and a footgun for data quality — the application becomes responsible for shape validation."},
-      {heading:"Scale-out by design",body:"NoSQL systems were built for horizontal scaling — add more machines, not bigger ones. They **partition** data across nodes automatically, accept eventual consistency, and favor availability over strict correctness."},
+      {heading:"Scale-out by design",body:"NoSQL systems were built for horizontal scaling — add more machines, not bigger ones. They partition data across nodes automatically, accept eventual consistency, and favor availability over strict correctness."},
       {heading:"Strengths",body:"• Horizontal scalability\n• High write throughput\n• Flexible schemas\n• Purpose-built for specific access patterns\n• Often simpler operationally at massive scale"},
     ]
   },
@@ -353,30 +353,30 @@ const DETAILS = {
     title:"CAP Theorem",
     color:T.purpleL,
     sections:[
-      {heading:"The theorem",body:"Eric Brewer's theorem (proven by Gilbert & Lynch, 2002): any distributed data store can provide at most two of three guarantees:\n\n• Consistency — every read sees the most recent write\n• Availability — every request receives a non-error response\n• **Partition** tolerance — the system continues to work despite network failures between nodes"},
+      {heading:"The theorem",body:"Eric Brewer's theorem (proven by Gilbert & Lynch, 2002): any distributed data store can provide at most two of three guarantees:\n\n• Consistency — every read sees the most recent write\n• Availability — every request receives a non-error response\n• Partition tolerance — the system continues to work despite network failures between nodes"},
       {heading:"Why P is non-negotiable",body:"In any real distributed system, network partitions WILL happen — packets are dropped, links fail, data centers get isolated. You can't choose to not tolerate partitions; you can only choose what to do when one occurs."},
-      {heading:"The real choice: C vs A",body:"When a **partition** happens, each affected node **must** choose:\n\n• CP — refuse to serve requests from the minority **partition**. Guarantees consistency, sacrifices availability.\n• AP — keep serving requests on both sides. Guarantees availability, sacrifices immediate consistency (nodes will diverge until reconnected)."},
-      {heading:"Nuance",body:"CAP is a simplification. Modern systems tune consistency per-operation — DynamoDB lets you request strong or eventual reads, Cassandra lets you pick quorum levels. Also see PACELC: even without a **partition**, you trade Latency for Consistency."},
+      {heading:"The real choice: C vs A",body:"When a partition happens, each affected node must choose:\n\n• CP — refuse to serve requests from the minority partition. Guarantees consistency, sacrifices availability.\n• AP — keep serving requests on both sides. Guarantees availability, sacrifices immediate consistency (nodes will diverge until reconnected)."},
+      {heading:"Nuance",body:"CAP is a simplification. Modern systems tune consistency per-operation — DynamoDB lets you request strong or eventual reads, Cassandra lets you pick quorum levels. Also see PACELC: even without a partition, you trade Latency for Consistency."},
     ]
   },
   acid: {
     title:"ACID Transactions",
     color:T.sql,
     sections:[
-      {heading:"What ACID means",body:"**ACID** is the set of guarantees traditional SQL databases give you for transactions:\n\n• Atomicity — all statements in a transaction succeed, or none do\n• Consistency — the database moves from one valid state to another (constraints hold)\n• Isolation — concurrent transactions don't see each other's partial work\n• Durability — once committed, the data survives crashes"},
-      {heading:"Atomicity example",body:"Bank transfer: debit account A by $100, credit account B by $100. If either statement fails, the whole transaction rolls back. You **never** lose money between the two updates."},
-      {heading:"Isolation levels",body:"Databases offer several levels, trading correctness for performance:\n• Read uncommitted — weakest, allows dirty reads\n• Read committed — default in many engines\n• Repeatable read — **prevents** non-repeatable reads\n• Serializable — strongest, as if transactions ran one at a time"},
-      {heading:"Cost",body:"**ACID** is expensive at scale. Coordinating transactions across many nodes requires locks, consensus, and two-phase commits — which is why many distributed databases relax **ACID** in favor of **BASE**."},
+      {heading:"What ACID means",body:"ACID is the set of guarantees traditional SQL databases give you for transactions:\n\n• Atomicity — all statements in a transaction succeed, or none do\n• Consistency — the database moves from one valid state to another (constraints hold)\n• Isolation — concurrent transactions don't see each other's partial work\n• Durability — once committed, the data survives crashes"},
+      {heading:"Atomicity example",body:"Bank transfer: debit account A by $100, credit account B by $100. If either statement fails, the whole transaction rolls back. You never lose money between the two updates."},
+      {heading:"Isolation levels",body:"Databases offer several levels, trading correctness for performance:\n• Read uncommitted — weakest, allows dirty reads\n• Read committed — default in many engines\n• Repeatable read — prevents non-repeatable reads\n• Serializable — strongest, as if transactions ran one at a time"},
+      {heading:"Cost",body:"ACID is expensive at scale. Coordinating transactions across many nodes requires locks, consensus, and two-phase commits — which is why many distributed databases relax ACID in favor of BASE."},
     ]
   },
   base: {
     title:"BASE (eventual consistency)",
     color:T.nosql,
     sections:[
-      {heading:"BASE vs ACID",body:"The philosophical opposite of **ACID**, popularized by the NoSQL world:\n\n• Basically Available — the system answers requests, even if data might be stale\n• Soft state — the state of the system may change over time, even without new input (as replicas sync)\n• Eventual consistency — given enough time without new writes, all replicas converge to the same value"},
-      {heading:"Why BASE?",body:"At global scale, strict consistency is slow and fragile. **BASE** trades immediate correctness for **always**-on availability. For many workloads — social feeds, shopping carts, product catalogs — stale data for a few seconds is perfectly acceptable."},
-      {heading:"Conflict resolution",body:"When replicas diverge and eventually reconnect, the system **must** resolve conflicts. Strategies include:\n• Last-write-wins (by timestamp)\n• Vector clocks (track causality)\n• CRDTs (merge deterministically)\n• Application-level reconciliation (Riak's siblings)"},
-      {heading:"When BASE hurts",body:"Financial transactions, inventory counts, and anything requiring counts/uniqueness is a poor fit for pure **BASE**. You either use a CP system or add coordination (e.g., distributed locks) on top."},
+      {heading:"BASE vs ACID",body:"The philosophical opposite of ACID, popularized by the NoSQL world:\n\n• Basically Available — the system answers requests, even if data might be stale\n• Soft state — the state of the system may change over time, even without new input (as replicas sync)\n• Eventual consistency — given enough time without new writes, all replicas converge to the same value"},
+      {heading:"Why BASE?",body:"At global scale, strict consistency is slow and fragile. BASE trades immediate correctness for always-on availability. For many workloads — social feeds, shopping carts, product catalogs — stale data for a few seconds is perfectly acceptable."},
+      {heading:"Conflict resolution",body:"When replicas diverge and eventually reconnect, the system must resolve conflicts. Strategies include:\n• Last-write-wins (by timestamp)\n• Vector clocks (track causality)\n• CRDTs (merge deterministically)\n• Application-level reconciliation (Riak's siblings)"},
+      {heading:"When BASE hurts",body:"Financial transactions, inventory counts, and anything requiring counts/uniqueness is a poor fit for pure BASE. You either use a CP system or add coordination (e.g., distributed locks) on top."},
     ]
   },
   code: {

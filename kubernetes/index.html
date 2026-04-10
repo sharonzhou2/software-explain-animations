@@ -369,8 +369,8 @@ const DETAILS = {
     color:T.k8sBlue,
     sections:[
       {heading:"API Server",body:"kube-apiserver is the front door to the cluster. Every kubectl command, every internal component, talks through the API server. It validates requests, authenticates users, and writes state to etcd. It's the only component that directly accesses etcd."},
-      {heading:"etcd",body:"A distributed key-value store that holds all cluster state: what pods exist, what nodes are available, what configs are set. It's the single source of truth. If etcd is lost, the cluster is lost. **Always** run it replicated (3 or 5 nodes)."},
-      {heading:"Scheduler",body:"kube-scheduler watches for newly created pods with no assigned node. It evaluates constraints (resource requests, node selectors, taints/tolerations, affinity rules) and picks the best node. It doesn't run the **pod** \u2014 it just decides WHERE."},
+      {heading:"etcd",body:"A distributed key-value store that holds all cluster state: what pods exist, what nodes are available, what configs are set. It's the single source of truth. If etcd is lost, the cluster is lost. Always run it replicated (3 or 5 nodes)."},
+      {heading:"Scheduler",body:"kube-scheduler watches for newly created pods with no assigned node. It evaluates constraints (resource requests, node selectors, taints/tolerations, affinity rules) and picks the best node. It doesn't run the pod \u2014 it just decides WHERE."},
       {heading:"Controller Manager",body:"Runs a set of control loops (controllers): Deployment controller, ReplicaSet controller, Node controller, Job controller, etc. Each watches for differences between desired and actual state, then takes corrective action."},
     ]
   },
@@ -378,9 +378,9 @@ const DETAILS = {
     title:"Worker Nodes",
     color:T.nodeTeal,
     sections:[
-      {heading:"kubelet",body:"The agent running on every worker node. It receives **pod** specs from the API server and ensures the described containers are running and healthy. It reports node status back to the control plane and restarts failed containers."},
-      {heading:"kube-proxy",body:"Maintains network rules on each node. When a Service is created, kube-proxy sets up iptables or IPVS rules so that traffic to the Service IP gets forwarded to the correct **pod** IPs. It enables the Service abstraction."},
-      {heading:"Container Runtime",body:"The software that actually runs containers. **Kubernetes** supports any CRI-compliant runtime: containerd (most common), CRI-O, or **Docker** (via dockershim, now deprecated). It pulls images, creates containers, and manages their lifecycle."},
+      {heading:"kubelet",body:"The agent running on every worker node. It receives pod specs from the API server and ensures the described containers are running and healthy. It reports node status back to the control plane and restarts failed containers."},
+      {heading:"kube-proxy",body:"Maintains network rules on each node. When a Service is created, kube-proxy sets up iptables or IPVS rules so that traffic to the Service IP gets forwarded to the correct pod IPs. It enables the Service abstraction."},
+      {heading:"Container Runtime",body:"The software that actually runs containers. Kubernetes supports any CRI-compliant runtime: containerd (most common), CRI-O, or Docker (via dockershim, now deprecated). It pulls images, creates containers, and manages their lifecycle."},
       {heading:"Node capacity",body:"Each node has finite CPU, memory, and storage. The scheduler considers these resources when placing pods. Nodes report their capacity and current usage to the control plane, enabling intelligent scheduling decisions."},
     ]
   },
@@ -388,17 +388,17 @@ const DETAILS = {
     title:"Pods",
     color:T.podGreen,
     sections:[
-      {heading:"What is a Pod?",body:"The smallest deployable unit in **Kubernetes**. A **pod** encapsulates one or more containers that share:\n\u2022 Network namespace (same IP, can use localhost)\n\u2022 Storage volumes\n\u2022 Lifecycle (created and destroyed together)\n\nMost pods run a single **container**."},
-      {heading:"Pod lifecycle",body:"Pending \u2192 Running \u2192 Succeeded/Failed\n\nPending: scheduled but not yet running (pulling image, waiting for resources)\nRunning: at least one **container** is running\nSucceeded: all containers exited with 0\nFailed: at least one **container** exited non-zero"},
-      {heading:"Sidecar pattern",body:"Multi-**container** pods are used for sidecars \u2014 helper containers that augment the main app:\n\u2022 Log collector sidecar\n\u2022 Service mesh proxy (Envoy/Istio)\n\u2022 Config reloader\n\u2022 TLS certificate rotator"},
-      {heading:"Health checks",body:"Liveness probe: Is the **container** alive? (restart if not)\nReadiness probe: Can it serve traffic? (remove from service if not)\nStartup probe: Has it finished starting? (don't check liveness yet)\n\nProbes can be HTTP, **TCP**, or exec-based."},
+      {heading:"What is a Pod?",body:"The smallest deployable unit in Kubernetes. A pod encapsulates one or more containers that share:\n\u2022 Network namespace (same IP, can use localhost)\n\u2022 Storage volumes\n\u2022 Lifecycle (created and destroyed together)\n\nMost pods run a single container."},
+      {heading:"Pod lifecycle",body:"Pending \u2192 Running \u2192 Succeeded/Failed\n\nPending: scheduled but not yet running (pulling image, waiting for resources)\nRunning: at least one container is running\nSucceeded: all containers exited with 0\nFailed: at least one container exited non-zero"},
+      {heading:"Sidecar pattern",body:"Multi-container pods are used for sidecars \u2014 helper containers that augment the main app:\n\u2022 Log collector sidecar\n\u2022 Service mesh proxy (Envoy/Istio)\n\u2022 Config reloader\n\u2022 TLS certificate rotator"},
+      {heading:"Health checks",body:"Liveness probe: Is the container alive? (restart if not)\nReadiness probe: Can it serve traffic? (remove from service if not)\nStartup probe: Has it finished starting? (don't check liveness yet)\n\nProbes can be HTTP, TCP, or exec-based."},
     ]
   },
   services: {
     title:"Services & Ingress",
     color:T.blue,
     sections:[
-      {heading:"Why Services?",body:"**Pod** IPs are ephemeral \u2014 they change on every restart. A Service provides a stable virtual IP (ClusterIP) and DNS name. It uses label selectors to find pods and load-balances across them. Pods come and go; the Service stays."},
+      {heading:"Why Services?",body:"Pod IPs are ephemeral \u2014 they change on every restart. A Service provides a stable virtual IP (ClusterIP) and DNS name. It uses label selectors to find pods and load-balances across them. Pods come and go; the Service stays."},
       {heading:"Service types",body:"ClusterIP: Internal only. Default. Only reachable within the cluster.\n\nNodePort: Exposes on each node's IP at a static port (30000-32767).\n\nLoadBalancer: Provisions a cloud load balancer (AWS ELB, GCP LB). The standard way to expose services externally.\n\nExternalName: Maps to a DNS name (CNAME)."},
       {heading:"Ingress",body:"An Ingress is an API object that manages external HTTP/HTTPS access. It provides:\n\u2022 Host-based routing (api.example.com \u2192 api-svc)\n\u2022 Path-based routing (/api \u2192 api-svc, /web \u2192 web-svc)\n\u2022 TLS termination\n\nRequires an Ingress Controller (nginx, traefik, etc.)."},
       {heading:"Service discovery",body:"K8s provides built-in DNS. Every Service gets a DNS entry:\n<service>.<namespace>.svc.cluster.local\n\nContainers can reach services by name. No hardcoded IPs needed."},
@@ -408,7 +408,7 @@ const DETAILS = {
     title:"Deployments",
     color:T.purple,
     sections:[
-      {heading:"Declarative management",body:"A Deployment describes the desired state: which image to run, how many replicas, resource limits, env vars. You apply the manifest; K8s figures out how to get there. If a **pod** crashes, the Deployment controller replaces it."},
+      {heading:"Declarative management",body:"A Deployment describes the desired state: which image to run, how many replicas, resource limits, env vars. You apply the manifest; K8s figures out how to get there. If a pod crashes, the Deployment controller replaces it."},
       {heading:"Rolling updates",body:"When you update the image version, K8s performs a rolling update:\n1. Creates new pods with the new image\n2. Waits for them to be healthy\n3. Terminates old pods one by one\n\nZero downtime. Configurable with maxSurge and maxUnavailable."},
       {heading:"Rollbacks",body:"Every update creates a new ReplicaSet (revision). If the new version is broken:\n\nkubectl rollout undo deployment/my-app\n\nInstantly rolls back to the previous working version. K8s keeps revision history for exactly this purpose."},
       {heading:"Scaling",body:"Manual: kubectl scale deployment/my-app --replicas=5\n\nAutomatic: HorizontalPodAutoscaler watches metrics and adjusts replica count. Cluster Autoscaler adds/removes nodes when pods can't be scheduled."},
@@ -420,7 +420,7 @@ const DETAILS = {
     sections:[
       {heading:"ConfigMaps",body:"Store non-sensitive configuration as key-value pairs. Consumed as:\n\u2022 Environment variables\n\u2022 Command-line arguments\n\u2022 Mounted config files\n\nChanges to ConfigMaps can be picked up without restarting pods (if mounted as volumes)."},
       {heading:"Secrets",body:"Similar to ConfigMaps but for sensitive data (passwords, tokens, keys). Base64 encoded (not encrypted by default!). For real security:\n\u2022 Enable encryption at rest in etcd\n\u2022 Use external secret managers (Vault, AWS Secrets Manager)\n\u2022 Use RBAC to restrict access"},
-      {heading:"Persistent Volumes",body:"PersistentVolume (PV): A piece of storage provisioned by an admin or dynamically.\nPersistentVolumeClaim (PVC): A request for storage by a **pod**.\n\nThe PV/PVC abstraction decouples storage provisioning from consumption. Pods claim storage; admins provide it."},
+      {heading:"Persistent Volumes",body:"PersistentVolume (PV): A piece of storage provisioned by an admin or dynamically.\nPersistentVolumeClaim (PVC): A request for storage by a pod.\n\nThe PV/PVC abstraction decouples storage provisioning from consumption. Pods claim storage; admins provide it."},
       {heading:"Storage Classes",body:"Define different tiers of storage:\n\u2022 fast-ssd: High IOPS SSD storage\n\u2022 standard: Regular disk storage\n\u2022 archive: Cheap, slow storage\n\nDynamic provisioning creates PVs on demand when a PVC is created."},
     ]
   },
@@ -438,8 +438,8 @@ const DETAILS = {
     title:"kubectl Reference",
     color:T.purpleL,
     sections:[
-      {heading:"Resource management",body:"kubectl apply -f manifest.yaml\nkubectl delete -f manifest.yaml\nkubectl get pods/deployments/services\nkubectl describe **pod** <name>\nkubectl edit deployment <name>"},
-      {heading:"Debugging",body:"kubectl logs <**pod**> [-f] [--previous]\nkubectl exec -it <**pod**> -- /bin/sh\nkubectl port-forward <**pod**> 8080:80\nkubectl top pods/nodes\nkubectl get events --sort-by=.lastTimestamp"},
+      {heading:"Resource management",body:"kubectl apply -f manifest.yaml\nkubectl delete -f manifest.yaml\nkubectl get pods/deployments/services\nkubectl describe pod <name>\nkubectl edit deployment <name>"},
+      {heading:"Debugging",body:"kubectl logs <pod> [-f] [--previous]\nkubectl exec -it <pod> -- /bin/sh\nkubectl port-forward <pod> 8080:80\nkubectl top pods/nodes\nkubectl get events --sort-by=.lastTimestamp"},
       {heading:"Cluster info",body:"kubectl cluster-info\nkubectl get nodes\nkubectl get namespaces\nkubectl config current-context\nkubectl api-resources"},
       {heading:"Common patterns",body:"# Watch resources in real-time\nkubectl get pods -w\n\n# All namespaces\nkubectl get pods -A\n\n# Output as YAML\nkubectl get deploy my-app -o yaml\n\n# Dry run to preview\nkubectl apply -f x.yaml --dry-run=client"},
     ]

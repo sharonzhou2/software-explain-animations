@@ -344,40 +344,40 @@ const DETAILS = {
     title:"HTTP/1.1",
     color:T.http1,
     sections:[
-      {heading:"What it is",body:"**HTTP/1**.1 (RFC 2616, 1997) is the text-based protocol that ran almost the entire web for nearly two decades. Requests and responses are plain ASCII lines — you can literally telnet to port 80 and type a request by hand."},
-      {heading:"Key features",body:"• Persistent connections (Connection: keep-alive is the default)\n• Chunked transfer encoding for streaming responses\n• Host header — enables virtual hosting on one IP\n• Cache validators: ETag, If-Modified-Since\n• Pipelining (rarely enabled because of **HOL blocking**)"},
-      {heading:"The bottlenecks",body:"• One response at a time per connection — **head-of-line blocking**\n• Browsers cap at ~6 parallel connections per origin\n• Huge, repetitive text headers on every single request\n• Text parsing is slow and error-prone\n• No server-initiated data (pre-**WebSocket**)"},
-      {heading:"Workarounds developers invented",body:"• Domain **sharding** — spread assets across subdomains\n• CSS sprites — one image with many icons\n• JS/CSS bundling and concatenation\n• Data URIs / inlining to skip requests entirely\n\nHTTP/2 made all of these unnecessary — and often counterproductive."},
+      {heading:"What it is",body:"HTTP/1.1 (RFC 2616, 1997) is the text-based protocol that ran almost the entire web for nearly two decades. Requests and responses are plain ASCII lines — you can literally telnet to port 80 and type a request by hand."},
+      {heading:"Key features",body:"• Persistent connections (Connection: keep-alive is the default)\n• Chunked transfer encoding for streaming responses\n• Host header — enables virtual hosting on one IP\n• Cache validators: ETag, If-Modified-Since\n• Pipelining (rarely enabled because of HOL blocking)"},
+      {heading:"The bottlenecks",body:"• One response at a time per connection — head-of-line blocking\n• Browsers cap at ~6 parallel connections per origin\n• Huge, repetitive text headers on every single request\n• Text parsing is slow and error-prone\n• No server-initiated data (pre-WebSocket)"},
+      {heading:"Workarounds developers invented",body:"• Domain sharding — spread assets across subdomains\n• CSS sprites — one image with many icons\n• JS/CSS bundling and concatenation\n• Data URIs / inlining to skip requests entirely\n\nHTTP/2 made all of these unnecessary — and often counterproductive."},
     ]
   },
   http2: {
     title:"HTTP/2",
     color:T.http2,
     sections:[
-      {heading:"What it is",body:"**HTTP/2** (RFC 7540, 2015) grew out of Google's SPDY experiment. It keeps HTTP's semantics (verbs, status codes, headers) but completely rewrites the wire format as binary frames over a single multiplexed **TCP** connection."},
-      {heading:"Core ideas",body:"• Binary framing layer — every message is split into small frames\n• Streams — each request/response is a logical stream with an ID\n• **Multiplexing** — frames from different streams interleave\n• HPACK header compression with a shared dynamic table\n• Stream prioritization and flow control\n• Server push (mostly deprecated in practice)"},
-      {heading:"Why it was a big deal",body:"A page could load dozens of resources over a single **TCP** connection with no HTTP-level **blocking**. Domain **sharding** and sprite-sheet hacks became anti-patterns — bundling sometimes hurt because **HTTP/2** could request many small files in parallel just fine."},
-      {heading:"The remaining flaw",body:"**HTTP/2** rides on **TCP**, and **TCP** guarantees in-order byte delivery. A single lost packet stalls the entire connection until the retransmission arrives — even for streams that didn't need the lost bytes. On lossy networks (mobile), this can be worse than **HTTP/1**.1 with multiple connections."},
+      {heading:"What it is",body:"HTTP/2 (RFC 7540, 2015) grew out of Google's SPDY experiment. It keeps HTTP's semantics (verbs, status codes, headers) but completely rewrites the wire format as binary frames over a single multiplexed TCP connection."},
+      {heading:"Core ideas",body:"• Binary framing layer — every message is split into small frames\n• Streams — each request/response is a logical stream with an ID\n• Multiplexing — frames from different streams interleave\n• HPACK header compression with a shared dynamic table\n• Stream prioritization and flow control\n• Server push (mostly deprecated in practice)"},
+      {heading:"Why it was a big deal",body:"A page could load dozens of resources over a single TCP connection with no HTTP-level blocking. Domain sharding and sprite-sheet hacks became anti-patterns — bundling sometimes hurt because HTTP/2 could request many small files in parallel just fine."},
+      {heading:"The remaining flaw",body:"HTTP/2 rides on TCP, and TCP guarantees in-order byte delivery. A single lost packet stalls the entire connection until the retransmission arrives — even for streams that didn't need the lost bytes. On lossy networks (mobile), this can be worse than HTTP/1.1 with multiple connections."},
     ]
   },
   http3: {
     title:"HTTP/3",
     color:T.http3,
     sections:[
-      {heading:"What it is",body:"**HTTP/3** (RFC 9114, 2022) is **HTTP/2**'s semantics re-mapped onto a completely new transport: **QUIC**. From the application's point of view nothing changes — it's still headers, methods, status codes. Under the hood, **TCP** is gone."},
-      {heading:"Why a new transport?",body:"**TCP** is deeply baked into operating system kernels and middleboxes — evolving it is nearly impossible. **QUIC** is implemented in user-space on top of **UDP**, so it can iterate much faster and sidestep **TCP**'s **head-of-line blocking** at the OS level."},
-      {heading:"What you actually get",body:"• Faster handshakes (1-RTT cold, 0-RTT on resume)\n• Independent streams — a lost packet only stalls its own stream\n• Connection migration — your **session** survives switching from WiFi to 4G\n• **Always**-on encryption (TLS 1.3 is baked in, not bolted on)\n• Better performance on lossy / mobile networks"},
-      {heading:"The tradeoffs",body:"• **UDP** is sometimes blocked or rate-limited on enterprise networks\n• More CPU than **TCP** (user-space crypto, no kernel offload yet)\n• Newer — tooling and debuggability are still catching up\n• Falls back to **HTTP/2** automatically when blocked"},
+      {heading:"What it is",body:"HTTP/3 (RFC 9114, 2022) is HTTP/2's semantics re-mapped onto a completely new transport: QUIC. From the application's point of view nothing changes — it's still headers, methods, status codes. Under the hood, TCP is gone."},
+      {heading:"Why a new transport?",body:"TCP is deeply baked into operating system kernels and middleboxes — evolving it is nearly impossible. QUIC is implemented in user-space on top of UDP, so it can iterate much faster and sidestep TCP's head-of-line blocking at the OS level."},
+      {heading:"What you actually get",body:"• Faster handshakes (1-RTT cold, 0-RTT on resume)\n• Independent streams — a lost packet only stalls its own stream\n• Connection migration — your session survives switching from WiFi to 4G\n• Always-on encryption (TLS 1.3 is baked in, not bolted on)\n• Better performance on lossy / mobile networks"},
+      {heading:"The tradeoffs",body:"• UDP is sometimes blocked or rate-limited on enterprise networks\n• More CPU than TCP (user-space crypto, no kernel offload yet)\n• Newer — tooling and debuggability are still catching up\n• Falls back to HTTP/2 automatically when blocked"},
     ]
   },
   quic: {
     title:"QUIC",
     color:T.tealL,
     sections:[
-      {heading:"What QUIC is",body:"**QUIC** (Quick **UDP** Internet Connections) is a transport protocol originally developed at Google and standardized in RFC 9000. It runs on **UDP** and provides reliable, ordered, encrypted streams — everything **TCP** + TLS gives you, but integrated and multiplexed."},
-      {heading:"Why UDP?",body:"**UDP** is a lightweight, connectionless datagram protocol. **QUIC** uses it as a thin shim so it can implement everything else — connections, streams, congestion control, encryption — in user space, where it can evolve without OS or middlebox upgrades."},
-      {heading:"Streams done right",body:"**QUIC** streams are truly independent. Each stream has its own flow-control window and its own reliability layer. A packet lost on stream 1 has zero effect on streams 3, 5, or 7 — they deliver their data immediately. This is **QUIC**'s headline win over **TCP**."},
-      {heading:"Connection IDs",body:"**QUIC** identifies a connection by a connection ID instead of the (source IP, source port, dest IP, dest port) four-tuple. When your phone jumps from WiFi to cellular, its IP changes — **TCP** would drop the connection; **QUIC** keeps it alive because the ID is the same."},
+      {heading:"What QUIC is",body:"QUIC (Quick UDP Internet Connections) is a transport protocol originally developed at Google and standardized in RFC 9000. It runs on UDP and provides reliable, ordered, encrypted streams — everything TCP + TLS gives you, but integrated and multiplexed."},
+      {heading:"Why UDP?",body:"UDP is a lightweight, connectionless datagram protocol. QUIC uses it as a thin shim so it can implement everything else — connections, streams, congestion control, encryption — in user space, where it can evolve without OS or middlebox upgrades."},
+      {heading:"Streams done right",body:"QUIC streams are truly independent. Each stream has its own flow-control window and its own reliability layer. A packet lost on stream 1 has zero effect on streams 3, 5, or 7 — they deliver their data immediately. This is QUIC's headline win over TCP."},
+      {heading:"Connection IDs",body:"QUIC identifies a connection by a connection ID instead of the (source IP, source port, dest IP, dest port) four-tuple. When your phone jumps from WiFi to cellular, its IP changes — TCP would drop the connection; QUIC keeps it alive because the ID is the same."},
       {heading:"0-RTT resumption",body:"After a first successful handshake, a returning client can send encrypted request data in its very first packet. Zero round-trips of negotiation. There are subtle replay-attack concerns, so 0-RTT is only used for idempotent requests."},
     ]
   },
@@ -385,19 +385,19 @@ const DETAILS = {
     title:"Multiplexing",
     color:T.purpleL,
     sections:[
-      {heading:"The problem",body:"Under **HTTP/1**.1, one **TCP** connection could only carry one request/response pair at a time. Browsers opened ~6 connections per origin just to fetch a page in parallel — and each connection paid its own handshake + congestion-window startup cost."},
-      {heading:"How HTTP/2 solved it",body:"**HTTP/2** introduced streams: every request and its response is a stream with a numeric ID. Messages are split into binary frames tagged with the stream ID, and frames from different streams are interleaved on the wire. The receiver reassembles each stream separately."},
-      {heading:"Flow control and priority",body:"Streams can be prioritized (e.g., HTML before images) and each has a flow-control window so slow consumers don't drown. **HTTP/3** keeps all of this but moves it into **QUIC**'s transport layer."},
-      {heading:"Why it matters",body:"• One **TCP** (or **QUIC**) connection replaces 6+ parallel ones\n• No HTTP-level **head-of-line blocking**\n• Lower memory and CPU on client and server\n• Domain **sharding** becomes an anti-pattern\n• Header compression is shared across all streams"},
+      {heading:"The problem",body:"Under HTTP/1.1, one TCP connection could only carry one request/response pair at a time. Browsers opened ~6 connections per origin just to fetch a page in parallel — and each connection paid its own handshake + congestion-window startup cost."},
+      {heading:"How HTTP/2 solved it",body:"HTTP/2 introduced streams: every request and its response is a stream with a numeric ID. Messages are split into binary frames tagged with the stream ID, and frames from different streams are interleaved on the wire. The receiver reassembles each stream separately."},
+      {heading:"Flow control and priority",body:"Streams can be prioritized (e.g., HTML before images) and each has a flow-control window so slow consumers don't drown. HTTP/3 keeps all of this but moves it into QUIC's transport layer."},
+      {heading:"Why it matters",body:"• One TCP (or QUIC) connection replaces 6+ parallel ones\n• No HTTP-level head-of-line blocking\n• Lower memory and CPU on client and server\n• Domain sharding becomes an anti-pattern\n• Header compression is shared across all streams"},
     ]
   },
   code: {
     title:"The Numbers",
     color:T.purpleL,
     sections:[
-      {heading:"Handshake round-trips (cold start)",body:"• **HTTP/1**.1 + TLS 1.2: ~3 RTTs\n    **TCP** (1) + TLS (2) before first GET\n• **HTTP/2** + TLS 1.3: ~2 RTTs\n    **TCP** (1) + TLS 1.3 (1)\n• **HTTP/3** / **QUIC**: 1 RTT\n    Transport + crypto combined\n• **HTTP/3** resumption: 0 RTT\n    Send data in the very first packet"},
-      {heading:"Connections per page",body:"• **HTTP/1**.1 browser: up to 6 × N origins\n• **HTTP/2**: usually 1 per origin\n• **HTTP/3**: usually 1 per origin — and it survives network changes"},
-      {heading:"Header size (typical)",body:"• **HTTP/1**.1: ~800 bytes per request, uncompressed\n• **HTTP/2** HPACK: ~20 bytes after the first request\n• **HTTP/3** QPACK: same idea, adapted for out-of-order **QUIC**"},
+      {heading:"Handshake round-trips (cold start)",body:"• HTTP/1.1 + TLS 1.2: ~3 RTTs\n    TCP (1) + TLS (2) before first GET\n• HTTP/2 + TLS 1.3: ~2 RTTs\n    TCP (1) + TLS 1.3 (1)\n• HTTP/3 / QUIC: 1 RTT\n    Transport + crypto combined\n• HTTP/3 resumption: 0 RTT\n    Send data in the very first packet"},
+      {heading:"Connections per page",body:"• HTTP/1.1 browser: up to 6 × N origins\n• HTTP/2: usually 1 per origin\n• HTTP/3: usually 1 per origin — and it survives network changes"},
+      {heading:"Header size (typical)",body:"• HTTP/1.1: ~800 bytes per request, uncompressed\n• HTTP/2 HPACK: ~20 bytes after the first request\n• HTTP/3 QPACK: same idea, adapted for out-of-order QUIC"},
       {heading:"Check it yourself",body:"• Chrome DevTools → Network → Protocol column\n    h1 / h2 / h3 for each request\n• Firefox → right-click the column header → Protocol\n• curl --http3 https://example.com\n• chrome://net-export/ for deep traces"},
     ]
   },

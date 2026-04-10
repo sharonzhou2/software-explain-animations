@@ -355,8 +355,8 @@ const DETAILS = {
     title:"Producers",
     color:T.amber,
     sections:[
-      {heading:"What is a producer?",body:"A **Kafka** producer is a client that publishes (writes) events to **Kafka** topics. Producers choose which topic and optionally which **partition** to send each record to."},
-      {heading:"Key-based partitioning",body:"If a record has a key, **Kafka** hashes it to determine the **partition**:\n  **partition** = hash(key) % num_partitions\n\nRecords with the same key **always** go to the same **partition**, preserving per-key ordering."},
+      {heading:"What is a producer?",body:"A Kafka producer is a client that publishes (writes) events to Kafka topics. Producers choose which topic and optionally which partition to send each record to."},
+      {heading:"Key-based partitioning",body:"If a record has a key, Kafka hashes it to determine the partition:\n  partition = hash(key) % num_partitions\n\nRecords with the same key always go to the same partition, preserving per-key ordering."},
       {heading:"Acks and durability",body:"Producers configure acknowledgment level:\n\n  acks=0  Fire and forget (fastest, may lose)\n  acks=1  Leader acknowledged (balanced)\n  acks=all  All ISR acknowledged (safest)\n\nHigher acks = more durability, more latency."},
       {heading:"Batching",body:"Producers batch records before sending for efficiency. batch.size and linger.ms control when batches are flushed. Larger batches = higher throughput, higher latency."},
     ]
@@ -365,29 +365,29 @@ const DETAILS = {
     title:"Brokers",
     color:T.blue,
     sections:[
-      {heading:"What is a broker?",body:"A **Kafka** **broker** is a server in the **Kafka** cluster that stores data and serves client requests. A cluster typically has 3+ brokers for fault tolerance."},
-      {heading:"Storage",body:"Brokers store **partition** data as segment files on disk. Each segment is a sequential append-only file. **Kafka** uses zero-copy transfer (sendfile) for high throughput reads."},
-      {heading:"Controller",body:"One **broker** is elected as the controller. It manages **partition** leader election, replica assignment, and cluster metadata. If the controller fails, another **broker** takes over."},
-      {heading:"KRaft mode",body:"**Kafka** 3.x+ replaces ZooKeeper with KRaft (**Kafka** Raft) for metadata management. The controller quorum manages cluster state using Raft consensus, simplifying operations."},
+      {heading:"What is a broker?",body:"A Kafka broker is a server in the Kafka cluster that stores data and serves client requests. A cluster typically has 3+ brokers for fault tolerance."},
+      {heading:"Storage",body:"Brokers store partition data as segment files on disk. Each segment is a sequential append-only file. Kafka uses zero-copy transfer (sendfile) for high throughput reads."},
+      {heading:"Controller",body:"One broker is elected as the controller. It manages partition leader election, replica assignment, and cluster metadata. If the controller fails, another broker takes over."},
+      {heading:"KRaft mode",body:"Kafka 3.x+ replaces ZooKeeper with KRaft (Kafka Raft) for metadata management. The controller quorum manages cluster state using Raft consensus, simplifying operations."},
     ]
   },
   consumers: {
     title:"Consumers",
     color:T.teal,
     sections:[
-      {heading:"What is a consumer?",body:"A **Kafka** consumer reads events from topics. It subscribes to one or more topics and pulls records from assigned partitions at its own pace."},
-      {heading:"Consumer groups",body:"Consumers with the same group.id form a consumer group. **Kafka** assigns each **partition** to exactly one consumer in the group. This enables parallel consumption."},
-      {heading:"Rebalancing",body:"When consumers join or leave a group, **Kafka** triggers a rebalance. Partitions are redistributed among active consumers. Rebalancing causes a brief processing pause."},
-      {heading:"Offset management",body:"Consumers track their position per **partition** using offsets. Offsets are committed to a special __consumer_offsets topic. On restart, consumers resume from the last committed **offset**."},
+      {heading:"What is a consumer?",body:"A Kafka consumer reads events from topics. It subscribes to one or more topics and pulls records from assigned partitions at its own pace."},
+      {heading:"Consumer groups",body:"Consumers with the same group.id form a consumer group. Kafka assigns each partition to exactly one consumer in the group. This enables parallel consumption."},
+      {heading:"Rebalancing",body:"When consumers join or leave a group, Kafka triggers a rebalance. Partitions are redistributed among active consumers. Rebalancing causes a brief processing pause."},
+      {heading:"Offset management",body:"Consumers track their position per partition using offsets. Offsets are committed to a special __consumer_offsets topic. On restart, consumers resume from the last committed offset."},
     ]
   },
   partitions: {
     title:"Partitions",
     color:T.blue,
     sections:[
-      {heading:"What is a partition?",body:"A **partition** is an ordered, immutable sequence of records within a topic. Each record has a sequential **offset** number. Partitions are the unit of parallelism in **Kafka**."},
-      {heading:"Ordering guarantees",body:"Ordering is guaranteed within a **partition**, not across partitions. Records with the same key go to the same **partition**, so per-key ordering is maintained."},
-      {heading:"Partition count",body:"More partitions = more parallelism but more overhead. A topic with N partitions can have at most N consumers in a group. Choose **partition** count based on throughput needs."},
+      {heading:"What is a partition?",body:"A partition is an ordered, immutable sequence of records within a topic. Each record has a sequential offset number. Partitions are the unit of parallelism in Kafka."},
+      {heading:"Ordering guarantees",body:"Ordering is guaranteed within a partition, not across partitions. Records with the same key go to the same partition, so per-key ordering is maintained."},
+      {heading:"Partition count",body:"More partitions = more parallelism but more overhead. A topic with N partitions can have at most N consumers in a group. Choose partition count based on throughput needs."},
       {heading:"Log compaction",body:"Instead of time-based deletion, log compaction keeps the latest value for each key. This is useful for changelog topics where you need the current state of each entity."},
     ]
   },
@@ -395,29 +395,29 @@ const DETAILS = {
     title:"Replication",
     color:T.coral,
     sections:[
-      {heading:"How replication works",body:"Each **partition** has a configurable **replication** factor (typically 3). One replica is the leader; others are followers. The leader handles all reads and writes. Followers replicate data."},
+      {heading:"How replication works",body:"Each partition has a configurable replication factor (typically 3). One replica is the leader; others are followers. The leader handles all reads and writes. Followers replicate data."},
       {heading:"ISR (In-Sync Replicas)",body:"Followers that are caught up with the leader are in the ISR set. If a follower falls behind, it's removed from ISR. Only ISR members can be elected leader."},
-      {heading:"Leader election",body:"When a leader fails, the controller elects a new leader from the ISR. With min.insync.replicas=2 and acks=all, you guarantee no data loss even if a **broker** fails."},
-      {heading:"Unclean leader election",body:"If all ISR members fail, **Kafka** can elect an out-of-sync replica (if unclean.leader.election.enable=true). This risks data loss but maintains availability. Disabled by default."},
+      {heading:"Leader election",body:"When a leader fails, the controller elects a new leader from the ISR. With min.insync.replicas=2 and acks=all, you guarantee no data loss even if a broker fails."},
+      {heading:"Unclean leader election",body:"If all ISR members fail, Kafka can elect an out-of-sync replica (if unclean.leader.election.enable=true). This risks data loss but maintains availability. Disabled by default."},
     ]
   },
   offsets: {
     title:"Offsets",
     color:T.green,
     sections:[
-      {heading:"What is an offset?",body:"An **offset** is a sequential ID assigned to each record in a **partition**. Offsets start at 0 and increment by 1. They uniquely identify a record within a **partition**."},
+      {heading:"What is an offset?",body:"An offset is a sequential ID assigned to each record in a partition. Offsets start at 0 and increment by 1. They uniquely identify a record within a partition."},
       {heading:"Commit strategies",body:"At-least-once: Process then commit. If crash after process but before commit, record is reprocessed.\n\nAt-most-once: Commit then process. If crash after commit but before process, record is skipped.\n\nExactly-once: Uses transactions and idempotent producers."},
       {heading:"Auto vs manual commit",body:"enable.auto.commit=true: Commits periodically (default 5s). Simple but may reprocess on crash.\n\nManual commit: Call commitSync() or commitAsync() after processing. More control, more code."},
-      {heading:"Seeking",body:"Consumers can seek to any **offset**:\n  seekToBeginning() - replay all\n  seekToEnd() - skip to latest\n  seek(**partition**, **offset**) - specific position\n\nThis enables replay and reprocessing."},
+      {heading:"Seeking",body:"Consumers can seek to any offset:\n  seekToBeginning() - replay all\n  seekToEnd() - skip to latest\n  seek(partition, offset) - specific position\n\nThis enables replay and reprocessing."},
     ]
   },
   code: {
     title:"Source Code",
     color:T.purpleL,
     sections:[
-      {heading:"Producer example",body:"const producer = **kafka**.producer()\nawait producer.connect()\nawait producer.send({\n  topic: 'orders',\n  messages: [\n    { key: 'user-42', value: '{\"item\":\"book\"}' }\n  ]\n})"},
-      {heading:"Consumer example",body:"const consumer = **kafka**.consumer({ groupId: 'analytics' })\nawait consumer.connect()\nawait consumer.subscribe({ topic: 'orders' })\nawait consumer.run({\n  eachMessage: async ({ topic, **partition**, message }) => {\n    console.log(message.value.toString())\n  }\n})"},
-      {heading:"Key CLI commands",body:"**kafka**-topics --create --topic orders --partitions 3 --**replication**-factor 3\nkafka-console-producer --topic orders\nkafka-console-consumer --topic orders --from-beginning\nkafka-consumer-groups --describe --group analytics"},
+      {heading:"Producer example",body:"const producer = kafka.producer()\nawait producer.connect()\nawait producer.send({\n  topic: 'orders',\n  messages: [\n    { key: 'user-42', value: '{\"item\":\"book\"}' }\n  ]\n})"},
+      {heading:"Consumer example",body:"const consumer = kafka.consumer({ groupId: 'analytics' })\nawait consumer.connect()\nawait consumer.subscribe({ topic: 'orders' })\nawait consumer.run({\n  eachMessage: async ({ topic, partition, message }) => {\n    console.log(message.value.toString())\n  }\n})"},
+      {heading:"Key CLI commands",body:"kafka-topics --create --topic orders --partitions 3 --replication-factor 3\nkafka-console-producer --topic orders\nkafka-console-consumer --topic orders --from-beginning\nkafka-consumer-groups --describe --group analytics"},
     ]
   },
 };

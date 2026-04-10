@@ -445,16 +445,16 @@ const DETAILS = {
     color:T.html,
     sections:[
       {heading:"What is the DOM?",body:"The Document Object Model is a tree representation of the HTML document. Each HTML element becomes a node. The browser reads HTML bytes, converts them to characters, identifies tokens (<tags>), converts tokens to nodes, and links nodes into the tree."},
-      {heading:"Incremental parsing",body:"The **DOM** is built incrementally \u2014 the browser doesn\u2019t wait for the entire HTML file. As bytes arrive, they are parsed into the tree. This is why you see partial page renders."},
-      {heading:"Parser blocking",body:"When the parser encounters a <script> tag without async/defer, it **must** stop building the **DOM**, download the script, execute it, then resume parsing. Scripts can modify the **DOM** via document.write()."},
+      {heading:"Incremental parsing",body:"The DOM is built incrementally \u2014 the browser doesn\u2019t wait for the entire HTML file. As bytes arrive, they are parsed into the tree. This is why you see partial page renders."},
+      {heading:"Parser blocking",body:"When the parser encounters a <script> tag without async/defer, it must stop building the DOM, download the script, execute it, then resume parsing. Scripts can modify the DOM via document.write()."},
     ]
   },
   cssom: {
     title:"CSSOM Tree",
     color:T.css,
     sections:[
-      {heading:"What is the CSSOM?",body:"The CSS Object Model mirrors the **DOM** but stores computed styles. Each node represents a CSS rule, with specificity and cascade rules already resolved."},
-      {heading:"Render-blocking",body:"CSS is render-**blocking** by default. The browser won\u2019t start building the **Render Tree** until the **CSSOM** is complete. Unlike the **DOM**, CSS can\u2019t be built incrementally \u2014 later rules can override earlier ones (the cascade)."},
+      {heading:"What is the CSSOM?",body:"The CSS Object Model mirrors the DOM but stores computed styles. Each node represents a CSS rule, with specificity and cascade rules already resolved."},
+      {heading:"Render-blocking",body:"CSS is render-blocking by default. The browser won\u2019t start building the Render Tree until the CSSOM is complete. Unlike the DOM, CSS can\u2019t be built incrementally \u2014 later rules can override earlier ones (the cascade)."},
       {heading:"Optimization",body:"Inline critical CSS directly in <style> tags so it arrives with the HTML. Use media queries on <link> tags to mark non-critical CSS (e.g., print styles). Minify CSS to reduce bytes."},
     ]
   },
@@ -462,7 +462,7 @@ const DETAILS = {
     title:"The Pipeline",
     color:T.render,
     sections:[
-      {heading:"Critical path",body:"The critical rendering path is the minimum set of work the browser **must** do before it can render the first pixel. It includes:\n\u2022 Parsing HTML into **DOM**\n\u2022 Parsing CSS into **CSSOM**\n\u2022 Building the **Render Tree**\n\u2022 Running Layout\n\u2022 Painting pixels"},
+      {heading:"Critical path",body:"The critical rendering path is the minimum set of work the browser must do before it can render the first pixel. It includes:\n\u2022 Parsing HTML into DOM\n\u2022 Parsing CSS into CSSOM\n\u2022 Building the Render Tree\n\u2022 Running Layout\n\u2022 Painting pixels"},
       {heading:"Why it matters",body:"Every millisecond on the critical path delays the user seeing content. Pages that optimize the CRP feel fast. Pages that don\u2019t feel sluggish even with the same total load time."},
       {heading:"Measuring",body:"Use Chrome DevTools \u2192 Performance tab to see the CRP visually. The Lighthouse audit identifies critical-path issues. The Navigation Timing API gives programmatic access."},
     ]
@@ -472,7 +472,7 @@ const DETAILS = {
     color:T.purpleL,
     sections:[
       {heading:"Reading the examples",body:"Each scene shows HTML, CSS, or JavaScript relevant to that step of the rendering pipeline. Tags, attributes, and values are syntax-highlighted."},
-      {heading:"Key concepts",body:"Render-**blocking**: CSS blocks paint, JS blocks parsing.\nasync/defer: Control when scripts execute.\nResource hints: preload, prefetch, preconnect.\nCore Web Vitals: FCP, LCP, CLS."},
+      {heading:"Key concepts",body:"Render-blocking: CSS blocks paint, JS blocks parsing.\nasync/defer: Control when scripts execute.\nResource hints: preload, prefetch, preconnect.\nCore Web Vitals: FCP, LCP, CLS."},
     ]
   },
 };

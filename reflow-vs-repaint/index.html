@@ -359,16 +359,16 @@ const DETAILS = {
     title:"Code Examples",
     color:T.purpleL,
     sections:[
-      {heading:"What to watch for",body:"Each scene shows different CSS properties and **DOM** operations. Notice which stage of the rendering pipeline they trigger -- this directly determines performance cost."},
-      {heading:"Key patterns",body:"• Geometry changes (width, height, margin) -> **reflow**\n• Visual changes (color, shadow) -> **repaint**\n• transform / opacity -> **composite** only\n• Reading layout props -> forced sync layout\n• Read-write interleaving -> layout thrashing"},
+      {heading:"What to watch for",body:"Each scene shows different CSS properties and DOM operations. Notice which stage of the rendering pipeline they trigger -- this directly determines performance cost."},
+      {heading:"Key patterns",body:"• Geometry changes (width, height, margin) -> reflow\n• Visual changes (color, shadow) -> repaint\n• transform / opacity -> composite only\n• Reading layout props -> forced sync layout\n• Read-write interleaving -> layout thrashing"},
     ]
   },
   pipeline: {
     title:"Rendering Pipeline",
     color:T.blueL,
     sections:[
-      {heading:"DOM + CSSOM",body:"The browser parses HTML into the **DOM** tree and CSS into the **CSSOM**. These are combined into a **render tree** that represents what actually gets displayed."},
-      {heading:"Layout (Reflow)",body:"The browser calculates the exact position and size of every element in the **render tree**. This is geometry computation -- where things go and how big they are."},
+      {heading:"DOM + CSSOM",body:"The browser parses HTML into the DOM tree and CSS into the CSSOM. These are combined into a render tree that represents what actually gets displayed."},
+      {heading:"Layout (Reflow)",body:"The browser calculates the exact position and size of every element in the render tree. This is geometry computation -- where things go and how big they are."},
       {heading:"Paint (Repaint)",body:"The browser fills in pixels -- colors, borders, shadows, text. Each element gets painted into layers (bitmaps in memory)."},
       {heading:"Composite",body:"The GPU takes painted layers and composites them together into the final image on screen. Transform and opacity changes happen here -- no layout or paint needed."},
     ]
@@ -377,8 +377,8 @@ const DETAILS = {
     title:"Performance Cost",
     color:T.coralL,
     sections:[
-      {heading:"Cost hierarchy",body:"**Composite** < **Repaint** < **Reflow**\n\nComposite: GPU handles it, virtually free\nRepaint: Main thread, moderate cost\nReflow: Main thread, expensive -- cascades to children and can affect ancestors"},
-      {heading:"When it matters",body:"During animations (60fps = 16ms per frame), during scroll handlers, when manipulating large **DOM** trees, or when building data-heavy UIs with frequent updates."},
+      {heading:"Cost hierarchy",body:"Composite < Repaint < Reflow\n\nComposite: GPU handles it, virtually free\nRepaint: Main thread, moderate cost\nReflow: Main thread, expensive -- cascades to children and can affect ancestors"},
+      {heading:"When it matters",body:"During animations (60fps = 16ms per frame), during scroll handlers, when manipulating large DOM trees, or when building data-heavy UIs with frequent updates."},
       {heading:"Measuring cost",body:"Use Chrome DevTools Performance tab to record and analyze. Look for long Layout and Paint tasks. The Rendering tab can highlight paint regions and layer borders."},
     ]
   },

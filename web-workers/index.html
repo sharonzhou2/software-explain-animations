@@ -368,16 +368,16 @@ const DETAILS = {
     title:"Source Code",
     color:T.purpleL,
     sections:[
-      {heading:"What to watch for",body:"Each scene shows different aspects of the Web Workers API. Watch how the main thread and worker thread communicate through messages, **never** sharing memory directly."},
-      {heading:"Key patterns",body:"- new Worker('file.js') creates a worker\n- postMessage() sends data\n- onmessage receives data\n- Data is cloned, not shared\n- Workers can't touch the **DOM**"},
+      {heading:"What to watch for",body:"Each scene shows different aspects of the Web Workers API. Watch how the main thread and worker thread communicate through messages, never sharing memory directly."},
+      {heading:"Key patterns",body:"- new Worker('file.js') creates a worker\n- postMessage() sends data\n- onmessage receives data\n- Data is cloned, not shared\n- Workers can't touch the DOM"},
     ]
   },
   concept: {
     title:"Core Concepts",
     color:T.tealL,
     sections:[
-      {heading:"Why workers exist",body:"JavaScript is **single-threaded** by design. The main thread handles UI rendering, event handling, and JS execution all on one thread. Heavy computation blocks everything.\n\nWeb Workers solve this by running code in a separate OS-level thread."},
-      {heading:"Thread safety",body:"Workers achieve thread safety through isolation. They can't access:\n- **DOM** (document, window)\n- Main thread variables\n- Parent scope\n\nCommunication happens only via message passing, which copies data rather than sharing it."},
+      {heading:"Why workers exist",body:"JavaScript is single-threaded by design. The main thread handles UI rendering, event handling, and JS execution all on one thread. Heavy computation blocks everything.\n\nWeb Workers solve this by running code in a separate OS-level thread."},
+      {heading:"Thread safety",body:"Workers achieve thread safety through isolation. They can't access:\n- DOM (document, window)\n- Main thread variables\n- Parent scope\n\nCommunication happens only via message passing, which copies data rather than sharing it."},
       {heading:"Performance tradeoff",body:"Creating a worker has overhead — spinning up a thread, loading a script. For quick tasks, the overhead isn't worth it. Workers shine for tasks taking >50ms."},
     ]
   },
@@ -385,9 +385,9 @@ const DETAILS = {
     title:"API Reference",
     color:T.amberL,
     sections:[
-      {heading:"Worker constructor",body:"new Worker(scriptURL, **options**?)\n\nCreates a dedicated worker. The script is loaded and executed in a new thread. **Options** can specify { type: 'module' } for ES modules."},
+      {heading:"Worker constructor",body:"new Worker(scriptURL, options?)\n\nCreates a dedicated worker. The script is loaded and executed in a new thread. Options can specify { type: 'module' } for ES modules."},
       {heading:"Communication API",body:"worker.postMessage(data, transfer?)\n- Sends data to the worker\n- Data is cloned via structured clone\n- Optional transferables for zero-copy\n\nworker.onmessage = (event) => {}\n- Receives messages from worker\n- event.data contains the payload"},
-      {heading:"Lifecycle",body:"worker.terminate()\n- Immediately stops the worker\n- **Cannot** be restarted\n\nInside worker:\nself.close()\n- Worker terminates itself"},
+      {heading:"Lifecycle",body:"worker.terminate()\n- Immediately stops the worker\n- Cannot be restarted\n\nInside worker:\nself.close()\n- Worker terminates itself"},
       {heading:"Error handling",body:"worker.onerror = (event) => {}\n- Catches uncaught errors from worker\n- event.message, event.filename, event.lineno"},
     ]
   },
@@ -395,9 +395,9 @@ const DETAILS = {
     title:"Thread Model",
     color:T.blueL,
     sections:[
-      {heading:"Main thread",body:"The main thread handles:\n- **DOM** manipulation & rendering\n- User event handling (click, scroll, etc.)\n- CSS animations & transitions\n- JavaScript execution\n- Network callbacks\n\nAll on a single thread sharing one **event loop**."},
-      {heading:"Worker thread",body:"Each worker gets:\n- Its own JavaScript engine instance\n- Its own **event loop**\n- Its own global scope (self)\n- Its own memory space\n\nMultiple workers = multiple real OS threads."},
-      {heading:"Message channel",body:"Messages between threads use a structured clone of the data. This is a deep copy that handles:\n- Objects, arrays, maps, sets\n- Dates, RegExps, Blobs, Files\n- ArrayBuffers, typed arrays\n\nCannot clone: Functions, **DOM** nodes, Errors"},
+      {heading:"Main thread",body:"The main thread handles:\n- DOM manipulation & rendering\n- User event handling (click, scroll, etc.)\n- CSS animations & transitions\n- JavaScript execution\n- Network callbacks\n\nAll on a single thread sharing one event loop."},
+      {heading:"Worker thread",body:"Each worker gets:\n- Its own JavaScript engine instance\n- Its own event loop\n- Its own global scope (self)\n- Its own memory space\n\nMultiple workers = multiple real OS threads."},
+      {heading:"Message channel",body:"Messages between threads use a structured clone of the data. This is a deep copy that handles:\n- Objects, arrays, maps, sets\n- Dates, RegExps, Blobs, Files\n- ArrayBuffers, typed arrays\n\nCannot clone: Functions, DOM nodes, Errors"},
     ]
   },
 };

@@ -393,7 +393,7 @@ const DETAILS = {
     title:"Source Code",
     color:T.purpleL,
     sections:[
-      {heading:"What to watch for",body:"Each scene shows a different **closure** pattern. Pay attention to which variables the inner function captures and when the outer function has already returned."},
+      {heading:"What to watch for",body:"Each scene shows a different closure pattern. Pay attention to which variables the inner function captures and when the outer function has already returned."},
       {heading:"Key patterns",body:"• Returned functions that access outer vars\n• Factory functions creating private state\n• Callbacks closing over local variables\n• IIFE creating isolated scopes\n• let vs var in loops"},
     ]
   },
@@ -401,9 +401,9 @@ const DETAILS = {
     title:"Scope Chain",
     color:T.teal,
     sections:[
-      {heading:"How scope chains work",body:"When a function is created, it saves a reference to its entire scope chain — the chain of all enclosing environments from local to global.\n\nWhen it executes, it looks up variables by walking this chain from innermost to outermost scope."},
-      {heading:"Closure formation",body:"A **closure** forms when an inner function references variables from an outer function. The inner function's [[Environment]] internal slot points to the outer function's scope, keeping those variables alive."},
-      {heading:"Garbage collection",body:"Captured variables can't be GC'd while any **closure** referencing them exists. Setting the **closure** to null releases the reference and allows cleanup."},
+      {heading:"How scope chains work",body:"**When a function is created, it saves a reference to its entire scope chain** — the chain of all enclosing environments from local to global.\n\nWhen it executes, it looks up variables by walking this chain from innermost to outermost scope."},
+      {heading:"Closure formation",body:"**A closure forms when an inner function references variables from an outer function.** The inner function's [[Environment]] internal slot points to the outer function's scope, keeping those variables alive."},
+      {heading:"Garbage collection",body:"**Captured variables can't be garbage-collected while any closure referencing them exists.** Setting the closure to null releases the reference and allows cleanup."},
     ]
   },
   concept: {
@@ -411,7 +411,7 @@ const DETAILS = {
     color:T.amber,
     sections:[
       {heading:"Why closures matter",body:"Closures are fundamental to JavaScript. They enable:\n\n• Data privacy (no direct access to internal state)\n• Factory functions (create configured instances)\n• Partial application and currying\n• Module pattern (pre-ES6 encapsulation)\n• Maintaining state in async callbacks"},
-      {heading:"Mental model",body:"Think of a **closure** as a backpack. When a function is created, it packs the variables it needs from its surroundings into an invisible backpack. Wherever that function goes, the backpack goes with it."},
+      {heading:"Mental model",body:"**Think of a closure as a backpack.** When a function is created, it packs the variables it needs from its surroundings into an invisible backpack. Wherever that function goes, the backpack goes with it."},
       {heading:"Common pitfalls",body:"• Stale closures — capturing a value that changes\n• Memory leaks — holding large objects unnecessarily\n• Loop variable sharing with var\n• Accidental captures in callbacks"},
     ]
   },
@@ -419,8 +419,8 @@ const DETAILS = {
     title:"Console Output",
     color:T.tealL,
     sections:[
-      {heading:"What it shows",body:"The console output demonstrates that the inner function can still access outer variables — even after the outer function has finished executing. This is proof the **closure** is alive."},
-      {heading:"Debugging closures",body:"To inspect what a **closure** has captured:\n1. console.dir(fn) — shows the [[Scopes]] property\n2. Set breakpoints inside the **closure**\n3. Check the Scope panel in DevTools\n4. Watch for stale values in async code"},
+      {heading:"What it shows",body:"The console output demonstrates that the inner function can still access outer variables — even after the outer function has finished executing. This is proof the closure is alive."},
+      {heading:"Debugging closures",body:"To inspect what a closure has captured:\n1. console.dir(fn) — shows the [[Scopes]] property\n2. Set breakpoints inside the closure\n3. Check the Scope panel in DevTools\n4. Watch for stale values in async code"},
     ]
   },
 };
