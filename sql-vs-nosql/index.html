@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SQL vs NoSQL</title>
+<link href="https://cdn.lineicons.com/5.0/lineicons.css" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111118;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px 16px 24px 196px;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  #root { width: 100%; max-width: 1120px; }
+  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: system-ui, sans-serif; }
+  .topnav a { text-decoration: none; color: #8888aa; font-size: 13px; transition: color 0.2s; }
+  .topnav a:hover { color: #e8e8f0; }
+  .topnav .name { font-weight: 600; color: #e8e8f0; font-size: 13px; }
+  .topnav .sep { color: #38384a; font-size: 12px; }
+  .topnav .current { color: #7c6fcd; font-size: 13px; font-weight: 500; }
+  .sidenav { position: fixed; top: 38px; left: 0; width: 180px; height: calc(100vh - 38px); background: #111118; border-right: 1px solid #2a2a38; padding: 14px 0; overflow-y: auto; z-index: 200; font-family: system-ui, sans-serif; }
+  .sidenav a { display: block; padding: 6px 16px; font-size: 11px; color: #8888aa; text-decoration: none; transition: color 0.2s, background 0.2s; border-left: 2px solid transparent; }
+  .sidenav a:hover { color: #e8e8f0; background: rgba(124,111,205,0.06); }
+  .sidenav a.active { color: #a99cf0; border-left-color: #7c6fcd; background: rgba(124,111,205,0.1); font-weight: 600; }
+  .sidenav .nav-section { padding: 8px 16px 4px; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #44445a; }
+  .sidenav .nav-section:first-child { padding-top: 4px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="../" class="name">Sharon Zhou</a>
+  <span class="sep">/</span>
+  <a href="../">Animations</a>
+  <span class="sep">/</span>
+  <span class="current">SQL vs NoSQL</span>
+</nav>
+<nav class="sidenav">
+  <div class="nav-section">JavaScript</div>
+  <a href="../event-loop/">Event Loop</a>
+  <a href="../this-keyword/">this Keyword</a>
+  <a href="../hoisting/">Hoisting</a>
+  <a href="../closures/">Closures</a>
+  <a href="../garbage-collection/">Garbage Collection</a>
+  <a href="../event-delegation/">Event Delegation</a>
+  <a href="../iterators-generators/">Iterators & Generators</a>
+  <a href="../xhr-vs-fetch/">XHR vs fetch()</a>
+  <a href="../error-propagation/">Error Propagation</a>
+  <a href="../web-workers/">Web Workers</a>
+  <a href="../prototypal-inheritance/">Prototypal Inheritance</a>
+  <div class="nav-section">Browser</div>
+  <a href="../critical-rendering-path/">Critical Rendering Path</a>
+  <a href="../reflow-vs-repaint/">Reflow vs Repaint</a>
+  <a href="../css-box-model/">CSS Box Model & Layout</a>
+  <a href="../web-security/">Web Security</a>
+  <a href="../request-animation-frame/">requestAnimationFrame</a>
+  <a href="../cors/">CORS</a>
+  <a href="../websocket-vs-sse/">WebSocket vs SSE</a>
+  <div class="nav-section">Infrastructure</div>
+  <a href="../vms-vs-docker/">VMs vs Docker</a>
+  <a href="../opentelemetry/">OpenTelemetry</a>
+  <a href="../kubernetes/">Kubernetes</a>
+  <a href="../kafka/">Kafka</a>
+  <a href="../database-indexing/">Database Indexing</a>
+  <a href="../sql-vs-nosql/" class="active">SQL vs NoSQL</a>
+  <a href="../load-balancing/">Load Balancing</a>
+  <a href="../http-versions/">HTTP Versions</a>
+  <a href="../authentication/">Authentication</a>
+  <a href="../rate-limiting/">Rate Limiting</a>
+  <a href="../caching-strategies/">Caching Strategies</a>
+  <a href="../database-sharding/">Database Sharding</a>
+  <a href="../microservices-vs-monolith/">Microservices vs Monolith</a>
+  <a href="../debounce-vs-throttle/">Debounce vs Throttle</a>
+</nav>
+<div id="root" style="margin-top: 36px;"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/framer-motion@11/dist/framer-motion.js"></script>
+<script>
+const { useState, useEffect, useRef } = React;
+const { motion, AnimatePresence } = window.Motion;
+const e = React.createElement;
+const M = motion;
+const AP = AnimatePresence;
+const sp = (s=380,d=28) => ({ type:"spring", stiffness:s, damping:d });
+const ez = { duration:0.32, ease:[0.22,1,0.36,1] };
+
+const T = {
+  bg:"#111118", surface:"#18181f", surface2:"#1e1e28",
+  border:"#2a2a38", border2:"#38384a",
+  text1:"#e8e8f0", text2:"#8888aa", text3:"#44445a",
+  purple:"#7c6fcd", purpleL:"#a99cf0",
+  teal:"#3db89a", tealL:"#6dd4b8",
+  coral:"#c4694a", coralL:"#e08a6a",
+  blue:"#4a8fd4", blueL:"#82b4e8",
+  amber:"#d4a84a", amberL:"#e8c86a",
+  green:"#4ac46a", greenL:"#6ae88a",
+  red:"#e05555", redL:"#ff7777",
+  sql:"#3db89a", sqlL:"#6dd4b8",
+  nosql:"#c4694a", nosqlL:"#e08a6a",
+  codeBase:"#141428",
+};
+
+const TS = {
+  fn:{color:"#82aaff"}, meth:{color:"#89ddff"}, str:{color:"#c3e88d"},
+  kw:{color:"#c792ea"}, num:{color:"#f78c6c"}, punc:{color:"#89ddff"},
+  plain:{color:"#a6accd"}, cmt:{color:"#546e7a",fontStyle:"italic"},
+  key:{color:"#f78c6c"},
+};
+
+const SCENES = [
+  {
+    id:0, act:"01",
+    title:"SQL vs NoSQL & the CAP theorem",
+    sub:"Two fundamentally different approaches to storing data — and a theorem that governs what any distributed database can (and cannot) promise. Let's walk through both.",
+    code:[
+      [["cmt","// The question:"]],
+      [["cmt","// How do you store data for"]],
+      [["cmt","// modern applications at scale?"]],
+    ],
+    view:null,
+  },
+  {
+    id:1, act:"02",
+    title:"SQL — the relational model",
+    sub:"SQL databases store data in tables — rows and columns with a fixed schema. Relationships between tables are expressed via foreign keys. Every row in a table has exactly the same shape.",
+    code:[
+      [["kw","CREATE TABLE"],["plain"," users "],["punc","("]],
+      [["plain","  id "],["kw","INT PRIMARY KEY"],["punc",","]],
+      [["plain","  name "],["kw","VARCHAR"],["punc","("],["num","100"],["punc",")"],["punc",","]],
+      [["plain","  email "],["kw","VARCHAR"],["punc","("],["num","255"],["punc",")"]],
+      [["punc",");"]],
+    ],
+    view:"schema-sql",
+  },
+  {
+    id:2, act:"03",
+    title:"SQL query — the JOIN",
+    sub:"SQL's superpower is the JOIN. You can stitch together data from many tables in a single declarative query. The database engine figures out the most efficient way to execute it.",
+    code:[
+      [["kw","SELECT"],["plain"," u.name"],["punc",", "],["plain","o.total"]],
+      [["kw","FROM"],["plain"," users u"]],
+      [["kw","JOIN"],["plain"," orders o "],["kw","ON"],["plain"," o.user_id "],["punc","="],["plain"," u.id"]],
+      [["kw","WHERE"],["plain"," o.total "],["punc",">"],["plain"," "],["num","100"]],
+      [["kw","ORDER BY"],["plain"," o.created_at "],["kw","DESC"],["punc",";"]],
+    ],
+    view:"join",
+  },
+  {
+    id:3, act:"04",
+    title:"ACID — what SQL guarantees",
+    sub:"Traditional SQL databases give you ACID transactions. Multiple writes succeed together or fail together, data stays consistent, and concurrent transactions don't step on each other.",
+    code:[
+      [["kw","BEGIN"],["punc",";"]],
+      [["kw","UPDATE"],["plain"," accounts "],["kw","SET"],["plain"," bal "],["punc","="],["plain"," bal "],["punc","-"],["plain"," "],["num","100"],["plain"," "],["kw","WHERE"],["plain"," id "],["punc","="],["plain"," "],["num","1"],["punc",";"]],
+      [["kw","UPDATE"],["plain"," accounts "],["kw","SET"],["plain"," bal "],["punc","="],["plain"," bal "],["punc","+"],["plain"," "],["num","100"],["plain"," "],["kw","WHERE"],["plain"," id "],["punc","="],["plain"," "],["num","2"],["punc",";"]],
+      [["kw","COMMIT"],["punc",";"],["plain"," "],["cmt","// atomic — both or neither"]],
+    ],
+    view:"acid",
+  },
+  {
+    id:4, act:"05",
+    title:"NoSQL — four major categories",
+    sub:"NoSQL is an umbrella term for everything that isn't a traditional relational database. There are four main categories, each optimized for different access patterns.",
+    code:[
+      [["cmt","// Document   → MongoDB, Couchbase"]],
+      [["cmt","// Key-Value  → Redis, DynamoDB"]],
+      [["cmt","// Wide-Col   → Cassandra, BigTable"]],
+      [["cmt","// Graph      → Neo4j, Neptune"]],
+    ],
+    view:"nosql-cats",
+  },
+  {
+    id:5, act:"06",
+    title:"Document stores — MongoDB",
+    sub:"Documents are self-contained JSON-like objects. Each document can have a different shape, nested fields, and arrays. No joins — you embed related data instead.",
+    code:[
+      [["punc","{"]],
+      [["plain","  "],["key","\"_id\""],["punc",": "],["str","\"u_42\""],["punc",","]],
+      [["plain","  "],["key","\"name\""],["punc",": "],["str","\"Ada\""],["punc",","]],
+      [["plain","  "],["key","\"orders\""],["punc",": ["]],
+      [["plain","    "],["punc","{ "],["key","\"total\""],["punc",": "],["num","120"],["punc"," }"],["punc",","]],
+      [["plain","    "],["punc","{ "],["key","\"total\""],["punc",": "],["num","80"],["punc"," }"]],
+      [["plain","  "],["punc","]"]],
+      [["punc","}"]],
+    ],
+    view:"schema-doc",
+  },
+  {
+    id:6, act:"07",
+    title:"Key-value stores — Redis, DynamoDB",
+    sub:"The simplest model: give me a key, get back a value. Blazingly fast lookups, used for caches, sessions, feature flags, and counters. No query language, no joins.",
+    code:[
+      [["fn","SET"],["plain"," "],["str","\"session:u42\""],["plain"," "],["str","\"{user:42}\""]],
+      [["fn","GET"],["plain"," "],["str","\"session:u42\""]],
+      [["fn","EXPIRE"],["plain"," "],["str","\"session:u42\""],["plain"," "],["num","3600"]],
+      [["fn","INCR"],["plain"," "],["str","\"views:home\""]],
+    ],
+    view:"kv",
+  },
+  {
+    id:7, act:"08",
+    title:"Wide-column — Cassandra, BigTable",
+    sub:"Rows have a partition key, and each row can have billions of columns grouped into column families. Designed for massive write throughput across many machines.",
+    code:[
+      [["kw","CREATE TABLE"],["plain"," events "],["punc","("]],
+      [["plain","  user_id "],["kw","UUID"],["punc",","]],
+      [["plain","  ts "],["kw","TIMESTAMP"],["punc",","]],
+      [["plain","  event "],["kw","TEXT"],["punc",","]],
+      [["plain","  "],["kw","PRIMARY KEY"],["punc"," ((user_id), ts)"]],
+      [["punc",");"]],
+    ],
+    view:"wide-col",
+  },
+  {
+    id:8, act:"09",
+    title:"Graph databases — Neo4j",
+    sub:"Data is stored as nodes and edges. Queries traverse relationships directly — perfect for social networks, fraud detection, and recommendation engines where the connections matter more than the rows.",
+    code:[
+      [["kw","MATCH"],["plain"," (a:User)"],["punc","-["],["plain","f:FRIEND"],["punc","]-"],["plain","(b:User)"]],
+      [["kw","WHERE"],["plain"," a.name "],["punc","="],["plain"," "],["str","\"Ada\""]],
+      [["kw","RETURN"],["plain"," b.name"]],
+      [["cmt","// Traverses edges in O(hops)"]],
+    ],
+    view:"graph",
+  },
+  {
+    id:9, act:"10",
+    title:"The CAP theorem — pick two of three",
+    sub:"In a distributed database, you can only guarantee two of: Consistency (every read sees the latest write), Availability (every request gets an answer), and Partition tolerance (the system keeps working if the network splits).",
+    code:[
+      [["cmt","// C — every read = most recent write"]],
+      [["cmt","// A — every request gets a response"]],
+      [["cmt","// P — survives network partitions"]],
+      [["cmt",""]],
+      [["cmt","// You MUST tolerate P in practice."]],
+      [["cmt","// So the real choice is C vs A."]],
+    ],
+    view:"cap",
+  },
+  {
+    id:10, act:"11",
+    title:"CP vs AP databases",
+    sub:"When a partition happens, a CP system refuses requests to stay consistent. An AP system answers anyway, accepting that different nodes may disagree until they sync. Different databases pick different trade-offs.",
+    code:[
+      [["cmt","// CP — consistent, may be unavailable"]],
+      [["cmt","//   MongoDB, HBase, Redis (cluster)"]],
+      [["cmt",""]],
+      [["cmt","// AP — available, eventually consistent"]],
+      [["cmt","//   Cassandra, DynamoDB, Riak"]],
+    ],
+    view:"cp-ap",
+  },
+  {
+    id:11, act:"12",
+    title:"BASE — eventual consistency",
+    sub:"The NoSQL alternative to ACID. Basically Available, Soft state, Eventual consistency. You give up immediate correctness for always-on availability — writes propagate, and all nodes converge… eventually.",
+    code:[
+      [["cmt","// write to node A"]],
+      [["fn","put"],["punc","("],["str","\"counter\""],["punc",", "],["num","42"],["punc",")"]],
+      [["cmt",""]],
+      [["cmt","// read from node B (ms later)"]],
+      [["fn","get"],["punc","("],["str","\"counter\""],["punc",")  "],["cmt","// maybe 41 (stale)"]],
+      [["cmt","// read from node B (s later)"]],
+      [["fn","get"],["punc","("],["str","\"counter\""],["punc",")  "],["cmt","// 42 ✓ converged"]],
+    ],
+    view:"base",
+  },
+  {
+    id:12, act:"13",
+    title:"When to use which",
+    sub:"They're not competitors — they're tools for different situations. Many production systems use both: SQL for the core transactional data, NoSQL for caching, analytics, or specialized workloads.",
+    code:[
+      [["cmt","// Use SQL when:"]],
+      [["cmt","//   Complex relationships & JOINs"]],
+      [["cmt","//   Strong transactional guarantees"]],
+      [["cmt","//   Well-defined, stable schema"]],
+      [["cmt",""]],
+      [["cmt","// Use NoSQL when:"]],
+      [["cmt","//   Massive scale / horizontal writes"]],
+      [["cmt","//   Flexible/evolving schema"]],
+      [["cmt","//   Key lookups, caches, time series"]],
+    ],
+    view:"usecase",
+  },
+  {
+    id:13, act:"DONE",
+    title:"SQL vs NoSQL — summary",
+    sub:"SQL gives you structure, joins, and ACID transactions. NoSQL gives you scale, flexibility, and availability. CAP says any distributed system must trade consistency for availability when the network splits. Pick the tool that fits your access pattern.",
+    code:[], view:null, finale:true,
+  },
+];
+
+const DETAILS = {
+  sql: {
+    title:"SQL / Relational",
+    color:T.sql,
+    sections:[
+      {heading:"What is SQL?",body:"SQL (Structured Query Language) is a declarative language for working with relational databases. You describe what data you want, and the database's query planner figures out how to get it."},
+      {heading:"The relational model",body:"Data lives in tables (relations). Each table has a fixed set of typed columns and zero or more rows. Relationships between tables use foreign keys — a column in one table that references the primary key of another."},
+      {heading:"Schema first",body:"You define the schema up front with CREATE TABLE. Every row in a table must match. This gives you type safety, integrity constraints, and predictable query plans — at the cost of flexibility when requirements change."},
+      {heading:"Popular engines",body:"• PostgreSQL — feature-rich open source\n• MySQL / MariaDB — widely deployed\n• SQLite — embedded, zero-config\n• SQL Server, Oracle — enterprise\n• CockroachDB, Spanner — distributed SQL"},
+      {heading:"Strengths",body:"• Powerful ad-hoc queries via JOINs\n• ACID transactions\n• Mature tooling and ecosystem\n• Strong consistency by default\n• Well-understood for 50+ years"},
+    ]
+  },
+  nosql: {
+    title:"NoSQL",
+    color:T.nosql,
+    sections:[
+      {heading:"What is NoSQL?",body:"An umbrella term for databases that don't use the relational model. The name is misleading — it really means \"Not Only SQL\". Different NoSQL databases look radically different from each other."},
+      {heading:"Four main categories",body:"• Document — self-contained JSON-like docs (MongoDB, Couchbase)\n• Key-Value — pure key → value lookups (Redis, DynamoDB)\n• Wide-Column — partitioned rows with huge column sets (Cassandra, BigTable, HBase)\n• Graph — nodes and edges with traversal queries (Neo4j, Neptune)"},
+      {heading:"Schema flexibility",body:"Most NoSQL stores are schemaless or schema-on-read. Each document or record can have different fields. This is a superpower for evolving data and a footgun for data quality — the application becomes responsible for shape validation."},
+      {heading:"Scale-out by design",body:"NoSQL systems were built for horizontal scaling — add more machines, not bigger ones. They partition data across nodes automatically, accept eventual consistency, and favor availability over strict correctness."},
+      {heading:"Strengths",body:"• Horizontal scalability\n• High write throughput\n• Flexible schemas\n• Purpose-built for specific access patterns\n• Often simpler operationally at massive scale"},
+    ]
+  },
+  cap: {
+    title:"CAP Theorem",
+    color:T.purpleL,
+    sections:[
+      {heading:"The theorem",body:"Eric Brewer's theorem (proven by Gilbert & Lynch, 2002): any distributed data store can provide at most two of three guarantees:\n\n• Consistency — every read sees the most recent write\n• Availability — every request receives a non-error response\n• Partition tolerance — the system continues to work despite network failures between nodes"},
+      {heading:"Why P is non-negotiable",body:"In any real distributed system, network partitions WILL happen — packets are dropped, links fail, data centers get isolated. You can't choose to not tolerate partitions; you can only choose what to do when one occurs."},
+      {heading:"The real choice: C vs A",body:"When a partition happens, each affected node must choose:\n\n• CP — refuse to serve requests from the minority partition. Guarantees consistency, sacrifices availability.\n• AP — keep serving requests on both sides. Guarantees availability, sacrifices immediate consistency (nodes will diverge until reconnected)."},
+      {heading:"Nuance",body:"CAP is a simplification. Modern systems tune consistency per-operation — DynamoDB lets you request strong or eventual reads, Cassandra lets you pick quorum levels. Also see PACELC: even without a partition, you trade Latency for Consistency."},
+    ]
+  },
+  acid: {
+    title:"ACID Transactions",
+    color:T.sql,
+    sections:[
+      {heading:"What ACID means",body:"ACID is the set of guarantees traditional SQL databases give you for transactions:\n\n• Atomicity — all statements in a transaction succeed, or none do\n• Consistency — the database moves from one valid state to another (constraints hold)\n• Isolation — concurrent transactions don't see each other's partial work\n• Durability — once committed, the data survives crashes"},
+      {heading:"Atomicity example",body:"Bank transfer: debit account A by $100, credit account B by $100. If either statement fails, the whole transaction rolls back. You never lose money between the two updates."},
+      {heading:"Isolation levels",body:"Databases offer several levels, trading correctness for performance:\n• Read uncommitted — weakest, allows dirty reads\n• Read committed — default in many engines\n• Repeatable read — prevents non-repeatable reads\n• Serializable — strongest, as if transactions ran one at a time"},
+      {heading:"Cost",body:"ACID is expensive at scale. Coordinating transactions across many nodes requires locks, consensus, and two-phase commits — which is why many distributed databases relax ACID in favor of BASE."},
+    ]
+  },
+  base: {
+    title:"BASE (eventual consistency)",
+    color:T.nosql,
+    sections:[
+      {heading:"BASE vs ACID",body:"The philosophical opposite of ACID, popularized by the NoSQL world:\n\n• Basically Available — the system answers requests, even if data might be stale\n• Soft state — the state of the system may change over time, even without new input (as replicas sync)\n• Eventual consistency — given enough time without new writes, all replicas converge to the same value"},
+      {heading:"Why BASE?",body:"At global scale, strict consistency is slow and fragile. BASE trades immediate correctness for always-on availability. For many workloads — social feeds, shopping carts, product catalogs — stale data for a few seconds is perfectly acceptable."},
+      {heading:"Conflict resolution",body:"When replicas diverge and eventually reconnect, the system must resolve conflicts. Strategies include:\n• Last-write-wins (by timestamp)\n• Vector clocks (track causality)\n• CRDTs (merge deterministically)\n• Application-level reconciliation (Riak's siblings)"},
+      {heading:"When BASE hurts",body:"Financial transactions, inventory counts, and anything requiring counts/uniqueness is a poor fit for pure BASE. You either use a CP system or add coordination (e.g., distributed locks) on top."},
+    ]
+  },
+  code: {
+    title:"Source Code",
+    color:T.purpleL,
+    sections:[
+      {heading:"Reading the examples",body:"Each scene shows a small sample of the relevant query language or data model — SQL DDL/DML, MongoDB JSON documents, Redis commands, CQL, or Cypher graph queries."},
+      {heading:"SQL reference",body:"SELECT ... FROM ... JOIN ... WHERE ...\nINSERT INTO t (cols) VALUES (...)\nUPDATE t SET col = v WHERE ...\nBEGIN; ...; COMMIT;"},
+      {heading:"MongoDB reference",body:"db.users.find({ name: \"Ada\" })\ndb.users.insertOne({ ... })\ndb.users.updateOne({_id}, {$set:{...}})\ndb.users.aggregate([ ... ])"},
+      {heading:"Redis reference",body:"SET key value\nGET key\nINCR counter\nEXPIRE key seconds\nLPUSH list item\nHSET hash field value"},
+    ]
+  },
+};
+
+/* ─── COMPONENTS ─── */
+const CodePanel = ({ tokens, onClick }) =>
+  e("div", { onClick, style:{ background:T.codeBase, borderRadius:12, overflow:"hidden", border:`1px solid ${T.border}`, cursor:onClick?"pointer":"default" } },
+    e("div", { style:{ padding:"10px 14px 8px", borderBottom:`1px solid ${T.border}`, display:"flex", gap:7 } },
+      ...["#ff5f57","#febc2e","#28c840"].map((c,i) =>
+        e("div", { key:i, style:{ width:11, height:11, borderRadius:"50%", background:c } })
+      )
+    ),
+    e("div", { style:{ padding:"14px 18px 16px", fontFamily:"'SF Mono','Fira Code','Consolas',monospace", fontSize:12, lineHeight:1.85 } },
+      tokens.map((line, li) =>
+        e("div", { key:li },
+          line.length === 0
+            ? e("span", null, " ")
+            : line.map(([cls, txt], ti) =>
+                e("span", { key:ti, style:{ ...TS[cls], whiteSpace:"pre" } }, txt)
+              )
+        )
+      )
+    )
+  );
+
+/* SQL table visual */
+const SqlTable = ({ onClick, highlightJoin=false }) => {
+  const users = [
+    { id:1, name:"Ada", email:"ada@ex.com" },
+    { id:2, name:"Linus", email:"linus@ex.com" },
+    { id:3, name:"Grace", email:"grace@ex.com" },
+  ];
+  const orders = [
+    { id:101, user_id:1, total:120 },
+    { id:102, user_id:1, total:80 },
+    { id:103, user_id:3, total:250 },
+  ];
+  const cell = { padding:"5px 8px", fontSize:10, fontFamily:"'SF Mono',monospace", color:T.text2, borderRight:`1px solid ${T.border}` };
+  const head = { ...cell, color:T.sqlL, fontWeight:700, background:`${T.sql}10`, borderBottom:`1px solid ${T.sql}44` };
+  return e("div", { onClick, style:{ flex:1, borderRadius:12, border:`1.5px solid ${T.border2}`, background:T.surface, overflow:"hidden", cursor:"pointer" } },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", gap:6 } },
+      e("i", { className:"lni lni-database", style:{ color:T.sql, fontSize:12 } }),
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.sql } }, "SQL — FIXED SCHEMA")
+    ),
+    e("div", { style:{ padding:12, display:"flex", flexDirection:"column", gap:10 } },
+      /* users table */
+      e("div", null,
+        e("div", { style:{ fontSize:9, color:T.text3, marginBottom:4, fontWeight:600, letterSpacing:"0.06em" } }, "users"),
+        e("div", { style:{ border:`1px solid ${T.border}`, borderRadius:6, overflow:"hidden" } },
+          e("div", { style:{ display:"grid", gridTemplateColumns:"40px 1fr 1.4fr" } },
+            e("div", { style:head }, "id"),
+            e("div", { style:head }, "name"),
+            e("div", { style:{...head, borderRight:"none"} }, "email")
+          ),
+          users.map((u,i) =>
+            e(M.div, { key:u.id, initial:{opacity:0,x:-8}, animate:{opacity:1,x:0}, transition:{delay:i*0.08,...ez},
+              style:{ display:"grid", gridTemplateColumns:"40px 1fr 1.4fr", background: highlightJoin && u.id===1 ? `${T.amber}18` : "transparent" }
+            },
+              e("div", { style:cell }, u.id),
+              e("div", { style:cell }, u.name),
+              e("div", { style:{...cell, borderRight:"none"} }, u.email)
+            )
+          )
+        )
+      ),
+      /* orders table */
+      e("div", null,
+        e("div", { style:{ fontSize:9, color:T.text3, marginBottom:4, fontWeight:600, letterSpacing:"0.06em" } }, "orders"),
+        e("div", { style:{ border:`1px solid ${T.border}`, borderRadius:6, overflow:"hidden" } },
+          e("div", { style:{ display:"grid", gridTemplateColumns:"40px 60px 1fr" } },
+            e("div", { style:head }, "id"),
+            e("div", { style:head }, "user_id"),
+            e("div", { style:{...head, borderRight:"none"} }, "total")
+          ),
+          orders.map((o,i) =>
+            e(M.div, { key:o.id, initial:{opacity:0,x:-8}, animate:{opacity:1,x:0}, transition:{delay:0.3 + i*0.08,...ez},
+              style:{ display:"grid", gridTemplateColumns:"40px 60px 1fr", background: highlightJoin && o.user_id===1 ? `${T.amber}18` : "transparent" }
+            },
+              e("div", { style:cell }, o.id),
+              e("div", { style:{...cell, color: highlightJoin && o.user_id===1 ? T.amberL : T.text2} }, o.user_id),
+              e("div", { style:{...cell, borderRight:"none"} }, "$"+o.total)
+            )
+          )
+        )
+      ),
+      highlightJoin && e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.7,...ez},
+        style:{ fontSize:10, color:T.amberL, textAlign:"center", padding:"4px 8px", background:`${T.amber}10`, borderRadius:6, border:`1px solid ${T.amber}33` }
+      }, "JOIN ON users.id = orders.user_id")
+    )
+  );
+};
+
+/* JSON document visual */
+const DocPanel = ({ onClick }) => {
+  const lines = [
+    { i:"{", c:T.text2 },
+    { i:'  "_id": "u_42",', c:T.text2, key:true },
+    { i:'  "name": "Ada",', c:T.text2, key:true },
+    { i:'  "email": "ada@ex.com",', c:T.text2, key:true },
+    { i:'  "orders": [', c:T.text2, key:true },
+    { i:'    { "id": 101, "total": 120 },', c:T.text2, nested:true },
+    { i:'    { "id": 102, "total": 80 }', c:T.text2, nested:true },
+    { i:"  ],", c:T.text2 },
+    { i:'  "tags": ["admin", "early-adopter"]', c:T.text2, key:true },
+    { i:"}", c:T.text2 },
+  ];
+  return e("div", { onClick, style:{ flex:1, borderRadius:12, border:`1.5px solid ${T.border2}`, background:T.surface, overflow:"hidden", cursor:"pointer" } },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", gap:6 } },
+      e("i", { className:"lni lni-files-1", style:{ color:T.nosql, fontSize:12 } }),
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.nosql } }, "NoSQL — DOCUMENT")
+    ),
+    e("div", { style:{ padding:14, fontFamily:"'SF Mono',monospace", fontSize:11, lineHeight:1.75 } },
+      lines.map((l,i) =>
+        e(M.div, { key:i, initial:{opacity:0,x:-8}, animate:{opacity:1,x:0}, transition:{delay:i*0.06,...ez},
+          style:{ color: l.nested ? T.greenL : T.text2, whiteSpace:"pre" }
+        }, l.i)
+      ),
+      e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.7,...ez},
+        style:{ marginTop:8, fontSize:10, color:T.nosqlL, textAlign:"center", padding:"4px 8px", background:`${T.nosql}10`, borderRadius:6, border:`1px solid ${T.nosql}33` }
+      }, "self-contained — no JOIN needed")
+    )
+  );
+};
+
+/* ACID panel */
+const AcidPanel = ({ onClick }) => {
+  const rows = [
+    { k:"A", label:"Atomicity", sub:"All or nothing — both updates commit together" },
+    { k:"C", label:"Consistency", sub:"Constraints always hold across transactions" },
+    { k:"I", label:"Isolation", sub:"Concurrent txns don't see partial state" },
+    { k:"D", label:"Durability", sub:"Committed data survives crashes" },
+  ];
+  return e("div", { onClick, style:{ borderRadius:12, border:`1.5px solid ${T.sql}44`, background:T.surface, overflow:"hidden", cursor:"pointer" } },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", gap:6 } },
+      e("div", { style:{ width:8, height:8, borderRadius:"50%", background:T.sql } }),
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.sql } }, "ACID GUARANTEES")
+    ),
+    e("div", { style:{ padding:14, display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 } },
+      rows.map((r,i) =>
+        e(M.div, { key:i, initial:{opacity:0,y:10}, animate:{opacity:1,y:0}, transition:{delay:i*0.1,...ez},
+          style:{ padding:"10px 12px", borderRadius:10, border:`1px solid ${T.sql}33`, background:`${T.sql}08`, display:"flex", gap:10, alignItems:"flex-start" }
+        },
+          e("div", { style:{ width:28, height:28, borderRadius:8, background:`${T.sql}20`, border:`1px solid ${T.sql}55`, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:700, color:T.sqlL, flexShrink:0, fontFamily:"'SF Mono',monospace" } }, r.k),
+          e("div", null,
+            e("div", { style:{ fontSize:12, fontWeight:600, color:T.sqlL, marginBottom:2 } }, r.label),
+            e("div", { style:{ fontSize:10, color:T.text2, lineHeight:1.4 } }, r.sub)
+          )
+        )
+      )
+    )
+  );
+};
+
+/* NoSQL categories grid */
+const NoSqlCats = ({ onClick, highlight }) => {
+  const cats = [
+    { id:"doc", icon:"lni-files-1", label:"Document", examples:"MongoDB, Couchbase", color:T.nosql, desc:"JSON-like docs, nested" },
+    { id:"kv",  icon:"lni-key-1", label:"Key-Value", examples:"Redis, DynamoDB", color:T.amber, desc:"Fast key → value" },
+    { id:"wc",  icon:"lni-grid-alt", label:"Wide-Column", examples:"Cassandra, BigTable", color:T.blue, desc:"Partitioned rows" },
+    { id:"gr",  icon:"lni-network", label:"Graph", examples:"Neo4j, Neptune", color:T.purple, desc:"Nodes & edges" },
+  ];
+  return e("div", { onClick, style:{ borderRadius:12, border:`1.5px solid ${T.border2}`, background:T.surface, overflow:"hidden", cursor:"pointer" } },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", gap:6 } },
+      e("div", { style:{ width:8, height:8, borderRadius:"50%", background:T.nosql } }),
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.nosql } }, "FOUR FLAVORS OF NoSQL")
+    ),
+    e("div", { style:{ padding:14, display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 } },
+      cats.map((c,i) => {
+        const dim = highlight && highlight !== c.id;
+        return e(M.div, { key:c.id, initial:{opacity:0,scale:0.9}, animate:{opacity: dim ? 0.3 : 1, scale:1}, transition:{delay:i*0.1,...ez},
+          style:{ padding:"12px 14px", borderRadius:10, border:`1px solid ${c.color}44`, background:`${c.color}10` }
+        },
+          e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginBottom:6 } },
+            e("i", { className:"lni "+c.icon, style:{ color:c.color, fontSize:16 } }),
+            e("div", { style:{ fontSize:13, fontWeight:600, color:c.color } }, c.label)
+          ),
+          e("div", { style:{ fontSize:10, color:T.text2, marginBottom:4, fontFamily:"'SF Mono',monospace" } }, c.examples),
+          e("div", { style:{ fontSize:10, color:T.text3 } }, c.desc)
+        );
+      })
+    )
+  );
+};
+
+/* Key-Value visual */
+const KvPanel = ({ onClick }) => {
+  const rows = [
+    { k:'"session:u42"', v:'{user:42, exp:...}', c:T.amber },
+    { k:'"cache:home"', v:'{...rendered HTML}', c:T.blue },
+    { k:'"views:home"', v:'4192', c:T.green },
+    { k:'"lock:order:9"', v:'"worker-3"', c:T.coral },
+  ];
+  return e("div", { onClick, style:{ borderRadius:12, border:`1.5px solid ${T.amber}44`, background:T.surface, overflow:"hidden", cursor:"pointer" } },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", gap:6 } },
+      e("i", { className:"lni lni-key-1", style:{ color:T.amber, fontSize:12 } }),
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.amber } }, "KEY-VALUE STORE")
+    ),
+    e("div", { style:{ padding:14, display:"flex", flexDirection:"column", gap:8 } },
+      rows.map((r,i) =>
+        e(M.div, { key:i, initial:{opacity:0,x:-10}, animate:{opacity:1,x:0}, transition:{delay:i*0.1,...ez},
+          style:{ display:"flex", alignItems:"center", gap:10, padding:"8px 12px", borderRadius:8, background:`${r.c}08`, border:`1px solid ${r.c}33` }
+        },
+          e("div", { style:{ fontSize:11, color:r.c, fontFamily:"'SF Mono',monospace", fontWeight:600, minWidth:130 } }, r.k),
+          e("div", { style:{ width:16, textAlign:"center", color:T.text3 } }, "→"),
+          e("div", { style:{ fontSize:11, color:T.text2, fontFamily:"'SF Mono',monospace", flex:1 } }, r.v)
+        )
+      )
+    )
+  );
+};
+
+/* Wide-column visual */
+const WideColPanel = ({ onClick }) => {
+  const cell = { padding:"4px 7px", fontSize:9, fontFamily:"'SF Mono',monospace", color:T.text2, borderRight:`1px solid ${T.border}`, textAlign:"center", whiteSpace:"nowrap" };
+  const head = { ...cell, color:T.blueL, fontWeight:700, background:`${T.blue}10`, borderBottom:`1px solid ${T.blue}44` };
+  const part = { padding:"4px 8px", fontSize:9, fontFamily:"'SF Mono',monospace", color:T.blueL, fontWeight:700, borderRight:`1px solid ${T.blue}44`, background:`${T.blue}15` };
+  return e("div", { onClick, style:{ borderRadius:12, border:`1.5px solid ${T.blue}44`, background:T.surface, overflow:"hidden", cursor:"pointer" } },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", gap:6 } },
+      e("i", { className:"lni lni-grid-alt", style:{ color:T.blue, fontSize:12 } }),
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.blue } }, "WIDE-COLUMN — PARTITION KEY + COLUMNS")
+    ),
+    e("div", { style:{ padding:14, overflowX:"auto" } },
+      e("div", { style:{ border:`1px solid ${T.border}`, borderRadius:6, overflow:"hidden", minWidth:500 } },
+        e("div", { style:{ display:"grid", gridTemplateColumns:"110px repeat(5, 1fr)" } },
+          e("div", { style:head }, "partition key"),
+          e("div", { style:head }, "ts:0"),
+          e("div", { style:head }, "ts:1"),
+          e("div", { style:head }, "ts:2"),
+          e("div", { style:head }, "ts:3"),
+          e("div", { style:{...head, borderRight:"none"} }, "ts:N…")
+        ),
+        ["user_7a","user_3f","user_91"].map((k,i) =>
+          e(M.div, { key:k, initial:{opacity:0,x:-10}, animate:{opacity:1,x:0}, transition:{delay:i*0.12,...ez},
+            style:{ display:"grid", gridTemplateColumns:"110px repeat(5, 1fr)" }
+          },
+            e("div", { style:part }, k),
+            e("div", { style:cell }, "click"),
+            e("div", { style:cell }, "view"),
+            e("div", { style:cell }, "buy"),
+            e("div", { style:cell }, "logout"),
+            e("div", { style:{...cell, borderRight:"none", color:T.text3} }, "...")
+          )
+        )
+      ),
+      e("div", { style:{ fontSize:10, color:T.text3, marginTop:8, textAlign:"center" } }, "Each row has its own (potentially huge) set of columns")
+    )
+  );
+};
+
+/* Graph visual */
+const GraphPanel = ({ onClick }) => {
+  const nodes = [
+    { id:"ada", x:160, y:60, label:"Ada", c:T.purple },
+    { id:"lin", x:50, y:150, label:"Linus", c:T.blue },
+    { id:"gra", x:270, y:150, label:"Grace", c:T.teal },
+    { id:"p1",  x:100, y:240, label:"Post#1", c:T.amber },
+    { id:"p2",  x:220, y:240, label:"Post#2", c:T.amber },
+  ];
+  const edges = [
+    { a:"ada", b:"lin", label:"FRIEND" },
+    { a:"ada", b:"gra", label:"FRIEND" },
+    { a:"lin", b:"p1", label:"WROTE" },
+    { a:"gra", b:"p2", label:"WROTE" },
+    { a:"ada", b:"p2", label:"LIKED" },
+  ];
+  const byId = Object.fromEntries(nodes.map(n=>[n.id,n]));
+  return e("div", { onClick, style:{ borderRadius:12, border:`1.5px solid ${T.purple}44`, background:T.surface, overflow:"hidden", cursor:"pointer" } },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", gap:6 } },
+      e("i", { className:"lni lni-network", style:{ color:T.purple, fontSize:12 } }),
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.purple } }, "GRAPH — NODES & EDGES")
+    ),
+    e("div", { style:{ padding:14, display:"flex", justifyContent:"center" } },
+      e("svg", { width:340, height:300, style:{ overflow:"visible" } },
+        edges.map((ed,i) => {
+          const a = byId[ed.a], b = byId[ed.b];
+          return e("g", { key:i },
+            e(M.line, { initial:{pathLength:0,opacity:0}, animate:{pathLength:1,opacity:1}, transition:{delay:0.2+i*0.12,duration:0.5},
+              x1:a.x, y1:a.y, x2:b.x, y2:b.y, stroke:T.purple+"66", strokeWidth:1.5
+            }),
+            e(M.text, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.5+i*0.12},
+              x:(a.x+b.x)/2, y:(a.y+b.y)/2-4, fill:T.text3, fontSize:8, textAnchor:"middle", fontFamily:"monospace"
+            }, ed.label)
+          );
+        }),
+        nodes.map((n,i) =>
+          e("g", { key:n.id },
+            e(M.circle, { initial:{r:0,opacity:0}, animate:{r:22,opacity:1}, transition:{delay:i*0.08, ...sp(360,20)},
+              cx:n.x, cy:n.y, fill:n.c+"22", stroke:n.c, strokeWidth:1.5
+            }),
+            e(M.text, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.3+i*0.08},
+              x:n.x, y:n.y+3, fill:n.c, fontSize:10, textAnchor:"middle", fontWeight:700, fontFamily:"'SF Mono',monospace"
+            }, n.label)
+          )
+        )
+      )
+    )
+  );
+};
+
+/* CAP triangle */
+const CapTriangle = ({ onClick, showDbs=false }) => {
+  // Equilateral triangle: C top, A bottom-left, P bottom-right
+  const cx=170, cy=40;  // Consistency
+  const ax=50, ay=230;  // Availability
+  const px=290, py=230; // Partition tolerance
+  const dbs = showDbs ? [
+    // along CP edge (between C and P): RDBMS, MongoDB, HBase
+    { name:"RDBMS", x:(cx+px)/2 - 20, y:(cy+py)/2 + 5, c:T.sql, edge:"CP" },
+    { name:"MongoDB", x:(cx+px)/2 + 20, y:(cy+py)/2 - 15, c:T.sql, edge:"CP" },
+    // along AP edge (between A and P)
+    { name:"Cassandra", x:(ax+px)/2 - 10, y:py + 18, c:T.nosql, edge:"AP" },
+    { name:"DynamoDB", x:(ax+px)/2 + 40, y:py + 32, c:T.nosql, edge:"AP" },
+    // along CA edge (between C and A) - theoretical single-node
+    { name:"Spanner*", x:(cx+ax)/2 - 40, y:(cy+ay)/2, c:T.blue, edge:"CA" },
+  ] : [];
+  return e("div", { onClick, style:{ borderRadius:12, border:`1.5px solid ${T.purple}44`, background:T.surface, overflow:"hidden", cursor:"pointer" } },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", gap:6 } },
+      e("div", { style:{ width:8, height:8, borderRadius:"50%", background:T.purple } }),
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.purple } }, "CAP — PICK TWO")
+    ),
+    e("div", { style:{ padding:14, display:"flex", justifyContent:"center" } },
+      e("svg", { width:360, height:290, style:{ overflow:"visible" } },
+        // edges
+        e(M.line, { initial:{pathLength:0}, animate:{pathLength:1}, transition:{duration:0.6},
+          x1:cx, y1:cy, x2:ax, y2:ay, stroke:showDbs?T.blue:T.purple+"66", strokeWidth:2
+        }),
+        e(M.line, { initial:{pathLength:0}, animate:{pathLength:1}, transition:{duration:0.6,delay:0.15},
+          x1:cx, y1:cy, x2:px, y2:py, stroke:showDbs?T.sql:T.purple+"66", strokeWidth:2
+        }),
+        e(M.line, { initial:{pathLength:0}, animate:{pathLength:1}, transition:{duration:0.6,delay:0.3},
+          x1:ax, y1:ay, x2:px, y2:py, stroke:showDbs?T.nosql:T.purple+"66", strokeWidth:2
+        }),
+        // edge labels
+        showDbs && e("text", { x:(cx+ax)/2 - 22, y:(cy+ay)/2 - 4, fill:T.blueL, fontSize:9, fontWeight:700, fontFamily:"monospace" }, "CA"),
+        showDbs && e("text", { x:(cx+px)/2 + 6, y:(cy+py)/2 - 4, fill:T.sqlL, fontSize:9, fontWeight:700, fontFamily:"monospace" }, "CP"),
+        showDbs && e("text", { x:(ax+px)/2 - 10, y:py + 4, fill:T.nosqlL, fontSize:9, fontWeight:700, fontFamily:"monospace" }, "AP"),
+        // corner nodes
+        [
+          { cx:cx, cy:cy, label:"C", sub:"Consistency", c:T.purpleL },
+          { cx:ax, cy:ay, label:"A", sub:"Availability", c:T.purpleL },
+          { cx:px, cy:py, label:"P", sub:"Partition tol.", c:T.purpleL },
+        ].map((n,i) =>
+          e("g", { key:i },
+            e(M.circle, { initial:{r:0}, animate:{r:28}, transition:{delay:0.4+i*0.1, ...sp(360,22)},
+              cx:n.cx, cy:n.cy, fill:T.surface, stroke:n.c, strokeWidth:2
+            }),
+            e(M.text, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.6+i*0.1},
+              x:n.cx, y:n.cy+5, fill:n.c, fontSize:18, textAnchor:"middle", fontWeight:700
+            }, n.label),
+            e(M.text, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.7+i*0.1},
+              x:n.cx, y:n.cy+44, fill:T.text2, fontSize:9, textAnchor:"middle", fontFamily:"system-ui"
+            }, n.sub)
+          )
+        ),
+        // DB plots
+        dbs.map((d,i) =>
+          e("g", { key:d.name },
+            e(M.circle, { initial:{r:0,opacity:0}, animate:{r:4,opacity:1}, transition:{delay:1+i*0.1},
+              cx:d.x, cy:d.y, fill:d.c
+            }),
+            e(M.text, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:1.1+i*0.1},
+              x:d.x+8, y:d.y+3, fill:d.c, fontSize:9, fontFamily:"'SF Mono',monospace", fontWeight:600
+            }, d.name)
+          )
+        )
+      )
+    )
+  );
+};
+
+/* CP vs AP side-by-side */
+const CpApPanel = ({ onClick }) => {
+  return e("div", { style:{ display:"flex", gap:10 } },
+    e(M.div, { initial:{opacity:0,x:-10}, animate:{opacity:1,x:0}, transition:ez, onClick,
+      style:{ flex:1, borderRadius:12, border:`1.5px solid ${T.sql}44`, background:T.surface, overflow:"hidden", cursor:"pointer" }
+    },
+      e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", gap:6 } },
+        e("div", { style:{ width:8, height:8, borderRadius:"50%", background:T.sql } }),
+        e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.sql } }, "CP — CONSISTENT")
+      ),
+      e("div", { style:{ padding:14 } },
+        e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.6, marginBottom:10 } }, "When a partition happens, refuse requests rather than serve stale data. Clients may see errors until the network heals."),
+        ["MongoDB","HBase","Redis (cluster)","etcd","Zookeeper"].map((n,i) =>
+          e(M.div, { key:n, initial:{opacity:0,x:-6}, animate:{opacity:1,x:0}, transition:{delay:0.2+i*0.07,...ez},
+            style:{ padding:"5px 10px", borderRadius:6, background:`${T.sql}10`, border:`1px solid ${T.sql}33`, fontSize:11, color:T.sqlL, fontFamily:"'SF Mono',monospace", marginBottom:5 }
+          }, n)
+        )
+      )
+    ),
+    e(M.div, { initial:{opacity:0,x:10}, animate:{opacity:1,x:0}, transition:{delay:0.15,...ez}, onClick,
+      style:{ flex:1, borderRadius:12, border:`1.5px solid ${T.nosql}44`, background:T.surface, overflow:"hidden", cursor:"pointer" }
+    },
+      e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", gap:6 } },
+        e("div", { style:{ width:8, height:8, borderRadius:"50%", background:T.nosql } }),
+        e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.nosql } }, "AP — AVAILABLE")
+      ),
+      e("div", { style:{ padding:14 } },
+        e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.6, marginBottom:10 } }, "When a partition happens, keep answering on both sides. Accept that replicas may diverge until they reconnect and sync."),
+        ["Cassandra","DynamoDB","Riak","CouchDB","Voldemort"].map((n,i) =>
+          e(M.div, { key:n, initial:{opacity:0,x:6}, animate:{opacity:1,x:0}, transition:{delay:0.3+i*0.07,...ez},
+            style:{ padding:"5px 10px", borderRadius:6, background:`${T.nosql}10`, border:`1px solid ${T.nosql}33`, fontSize:11, color:T.nosqlL, fontFamily:"'SF Mono',monospace", marginBottom:5 }
+          }, n)
+        )
+      )
+    )
+  );
+};
+
+/* BASE panel — eventual consistency animation */
+const BasePanel = ({ onClick }) => {
+  const nodes = [
+    { id:"A", x:60,  y:70, c:T.nosql, val:"42", t:0 },
+    { id:"B", x:180, y:40, c:T.nosql, val:"41→42", t:0.4 },
+    { id:"C", x:300, y:70, c:T.nosql, val:"41→42", t:0.8 },
+    { id:"D", x:180, y:140,c:T.nosql, val:"41→42", t:1.2 },
+  ];
+  return e("div", { onClick, style:{ borderRadius:12, border:`1.5px solid ${T.nosql}44`, background:T.surface, overflow:"hidden", cursor:"pointer" } },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", gap:6 } },
+      e("div", { style:{ width:8, height:8, borderRadius:"50%", background:T.nosql } }),
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.nosql } }, "BASE — WRITE PROPAGATES, NODES CONVERGE")
+    ),
+    e("div", { style:{ padding:14 } },
+      e("svg", { width:360, height:200, style:{ display:"block", margin:"0 auto" } },
+        // edges
+        [[0,1],[0,3],[1,2],[2,3],[1,3]].map(([i,j],k) =>
+          e("line", { key:k, x1:nodes[i].x, y1:nodes[i].y, x2:nodes[j].x, y2:nodes[j].y, stroke:T.nosql+"44", strokeWidth:1, strokeDasharray:"3,3" })
+        ),
+        // pulse ripples from A
+        nodes.slice(1).map((n,i) =>
+          e(M.circle, { key:"p"+i,
+            cx:nodes[0].x, cy:nodes[0].y, r:0, fill:"none", stroke:T.nosql, strokeWidth:1.5, opacity:0.6,
+            animate:{ r:[0, Math.hypot(n.x-nodes[0].x, n.y-nodes[0].y)], opacity:[0.8, 0] },
+            transition:{ delay:0.5+i*0.4, duration:1.2, repeat:Infinity, repeatDelay:2 }
+          })
+        ),
+        // nodes
+        nodes.map((n,i) =>
+          e("g", { key:n.id },
+            e(M.circle, { initial:{r:0}, animate:{r:26}, transition:{delay:i*0.1, ...sp(360,22)},
+              cx:n.x, cy:n.y, fill:T.surface, stroke:n.c, strokeWidth:1.5
+            }),
+            e(M.text, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.3+i*0.1},
+              x:n.x, y:n.y-2, fill:n.c, fontSize:10, textAnchor:"middle", fontWeight:700
+            }, "Node "+n.id),
+            e(M.text, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:n.t},
+              x:n.x, y:n.y+10, fill:T.text2, fontSize:9, textAnchor:"middle", fontFamily:"'SF Mono',monospace"
+            }, n.val)
+          )
+        )
+      ),
+      e("div", { style:{ fontSize:10, color:T.text3, textAlign:"center", marginTop:4 } }, "Node A accepts write → replicas eventually converge")
+    )
+  );
+};
+
+/* Use case cards */
+const UseCases = () =>
+  e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 } },
+    e("div", { style:{ borderRadius:12, border:`1px solid ${T.sql}33`, background:`${T.sql}08`, padding:14 } },
+      e("div", { style:{ fontSize:13, fontWeight:600, color:T.sqlL, marginBottom:8 } }, "Use SQL when…"),
+      ["Complex relationships / multi-table JOINs","Strong ACID transactions required","Schema is well-defined and stable","Ad-hoc analytics & reporting queries","Financial data, inventory, accounting"].map((t,i) =>
+        e(M.div, { key:i, initial:{opacity:0,x:-10}, animate:{opacity:1,x:0}, transition:{delay:i*0.08,...ez},
+          style:{ fontSize:11, color:T.text2, padding:"4px 0", display:"flex", gap:6, lineHeight:1.4 }
+        }, e("span", { style:{color:T.sql,flexShrink:0} }, "•"), t)
+      )
+    ),
+    e("div", { style:{ borderRadius:12, border:`1px solid ${T.nosql}33`, background:`${T.nosql}08`, padding:14 } },
+      e("div", { style:{ fontSize:13, fontWeight:600, color:T.nosqlL, marginBottom:8 } }, "Use NoSQL when…"),
+      ["Massive horizontal scale (writes & data)","Schema evolves rapidly or is variable","Simple key-based lookups (caches, sessions)","Time-series, logs, telemetry","Graph traversals, product catalogs"].map((t,i) =>
+        e(M.div, { key:i, initial:{opacity:0,x:-10}, animate:{opacity:1,x:0}, transition:{delay:i*0.08,...ez},
+          style:{ fontSize:11, color:T.text2, padding:"4px 0", display:"flex", gap:6, lineHeight:1.4 }
+        }, e("span", { style:{color:T.nosql,flexShrink:0} }, "•"), t)
+      )
+    )
+  );
+
+const Finale = () => {
+  const rows = [
+    { n:"lni-database", label:"SQL — structured", sub:"Tables, rows, fixed schema, relational joins, ACID", c:T.sql },
+    { n:"lni-files-1", label:"NoSQL — flexible", sub:"Documents, key-value, wide-column, or graph — schemaless", c:T.nosql },
+    { n:"lni-hand", label:"Four NoSQL flavors", sub:"Document, Key-Value, Wide-Column, Graph — different shapes for different access patterns", c:T.amber },
+    { n:"lni-shield-2", label:"ACID vs BASE", sub:"Strict transactions vs eventual consistency — pick your consistency model", c:T.blue },
+    { n:"lni-network", label:"CAP theorem", sub:"In a partition, you choose C (consistency) or A (availability) — P is non-negotiable", c:T.purple },
+    { n:"lni-link-2-angular-right", label:"Use both", sub:"SQL for the source of truth, NoSQL for scale-out specialized workloads", c:T.teal },
+  ];
+  return e("div", { style:{ padding:"8px 0" } },
+    rows.map((r,i) => e(M.div, { key:i, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.1,...ez},
+      style:{ display:"flex", alignItems:"flex-start", gap:12, padding:"11px 14px", marginBottom:8, borderRadius:10, border:`1px solid ${r.c}28`, background:`${r.c}08` }
+    },
+      e("div", { style:{ width:28, height:28, borderRadius:"50%", border:`1.5px solid ${r.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:12, fontWeight:700, color:r.c } }, e("i", { className:"lni " + r.n })),
+      e("div", null,
+        e("div", { style:{ fontSize:13, fontWeight:600, color:r.c, marginBottom:2 } }, r.label),
+        e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.5 } }, r.sub)
+      )
+    ))
+  );
+};
+
+const DetailPanel = ({ detailKey, onClose }) => {
+  const d = DETAILS[detailKey];
+  if (!d) return null;
+  return e("div", {
+    style:{ width:340, flexShrink:0, background:T.surface, borderRadius:14, border:`1.5px solid ${d.color}44`, overflow:"hidden", alignSelf:"flex-start", position:"sticky", top:56 }
+  },
+    e("div", { style:{ padding:"14px 18px 12px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:8 } },
+        e("div", { style:{ width:8, height:8, borderRadius:"50%", background:d.color } }),
+        e("span", { style:{ fontSize:14, fontWeight:600, color:T.text1 } }, d.title)
+      ),
+      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6, transition:"color 0.2s" }, onMouseEnter:ev=>ev.target.style.color=T.text1, onMouseLeave:ev=>ev.target.style.color=T.text3 }, e("i", { className:"lni lni-xmark" }))
+    ),
+    e("div", { style:{ padding:"16px 18px 20px", maxHeight:"calc(100vh - 140px)", overflowY:"auto" } },
+      d.sections.map((s, i) =>
+        e("div", { key:i, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
+          e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
+        )
+      )
+    )
+  );
+};
+
+/* Render the view for a scene */
+const SceneView = ({ view, toggleDetail }) => {
+  if (view === "schema-sql") {
+    return e("div", { style:{ display:"flex", gap:10 } },
+      e(SqlTable, { onClick:()=>toggleDetail("sql") })
+    );
+  }
+  if (view === "join") {
+    return e("div", { style:{ display:"flex", gap:10 } },
+      e(SqlTable, { onClick:()=>toggleDetail("sql"), highlightJoin:true })
+    );
+  }
+  if (view === "acid") {
+    return e(AcidPanel, { onClick:()=>toggleDetail("acid") });
+  }
+  if (view === "nosql-cats") {
+    return e(NoSqlCats, { onClick:()=>toggleDetail("nosql") });
+  }
+  if (view === "schema-doc") {
+    return e("div", { style:{ display:"flex", gap:10 } },
+      e(SqlTable, { onClick:()=>toggleDetail("sql") }),
+      e(DocPanel, { onClick:()=>toggleDetail("nosql") })
+    );
+  }
+  if (view === "kv") {
+    return e(KvPanel, { onClick:()=>toggleDetail("nosql") });
+  }
+  if (view === "wide-col") {
+    return e(WideColPanel, { onClick:()=>toggleDetail("nosql") });
+  }
+  if (view === "graph") {
+    return e(GraphPanel, { onClick:()=>toggleDetail("nosql") });
+  }
+  if (view === "cap") {
+    return e(CapTriangle, { onClick:()=>toggleDetail("cap") });
+  }
+  if (view === "cp-ap") {
+    return e("div", { style:{ display:"flex", flexDirection:"column", gap:10 } },
+      e(CapTriangle, { onClick:()=>toggleDetail("cap"), showDbs:true })
+    );
+  }
+  if (view === "base") {
+    return e(BasePanel, { onClick:()=>toggleDetail("base") });
+  }
+  if (view === "usecase") {
+    return e(UseCases);
+  }
+  return null;
+};
+
+/* ─── APP ─── */
+function App() {
+  const [si, setSi] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [detail, setDetail] = useState(null);
+  const timer = useRef(null);
+  const sc = SCENES[si];
+
+  useEffect(() => { setPlaying(true); }, []);
+
+  useEffect(() => {
+    if (!playing) return;
+    const d = si===0 ? 3000 : sc.finale ? 99999 : 3400;
+    timer.current = setTimeout(() => { si < SCENES.length-1 ? setSi(i=>i+1) : setPlaying(false); }, d);
+    return () => clearTimeout(timer.current);
+  }, [playing, si]);
+
+  const go = d => { clearTimeout(timer.current); setPlaying(false); setSi(i=>Math.max(0,Math.min(SCENES.length-1,i+d))); };
+  const jump = i => { clearTimeout(timer.current); setPlaying(false); setSi(i); };
+  const togglePlay = () => { if(si===SCENES.length-1){setSi(0);setPlaying(true);}else setPlaying(p=>!p); };
+  const toggleDetail = key => { setDetail(d => d===key ? null : key); clearTimeout(timer.current); setPlaying(false); };
+
+  return e("div", { style:{ display:"flex", gap:16, alignItems:"flex-start", justifyContent: detail ? "flex-start" : "center" } },
+  e("div", { style:{ width:760, flexShrink:0, background:T.bg, fontFamily:"system-ui,sans-serif", padding:20, borderRadius:16 } },
+
+    /* header */
+    e("div", { style:{ marginBottom:18 } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:10, marginBottom:11 } },
+        e(AP, { mode:"wait" },
+          e(M.div, { key:sc.act, initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, exit:{opacity:0}, transition:sp(400,28),
+            style:{ fontSize:9,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:T.purple,background:`${T.purple}14`,padding:"3px 10px",borderRadius:20,border:`1px solid ${T.purple}30`,flexShrink:0 }
+          }, sc.act)
+        ),
+        e("div", { style:{ flex:1, height:1, background:T.border, borderRadius:99, overflow:"hidden" } },
+          e(M.div, { animate:{width:`${si/(SCENES.length-1)*100}%`}, transition:{duration:0.5}, style:{height:"100%",background:T.purple,borderRadius:99} })
+        ),
+        e("span", { style:{ fontSize:10, color:T.text3 } }, `${si+1} / ${SCENES.length}`)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.title, initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, exit:{opacity:0,y:-8}, transition:ez,
+          style:{ fontSize:20,fontWeight:600,color:T.text1,marginBottom:4,letterSpacing:"-0.02em" }
+        }, sc.title)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
+          style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
+        }, sc.sub)
+      )
+    ),
+
+    e("div", { style:{ minHeight:460 } },
+
+    /* finale */
+    sc.finale && e(Finale),
+
+    /* main */
+    !sc.finale && e("div", null,
+
+      /* visualization */
+      sc.view && e("div", { style:{ marginBottom:10 } },
+        e(AP, { mode:"wait" },
+          e(M.div, { key:sc.view, initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, exit:{opacity:0,y:-8}, transition:ez },
+            e(SceneView, { view:sc.view, toggleDetail })
+          )
+        )
+      ),
+
+      /* code */
+      sc.code.length > 0 && e("div", { style:{ marginBottom:10 } },
+        e(CodePanel, { tokens:sc.code, onClick:()=>toggleDetail("code") })
+      )
+    ),
+
+    ), /* close minHeight wrapper */
+
+    /* controls */
+    e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginTop:16 } },
+      e("button", { onClick:()=>go(-1), disabled:si===0,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===0?T.text3:T.text2,cursor:si===0?"not-allowed":"pointer",fontSize:11,transition:"color 0.2s" }
+      }, "← Back"),
+      e("button", { onClick:togglePlay,
+        style:{ padding:"6px 18px",borderRadius:8,border:`1px solid ${playing?T.coral:T.purple}44`,background:playing?`${T.coral}14`:`${T.purple}14`,color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all 0.2s" }
+      }, playing ? "⏸  Pause" : si===SCENES.length-1 ? "↺  Replay" : "▶  Play"),
+      e("button", { onClick:()=>go(1), disabled:si===SCENES.length-1,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
+      }, "Next →"),
+      e("div", { style:{ flex:1 } }),
+      e("div", { style:{ display:"flex", gap:4, alignItems:"center" } },
+        SCENES.map((_,i) =>
+          e("button", { key:i, onClick:()=>jump(i),
+            style:{ width:i===si?16:5,height:5,borderRadius:99,border:"none",padding:0,background:i===si?T.purple:i<si?`${T.purple}55`:T.border,cursor:"pointer",transition:"all 0.25s" }
+          })
+        )
+      )
+    )
+  ),
+  detail && e(DetailPanel, { detailKey:detail, onClose:()=>setDetail(null) })
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(e(App));
+</script>
+</body>
+</html>

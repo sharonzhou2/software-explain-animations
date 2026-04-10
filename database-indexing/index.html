@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Database Indexing</title>
+<link href="https://cdn.lineicons.com/5.0/lineicons.css" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111118;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px 16px 24px 196px;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  #root { width: 100%; max-width: 1120px; }
+  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: system-ui, sans-serif; }
+  .topnav a { text-decoration: none; color: #8888aa; font-size: 13px; transition: color 0.2s; }
+  .topnav a:hover { color: #e8e8f0; }
+  .topnav .name { font-weight: 600; color: #e8e8f0; font-size: 13px; }
+  .topnav .sep { color: #38384a; font-size: 12px; }
+  .topnav .current { color: #7c6fcd; font-size: 13px; font-weight: 500; }
+  .sidenav { position: fixed; top: 38px; left: 0; width: 180px; height: calc(100vh - 38px); background: #111118; border-right: 1px solid #2a2a38; padding: 14px 0; overflow-y: auto; z-index: 200; font-family: system-ui, sans-serif; }
+  .sidenav a { display: block; padding: 6px 16px; font-size: 11px; color: #8888aa; text-decoration: none; transition: color 0.2s, background 0.2s; border-left: 2px solid transparent; }
+  .sidenav a:hover { color: #e8e8f0; background: rgba(124,111,205,0.06); }
+  .sidenav a.active { color: #a99cf0; border-left-color: #7c6fcd; background: rgba(124,111,205,0.1); font-weight: 600; }
+  .sidenav .nav-section { padding: 8px 16px 4px; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #44445a; }
+  .sidenav .nav-section:first-child { padding-top: 4px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="../" class="name">Sharon Zhou</a>
+  <span class="sep">/</span>
+  <a href="../">Animations</a>
+  <span class="sep">/</span>
+  <span class="current">Database Indexing</span>
+</nav>
+<nav class="sidenav">
+  <div class="nav-section">JavaScript</div>
+  <a href="../event-loop/">Event Loop</a>
+  <a href="../this-keyword/">this Keyword</a>
+  <a href="../hoisting/">Hoisting</a>
+  <a href="../closures/">Closures</a>
+  <a href="../garbage-collection/">Garbage Collection</a>
+  <a href="../event-delegation/">Event Delegation</a>
+  <a href="../iterators-generators/">Iterators & Generators</a>
+  <a href="../xhr-vs-fetch/">XHR vs fetch()</a>
+  <a href="../error-propagation/">Error Propagation</a>
+  <a href="../web-workers/">Web Workers</a>
+  <a href="../prototypal-inheritance/">Prototypal Inheritance</a>
+  <div class="nav-section">Browser</div>
+  <a href="../critical-rendering-path/">Critical Rendering Path</a>
+  <a href="../reflow-vs-repaint/">Reflow vs Repaint</a>
+  <a href="../css-box-model/">CSS Box Model & Layout</a>
+  <a href="../web-security/">Web Security</a>
+  <a href="../request-animation-frame/">requestAnimationFrame</a>
+  <a href="../cors/">CORS</a>
+  <a href="../websocket-vs-sse/">WebSocket vs SSE</a>
+  <div class="nav-section">Infrastructure</div>
+  <a href="../vms-vs-docker/">VMs vs Docker</a>
+  <a href="../opentelemetry/">OpenTelemetry</a>
+  <a href="../kubernetes/">Kubernetes</a>
+  <a href="../kafka/">Kafka</a>
+  <a href="../database-indexing/" class="active">Database Indexing</a>
+  <a href="../sql-vs-nosql/">SQL vs NoSQL</a>
+  <a href="../load-balancing/">Load Balancing</a>
+  <a href="../http-versions/">HTTP Versions</a>
+  <a href="../authentication/">Authentication</a>
+  <a href="../rate-limiting/">Rate Limiting</a>
+  <a href="../caching-strategies/">Caching Strategies</a>
+  <a href="../database-sharding/">Database Sharding</a>
+  <a href="../microservices-vs-monolith/">Microservices vs Monolith</a>
+  <a href="../debounce-vs-throttle/">Debounce vs Throttle</a>
+</nav>
+<div id="root" style="margin-top: 36px;"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/framer-motion@11/dist/framer-motion.js"></script>
+<script>
+const { useState, useEffect, useRef } = React;
+const { motion, AnimatePresence } = window.Motion;
+const e = React.createElement;
+const M = motion;
+const AP = AnimatePresence;
+const sp = (s=380,d=28) => ({ type:"spring", stiffness:s, damping:d });
+const ez = { duration:0.32, ease:[0.22,1,0.36,1] };
+
+const T = {
+  bg:"#111118", surface:"#18181f", surface2:"#1e1e28",
+  border:"#2a2a38", border2:"#38384a",
+  text1:"#e8e8f0", text2:"#8888aa", text3:"#44445a",
+  purple:"#7c6fcd", purpleL:"#a99cf0",
+  teal:"#3db89a", tealL:"#6dd4b8",
+  coral:"#c4694a", coralL:"#e08a6a",
+  blue:"#4a8fd4", blueL:"#82b4e8",
+  amber:"#d4a84a", amberL:"#e8c86a",
+  green:"#4ac46a", greenL:"#6ae88a",
+  red:"#e05555", redL:"#ff7777",
+  codeBase:"#141428",
+};
+
+const TS = {
+  fn:{color:"#82aaff"}, meth:{color:"#89ddff"}, str:{color:"#c3e88d"},
+  kw:{color:"#c792ea"}, num:{color:"#f78c6c"}, punc:{color:"#89ddff"},
+  plain:{color:"#a6accd"}, cmt:{color:"#546e7a",fontStyle:"italic"},
+};
+
+/* ─── SAMPLE TABLE DATA ───
+   Rows: { id, name, email } — we search by name = "Grace"
+   target row id = 7
+*/
+const ROWS = [
+  { id:1,  name:"Alice",   email:"alice@x" },
+  { id:2,  name:"Bob",     email:"bob@x" },
+  { id:3,  name:"Carol",   email:"carol@x" },
+  { id:4,  name:"Dan",     email:"dan@x" },
+  { id:5,  name:"Eve",     email:"eve@x" },
+  { id:6,  name:"Frank",   email:"frank@x" },
+  { id:7,  name:"Grace",   email:"grace@x" },
+  { id:8,  name:"Heidi",   email:"heidi@x" },
+  { id:9,  name:"Ivan",    email:"ivan@x" },
+  { id:10, name:"Judy",    email:"judy@x" },
+  { id:11, name:"Kim",     email:"kim@x" },
+  { id:12, name:"Leo",     email:"leo@x" },
+];
+const TARGET = "Grace";
+const TARGET_ID = 7;
+
+/* ─── B-TREE STRUCTURE (illustrative) ───
+   Root points to 3 children. Leaves contain sorted names with row pointers.
+*/
+const BTREE = {
+  root: { keys:["Eve","Ivan"] },
+  nodes: [
+    { keys:["Alice","Carol"], rows:[1,3] },   /* left: < Eve */
+    { keys:["Frank","Grace","Heidi"], rows:[6,7,8] }, /* mid: Eve..Ivan */
+    { keys:["Judy","Leo"], rows:[10,12] },    /* right: > Ivan */
+  ],
+  /* traversal path for "Grace": root → middle child → match "Grace" */
+  pathForGrace: { nodeIdx:1, keyIdx:1 },
+};
+
+const SCENES = [
+  {
+    id:0, act:"01",
+    title:"Why do we need indexes?",
+    sub:"Databases store millions of rows. Without help, finding a single row means scanning every one. An index is a side-structure that lets the database skip almost all of them.",
+    code:[
+      [["cmt","// The problem:"]],
+      [["kw","SELECT"],["plain"," * "],["kw","FROM"],["plain"," users"]],
+      [["kw","WHERE"],["plain"," name "],["punc","="],["plain"," "],["str","'Grace'"],["punc",";"]],
+      [["cmt",""]],
+      [["cmt","// With 10M rows, how fast is this?"]],
+    ],
+    show:"intro", highlight:null,
+  },
+  {
+    id:1, act:"02",
+    title:"Without an index — full table scan",
+    sub:"The database reads every row in order, comparing each name to 'Grace'. On a huge table this is O(n) — slow, and it gets worse as data grows.",
+    code:[
+      [["cmt","// No index on 'name'"]],
+      [["cmt","// DB reads row 1, then 2, then 3…"]],
+      [["cmt","// …until it finds Grace at row 7"]],
+      [["cmt",""]],
+      [["cmt","// Cost: O(n) — scan all N rows"]],
+    ],
+    show:"scan", highlight:"scan",
+  },
+  {
+    id:2, act:"03",
+    title:"What is an index?",
+    sub:"An index is a sorted, auxiliary data structure keyed by one (or more) columns. Each entry holds the key value and a pointer to the full row. Think: book index at the back, not flipping every page.",
+    code:[
+      [["cmt","// Index on name →"]],
+      [["plain","  Alice → row 1"]],
+      [["plain","  Bob   → row 2"]],
+      [["plain","  Carol → row 3"]],
+      [["plain","  …     → …"]],
+      [["plain","  Grace → row 7"]],
+    ],
+    show:"indexList", highlight:"btree",
+  },
+  {
+    id:3, act:"04",
+    title:"B-trees — the usual backbone",
+    sub:"Most relational databases store indexes as B-trees (really B+ trees). A B-tree is a balanced tree where each node holds many keys and branches to many children — wide and shallow, perfect for disk.",
+    code:[
+      [["cmt","// B-tree properties:"]],
+      [["cmt","//   • Sorted keys per node"]],
+      [["cmt","//   • Balanced (all leaves same depth)"]],
+      [["cmt","//   • Wide fan-out (100s of keys/node)"]],
+      [["cmt","//   • Leaves point to row locations"]],
+    ],
+    show:"btree", highlight:"btree", btreeStep:"intro",
+  },
+  {
+    id:4, act:"05",
+    title:"B-tree traversal — O(log n) hops",
+    sub:"To find 'Grace', the database compares against root keys, picks the matching child, then walks one level at a time. A tree of 10M rows is only ~4 levels deep — that's 4 hops instead of 10 million.",
+    code:[
+      [["cmt","// Searching for 'Grace':"]],
+      [["plain","  root"],["punc"," → "],["cmt","Grace < Eve? no"]],
+      [["plain","       "],["cmt","Grace < Ivan? yes → middle"]],
+      [["plain","  mid "],["punc"," → "],["cmt","scan keys → Grace ✓"]],
+      [["plain","  row "],["punc"," → "],["cmt","follow pointer to row 7"]],
+    ],
+    show:"btree", highlight:"btree", btreeStep:"traverse",
+  },
+  {
+    id:5, act:"06",
+    title:"Primary vs secondary indexes",
+    sub:"The primary index is on the table's primary key — it defines the row's identity. A secondary index is any additional index on other columns. A table has one primary and can have many secondaries.",
+    code:[
+      [["cmt","// Primary (automatic):"]],
+      [["kw","PRIMARY KEY"],["plain"," (id)"]],
+      [["cmt",""]],
+      [["cmt","// Secondary (you create them):"]],
+      [["kw","CREATE INDEX"],["plain"," idx_name "],["kw","ON"],["plain"," users(name)"],["punc",";"]],
+      [["kw","CREATE INDEX"],["plain"," idx_email "],["kw","ON"],["plain"," users(email)"],["punc",";"]],
+    ],
+    show:"primarySecondary", highlight:"code",
+  },
+  {
+    id:6, act:"07",
+    title:"Clustered vs non-clustered",
+    sub:"A clustered index stores the row data physically in key order — the index IS the table (InnoDB, SQL Server). A non-clustered index stores only pointers to rows stored elsewhere.",
+    code:[
+      [["cmt","// Clustered:"]],
+      [["cmt","//   leaf = actual row data"]],
+      [["cmt","//   one per table"]],
+      [["cmt",""]],
+      [["cmt","// Non-clustered:"]],
+      [["cmt","//   leaf = pointer to row"]],
+      [["cmt","//   many per table"]],
+    ],
+    show:"clustered", highlight:null,
+  },
+  {
+    id:7, act:"08",
+    title:"Composite indexes — leftmost prefix rule",
+    sub:"An index on (a, b, c) is sorted first by a, then by b, then by c. The database can use it for queries on a, on (a,b), or on (a,b,c) — but not on b alone or c alone. Left-to-right only.",
+    code:[
+      [["kw","CREATE INDEX"],["plain"," idx "],["kw","ON"],["plain"," users(country, city, age)"],["punc",";"]],
+      [["cmt",""]],
+      [["cmt","// ✓ WHERE country = 'US'"]],
+      [["cmt","// ✓ WHERE country = 'US' AND city = 'SF'"]],
+      [["cmt","// ✗ WHERE city = 'SF'              (skips left)"]],
+      [["cmt","// ✗ WHERE age = 30                  (skips left)"]],
+    ],
+    show:"composite", highlight:"composite",
+  },
+  {
+    id:8, act:"09",
+    title:"Covering indexes",
+    sub:"If an index contains every column the query needs, the database can answer the query from the index alone — no trip back to the table. This is called an index-only scan.",
+    code:[
+      [["kw","CREATE INDEX"],["plain"," idx "],["kw","ON"],["plain"," users(name, email)"],["punc",";"]],
+      [["cmt",""]],
+      [["kw","SELECT"],["plain"," email "],["kw","FROM"],["plain"," users"]],
+      [["kw","WHERE"],["plain"," name "],["punc","="],["plain"," "],["str","'Grace'"],["punc",";"]],
+      [["cmt","// Index has name + email → table not touched"]],
+    ],
+    show:"covering", highlight:"covering",
+  },
+  {
+    id:9, act:"10",
+    title:"Indexes aren't free",
+    sub:"Every INSERT, UPDATE, or DELETE must also update every relevant index. Indexes cost disk space and write speed. A table with 10 indexes pays for 10 extra updates on every row change.",
+    code:[
+      [["kw","INSERT INTO"],["plain"," users(name, email) "],["kw","VALUES"],["plain"," (…)"],["punc",";"]],
+      [["cmt",""]],
+      [["cmt","// Must also update:"]],
+      [["cmt","//   • idx_name"]],
+      [["cmt","//   • idx_email"]],
+      [["cmt","//   • idx_country_city"]],
+      [["cmt","//   • …every index on this table"]],
+    ],
+    show:"cost", highlight:null,
+  },
+  {
+    id:10, act:"11",
+    title:"When NOT to index",
+    sub:"Indexes aren't always a win. Small tables, write-heavy columns, and low-cardinality columns (few distinct values) often perform worse with an index than without.",
+    code:[
+      [["cmt","// Skip indexes when:"]],
+      [["cmt","//   • Table fits in memory (< ~1000 rows)"]],
+      [["cmt","//   • Column churns constantly"]],
+      [["cmt","//   • Column has 2-3 distinct values"]],
+      [["cmt","//     (boolean, status flag)"]],
+      [["cmt","//   • You never filter/sort/join on it"]],
+    ],
+    show:"whenNot", highlight:null,
+  },
+  {
+    id:11, act:"12",
+    title:"EXPLAIN — reading the query plan",
+    sub:"EXPLAIN shows how the database will run a query. Look for 'index' or 'index scan' (good) versus 'seq scan' or 'ALL' (bad). It's the fastest way to confirm an index is actually being used.",
+    code:[
+      [["kw","EXPLAIN"],["plain"," "],["kw","SELECT"],["plain"," * "],["kw","FROM"],["plain"," users "],["kw","WHERE"],["plain"," name="],["str","'Grace'"],["punc",";"]],
+      [["cmt",""]],
+      [["cmt","// Bad:  Seq Scan on users  (cost=0..184)"]],
+      [["cmt","// Good: Index Scan using idx_name  (cost=0..8)"]],
+      [["cmt",""]],
+      [["cmt","// Lower cost = faster plan"]],
+    ],
+    show:"explain", highlight:"code",
+  },
+  {
+    id:12, act:"13",
+    title:"Common pitfalls",
+    sub:"Indexes quietly stop working if you wrap the column in a function, use leading wildcards, or combine conditions with OR. The index exists, but the planner can't use it.",
+    code:[
+      [["cmt","// ✗ Function on indexed column:"]],
+      [["kw","WHERE"],["plain"," "],["fn","LOWER"],["punc","("],["plain","name"],["punc",") = "],["str","'grace'"]],
+      [["cmt","// ✗ Leading wildcard:"]],
+      [["kw","WHERE"],["plain"," name "],["kw","LIKE"],["plain"," "],["str","'%race'"]],
+      [["cmt","// ✗ OR across different columns:"]],
+      [["kw","WHERE"],["plain"," name="],["str","'Grace'"],["plain"," "],["kw","OR"],["plain"," city="],["str","'SF'"]],
+    ],
+    show:"pitfalls", highlight:"pitfalls",
+  },
+  {
+    id:13, act:"DONE",
+    title:"Database indexing — summary",
+    sub:"Indexes trade write cost + storage for dramatically faster reads. B-trees give O(log n) lookups. Choose columns thoughtfully, mind the leftmost prefix, and always verify with EXPLAIN.",
+    code:[], show:null, highlight:null, finale:true,
+  },
+];
+
+/* ─── DETAIL CONTENT ─── */
+const DETAILS = {
+  scan: {
+    title:"Full Table Scan",
+    color:T.coral,
+    sections:[
+      {heading:"What it is",body:"A full table scan reads every row on disk one after another, applying the WHERE filter to each. It's the fallback when no usable index exists."},
+      {heading:"Cost",body:"O(n) — linear in the number of rows. 1,000 rows: fine. 10 million rows: painful. 1 billion rows: unusable for interactive queries."},
+      {heading:"When it's actually fine",body:"• Small tables (the DB often prefers a scan under ~500 rows — it's cheaper than the index overhead)\n• Queries that return most of the table anyway\n• Analytical queries on columnar stores"},
+      {heading:"Spotting it",body:"Look for 'Seq Scan' (Postgres), 'type: ALL' (MySQL), or 'Table Scan' (SQL Server) in EXPLAIN output."},
+    ]
+  },
+  btree: {
+    title:"B-tree Index",
+    color:T.teal,
+    sections:[
+      {heading:"Why B-trees?",body:"B-trees are balanced — every leaf is the same depth. They're shallow and wide: with ~200 keys per node, a tree holding 10 million rows is only 4 levels deep. That means 4 disk seeks max to find any row."},
+      {heading:"Lookup cost",body:"O(log n). Compare against keys in the root, descend to the matching child, repeat. Each level filters out ~99% of the remaining search space."},
+      {heading:"Range queries",body:"B+ trees (what real databases use) link leaf nodes in a sorted linked list. That makes range scans — WHERE age BETWEEN 20 AND 30 — fast: find the start, walk the leaves."},
+      {heading:"Other index types",body:"• Hash: O(1) point lookups but no ranges\n• Bitmap: great for low-cardinality columns\n• GIN / GiST: full-text, arrays, geometry\n• LSM trees: write-optimized (Cassandra, RocksDB)"},
+    ]
+  },
+  composite: {
+    title:"Composite Indexes",
+    color:T.blue,
+    sections:[
+      {heading:"What it is",body:"An index built on multiple columns, e.g. (country, city, age). The DB sorts first by country, then within each country by city, then within each city by age."},
+      {heading:"Leftmost prefix rule",body:"The index can serve queries that filter on a left-anchored prefix of the column list:\n\n✓ country\n✓ country + city\n✓ country + city + age\n✗ city alone\n✗ age alone\n✗ city + age"},
+      {heading:"Column order matters",body:"Put the most selective column first, or the column most often filtered alone. The order of columns in the index definition is a real performance decision — it can't be reshuffled on the fly."},
+      {heading:"Equality vs range",body:"Equality filters can fully use the index for columns to their right. A range filter (>, <, BETWEEN) usually stops further index use — put range columns last."},
+    ]
+  },
+  covering: {
+    title:"Covering Indexes",
+    color:T.green,
+    sections:[
+      {heading:"What it is",body:"An index that contains every column referenced by a query — SELECT list, WHERE, ORDER BY, JOIN. The DB can satisfy the query from the index alone, skipping the table heap entirely."},
+      {heading:"Why it matters",body:"Reading a row from the table costs an extra random I/O per match. A covering index turns N lookups into 0. For hot queries, this is often a 5-10× speedup."},
+      {heading:"INCLUDE clause",body:"Postgres and SQL Server let you add non-key columns to an index purely to cover queries, without affecting sort order:\n\nCREATE INDEX idx ON users(name) INCLUDE (email);"},
+      {heading:"Tradeoff",body:"More columns in the index = larger index = slower writes and more disk. Only cover queries that are actually hot and measurable."},
+    ]
+  },
+  pitfalls: {
+    title:"Query Pitfalls",
+    color:T.red,
+    sections:[
+      {heading:"Functions on columns",body:"WHERE LOWER(name) = 'grace' can't use an index on name — the index is sorted by name, not by LOWER(name). Fix: store normalized data, or create a functional index on LOWER(name)."},
+      {heading:"Leading wildcards",body:"WHERE name LIKE '%race' can't use a B-tree — B-trees are sorted left-to-right. 'Grace' LIKE 'Gr%' is fine, but anything starting with % forces a scan. Use full-text indexes or trigram indexes for substring search."},
+      {heading:"OR across columns",body:"WHERE name = 'Grace' OR city = 'SF' often degrades to a scan because no single index covers both. Workarounds: two indexes + UNION, or a composite/expression index."},
+      {heading:"Implicit type casts",body:"WHERE id = '123' on an integer column may disable the index in some databases because of the string-to-int coercion. Always match column types."},
+      {heading:"Low selectivity",body:"An index on a boolean column (2 values) rarely helps — the DB still reads half the table. The planner often ignores such indexes entirely."},
+    ]
+  },
+  code: {
+    title:"SQL Reference",
+    color:T.purpleL,
+    sections:[
+      {heading:"Creating indexes",body:"CREATE INDEX idx_name ON users(name);\nCREATE UNIQUE INDEX idx_email ON users(email);\nCREATE INDEX idx_geo ON users(country, city);"},
+      {heading:"Dropping",body:"DROP INDEX idx_name;"},
+      {heading:"Inspecting",body:"-- Postgres:\nEXPLAIN ANALYZE SELECT … ;\n\\d users\n\n-- MySQL:\nSHOW INDEX FROM users;\nEXPLAIN SELECT … ;"},
+      {heading:"Rule of thumb",body:"Index columns that appear in:\n• WHERE clauses with high selectivity\n• JOIN conditions\n• ORDER BY / GROUP BY\n\nDon't index columns that:\n• Change on every write\n• Have few distinct values\n• Are never filtered"},
+    ]
+  },
+};
+
+/* ─── COMPONENTS ─── */
+const CodePanel = ({ tokens, onClick }) =>
+  e("div", { onClick, style:{ background:T.codeBase, borderRadius:12, overflow:"hidden", border:`1px solid ${T.border}`, cursor:onClick?"pointer":"default" } },
+    e("div", { style:{ padding:"10px 14px 8px", borderBottom:`1px solid ${T.border}`, display:"flex", gap:7 } },
+      ...["#ff5f57","#febc2e","#28c840"].map((c,i) =>
+        e("div", { key:i, style:{ width:11, height:11, borderRadius:"50%", background:c } })
+      )
+    ),
+    e("div", { style:{ padding:"14px 18px 16px", fontFamily:"'SF Mono','Fira Code','Consolas',monospace", fontSize:12, lineHeight:1.85 } },
+      tokens.map((line, li) =>
+        e("div", { key:li },
+          line.map(([cls, txt], ti) =>
+            e("span", { key:ti, style:{ ...TS[cls], whiteSpace:"pre" } }, txt)
+          )
+        )
+      )
+    )
+  );
+
+/* ─── SCAN vs INDEX VISUAL ───
+   Shows the table on the left, highlighting rows sequentially (scan) or jumping straight (index).
+*/
+const TableView = ({ activeRow, foundRow, mode, label, color, onClick }) =>
+  e("div", { onClick, style:{ flex:1, borderRadius:12, border:`1.5px solid ${T.border2}`, background:T.surface, overflow:"hidden", cursor:"pointer" } },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", gap:6 } },
+      e("div", { style:{ width:8, height:8, borderRadius:"50%", background:color } }),
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color } }, label)
+    ),
+    e("div", { style:{ padding:10, display:"flex", flexDirection:"column", gap:3, maxHeight:360, overflowY:"hidden" } },
+      ROWS.map(row => {
+        const isActive = activeRow === row.id;
+        const isFound = foundRow === row.id;
+        const isDim = foundRow && !isFound;
+        return e(M.div, {
+          key:row.id,
+          animate:{
+            backgroundColor: isFound ? `${T.green}28` : isActive ? `${color}28` : `${T.surface2}`,
+            borderColor: isFound ? T.green : isActive ? color : T.border,
+            opacity: isDim ? 0.35 : 1,
+          },
+          transition:{ duration:0.22 },
+          style:{
+            padding:"6px 10px", borderRadius:6, border:"1px solid",
+            display:"flex", alignItems:"center", gap:10,
+            fontFamily:"'SF Mono',monospace", fontSize:11,
+          }
+        },
+          e("span", { style:{ width:18, color:T.text3, fontWeight:600 } }, row.id),
+          e("span", { style:{
+            flex:1,
+            color: isFound ? T.greenL : isActive ? color : T.text2,
+            fontWeight: isFound || isActive ? 700 : 500,
+          } }, row.name),
+          e("span", { style:{ color:T.text3, fontSize:10 } }, row.email),
+          isFound && e("i", { className:"lni lni-checkmark", style:{ color:T.green, fontSize:12 } })
+        );
+      })
+    )
+  );
+
+/* ─── B-TREE VISUAL ─── */
+const BTreeView = ({ step, onClick }) => {
+  /* step: "intro" | "traverse" */
+  const rootActive = step === "traverse";
+  const midActive = step === "traverse";
+  const graceActive = step === "traverse";
+
+  const node = (keys, opts={}) => {
+    const { active, picked, highlightKey } = opts;
+    return e(M.div, {
+      animate:{
+        borderColor: picked ? T.teal : active ? T.tealL : T.border2,
+        boxShadow: picked ? `0 0 18px ${T.teal}55` : "0 0 0px transparent",
+      },
+      transition:{ duration:0.3 },
+      style:{
+        display:"flex", gap:3, padding:4, borderRadius:8,
+        border:"1.5px solid", background:T.surface2,
+      }
+    },
+      keys.map((k,i) => e(M.div, {
+        key:i,
+        animate:{
+          backgroundColor: highlightKey === k ? `${T.green}33` : `${T.bg}`,
+          color: highlightKey === k ? T.greenL : T.text2,
+        },
+        transition:{ duration:0.25 },
+        style:{
+          padding:"4px 8px", borderRadius:5,
+          fontFamily:"'SF Mono',monospace", fontSize:11, fontWeight:600,
+          minWidth:44, textAlign:"center",
+        }
+      }, k))
+    );
+  };
+
+  return e("div", { onClick, style:{ borderRadius:12, border:`1.5px solid ${T.border2}`, background:T.surface, overflow:"hidden", cursor:"pointer" } },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", gap:6 } },
+      e("div", { style:{ width:8, height:8, borderRadius:"50%", background:T.teal } }),
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.teal } }, "B-tree index on name")
+    ),
+    e("div", { style:{ padding:"22px 18px 18px", display:"flex", flexDirection:"column", alignItems:"center", gap:12, minHeight:260 } },
+      /* root */
+      e("div", { style:{ display:"flex", justifyContent:"center" } },
+        node(BTREE.root.keys, { active:rootActive, picked:rootActive })
+      ),
+      /* connectors */
+      e("div", { style:{ height:18, position:"relative", width:"100%" } },
+        e("svg", { width:"100%", height:18, style:{ position:"absolute", top:0, left:0 } },
+          e("line", { x1:"50%", y1:0, x2:"16%", y2:18, stroke:T.border2, strokeWidth:1 }),
+          e("line", { x1:"50%", y1:0, x2:"50%", y2:18, stroke: midActive ? T.tealL : T.border2, strokeWidth: midActive ? 2 : 1 }),
+          e("line", { x1:"50%", y1:0, x2:"84%", y2:18, stroke:T.border2, strokeWidth:1 })
+        )
+      ),
+      /* leaves */
+      e("div", { style:{ display:"flex", justifyContent:"space-between", width:"100%", gap:10 } },
+        node(BTREE.nodes[0].keys, {}),
+        node(BTREE.nodes[1].keys, { active:midActive, picked:midActive, highlightKey: graceActive ? "Grace" : null }),
+        node(BTREE.nodes[2].keys, {})
+      ),
+      /* arrow to row */
+      step === "traverse" && e(M.div, {
+        initial:{opacity:0,y:-4}, animate:{opacity:1,y:0}, transition:{delay:0.4,...ez},
+        style:{ display:"flex", alignItems:"center", gap:8, marginTop:4, padding:"6px 12px", borderRadius:8, border:`1px solid ${T.green}44`, background:`${T.green}10` }
+      },
+        e("i", { className:"lni lni-arrow-down", style:{ color:T.green, fontSize:12 } }),
+        e("span", { style:{ fontSize:11, color:T.greenL, fontFamily:"'SF Mono',monospace", fontWeight:600 } }, "Grace → row 7")
+      )
+    )
+  );
+};
+
+/* ─── INDEX LIST ─── */
+const IndexList = ({ onClick }) =>
+  e("div", { onClick, style:{ borderRadius:12, border:`1.5px solid ${T.border2}`, background:T.surface, overflow:"hidden", cursor:"pointer" } },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", gap:6 } },
+      e("div", { style:{ width:8, height:8, borderRadius:"50%", background:T.teal } }),
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.teal } }, "Index on name (sorted)")
+    ),
+    e("div", { style:{ padding:12, display:"grid", gridTemplateColumns:"1fr 1fr", gap:6 } },
+      [...ROWS].sort((a,b)=>a.name.localeCompare(b.name)).map((row,i) =>
+        e(M.div, {
+          key:row.id,
+          initial:{opacity:0,x:-6}, animate:{opacity:1,x:0}, transition:{delay:i*0.04,...ez},
+          style:{
+            padding:"5px 10px", borderRadius:6, border:`1px solid ${T.border}`,
+            background:T.surface2,
+            display:"flex", alignItems:"center", justifyContent:"space-between",
+            fontFamily:"'SF Mono',monospace", fontSize:11,
+          }
+        },
+          e("span", { style:{ color:T.tealL, fontWeight:600 } }, row.name),
+          e("span", { style:{ color:T.text3, fontSize:10 } }, `→ row ${row.id}`)
+        )
+      )
+    )
+  );
+
+/* ─── PRIMARY / SECONDARY ─── */
+const PrimarySecondary = () =>
+  e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 } },
+    e("div", { style:{ borderRadius:12, border:`1.5px solid ${T.purple}44`, background:`${T.purple}08`, padding:14 } },
+      e("div", { style:{ fontSize:12, fontWeight:700, color:T.purpleL, marginBottom:8, display:"flex", alignItems:"center", gap:6 } },
+        e("i", { className:"lni lni-key-1" }), "Primary index (id)"
+      ),
+      [1,2,3,4,5].map(i =>
+        e("div", { key:i, style:{ padding:"5px 10px", marginBottom:3, borderRadius:5, background:T.surface2, fontFamily:"monospace", fontSize:11, color:T.text2, border:`1px solid ${T.border}` } },
+          `${i}  →  row data`
+        )
+      )
+    ),
+    e("div", { style:{ borderRadius:12, border:`1.5px solid ${T.blue}44`, background:`${T.blue}08`, padding:14 } },
+      e("div", { style:{ fontSize:12, fontWeight:700, color:T.blueL, marginBottom:8, display:"flex", alignItems:"center", gap:6 } },
+        e("i", { className:"lni lni-bookmark" }), "Secondary index (name)"
+      ),
+      [["Alice","1"],["Bob","2"],["Carol","3"],["Dan","4"],["Eve","5"]].map(([n,i]) =>
+        e("div", { key:n, style:{ padding:"5px 10px", marginBottom:3, borderRadius:5, background:T.surface2, fontFamily:"monospace", fontSize:11, color:T.text2, border:`1px solid ${T.border}` } },
+          `${n}  →  id ${i}`
+        )
+      )
+    )
+  );
+
+/* ─── CLUSTERED / NON-CLUSTERED ─── */
+const Clustered = () =>
+  e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 } },
+    e("div", { style:{ borderRadius:12, border:`1.5px solid ${T.teal}44`, background:`${T.teal}08`, padding:14 } },
+      e("div", { style:{ fontSize:12, fontWeight:700, color:T.tealL, marginBottom:8, display:"flex", alignItems:"center", gap:6 } },
+        e("i", { className:"lni lni-layers-1" }), "Clustered"
+      ),
+      e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.5, marginBottom:8 } }, "Leaves hold full rows. The index IS the physical table order."),
+      [1,2,3,4].map(i =>
+        e("div", { key:i, style:{ padding:"6px 10px", marginBottom:3, borderRadius:5, background:T.surface2, fontFamily:"monospace", fontSize:10, color:T.tealL, border:`1px solid ${T.teal}33` } },
+          `id ${i}: full row data…`
+        )
+      )
+    ),
+    e("div", { style:{ borderRadius:12, border:`1.5px solid ${T.amber}44`, background:`${T.amber}08`, padding:14 } },
+      e("div", { style:{ fontSize:12, fontWeight:700, color:T.amberL, marginBottom:8, display:"flex", alignItems:"center", gap:6 } },
+        e("i", { className:"lni lni-link-2-angular-right" }), "Non-clustered"
+      ),
+      e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.5, marginBottom:8 } }, "Leaves hold pointers. Rows live separately (heap or clustered PK)."),
+      ["Alice","Bob","Carol","Dan"].map((n,i) =>
+        e("div", { key:n, style:{ padding:"6px 10px", marginBottom:3, borderRadius:5, background:T.surface2, fontFamily:"monospace", fontSize:10, color:T.amberL, border:`1px solid ${T.amber}33` } },
+          `${n} → ptr 0x${(40+i*8).toString(16)}`
+        )
+      )
+    )
+  );
+
+/* ─── COMPOSITE INDEX VISUAL ─── */
+const Composite = ({ onClick }) => {
+  const rows = [
+    { a:"CA", b:"Toronto",  c:28, ok1:true,  ok2:true,  ok3:true  },
+    { a:"CA", b:"Toronto",  c:34, ok1:true,  ok2:true,  ok3:false },
+    { a:"CA", b:"Vancouver",c:22, ok1:true,  ok2:false, ok3:false },
+    { a:"US", b:"NYC",      c:30, ok1:false, ok2:false, ok3:false },
+    { a:"US", b:"SF",       c:25, ok1:false, ok2:false, ok3:false },
+    { a:"US", b:"SF",       c:41, ok1:false, ok2:false, ok3:false },
+  ];
+  return e("div", { onClick, style:{ borderRadius:12, border:`1.5px solid ${T.border2}`, background:T.surface, overflow:"hidden", cursor:"pointer" } },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", gap:6 } },
+      e("div", { style:{ width:8, height:8, borderRadius:"50%", background:T.blue } }),
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.blue } }, "INDEX (country, city, age) — sorted left-to-right")
+    ),
+    e("div", { style:{ padding:12 } },
+      e("div", { style:{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:8, marginBottom:10, fontSize:10, color:T.text3, fontWeight:600, letterSpacing:"0.06em", textTransform:"uppercase" } },
+        e("div", null, "country"),
+        e("div", null, "city"),
+        e("div", null, "age"),
+      ),
+      rows.map((r,i) =>
+        e("div", { key:i, style:{
+          display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:8,
+          padding:"5px 0", borderTop:`1px solid ${T.border}`,
+          fontFamily:"'SF Mono',monospace", fontSize:11,
+        } },
+          e("div", { style:{ color:T.blueL, fontWeight:600 } }, r.a),
+          e("div", { style:{ color:T.text2 } }, r.b),
+          e("div", { style:{ color:T.text3 } }, r.c)
+        )
+      )
+    )
+  );
+};
+
+/* ─── COVERING INDEX VISUAL ─── */
+const Covering = ({ onClick }) =>
+  e("div", { onClick, style:{ borderRadius:12, border:`1.5px solid ${T.border2}`, background:T.surface, overflow:"hidden", cursor:"pointer" } },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", gap:6 } },
+      e("div", { style:{ width:8, height:8, borderRadius:"50%", background:T.green } }),
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.green } }, "Covering index — query answered without touching the table")
+    ),
+    e("div", { style:{ padding:16, display:"flex", alignItems:"center", gap:14 } },
+      /* index */
+      e("div", { style:{ flex:1, borderRadius:10, border:`1.5px solid ${T.green}44`, background:`${T.green}10`, padding:12 } },
+        e("div", { style:{ fontSize:10, fontWeight:700, color:T.greenL, marginBottom:8, letterSpacing:"0.06em" } }, "INDEX (name, email)"),
+        [["Alice","alice@x"],["Bob","bob@x"],["Grace","grace@x"],["Ivan","ivan@x"]].map(([n,ee]) =>
+          e("div", { key:n, style:{ padding:"5px 8px", marginBottom:3, borderRadius:5, background:T.surface2, fontFamily:"monospace", fontSize:10, border:`1px solid ${T.border}`, display:"flex", justifyContent:"space-between" } },
+            e("span", { style:{ color:T.greenL, fontWeight:600 } }, n),
+            e("span", { style:{ color:T.text3 } }, ee)
+          )
+        )
+      ),
+      /* arrow */
+      e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 } },
+        e(M.div, { animate:{x:[0,4,0]}, transition:{duration:1.4,repeat:Infinity,ease:"easeInOut"}, style:{ color:T.green, fontSize:20 } },
+          e("i", { className:"lni lni-arrow-right" })
+        ),
+        e("span", { style:{ fontSize:9, color:T.text3 } }, "done")
+      ),
+      /* table (skipped) */
+      e("div", { style:{ flex:1, borderRadius:10, border:`1.5px dashed ${T.border2}`, background:T.surface2, padding:12, opacity:0.5 } },
+        e("div", { style:{ fontSize:10, fontWeight:700, color:T.text3, marginBottom:8, letterSpacing:"0.06em" } }, "USERS table (not read)"),
+        e("div", { style:{ fontSize:11, color:T.text3, lineHeight:1.5, fontFamily:"monospace" } }, "id, name, email,\ncreated_at, country,\ncity, age, …")
+      )
+    )
+  );
+
+/* ─── INDEX COST ─── */
+const Cost = () =>
+  e("div", { style:{ borderRadius:12, border:`1.5px solid ${T.border2}`, background:T.surface, overflow:"hidden" } },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", gap:6 } },
+      e("div", { style:{ width:8, height:8, borderRadius:"50%", background:T.coral } }),
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.coral } }, "INSERT — every index must also be updated")
+    ),
+    e("div", { style:{ padding:14, display:"flex", flexDirection:"column", gap:8 } },
+      e("div", { style:{ padding:"8px 12px", borderRadius:8, border:`1px solid ${T.green}44`, background:`${T.green}10`, fontFamily:"monospace", fontSize:11, color:T.greenL, fontWeight:600 } },
+        "1. Write row to USERS table"
+      ),
+      ["2. Update idx_name B-tree","3. Update idx_email B-tree","4. Update idx_country_city B-tree","5. Update idx_created_at B-tree"].map((t,i) =>
+        e(M.div, {
+          key:i, initial:{opacity:0,x:-8}, animate:{opacity:1,x:0}, transition:{delay:i*0.1,...ez},
+          style:{ padding:"8px 12px", borderRadius:8, border:`1px solid ${T.coral}33`, background:`${T.coral}08`, fontFamily:"monospace", fontSize:11, color:T.coralL }
+        }, t)
+      ),
+      e("div", { style:{ marginTop:4, padding:"8px 12px", borderRadius:8, background:T.surface2, fontSize:11, color:T.text2, lineHeight:1.5 } },
+        "Writes get slower as you add indexes. Indexes also consume disk — often 10-30% of table size each."
+      )
+    )
+  );
+
+/* ─── WHEN NOT TO INDEX ─── */
+const WhenNot = () =>
+  e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 } },
+    [
+      { icon:"lni-database-1", title:"Tiny table", body:"Under ~500 rows the planner often prefers a scan anyway — index overhead isn't worth it.", c:T.amber },
+      { icon:"lni-pencil-1", title:"Write-heavy column", body:"A column updated on every row change makes the index thrash. Reads may never see the payoff.", c:T.coral },
+      { icon:"lni-checkbox", title:"Low cardinality", body:"Booleans, status flags (2-5 values). The index matches half the table — still a scan.", c:T.blue },
+      { icon:"lni-eye", title:"Never queried", body:"An index only helps if queries actually filter/sort/join on it. Index the working set, not every column.", c:T.red },
+    ].map((r,i) =>
+      e(M.div, {
+        key:i, initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, transition:{delay:i*0.08,...ez},
+        style:{ padding:14, borderRadius:12, border:`1px solid ${r.c}33`, background:`${r.c}08` }
+      },
+        e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginBottom:6 } },
+          e("i", { className:"lni "+r.icon, style:{ color:r.c, fontSize:14 } }),
+          e("div", { style:{ fontSize:12, fontWeight:700, color:r.c } }, r.title)
+        ),
+        e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.55 } }, r.body)
+      )
+    )
+  );
+
+/* ─── EXPLAIN OUTPUT ─── */
+const ExplainView = () =>
+  e("div", { style:{ display:"flex", flexDirection:"column", gap:10 } },
+    e("div", { style:{ borderRadius:12, border:`1px solid ${T.coral}44`, background:`${T.coral}08`, padding:14 } },
+      e("div", { style:{ fontSize:10, fontWeight:700, color:T.coralL, marginBottom:8, letterSpacing:"0.06em" } }, "WITHOUT INDEX"),
+      e("pre", { style:{ fontFamily:"monospace", fontSize:11, color:T.text2, lineHeight:1.6, whiteSpace:"pre-wrap" } },
+        "Seq Scan on users\n  Filter: (name = 'Grace')\n  Rows Removed: 9,999,999\n  cost=0.00..184000.00\n  actual time=412ms"
+      )
+    ),
+    e("div", { style:{ borderRadius:12, border:`1px solid ${T.green}44`, background:`${T.green}10`, padding:14 } },
+      e("div", { style:{ fontSize:10, fontWeight:700, color:T.greenL, marginBottom:8, letterSpacing:"0.06em" } }, "WITH INDEX ON name"),
+      e("pre", { style:{ fontFamily:"monospace", fontSize:11, color:T.text2, lineHeight:1.6, whiteSpace:"pre-wrap" } },
+        "Index Scan using idx_name on users\n  Index Cond: (name = 'Grace')\n  Rows: 1\n  cost=0.42..8.44\n  actual time=0.08ms"
+      )
+    )
+  );
+
+/* ─── PITFALLS VISUAL ─── */
+const Pitfalls = ({ onClick }) => {
+  const items = [
+    { bad:"WHERE LOWER(name) = 'grace'", fix:"store lowercased, or functional index", c:T.red },
+    { bad:"WHERE name LIKE '%race'",      fix:"trigram / full-text index", c:T.red },
+    { bad:"WHERE name='G' OR city='SF'",  fix:"UNION of two index scans", c:T.red },
+    { bad:"WHERE id = '123'  (string)",   fix:"match column type", c:T.red },
+  ];
+  return e("div", { onClick, style:{ borderRadius:12, border:`1.5px solid ${T.border2}`, background:T.surface, overflow:"hidden", cursor:"pointer" } },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", gap:6 } },
+      e("div", { style:{ width:8, height:8, borderRadius:"50%", background:T.red } }),
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.red } }, "Index exists — but the planner can't use it")
+    ),
+    e("div", { style:{ padding:12, display:"flex", flexDirection:"column", gap:8 } },
+      items.map((it,i) =>
+        e(M.div, {
+          key:i, initial:{opacity:0,x:-8}, animate:{opacity:1,x:0}, transition:{delay:i*0.08,...ez},
+          style:{ padding:"8px 12px", borderRadius:8, border:`1px solid ${T.red}33`, background:`${T.red}08`, display:"flex", alignItems:"center", justifyContent:"space-between", gap:10 }
+        },
+          e("div", { style:{ display:"flex", alignItems:"center", gap:8, fontFamily:"monospace", fontSize:11, color:T.redL } },
+            e("i", { className:"lni lni-xmark-circle", style:{ color:T.red } }),
+            e("span", null, it.bad)
+          ),
+          e("span", { style:{ fontSize:10, color:T.text3, fontStyle:"italic" } }, "→ " + it.fix)
+        )
+      )
+    )
+  );
+};
+
+/* ─── INTRO ─── */
+const Intro = () =>
+  e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"30px 20px", borderRadius:12, border:`1.5px dashed ${T.border2}`, background:T.surface, gap:14 } },
+    e(M.div, { animate:{y:[0,-4,0]}, transition:{duration:2,repeat:Infinity,ease:"easeInOut"},
+      style:{ fontSize:38, color:T.purpleL }
+    }, e("i", { className:"lni lni-database-1" })),
+    e("div", { style:{ fontSize:14, color:T.text2, textAlign:"center", lineHeight:1.6, maxWidth:440 } },
+      "A query that takes ", e("span", { style:{ color:T.coralL, fontWeight:700 } }, "412 ms"),
+      " without an index takes ",
+      e("span", { style:{ color:T.greenL, fontWeight:700 } }, "0.08 ms"),
+      " with one. That's a ", e("span", { style:{ color:T.purpleL, fontWeight:700 } }, "5000×"), " speedup."
+    ),
+    e("div", { style:{ fontSize:11, color:T.text3, textAlign:"center" } }, "Let's see how.")
+  );
+
+/* ─── FINALE ─── */
+const Finale = () => {
+  const rows = [
+    { n:"lni-search-1", label:"Index = sorted side-structure", sub:"Keys + row pointers, kept in sync with the table", c:T.purple },
+    { n:"lni-layers-1", label:"B-tree gives O(log n)", sub:"Balanced, wide, shallow — ~4 hops for 10M rows", c:T.teal },
+    { n:"lni-key-1", label:"Primary vs secondary", sub:"One PK index defines identity; secondaries are extras", c:T.blue },
+    { n:"lni-sort-amount-asc", label:"Composite: leftmost prefix", sub:"Order of columns matters — left-anchored queries only", c:T.amber },
+    { n:"lni-checkmark-circle-1", label:"Covering avoids table lookups", sub:"All needed columns in the index = index-only scan", c:T.green },
+    { n:"lni-warning", label:"Not free", sub:"Writes slower, disk bigger — index the working set only", c:T.coral },
+    { n:"lni-code-1", label:"Always EXPLAIN", sub:"Verify the plan; watch for functions, wildcards, OR", c:T.purpleL },
+  ];
+  return e("div", { style:{ padding:"8px 0" } },
+    rows.map((r,i) => e(M.div, { key:i, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.1,...ez},
+      style:{ display:"flex", alignItems:"flex-start", gap:12, padding:"11px 14px", marginBottom:8, borderRadius:10, border:`1px solid ${r.c}28`, background:`${r.c}08` }
+    },
+      e("div", { style:{ width:28, height:28, borderRadius:"50%", border:`1.5px solid ${r.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:13, fontWeight:700, color:r.c } },
+        e("i", { className:"lni " + r.n })
+      ),
+      e("div", null,
+        e("div", { style:{ fontSize:13, fontWeight:600, color:r.c, marginBottom:2 } }, r.label),
+        e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.5 } }, r.sub)
+      )
+    ))
+  );
+};
+
+const DetailPanel = ({ detailKey, onClose }) => {
+  const d = DETAILS[detailKey];
+  if (!d) return null;
+  return e("div", {
+    style:{ width:340, flexShrink:0, background:T.surface, borderRadius:14, border:`1.5px solid ${d.color}44`, overflow:"hidden", alignSelf:"flex-start", position:"sticky", top:56 }
+  },
+    e("div", { style:{ padding:"14px 18px 12px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:8 } },
+        e("div", { style:{ width:8, height:8, borderRadius:"50%", background:d.color } }),
+        e("span", { style:{ fontSize:14, fontWeight:600, color:T.text1 } }, d.title)
+      ),
+      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6, transition:"color 0.2s" }, onMouseEnter:ev=>ev.target.style.color=T.text1, onMouseLeave:ev=>ev.target.style.color=T.text3 }, e("i", { className:"lni lni-xmark" }))
+    ),
+    e("div", { style:{ padding:"16px 18px 20px", maxHeight:"calc(100vh - 140px)", overflowY:"auto" } },
+      d.sections.map((s, i) =>
+        e("div", { key:i, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
+          e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
+        )
+      )
+    )
+  );
+};
+
+/* ─── APP ─── */
+function App() {
+  const [si, setSi] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [detail, setDetail] = useState(null);
+  const [scanRow, setScanRow] = useState(0);
+  const timer = useRef(null);
+  const scanTimer = useRef(null);
+  const sc = SCENES[si];
+
+  useEffect(() => { setPlaying(true); }, []);
+
+  /* main scene advance */
+  useEffect(() => {
+    if (!playing) return;
+    const d = si===0 ? 3200 : sc.finale ? 99999 : sc.show==="scan" ? 5200 : 3800;
+    timer.current = setTimeout(() => { si < SCENES.length-1 ? setSi(i=>i+1) : setPlaying(false); }, d);
+    return () => clearTimeout(timer.current);
+  }, [playing, si]);
+
+  /* scan animation driver */
+  useEffect(() => {
+    clearInterval(scanTimer.current);
+    if (sc.show === "scan") {
+      setScanRow(0);
+      let i = 0;
+      scanTimer.current = setInterval(() => {
+        i++;
+        if (i > TARGET_ID) { clearInterval(scanTimer.current); return; }
+        setScanRow(i);
+      }, 340);
+    } else {
+      setScanRow(0);
+    }
+    return () => clearInterval(scanTimer.current);
+  }, [si, sc.show]);
+
+  const go = d => { clearTimeout(timer.current); setPlaying(false); setSi(i=>Math.max(0,Math.min(SCENES.length-1,i+d))); };
+  const jump = i => { clearTimeout(timer.current); setPlaying(false); setSi(i); };
+  const togglePlay = () => { if(si===SCENES.length-1){setSi(0);setPlaying(true);}else setPlaying(p=>!p); };
+  const toggleDetail = key => { setDetail(d => d===key ? null : key); clearTimeout(timer.current); setPlaying(false); };
+
+  return e("div", { style:{ display:"flex", gap:16, alignItems:"flex-start", justifyContent: detail ? "flex-start" : "center" } },
+  e("div", { style:{ width:760, flexShrink:0, background:T.bg, fontFamily:"system-ui,sans-serif", padding:20, borderRadius:16 } },
+
+    /* header */
+    e("div", { style:{ marginBottom:18 } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:10, marginBottom:11 } },
+        e(AP, { mode:"wait" },
+          e(M.div, { key:sc.act, initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, exit:{opacity:0}, transition:sp(400,28),
+            style:{ fontSize:9,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:T.purple,background:`${T.purple}14`,padding:"3px 10px",borderRadius:20,border:`1px solid ${T.purple}30`,flexShrink:0 }
+          }, sc.act)
+        ),
+        e("div", { style:{ flex:1, height:1, background:T.border, borderRadius:99, overflow:"hidden" } },
+          e(M.div, { animate:{width:`${si/(SCENES.length-1)*100}%`}, transition:{duration:0.5}, style:{height:"100%",background:T.purple,borderRadius:99} })
+        ),
+        e("span", { style:{ fontSize:10, color:T.text3 } }, `${si+1} / ${SCENES.length}`)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.title, initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, exit:{opacity:0,y:-8}, transition:ez,
+          style:{ fontSize:20,fontWeight:600,color:T.text1,marginBottom:4,letterSpacing:"-0.02em" }
+        }, sc.title)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
+          style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
+        }, sc.sub)
+      )
+    ),
+
+    e("div", { style:{ minHeight:460 } },
+
+      /* finale */
+      sc.finale && e(Finale),
+
+      /* main */
+      !sc.finale && e("div", null,
+
+        sc.show === "intro" && e("div", { style:{ marginBottom:10 } }, e(Intro)),
+
+        sc.show === "scan" && e("div", { style:{ display:"flex", gap:10, marginBottom:10 } },
+          e(TableView, {
+            activeRow: scanRow > 0 && scanRow < TARGET_ID ? scanRow : null,
+            foundRow: scanRow >= TARGET_ID ? TARGET_ID : null,
+            mode:"scan",
+            label:"Full table scan — O(n)",
+            color:T.coral,
+            onClick:()=>toggleDetail("scan")
+          })
+        ),
+
+        sc.show === "indexList" && e("div", { style:{ marginBottom:10 } },
+          e(IndexList, { onClick:()=>toggleDetail("btree") })
+        ),
+
+        sc.show === "btree" && e("div", { style:{ marginBottom:10 } },
+          e(BTreeView, { step: sc.btreeStep, onClick:()=>toggleDetail("btree") })
+        ),
+
+        sc.show === "primarySecondary" && e("div", { style:{ marginBottom:10 } }, e(PrimarySecondary)),
+
+        sc.show === "clustered" && e("div", { style:{ marginBottom:10 } }, e(Clustered)),
+
+        sc.show === "composite" && e("div", { style:{ marginBottom:10 } },
+          e(Composite, { onClick:()=>toggleDetail("composite") })
+        ),
+
+        sc.show === "covering" && e("div", { style:{ marginBottom:10 } },
+          e(Covering, { onClick:()=>toggleDetail("covering") })
+        ),
+
+        sc.show === "cost" && e("div", { style:{ marginBottom:10 } }, e(Cost)),
+
+        sc.show === "whenNot" && e("div", { style:{ marginBottom:10 } }, e(WhenNot)),
+
+        sc.show === "explain" && e("div", { style:{ marginBottom:10 } }, e(ExplainView)),
+
+        sc.show === "pitfalls" && e("div", { style:{ marginBottom:10 } },
+          e(Pitfalls, { onClick:()=>toggleDetail("pitfalls") })
+        ),
+
+        /* code */
+        sc.code && sc.code.length > 0 && e("div", { style:{ marginBottom:10 } },
+          e(CodePanel, { tokens:sc.code, onClick:()=>toggleDetail("code") })
+        )
+      ),
+
+    ), /* close minHeight wrapper */
+
+    /* controls */
+    e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginTop:16 } },
+      e("button", { onClick:()=>go(-1), disabled:si===0,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===0?T.text3:T.text2,cursor:si===0?"not-allowed":"pointer",fontSize:11,transition:"color 0.2s" }
+      }, "← Back"),
+      e("button", { onClick:togglePlay,
+        style:{ padding:"6px 18px",borderRadius:8,border:`1px solid ${playing?T.coral:T.purple}44`,background:playing?`${T.coral}14`:`${T.purple}14`,color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all 0.2s" }
+      }, playing ? "⏸  Pause" : si===SCENES.length-1 ? "↺  Replay" : "▶  Play"),
+      e("button", { onClick:()=>go(1), disabled:si===SCENES.length-1,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
+      }, "Next →"),
+      e("div", { style:{ flex:1 } }),
+      e("div", { style:{ display:"flex", gap:4, alignItems:"center" } },
+        SCENES.map((_,i) =>
+          e("button", { key:i, onClick:()=>jump(i),
+            style:{ width:i===si?16:5,height:5,borderRadius:99,border:"none",padding:0,background:i===si?T.purple:i<si?`${T.purple}55`:T.border,cursor:"pointer",transition:"all 0.25s" }
+          })
+        )
+      )
+    )
+  ),
+  detail && e(DetailPanel, { detailKey:detail, onClose:()=>setDetail(null) })
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(e(App));
+</script>
+</body>
+</html>
