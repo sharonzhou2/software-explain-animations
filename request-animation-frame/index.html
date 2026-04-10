@@ -390,100 +390,85 @@ const Panel = ({ label, children, style={}, focused=false, onClick }) =>
 
 /* ─── TIMELINE VISUALIZATION ─── */
 const FrameTimeline = ({ mode, label, animKey }) => {
-  /* mode: "setTimeout" | "raf" | "both" | "problem" */
-  const W = 680, H = 120;
-  const refreshInterval = 50; /* px between refresh ticks */
-  const numTicks = Math.floor(W / refreshInterval);
-
-  const refreshTicks = [];
-  for (let i = 0; i <= numTicks; i++) refreshTicks.push(i * refreshInterval);
-
-  /* setTimeout callbacks - slightly off beat */
-  const stOffsets = [3,47,95,138,192,234,280,329,375,422,470,512,562,608];
-  /* rAF callbacks - perfectly on beat */
-  const rafOffsets = refreshTicks.slice(1);
-
+  const ticks = 12;
   const isSetTimeout = mode === "setTimeout" || mode === "problem" || mode === "both";
   const isRaf = mode === "raf" || mode === "both";
+  /* setTimeout offsets as % — deliberately off from the even grid */
+  const stPcts = [1,8,15,21,29,36,43,51,57,65,72,79,86,93];
+  /* rAF offsets as % — perfectly on the grid */
+  const rafPcts = Array.from({length:ticks}, (_,i) => ((i+1)/(ticks+1))*100);
 
-  return e(M.div, {
-    key: animKey,
-    initial:{opacity:0, y:10},
-    animate:{opacity:1, y:0},
-    transition:ez,
-    style:{ position:"relative", width:"100%", height:H, background:T.surface2, borderRadius:10, border:`1px solid ${T.border}`, overflow:"hidden", padding:"0 10px" }
-  },
-    /* label */
-    label && e("div", { style:{ position:"absolute", top:6, left:12, fontSize:9, color:T.text3, fontWeight:600, letterSpacing:"0.06em", textTransform:"uppercase" } }, label),
-
-    /* Display refresh line */
-    e("div", { style:{ position:"absolute", top:28, left:10, right:10, height:1, background:T.border } }),
-    e("div", { style:{ position:"absolute", top:16, left:10, fontSize:8, color:T.text3 } }, "Display Refresh (60 Hz)"),
-
-    /* Refresh ticks */
-    ...refreshTicks.map((x,i) =>
-      e(M.div, {
-        key:`rt${i}`,
-        initial:{scaleY:0}, animate:{scaleY:1},
-        transition:{delay:i*0.03, duration:0.2},
-        style:{ position:"absolute", top:22, left:x+10, width:2, height:14, background:T.blueL, borderRadius:1, transformOrigin:"top" }
-      })
-    ),
-
-    /* setTimeout callbacks */
-    isSetTimeout && e("div", null,
-      e("div", { style:{ position:"absolute", top:48, left:10, fontSize:8, color:T.coralL } }, "setTimeout(fn, 16)"),
-      ...stOffsets.map((x,i) => {
-        /* check if this lands near a refresh tick */
-        const nearTick = refreshTicks.some(t => Math.abs(x - t) < 8);
-        const missed = !nearTick;
-        return e(M.div, {
-          key:`st${i}`,
-          initial:{opacity:0, scale:0}, animate:{opacity:1, scale:1},
-          transition:{delay:0.3 + i*0.05, ...sp(300,20)},
-          style:{ position:"absolute", top:56, left:x+10, width:missed?8:6, height:missed?8:6, borderRadius:"50%", background: missed ? T.coral : T.coralL, border: missed ? `1px solid ${T.coralL}` : "none", transform:"translate(-50%,0)" }
+  const rowStyle = (top) => ({ display:"flex", alignItems:"center", gap:8, marginTop:top||0 });
+  const dotRow = (offsets, color, missed) =>
+    e("div", { style:{ position:"relative", height:20, flex:1 } },
+      offsets.map((pct,i) => {
+        const isMissed = missed && missed[i];
+        return e(M.div, { key:i,
+          initial:{opacity:0,scale:0}, animate:{opacity:1,scale:1},
+          transition:{delay:0.2+i*0.04,...sp(300,20)},
+          style:{ position:"absolute", left:`${pct}%`, top:isMissed?2:4, width:isMissed?10:8, height:isMissed?10:8, borderRadius:"50%",
+            background:isMissed?T.coral:color, border:isMissed?`1.5px solid ${T.coralL}`:"none",
+            transform:"translateX(-50%)", boxShadow:isMissed?`0 0 6px ${T.coral}66`:"none" }
         });
-      }),
-      /* missed frame indicators */
-      mode === "problem" && stOffsets.filter(x => !refreshTicks.some(t => Math.abs(x-t)<8)).slice(0,5).map((x,i) =>
-        e(M.div, {
-          key:`miss${i}`,
-          initial:{opacity:0}, animate:{opacity:[0,1,0.6]},
-          transition:{delay:0.8+i*0.1, duration:0.4},
-          style:{ position:"absolute", top:68, left:x+10, fontSize:7, color:T.coral, fontWeight:700, transform:"translate(-50%,0)" }
-        }, "MISS")
-      )
-    ),
-
-    /* rAF callbacks */
-    isRaf && e("div", null,
-      e("div", { style:{ position:"absolute", top: isSetTimeout?78:48, left:10, fontSize:8, color:T.tealL } }, "requestAnimationFrame"),
-      ...rafOffsets.map((x,i) =>
-        e(M.div, {
-          key:`raf${i}`,
-          initial:{opacity:0, scale:0}, animate:{opacity:1, scale:1},
-          transition:{delay:0.5 + i*0.05, ...sp(300,20)},
-          style:{ position:"absolute", top:isSetTimeout?86:56, left:x+10, width:6, height:6, borderRadius:"50%", background:T.tealL, transform:"translate(-50%,0)" }
-        })
-      )
-    ),
-
-    /* alignment lines for "both" mode */
-    mode === "both" && rafOffsets.map((x,i) =>
-      e(M.div, {
-        key:`al${i}`,
-        initial:{scaleY:0}, animate:{scaleY:1},
-        transition:{delay:0.8+i*0.04, duration:0.3},
-        style:{ position:"absolute", top:36, left:x+9, width:1, height:54, background:`${T.teal}30`, transformOrigin:"top" }
       })
+    );
+
+  /* Which setTimeout dots miss the refresh? */
+  const stMissed = stPcts.map(pct => !rafPcts.some(rp => Math.abs(pct-rp) < 2.5));
+
+  return e(M.div, { key:animKey, initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, transition:ez,
+    style:{ background:T.surface2, borderRadius:10, border:`1px solid ${T.border}`, padding:"12px 16px", overflow:"hidden" }
+  },
+    label && e("div", { style:{ fontSize:9, color:T.text3, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:10 } }, label),
+
+    /* Refresh ticks row */
+    e("div", { style:rowStyle() },
+      e("div", { style:{ fontSize:10, color:T.blueL, fontWeight:600, width:100, flexShrink:0 } }, "Display 60Hz"),
+      e("div", { style:{ position:"relative", height:24, flex:1 } },
+        e("div", { style:{ position:"absolute", top:11, left:0, right:0, height:1, background:T.border } }),
+        rafPcts.map((pct,i) =>
+          e(M.div, { key:i, initial:{scaleY:0}, animate:{scaleY:1}, transition:{delay:i*0.03,duration:0.2},
+            style:{ position:"absolute", left:`${pct}%`, top:2, width:2, height:20, background:T.blueL, borderRadius:1, transformOrigin:"top", transform:"translateX(-50%)" }
+          })
+        )
+      )
     ),
 
-    /* "perfect alignment" label for raf-only */
-    mode === "raf" && e(M.div, {
-      initial:{opacity:0}, animate:{opacity:1},
-      transition:{delay:1.2, duration:0.5},
-      style:{ position:"absolute", bottom:8, right:14, fontSize:8, color:T.tealL, fontWeight:600, letterSpacing:"0.05em" }
-    }, "PERFECTLY ALIGNED")
+    /* setTimeout row */
+    isSetTimeout && e("div", { style:rowStyle(8) },
+      e("div", { style:{ fontSize:10, color:T.coralL, fontWeight:600, width:100, flexShrink:0 } }, "setTimeout"),
+      dotRow(stPcts, T.coralL, mode==="problem"?stMissed:null)
+    ),
+
+    /* MISS labels for problem mode */
+    isSetTimeout && mode === "problem" && e("div", { style:{ ...rowStyle(2), height:14 } },
+      e("div", { style:{ width:100, flexShrink:0 } }),
+      e("div", { style:{ position:"relative", height:14, flex:1 } },
+        stPcts.map((pct,i) => stMissed[i] ?
+          e(M.div, { key:i, initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.6+i*0.04},
+            style:{ position:"absolute", left:`${pct}%`, top:0, fontSize:8, color:T.coral, fontWeight:700, transform:"translateX(-50%)" }
+          }, "✗") : null
+        )
+      )
+    ),
+
+    /* rAF row */
+    isRaf && e("div", { style:rowStyle(8) },
+      e("div", { style:{ fontSize:10, color:T.tealL, fontWeight:600, width:100, flexShrink:0 } }, "rAF"),
+      dotRow(rafPcts, T.tealL, null)
+    ),
+
+    /* Alignment indicator for rAF */
+    isRaf && !isSetTimeout && e(M.div, {
+      initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.8},
+      style:{ textAlign:"right", fontSize:9, color:T.tealL, fontWeight:600, marginTop:6, letterSpacing:"0.04em" }
+    }, "✓ perfectly aligned with display refresh"),
+
+    /* Both mode: show alignment lines */
+    mode === "both" && e(M.div, {
+      initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.8},
+      style:{ textAlign:"center", fontSize:10, color:T.text2, marginTop:8, padding:"6px 10px", background:`${T.teal}10`, borderRadius:6, border:`1px solid ${T.teal}22` }
+    }, "rAF dots align with refresh ticks — setTimeout dots drift between them")
   );
 };
 
