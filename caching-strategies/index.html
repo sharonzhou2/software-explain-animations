@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Caching Strategies</title>
+<link href="https://cdn.lineicons.com/5.0/lineicons.css" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111118;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px 16px 24px 196px;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  #root { width: 100%; max-width: 1120px; }
+  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: system-ui, sans-serif; }
+  .topnav a { text-decoration: none; color: #8888aa; font-size: 13px; transition: color 0.2s; }
+  .topnav a:hover { color: #e8e8f0; }
+  .topnav .name { font-weight: 600; color: #e8e8f0; font-size: 13px; }
+  .topnav .sep { color: #38384a; font-size: 12px; }
+  .topnav .current { color: #7c6fcd; font-size: 13px; font-weight: 500; }
+  .sidenav { position: fixed; top: 38px; left: 0; width: 180px; height: calc(100vh - 38px); background: #111118; border-right: 1px solid #2a2a38; padding: 14px 0; overflow-y: auto; z-index: 200; font-family: system-ui, sans-serif; }
+  .sidenav a { display: block; padding: 6px 16px; font-size: 11px; color: #8888aa; text-decoration: none; transition: color 0.2s, background 0.2s; border-left: 2px solid transparent; }
+  .sidenav a:hover { color: #e8e8f0; background: rgba(124,111,205,0.06); }
+  .sidenav a.active { color: #a99cf0; border-left-color: #7c6fcd; background: rgba(124,111,205,0.1); font-weight: 600; }
+  .sidenav .nav-section { padding: 8px 16px 4px; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #44445a; }
+  .sidenav .nav-section:first-child { padding-top: 4px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="../" class="name">Sharon Zhou</a>
+  <span class="sep">/</span>
+  <a href="../">Animations</a>
+  <span class="sep">/</span>
+  <span class="current">Caching Strategies</span>
+</nav>
+<nav class="sidenav">
+  <div class="nav-section">JavaScript</div>
+  <a href="../event-loop/">Event Loop</a>
+  <a href="../this-keyword/">this Keyword</a>
+  <a href="../hoisting/">Hoisting</a>
+  <a href="../closures/">Closures</a>
+  <a href="../garbage-collection/">Garbage Collection</a>
+  <a href="../event-delegation/">Event Delegation</a>
+  <a href="../iterators-generators/">Iterators & Generators</a>
+  <a href="../xhr-vs-fetch/">XHR vs fetch()</a>
+  <a href="../error-propagation/">Error Propagation</a>
+  <a href="../web-workers/">Web Workers</a>
+  <a href="../prototypal-inheritance/">Prototypal Inheritance</a>
+  <a href="../debounce-vs-throttle/">Debounce vs Throttle</a>
+  <div class="nav-section">Browser</div>
+  <a href="../critical-rendering-path/">Critical Rendering Path</a>
+  <a href="../reflow-vs-repaint/">Reflow vs Repaint</a>
+  <a href="../css-box-model/">CSS Box Model & Layout</a>
+  <a href="../web-security/">Web Security</a>
+  <a href="../request-animation-frame/">requestAnimationFrame</a>
+  <a href="../cors/">CORS</a>
+  <a href="../websocket-vs-sse/">WebSocket vs SSE</a>
+  <a href="../http-versions/">HTTP Versions</a>
+  <a href="../authentication/">Authentication</a>
+  <div class="nav-section">Infrastructure</div>
+  <a href="../vms-vs-docker/">VMs vs Docker</a>
+  <a href="../opentelemetry/">OpenTelemetry</a>
+  <a href="../kubernetes/">Kubernetes</a>
+  <a href="../kafka/">Kafka</a>
+  <a href="../database-indexing/">Database Indexing</a>
+  <a href="../sql-vs-nosql/">SQL vs NoSQL</a>
+  <a href="../load-balancing/">Load Balancing</a>
+  <a href="../rate-limiting/">Rate Limiting</a>
+  <a href="../caching-strategies/" class="active">Caching Strategies</a>
+  <a href="../database-sharding/">Database Sharding</a>
+  <a href="../microservices-vs-monolith/">Microservices vs Monolith</a>
+</nav>
+<div id="root" style="margin-top: 36px;"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/framer-motion@11/dist/framer-motion.js"></script>
+<script>
+const { useState, useEffect, useRef } = React;
+const { motion, AnimatePresence } = window.Motion;
+const e = React.createElement;
+const M = motion;
+const AP = AnimatePresence;
+const sp = (s=380,d=28) => ({ type:"spring", stiffness:s, damping:d });
+const ez = { duration:0.32, ease:[0.22,1,0.36,1] };
+
+const T = {
+  bg:"#111118", surface:"#18181f", surface2:"#1e1e28",
+  border:"#2a2a38", border2:"#38384a",
+  text1:"#e8e8f0", text2:"#8888aa", text3:"#44445a",
+  purple:"#7c6fcd", purpleL:"#a99cf0",
+  teal:"#3db89a", tealL:"#6dd4b8",
+  coral:"#c4694a", coralL:"#e08a6a",
+  blue:"#4a8fd4", blueL:"#82b4e8",
+  amber:"#d4a84a", amberL:"#e8c86a",
+  green:"#4ac46a", greenL:"#6ae88a",
+  red:"#e05555", redL:"#ff7777",
+  pink:"#d46aa8", pinkL:"#e891c0",
+  codeBase:"#141428",
+};
+
+const TS = {
+  fn:{color:"#82aaff"}, meth:{color:"#89ddff"}, str:{color:"#c3e88d"},
+  kw:{color:"#c792ea"}, num:{color:"#f78c6c"}, punc:{color:"#89ddff"},
+  plain:{color:"#a6accd"}, cmt:{color:"#546e7a",fontStyle:"italic"},
+};
+
+/* ─── SCENES ─── */
+const SCENES = [
+  {
+    id:0, act:"01",
+    title:"Why cache?",
+    sub:"A cache is a fast, temporary store placed in front of a slower source. The goal: avoid doing expensive work twice. Databases are slow, networks are slower, computation costs money — caching is how systems scale.",
+    code:[
+      [["cmt","// The core idea:"]],
+      [["cmt","// 1. Check cache first"]],
+      [["cmt","// 2. If hit → return instantly"]],
+      [["cmt","// 3. If miss → fetch, store, return"]],
+    ],
+    view:"intro",
+  },
+  {
+    id:1, act:"02",
+    title:"The cache hierarchy",
+    sub:"Caching happens at many layers between the user and the database. Each layer is a chance to answer the request faster. The closer to the user, the faster — and the cheaper.",
+    code:[
+      [["cmt","// Request path:"]],
+      [["plain","  browser  → "],["str","memory / disk"]],
+      [["plain","  CDN      → "],["str","edge locations"]],
+      [["plain","  proxy    → "],["str","nginx / varnish"]],
+      [["plain","  app      → "],["str","in-process LRU"]],
+      [["plain","  redis    → "],["str","shared memory"]],
+      [["plain","  DB       → "],["str","source of truth"]],
+    ],
+    view:"hierarchy",
+  },
+  {
+    id:2, act:"03",
+    title:"Cache hit vs cache miss",
+    sub:"A hit is the whole point: the data is already in the cache, and the request returns in microseconds. A miss means we pay the full cost — go to the database, return the answer, and (usually) populate the cache for next time.",
+    code:[
+      [["kw","async function"],["plain"," "],["fn","getUser"],["punc","("],["plain","id"],["punc",") {"]],
+      [["plain","  "],["kw","const"],["plain"," cached "],["punc","="],["plain"," "],["kw","await"],["plain"," cache."],["meth","get"],["punc","("],["plain","id"],["punc",")"]],
+      [["plain","  "],["kw","if"],["plain"," "],["punc","("],["plain","cached"],["punc",") "],["kw","return"],["plain"," cached  "],["cmt","// HIT ⚡"]],
+      [["plain","  "],["kw","const"],["plain"," row "],["punc","="],["plain"," "],["kw","await"],["plain"," db."],["meth","query"],["punc","("],["plain","id"],["punc",")  "],["cmt","// MISS 🐌"]],
+      [["plain","  "],["kw","await"],["plain"," cache."],["meth","set"],["punc","("],["plain","id"],["punc",", row"],["punc",")"]],
+      [["plain","  "],["kw","return"],["plain"," row"]],
+      [["punc","}"]],
+    ],
+    view:"hitmiss",
+    detail:"hit-miss",
+  },
+  {
+    id:3, act:"04",
+    title:"Cache-aside (lazy loading)",
+    sub:"The app manages the cache itself. On read, check the cache; on miss, fetch from DB and populate. Simple, flexible, and the most common pattern. Downside: the first request for any key always pays the full cost.",
+    code:[
+      [["cmt","// Cache-aside read"]],
+      [["kw","let"],["plain"," data "],["punc","="],["plain"," cache."],["meth","get"],["punc","("],["plain","key"],["punc",")"]],
+      [["kw","if"],["plain"," "],["punc","(!"],["plain","data"],["punc",") {"]],
+      [["plain","  data "],["punc","="],["plain"," db."],["meth","query"],["punc","("],["plain","key"],["punc",")"]],
+      [["plain","  cache."],["meth","set"],["punc","("],["plain","key"],["punc",", data"],["punc",")"]],
+      [["punc","}"]],
+      [["kw","return"],["plain"," data"]],
+    ],
+    view:"pattern",
+    pattern:"aside",
+    detail:"aside",
+  },
+  {
+    id:4, act:"05",
+    title:"Read-through",
+    sub:"The cache itself is in charge of fetching from the database. The app only talks to the cache. Cleaner code, but you need a cache library (or service) that supports it.",
+    code:[
+      [["cmt","// App only talks to cache"]],
+      [["kw","const"],["plain"," data "],["punc","="],["plain"," "],["kw","await"],["plain"," cache."],["meth","get"],["punc","("],["plain","key"],["punc",")"]],
+      [["cmt",""]],
+      [["cmt","// Cache handles misses internally:"]],
+      [["cmt","//   cache.get() →"]],
+      [["cmt","//     if miss: loader(key) → DB"]],
+      [["cmt","//     store, return"]],
+    ],
+    view:"pattern",
+    pattern:"readthrough",
+    detail:"through",
+  },
+  {
+    id:5, act:"06",
+    title:"Write-through",
+    sub:"On write, update the cache AND the database in the same synchronous operation. The cache is always consistent with the DB — but every write pays for both stores. Safe. Slower writes.",
+    code:[
+      [["kw","async function"],["plain"," "],["fn","setUser"],["punc","("],["plain","id"],["punc",", user"],["punc",") {"]],
+      [["plain","  "],["kw","await"],["plain"," db."],["meth","write"],["punc","("],["plain","id"],["punc",", user"],["punc",")   "],["cmt","// 1. DB"]],
+      [["plain","  "],["kw","await"],["plain"," cache."],["meth","set"],["punc","("],["plain","id"],["punc",", user"],["punc",") "],["cmt","// 2. cache"]],
+      [["plain","  "],["kw","return"],["plain"," user"]],
+      [["punc","}"]],
+    ],
+    view:"pattern",
+    pattern:"writethrough",
+    detail:"through",
+  },
+  {
+    id:6, act:"07",
+    title:"Write-behind (write-back)",
+    sub:"Write to the cache immediately, then flush to the DB asynchronously. Fast writes, high throughput — but if the cache dies before the flush, you lose data. Used when throughput > durability.",
+    code:[
+      [["cmt","// App writes to cache"]],
+      [["kw","await"],["plain"," cache."],["meth","set"],["punc","("],["plain","id"],["punc",", user"],["punc",")"]],
+      [["cmt",""]],
+      [["cmt","// Cache flushes later"]],
+      [["plain","queue."],["meth","push"],["punc","({"],["plain","id"],["punc",", user"],["punc","})"]],
+      [["cmt","// → batched write to DB"]],
+      [["cmt","// → risk: crash = lost writes"]],
+    ],
+    view:"pattern",
+    pattern:"writebehind",
+    detail:"behind",
+  },
+  {
+    id:7, act:"08",
+    title:"Write-around",
+    sub:"Skip the cache on writes — they go straight to the DB. The cache is only populated on reads (via cache-aside). Good when written data is rarely read again, like logs or analytics events.",
+    code:[
+      [["cmt","// Write: bypass cache"]],
+      [["kw","await"],["plain"," db."],["meth","write"],["punc","("],["plain","id"],["punc",", row"],["punc",")"]],
+      [["cmt",""]],
+      [["cmt","// Read: normal cache-aside"]],
+      [["kw","let"],["plain"," row "],["punc","="],["plain"," cache."],["meth","get"],["punc","("],["plain","id"],["punc",")"]],
+      [["kw","if"],["plain"," "],["punc","(!"],["plain","row"],["punc",") row "],["punc","="],["plain"," db."],["meth","query"],["punc","("],["plain","id"],["punc",")"]],
+    ],
+    view:"pattern",
+    pattern:"writearound",
+    detail:"through",
+  },
+  {
+    id:8, act:"09",
+    title:"Eviction policies",
+    sub:"Caches are small. When full, something has to go. LRU evicts the least-recently-used item — usually the best default. LFU evicts the least-frequently-used. FIFO evicts in insertion order. TTL evicts when items expire.",
+    code:[
+      [["cmt","// LRU: move on access"]],
+      [["fn","get"],["punc","("],["plain","key"],["punc",") {"]],
+      [["plain","  "],["kw","const"],["plain"," v "],["punc","="],["plain"," map."],["meth","get"],["punc","("],["plain","key"],["punc",")"]],
+      [["plain","  map."],["meth","delete"],["punc","("],["plain","key"],["punc",")  "],["cmt","// re-insert"]],
+      [["plain","  map."],["meth","set"],["punc","("],["plain","key"],["punc",", v"],["punc",")"]],
+      [["plain","  "],["kw","return"],["plain"," v"]],
+      [["punc","}"]],
+    ],
+    view:"eviction",
+    detail:"eviction",
+  },
+  {
+    id:9, act:"10",
+    title:"Cache invalidation",
+    sub:"\"There are only two hard things in Computer Science: cache invalidation and naming things.\" — Phil Karlton. When the DB changes, how does the cache know? Get it wrong and users see stale data.",
+    code:[
+      [["cmt","// Approaches:"]],
+      [["cmt","//   1. TTL          — expire after N seconds"]],
+      [["cmt","//   2. Write-through — update both on write"]],
+      [["cmt","//   3. Explicit     — cache.delete(key)"]],
+      [["cmt","//   4. Event-based  — DB → pub/sub → cache"]],
+      [["cmt","//   5. Versioning   — key = user:42:v7"]],
+    ],
+    view:"invalidation",
+    detail:"invalidation",
+  },
+  {
+    id:10, act:"11",
+    title:"Cache stampede",
+    sub:"A popular key expires. Suddenly 10,000 concurrent requests all miss at the same instant — and all hammer the database at once. This is a thundering herd. Fixes: request coalescing, locking, stale-while-revalidate.",
+    code:[
+      [["cmt","// Bad: all misses hit DB"]],
+      [["kw","if"],["plain"," "],["punc","(!"],["plain","cache."],["meth","get"],["punc","("],["plain","key"],["punc","))"]],
+      [["plain","  data "],["punc","="],["plain"," db."],["meth","query"],["punc","("],["plain","key"],["punc",")  "],["cmt","// 🚨 10k at once"]],
+      [["cmt",""]],
+      [["cmt","// Better: single-flight"]],
+      [["kw","const"],["plain"," data "],["punc","="],["plain"," "],["kw","await"],["plain"," "],["fn","singleflight"],["punc","("],["plain","key"],["punc",","]],
+      [["plain","  "],["punc","() => "],["plain","db."],["meth","query"],["punc","("],["plain","key"],["punc","))"]],
+    ],
+    view:"stampede",
+  },
+  {
+    id:11, act:"12",
+    title:"Common pitfalls",
+    sub:"Caching bugs are sneaky because the app still \"works\" — just wrong. Stale reads, inconsistent views across replicas, cold-cache latency spikes after deploys, and unbounded memory growth are the usual suspects.",
+    code:[
+      [["cmt","// ⚠️  Pitfalls"]],
+      [["cmt","//   • Stale data — old snapshot"]],
+      [["cmt","//   • Inconsistency — replica drift"]],
+      [["cmt","//   • Cold cache — slow after restart"]],
+      [["cmt","//   • Unbounded growth — OOM"]],
+      [["cmt","//   • Negative cache — cached 404s"]],
+    ],
+    view:"pitfalls",
+  },
+  {
+    id:12, act:"13",
+    title:"Browser caching",
+    sub:"The browser has its own HTTP cache. Cache-Control sets max-age and public/private. ETag and Last-Modified let the server say \"your copy is still good\" with a 304 Not Modified — saving the full response body.",
+    code:[
+      [["cmt","// Response headers"]],
+      [["plain","Cache-Control"],["punc",": "],["str","max-age=3600, public"]],
+      [["plain","ETag"],["punc",": "],["str","\"33a64df551\""]],
+      [["plain","Last-Modified"],["punc",": "],["str","Mon, 04 Oct 2025..."]],
+      [["cmt",""]],
+      [["cmt","// Revalidation request"]],
+      [["plain","If-None-Match"],["punc",": "],["str","\"33a64df551\""]],
+      [["cmt","// → 304 Not Modified (no body)"]],
+    ],
+    view:"browser",
+    detail:"browser",
+  },
+  {
+    id:13, act:"DONE",
+    title:"Caching strategies — summary",
+    sub:"Cache where it's cheap and close. Pick a write strategy by what you can afford to lose. Invalidate deliberately. Plan for stampedes. Measure hit rates — if they're low, the cache is just overhead.",
+    finale:true,
+  },
+];
+
+/* ─── DETAIL CONTENT ─── */
+const DETAILS = {
+  "hit-miss": {
+    title:"Hit vs Miss",
+    color:T.teal,
+    sections:[
+      {heading:"Cache hit",body:"The requested key is found in the cache. Return immediately — typically sub-millisecond from in-memory, a few ms from Redis. No DB load, no network to the origin."},
+      {heading:"Cache miss",body:"Key not in cache. The app (or cache) must fetch from the source of truth — DB, API, or computation. Then usually store the result so the next request is a hit."},
+      {heading:"Hit rate matters",body:"Hit rate = hits / (hits + misses). A cache with 20% hit rate barely helps; 95%+ transforms performance. Track it in metrics — it's the single most important cache number."},
+      {heading:"Cost of a miss",body:"A miss is always more expensive than no cache at all (you pay for the lookup + the fetch + the store). The cache only pays for itself if hits dominate."},
+    ]
+  },
+  aside: {
+    title:"Cache-aside",
+    color:T.purple,
+    sections:[
+      {heading:"How it works",body:"1. App reads from cache\n2. If miss, app reads from DB\n3. App writes the result back to cache\n4. Return to caller\n\nThe cache is passive — it never talks to the DB itself."},
+      {heading:"Strengths",body:"• Simple, language-agnostic\n• Cache failure doesn't break reads (just slower)\n• You control exactly what gets cached and when\n• Works with any cache (Redis, Memcached, in-process Map)"},
+      {heading:"Weaknesses",body:"• First request for any key always misses (cold cache)\n• Writes don't touch the cache → stale data until TTL or explicit invalidation\n• Every caller must remember the pattern (easy to forget)"},
+      {heading:"When to use",body:"The default choice. If you're not sure, use cache-aside. Most real systems use this with a write-through or explicit invalidation on top."},
+    ]
+  },
+  through: {
+    title:"Read/Write-through",
+    color:T.blue,
+    sections:[
+      {heading:"Read-through",body:"The cache is the front door. App calls cache.get(key); on miss, the cache loads from the DB itself via a registered loader function. App never sees the DB directly."},
+      {heading:"Write-through",body:"On write, the cache synchronously writes to both itself and the DB before returning. The cache is always in sync with the DB — no stale reads possible from this path."},
+      {heading:"Write-around",body:"Writes go straight to the DB, bypassing the cache. The cache is only populated on reads. Good for write-heavy workloads where most written data is never read again."},
+      {heading:"Trade-offs",body:"Through patterns move complexity into the cache layer — cleaner app code but requires a cache that supports loaders/writers. Every write pays for both stores, so writes are slower."},
+    ]
+  },
+  behind: {
+    title:"Write-behind",
+    color:T.coral,
+    sections:[
+      {heading:"How it works",body:"Write to the cache and return immediately. The cache queues the write and flushes to the DB later, often in batches. Think of it as async write-through."},
+      {heading:"Strengths",body:"• Very fast writes (no DB wait)\n• Batches many writes into few DB operations\n• Absorbs spiky write load\n• Great for counters, metrics, session updates"},
+      {heading:"Risks",body:"• If the cache crashes before flush → data lost\n• Write order can be reordered or coalesced\n• Harder to reason about consistency\n• Need durable queues for critical data"},
+      {heading:"When to use",body:"High write throughput where some data loss is acceptable, or where the cache itself is durable (e.g., Redis AOF with fsync). Common in analytics, leaderboards, telemetry."},
+    ]
+  },
+  eviction: {
+    title:"Eviction Policies",
+    color:T.amber,
+    sections:[
+      {heading:"LRU — Least Recently Used",body:"Evict the item that hasn't been accessed for the longest time. Great general-purpose default — matches typical access patterns (recent = likely soon again). Implemented as a hash map + doubly-linked list."},
+      {heading:"LFU — Least Frequently Used",body:"Evict the item with the fewest accesses. Better for workloads with a stable \"hot set\" that LRU might evict on a temporary scan. Harder to implement efficiently; often approximated (TinyLFU)."},
+      {heading:"FIFO — First In First Out",body:"Evict in insertion order, ignoring access. Dead simple but usually worse than LRU. Occasionally used when access patterns are uniform or tracking is too expensive."},
+      {heading:"TTL — Time To Live",body:"Items self-expire after N seconds. Not really an eviction policy on its own — combined with LRU/LFU. Essential for bounding staleness when invalidation is hard."},
+      {heading:"Random / 2-random",body:"Pick N random items, evict the worst by some metric. Used in Redis' maxmemory-policy (allkeys-lru is actually approximate LRU over 5 random samples)."},
+    ]
+  },
+  invalidation: {
+    title:"Cache Invalidation",
+    color:T.red,
+    sections:[
+      {heading:"Why it's hard",body:"The source of truth changed. How do all the caches that might hold a copy find out? In a distributed system with multiple replicas, this is a consistency problem disguised as a caching problem."},
+      {heading:"TTL-based",body:"Simplest: just expire after N seconds. Bounded staleness, zero coordination. Downside: you always see data up to TTL seconds stale, and a short TTL kills hit rate."},
+      {heading:"Write-through update",body:"On write, update the cache at the same time. Works for single-key writes, but breaks down if the same data is cached under multiple keys or in multiple caches."},
+      {heading:"Explicit delete",body:"On write, the app calls cache.delete(key). Simple but relies on the app remembering every cache location. Miss one call site and you ship stale data."},
+      {heading:"Event-driven",body:"DB changes emit events (CDC, outbox pattern) that invalidate caches. Correct but complex — requires infrastructure for reliable event delivery."},
+      {heading:"Versioning",body:"Embed a version in the cache key: user:42:v7. On update, bump the version. Old entries become orphans and age out via LRU. Never serves stale data."},
+    ]
+  },
+  browser: {
+    title:"Browser Caching",
+    color:T.blue,
+    sections:[
+      {heading:"Cache-Control",body:"The main HTTP caching header.\n• max-age=N — fresh for N seconds\n• public / private — shared or per-user\n• no-cache — revalidate before using\n• no-store — never cache\n• immutable — never revalidate (for hashed URLs)"},
+      {heading:"ETag",body:"An opaque identifier the server sends with a response. The browser stores it. On revalidation, it sends If-None-Match: <etag>. If unchanged, the server replies 304 Not Modified with no body."},
+      {heading:"Last-Modified",body:"A timestamp the server sends. The browser sends If-Modified-Since: <date> on revalidation. Weaker than ETag (second-granularity, clock drift) but simpler."},
+      {heading:"Strategy",body:"Long-lived assets: hash the URL (app.a3f2.js) and send max-age=31536000, immutable.\n\nHTML: short max-age + ETag so content updates propagate quickly.\n\nAPI responses: usually private or no-store unless you know what you're doing."},
+    ]
+  },
+  code: {
+    title:"Source Code",
+    color:T.purpleL,
+    sections:[
+      {heading:"Reading the examples",body:"Each scene shows the minimal code for the pattern. In real systems you'd add error handling, metrics, and a serialization layer."},
+      {heading:"Common libraries",body:"Node: lru-cache, node-cache, ioredis\nPython: functools.lru_cache, cachetools, redis-py\nGo: groupcache, ristretto, go-redis\nJava: Caffeine, Ehcache, Spring Cache"},
+      {heading:"Redis basics",body:"GET key\nSET key value EX 3600\nDEL key\nINCR counter\nEXPIRE key 60\n\nUse pipelining for batches; use SCAN (not KEYS) in production."},
+    ]
+  },
+};
+
+/* ─── COMPONENTS ─── */
+const CodePanel = ({ tokens, onClick }) =>
+  e("div", { onClick, style:{ background:T.codeBase, borderRadius:12, overflow:"hidden", border:`1px solid ${T.border}`, cursor:onClick?"pointer":"default" } },
+    e("div", { style:{ padding:"10px 14px 8px", borderBottom:`1px solid ${T.border}`, display:"flex", gap:7 } },
+      ...["#ff5f57","#febc2e","#28c840"].map((c,i) =>
+        e("div", { key:i, style:{ width:11, height:11, borderRadius:"50%", background:c } })
+      )
+    ),
+    e("div", { style:{ padding:"14px 18px 16px", fontFamily:"'SF Mono','Fira Code','Consolas',monospace", fontSize:12, lineHeight:1.85, minHeight:140 } },
+      tokens.map((line, li) =>
+        e("div", { key:li },
+          line.length === 0
+            ? e("span", { style:{ whiteSpace:"pre" } }, " ")
+            : line.map(([cls, txt], ti) =>
+                e("span", { key:ti, style:{ ...TS[cls], whiteSpace:"pre" } }, txt)
+              )
+        )
+      )
+    )
+  );
+
+/* ─── VIEW: intro — why cache ─── */
+const IntroView = () => {
+  const items = [
+    { icon:"lni-bolt-2", label:"Speed", sub:"In-memory reads are 1000× faster than disk", c:T.amber },
+    { icon:"lni-dollar", label:"Cost", sub:"Avoid expensive DB queries and API calls", c:T.green },
+    { icon:"lni-network", label:"Scale", sub:"Absorb traffic spikes without touching the DB", c:T.blue },
+    { icon:"lni-users", label:"Experience", sub:"Faster pages = happier users, better conversion", c:T.purple },
+  ];
+  return e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, padding:"4px 0" } },
+    items.map((it,i) => e(M.div, { key:i, initial:{opacity:0,y:10}, animate:{opacity:1,y:0}, transition:{delay:i*0.08,...ez},
+      style:{ padding:"14px 16px", borderRadius:12, border:`1px solid ${it.c}33`, background:`${it.c}0c`, display:"flex", alignItems:"flex-start", gap:11 }
+    },
+      e("div", { style:{ width:32, height:32, borderRadius:10, border:`1.5px solid ${it.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 } },
+        e("i", { className:"lni "+it.icon, style:{ color:it.c, fontSize:14 } })
+      ),
+      e("div", null,
+        e("div", { style:{ fontSize:13, fontWeight:600, color:it.c, marginBottom:3 } }, it.label),
+        e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.5 } }, it.sub)
+      )
+    ))
+  );
+};
+
+/* ─── VIEW: hierarchy — layers from user to DB ─── */
+const HierarchyView = () => {
+  const layers = [
+    { id:"user", label:"User", icon:"lni-user-4", c:T.text2, t:"" },
+    { id:"browser", label:"Browser cache", icon:"lni-world-2", c:T.teal, t:"~0 ms" },
+    { id:"cdn", label:"CDN edge", icon:"lni-cloud-network", c:T.blueL, t:"~10 ms" },
+    { id:"proxy", label:"Reverse proxy", icon:"lni-shield-2", c:T.blue, t:"~1 ms" },
+    { id:"app", label:"App in-memory", icon:"lni-rocket-5", c:T.green, t:"~0.01 ms" },
+    { id:"redis", label:"Redis / Memcached", icon:"lni-database-1", c:T.coral, t:"~1 ms" },
+    { id:"db", label:"Database", icon:"lni-hard-drive", c:T.red, t:"~10-100 ms" },
+  ];
+  const [step, setStep] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setStep(s => (s+1) % (layers.length+2)), 700);
+    return () => clearInterval(id);
+  }, []);
+  return e("div", { style:{ padding:"6px 0" } },
+    layers.map((L,i) => {
+      const active = step === i;
+      const past = step > i;
+      return e(M.div, { key:L.id, layout:true,
+        initial:{opacity:0,x:-10}, animate:{opacity:1,x:0}, transition:{delay:i*0.05,...ez},
+        style:{ display:"flex", alignItems:"center", gap:12, padding:"9px 14px", marginBottom:6, borderRadius:10,
+          border:`1px solid ${active?L.c:L.c+"28"}`,
+          background: active ? `${L.c}18` : `${L.c}06`,
+          transition:"border 0.25s, background 0.25s" }
+      },
+        e("div", { style:{ width:28, height:28, borderRadius:8, border:`1.5px solid ${L.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, background: active?`${L.c}22`:"transparent" } },
+          e("i", { className:"lni "+L.icon, style:{ color:L.c, fontSize:13 } })
+        ),
+        e("div", { style:{ flex:1 } },
+          e("div", { style:{ fontSize:12, fontWeight:600, color:L.c } }, L.label)
+        ),
+        L.t && e("div", { style:{ fontSize:10, fontFamily:"monospace", color: active?L.c:T.text3 } }, L.t)
+      );
+    })
+  );
+};
+
+/* ─── VIEW: hit vs miss ─── */
+const HitMissView = () => {
+  const [phase, setPhase] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setPhase(p => (p+1) % 4), 1400);
+    return () => clearInterval(id);
+  }, []);
+  // phase 0: hit start, 1: hit return, 2: miss → db, 3: miss ← store
+  const isHit = phase < 2;
+  const label = isHit ? "HIT" : "MISS";
+  const labelColor = isHit ? T.teal : T.coral;
+
+  const Box = ({ x, w, c, label, icon }) => e("div", {
+    style:{ position:"absolute", left:x, top:40, width:w, height:56, borderRadius:10, border:`1.5px solid ${c}`, background:`${c}14`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:3 }
+  },
+    e("i", { className:"lni "+icon, style:{ color:c, fontSize:14 } }),
+    e("div", { style:{ fontSize:10, fontWeight:700, color:c, fontFamily:"monospace" } }, label)
+  );
+
+  return e("div", { style:{ padding:"6px 0" } },
+    e("div", { style:{ display:"flex", justifyContent:"center", marginBottom:10 } },
+      e(M.div, { animate:{ color:labelColor, borderColor:labelColor, background:`${labelColor}14` }, transition:{ duration:0.3 },
+        style:{ padding:"4px 14px", borderRadius:20, border:"1.5px solid", fontSize:11, fontWeight:700, letterSpacing:"0.1em" }
+      }, label + (isHit ? " ⚡" : " 🐌"))
+    ),
+    e("div", { style:{ position:"relative", height:150, background:T.surface2, borderRadius:12, border:`1px solid ${T.border}` } },
+      e(Box, { x:16, w:120, c:T.text2, label:"app", icon:"lni-rocket-5" }),
+      e(Box, { x:220, w:130, c:T.amber, label:"cache", icon:"lni-bolt-2" }),
+      e(Box, { x:430, w:140, c:T.coral, label:"database", icon:"lni-database-1" }),
+      // request arrow app → cache (always)
+      e(M.div, { initial:false, animate:{ opacity: 1 },
+        style:{ position:"absolute", left:136, top:64, width:84, height:2, background:T.text2 }
+      }),
+      e("div", { style:{ position:"absolute", left:216, top:60, fontSize:10, color:T.text2 } }, "▶"),
+      // cache → DB (only on miss)
+      e(M.div, { initial:false, animate:{ opacity: !isHit ? 1 : 0.15 }, transition:{ duration:0.3 },
+        style:{ position:"absolute", left:350, top:64, width:80, height:2, background:T.coral }
+      }),
+      e(M.div, { animate:{ opacity: !isHit ? 1 : 0.15 }, style:{ position:"absolute", left:426, top:60, fontSize:10, color:T.coral } }, "▶"),
+      // return arrow
+      e(M.div, { animate:{
+          left: isHit ? 136 : 350,
+          width: isHit ? 84 : 80,
+          background: isHit ? T.teal : T.coral
+        }, transition:{ duration:0.4, ease:[0.22,1,0.36,1] },
+        style:{ position:"absolute", top:108, height:2 }
+      }),
+      e(M.div, { animate:{ left: isHit ? 132 : 346, color: isHit ? T.teal : T.coral }, transition:{ duration:0.4 },
+        style:{ position:"absolute", top:104, fontSize:10 }
+      }, "◀"),
+      e(M.div, { animate:{
+        opacity: 1,
+        color: isHit ? T.teal : T.coral
+      }, style:{ position:"absolute", left:160, top:118, fontSize:9, fontFamily:"monospace" } },
+        isHit ? "return (fast)" : "return (slow)"
+      )
+    ),
+    e("div", { style:{ display:"flex", gap:12, marginTop:10, fontSize:10, color:T.text3, justifyContent:"center" } },
+      e("div", null, e("span", { style:{ color:T.teal } }, "● "), "Hit: ~1 ms"),
+      e("div", null, e("span", { style:{ color:T.coral } }, "● "), "Miss: ~50 ms (query + store)")
+    )
+  );
+};
+
+/* ─── VIEW: write/read patterns ─── */
+const PatternView = ({ pattern }) => {
+  // box positions
+  const APP = { x:18, y:50, w:110, h:54, c:T.purpleL, label:"app", icon:"lni-rocket-5" };
+  const CACHE = { x:218, y:50, w:130, h:54, c:T.amber, label:"cache", icon:"lni-bolt-2" };
+  const DB = { x:438, y:50, w:130, h:54, c:T.coral, label:"database", icon:"lni-database-1" };
+
+  // each pattern defines an animation of arrows
+  const patterns = {
+    aside: {
+      title:"Cache-aside (lazy load)",
+      steps:[
+        { from:"app", to:"cache", label:"1. get()", c:T.purpleL },
+        { from:"cache", to:"app", label:"2. miss", c:T.coral, dashed:true },
+        { from:"app", to:"db", label:"3. query()", c:T.purpleL, arc:true },
+        { from:"db", to:"app", label:"4. row", c:T.green, arc:true, back:true },
+        { from:"app", to:"cache", label:"5. set()", c:T.purpleL },
+      ]
+    },
+    readthrough: {
+      title:"Read-through",
+      steps:[
+        { from:"app", to:"cache", label:"1. get()", c:T.purpleL },
+        { from:"cache", to:"db", label:"2. load (miss)", c:T.amber },
+        { from:"db", to:"cache", label:"3. row", c:T.green, back:true },
+        { from:"cache", to:"app", label:"4. return", c:T.amber, back:true },
+      ]
+    },
+    writethrough: {
+      title:"Write-through",
+      steps:[
+        { from:"app", to:"cache", label:"1. set()", c:T.purpleL },
+        { from:"cache", to:"db", label:"2. write (sync)", c:T.amber },
+        { from:"db", to:"cache", label:"3. ok", c:T.green, back:true },
+        { from:"cache", to:"app", label:"4. ok", c:T.amber, back:true },
+      ]
+    },
+    writebehind: {
+      title:"Write-behind",
+      steps:[
+        { from:"app", to:"cache", label:"1. set()", c:T.purpleL },
+        { from:"cache", to:"app", label:"2. ok (fast)", c:T.teal, back:true },
+        { from:"cache", to:"db", label:"3. async flush", c:T.coral, dashed:true, delay:true },
+      ]
+    },
+    writearound: {
+      title:"Write-around",
+      steps:[
+        { from:"app", to:"db", label:"1. write", c:T.purpleL, arc:true },
+        { from:"db", to:"app", label:"2. ok", c:T.green, arc:true, back:true },
+        { from:"app", to:"cache", label:"(skip cache)", c:T.text3, dashed:true, skip:true },
+      ]
+    },
+  };
+
+  const p = patterns[pattern] || patterns.aside;
+  const [step, setStep] = useState(0);
+  useEffect(() => {
+    setStep(0);
+    const id = setInterval(() => setStep(s => (s+1) % (p.steps.length+1)), 900);
+    return () => clearInterval(id);
+  }, [pattern]);
+
+  const Node = (n, highlight) => e("div", {
+    key:n.label,
+    style:{ position:"absolute", left:n.x, top:n.y, width:n.w, height:n.h, borderRadius:10, border:`1.5px solid ${highlight?n.c:n.c+"66"}`, background: highlight?`${n.c}22`:`${n.c}10`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:3, transition:"border 0.25s, background 0.25s" }
+  },
+    e("i", { className:"lni "+n.icon, style:{ color:n.c, fontSize:14 } }),
+    e("div", { style:{ fontSize:10, fontWeight:700, color:n.c, fontFamily:"monospace" } }, n.label)
+  );
+
+  // Determine which node is "highlighted" on current step
+  const active = p.steps[step-1];
+  const hiApp = active && (active.from === "app" || active.to === "app");
+  const hiCache = active && (active.from === "cache" || active.to === "cache");
+  const hiDb = active && (active.from === "db" || active.to === "db");
+
+  return e("div", { style:{ padding:"6px 0" } },
+    e("div", { style:{ fontSize:11, fontWeight:700, color:T.purpleL, letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:8, textAlign:"center" } }, p.title),
+    e("div", { style:{ position:"relative", height:220, background:T.surface2, borderRadius:12, border:`1px solid ${T.border}` } },
+      Node(APP, hiApp),
+      Node(CACHE, hiCache),
+      Node(DB, hiDb),
+      // render the currently-active step arrow
+      active && (() => {
+        const positions = {
+          app: { cx:APP.x+APP.w, cy:APP.y+APP.h/2 },
+          cache: { cx:CACHE.x, cy:CACHE.y+CACHE.h/2, rx:CACHE.x+CACHE.w, ry:CACHE.y+CACHE.h/2 },
+          db: { cx:DB.x, cy:DB.y+DB.h/2 },
+        };
+        const startX = active.from === "app" ? APP.x+APP.w : active.from === "cache" ? (active.to==="app" ? CACHE.x : CACHE.x+CACHE.w) : DB.x;
+        const startY = active.from === "app" ? APP.y+APP.h/2 : active.from === "cache" ? CACHE.y+CACHE.h/2 : DB.y+DB.h/2;
+        const endX = active.to === "app" ? APP.x+APP.w : active.to === "cache" ? (active.from==="app" ? CACHE.x : CACHE.x+CACHE.w) : DB.x;
+        const endY = active.to === "app" ? APP.y+APP.h/2 : active.to === "cache" ? CACHE.y+CACHE.h/2 : DB.y+DB.h/2;
+
+        // For arcs (app↔db skipping cache), offset the path
+        const yOffset = active.arc ? (active.back ? 60 : -40) : 0;
+        const midX = (startX + endX) / 2;
+        const midY = (startY + endY) / 2 + yOffset;
+
+        return e("svg", { key:step, style:{ position:"absolute", top:0, left:0, width:"100%", height:"100%", pointerEvents:"none" } },
+          e("defs", null,
+            e("marker", { id:`arrow-${step}`, markerWidth:8, markerHeight:8, refX:6, refY:4, orient:"auto" },
+              e("path", { d:"M0,0 L8,4 L0,8 z", fill:active.c })
+            )
+          ),
+          e(M.path, {
+            initial:{ pathLength:0, opacity:0 },
+            animate:{ pathLength:1, opacity: active.skip ? 0.4 : 1 },
+            transition:{ duration:0.55, ease:[0.22,1,0.36,1] },
+            d: active.arc ? `M${startX},${startY} Q${midX},${midY} ${endX},${endY}` : `M${startX},${startY} L${endX},${endY}`,
+            stroke:active.c, strokeWidth:2.2, fill:"none",
+            strokeDasharray: active.dashed ? "5 4" : "none",
+            markerEnd:`url(#arrow-${step})`
+          }),
+          e("text", {
+            x: active.arc ? midX : (startX+endX)/2,
+            y: (active.arc ? midY : (startY+endY)/2) - 6,
+            fill:active.c, fontSize:10, fontFamily:"monospace", fontWeight:700, textAnchor:"middle"
+          }, active.label)
+        );
+      })(),
+      // step indicator
+      e("div", { style:{ position:"absolute", bottom:10, left:0, right:0, display:"flex", justifyContent:"center", gap:5 } },
+        p.steps.map((_,i) => e("div", { key:i,
+          style:{ width: step>i?10:5, height:5, borderRadius:99, background: step>i ? T.purple : T.border, transition:"all 0.2s" }
+        }))
+      )
+    )
+  );
+};
+
+/* ─── VIEW: eviction LRU animation ─── */
+const EvictionView = () => {
+  // show LRU list of 4 items; access pattern moves items to front
+  const [items, setItems] = useState([
+    { id:"A", c:T.blue },
+    { id:"B", c:T.teal },
+    { id:"C", c:T.amber },
+    { id:"D", c:T.pink },
+  ]);
+  const [log, setLog] = useState("LRU: least-recently-used at the end");
+  const stepRef = useRef(0);
+
+  useEffect(() => {
+    const actions = [
+      { type:"access", id:"B", msg:"access B → move to front" },
+      { type:"access", id:"A", msg:"access A → move to front" },
+      { type:"insert", id:"E", c:T.green, msg:"insert E → evict least-recent" },
+      { type:"access", id:"C", msg:"access C → move to front" },
+      { type:"insert", id:"F", c:T.purpleL, msg:"insert F → evict least-recent" },
+      { type:"reset" },
+    ];
+    const id = setInterval(() => {
+      const a = actions[stepRef.current % actions.length];
+      stepRef.current++;
+      if (a.type === "reset") {
+        setItems([
+          { id:"A", c:T.blue },
+          { id:"B", c:T.teal },
+          { id:"C", c:T.amber },
+          { id:"D", c:T.pink },
+        ]);
+        setLog("LRU: least-recently-used at the end");
+      } else if (a.type === "access") {
+        setItems(prev => {
+          const found = prev.find(x => x.id === a.id);
+          if (!found) return prev;
+          return [found, ...prev.filter(x => x.id !== a.id)];
+        });
+        setLog(a.msg);
+      } else if (a.type === "insert") {
+        setItems(prev => {
+          const next = [{ id:a.id, c:a.c }, ...prev];
+          return next.slice(0, 4);
+        });
+        setLog(a.msg);
+      }
+    }, 1400);
+    return () => clearInterval(id);
+  }, []);
+
+  const policies = [
+    { name:"LRU", desc:"by recency", c:T.teal },
+    { name:"LFU", desc:"by frequency", c:T.blue },
+    { name:"FIFO", desc:"by insert order", c:T.amber },
+    { name:"TTL", desc:"by expiry", c:T.coral },
+  ];
+
+  return e("div", { style:{ padding:"4px 0" } },
+    e("div", { style:{ fontSize:10, color:T.text3, marginBottom:6, fontFamily:"monospace", textAlign:"center" } }, "MOST RECENT ──────────────→ LEAST RECENT"),
+    e("div", { style:{ display:"flex", gap:8, justifyContent:"center", marginBottom:10, minHeight:70 } },
+      e(AP, null,
+        items.map((it,i) => e(M.div, { key:it.id, layout:true,
+          initial:{ opacity:0, scale:0.5, y:-20 },
+          animate:{ opacity:1, scale:1, y:0 },
+          exit:{ opacity:0, scale:0.5, y:20 },
+          transition:sp(320,24),
+          style:{ width:58, height:58, borderRadius:12, border:`1.5px solid ${it.c}`, background:`${it.c}18`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, fontWeight:700, color:it.c, fontFamily:"monospace" }
+        }, it.id))
+      )
+    ),
+    e("div", { style:{ fontSize:11, color:T.amberL, textAlign:"center", fontFamily:"monospace", marginBottom:12, minHeight:16 } }, log),
+    e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr 1fr", gap:6 } },
+      policies.map(p => e("div", { key:p.name, style:{ padding:"8px 6px", borderRadius:8, border:`1px solid ${p.c}33`, background:`${p.c}08`, textAlign:"center" } },
+        e("div", { style:{ fontSize:11, fontWeight:700, color:p.c } }, p.name),
+        e("div", { style:{ fontSize:9, color:T.text3, marginTop:2 } }, p.desc)
+      ))
+    )
+  );
+};
+
+/* ─── VIEW: cache invalidation ─── */
+const InvalidationView = () => {
+  const approaches = [
+    { name:"TTL", desc:"expire after N seconds", icon:"lni-timer-3", c:T.amber, ex:"cache.set(key, v, 60)" },
+    { name:"Write-through", desc:"update cache on write", icon:"lni-reload", c:T.blue, ex:"cache.set + db.write" },
+    { name:"Explicit delete", desc:"remove on mutation", icon:"lni-trash-can-2", c:T.coral, ex:"cache.delete(key)" },
+    { name:"Event-driven", desc:"DB → pub/sub → cache", icon:"lni-network", c:T.purple, ex:"on(\"user.updated\")" },
+    { name:"Versioning", desc:"new key on change", icon:"lni-rotate-right", c:T.green, ex:"user:42:v7" },
+  ];
+  return e("div", { style:{ padding:"4px 0" } },
+    e("div", { style:{ padding:"8px 12px", marginBottom:10, borderRadius:8, border:`1px dashed ${T.red}44`, background:`${T.red}08`, fontSize:11, color:T.redL, textAlign:"center", fontStyle:"italic" } },
+      "\"Two hard things in CS: cache invalidation and naming things.\" — Phil Karlton"
+    ),
+    approaches.map((a,i) => e(M.div, { key:a.name, initial:{opacity:0,x:-10}, animate:{opacity:1,x:0}, transition:{delay:i*0.08,...ez},
+      style:{ display:"flex", alignItems:"center", gap:11, padding:"8px 12px", marginBottom:5, borderRadius:9, border:`1px solid ${a.c}28`, background:`${a.c}07` }
+    },
+      e("div", { style:{ width:26, height:26, borderRadius:7, border:`1.5px solid ${a.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 } },
+        e("i", { className:"lni "+a.icon, style:{ color:a.c, fontSize:12 } })
+      ),
+      e("div", { style:{ flex:1, minWidth:0 } },
+        e("div", { style:{ fontSize:12, fontWeight:600, color:a.c } }, a.name),
+        e("div", { style:{ fontSize:10, color:T.text2 } }, a.desc)
+      ),
+      e("div", { style:{ fontSize:10, fontFamily:"monospace", color:T.text3 } }, a.ex)
+    ))
+  );
+};
+
+/* ─── VIEW: cache stampede ─── */
+const StampedeView = () => {
+  const [phase, setPhase] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setPhase(p => (p+1) % 3), 1700);
+    return () => clearInterval(id);
+  }, []);
+  // phase 0: idle (cache has key), 1: expires + herd hits DB, 2: singleflight fix
+
+  const requesters = Array.from({ length:8 }, (_,i) => i);
+
+  return e("div", { style:{ padding:"4px 0" } },
+    e("div", { style:{ display:"flex", justifyContent:"center", marginBottom:8 } },
+      e(M.div, { animate:{
+        color: phase===0 ? T.teal : phase===1 ? T.red : T.green,
+        borderColor: phase===0 ? T.teal : phase===1 ? T.red : T.green,
+        background: phase===0 ? `${T.teal}14` : phase===1 ? `${T.red}14` : `${T.green}14`,
+      }, style:{ padding:"4px 14px", borderRadius:20, border:"1.5px solid", fontSize:11, fontWeight:700, letterSpacing:"0.08em" }},
+        phase===0 ? "CACHED — all hits" : phase===1 ? "EXPIRED — thundering herd" : "SINGLE-FLIGHT — coalesced"
+      )
+    ),
+    e("div", { style:{ position:"relative", height:200, background:T.surface2, borderRadius:12, border:`1px solid ${T.border}`, overflow:"hidden" } },
+      // clients row
+      e("div", { style:{ position:"absolute", left:12, top:10, display:"flex", flexDirection:"column", gap:4 } },
+        requesters.map(i => e("div", { key:i, style:{ width:30, height:18, borderRadius:4, background:`${T.text2}22`, border:`1px solid ${T.text2}44`, display:"flex", alignItems:"center", justifyContent:"center" } },
+          e("i", { className:"lni lni-user-4", style:{ color:T.text2, fontSize:9 } })
+        ))
+      ),
+      // cache
+      e("div", { style:{ position:"absolute", left:160, top:72, width:100, height:56, borderRadius:10, border:`1.5px solid ${phase===1?T.red:T.amber}`, background:`${phase===1?T.red:T.amber}14`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:2 } },
+        e("i", { className:"lni lni-bolt-2", style:{ color:phase===1?T.red:T.amber, fontSize:14 } }),
+        e("div", { style:{ fontSize:9, fontWeight:700, color:phase===1?T.red:T.amber, fontFamily:"monospace" } }, phase===1?"EXPIRED":"cache")
+      ),
+      // DB
+      e("div", { style:{ position:"absolute", left:340, top:72, width:100, height:56, borderRadius:10, border:`1.5px solid ${T.coral}`, background:`${T.coral}14`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:2 } },
+        e("i", { className:"lni lni-database-1", style:{ color:T.coral, fontSize:14 } }),
+        e("div", { style:{ fontSize:9, fontWeight:700, color:T.coral, fontFamily:"monospace" } }, "database")
+      ),
+      // arrows from clients
+      requesters.map(i => {
+        const y = 19 + i*22;
+        const toCacheEnd = 160;
+        const showCacheArrow = true;
+        // on phase 1 (stampede), also draw cache→DB arrow for each request
+        // on phase 2, just one coalesced arrow
+        return e("div", { key:i },
+          e(M.div, {
+            animate:{ opacity: 1 },
+            style:{ position:"absolute", left:42, top:y, width:toCacheEnd-42, height:1.5, background:phase===0?T.teal:phase===1?T.red:T.blue, opacity:0.6 }
+          }),
+          // cache→db arrow (only in stampede phase for each client)
+          phase===1 && e(M.div, {
+            initial:{ scaleX:0, originX:0 }, animate:{ scaleX:1 }, transition:{ delay:i*0.04, duration:0.4 },
+            style:{ position:"absolute", left:260, top:y, width:80, height:1.5, background:T.red, transformOrigin:"left" }
+          })
+        );
+      }),
+      // single-flight: one thick arrow cache→DB
+      phase===2 && e(M.div, {
+        initial:{ scaleX:0, originX:0 }, animate:{ scaleX:1 }, transition:{ duration:0.5 },
+        style:{ position:"absolute", left:260, top:100, width:80, height:3, background:T.green, transformOrigin:"left", borderRadius:2 }
+      }),
+      phase===2 && e("div", { style:{ position:"absolute", left:268, top:82, fontSize:9, color:T.green, fontFamily:"monospace", fontWeight:700 } }, "1 query")
+    ),
+    e("div", { style:{ fontSize:10, color:T.text3, marginTop:8, textAlign:"center", lineHeight:1.5 } },
+      "Fixes: single-flight / request coalescing • distributed locks • stale-while-revalidate • probabilistic early refresh"
+    )
+  );
+};
+
+/* ─── VIEW: pitfalls ─── */
+const PitfallsView = () => {
+  const pits = [
+    { icon:"lni-timer-3", name:"Stale data", desc:"Cache holds a version older than the DB. TTLs bound the damage but don't eliminate it.", c:T.coral },
+    { icon:"lni-shuffle", name:"Inconsistency", desc:"Multiple cache replicas disagree after a write. Common with async invalidation.", c:T.amber },
+    { icon:"lni-snowflake", name:"Cold cache", desc:"After a restart or deploy, nothing is cached — suddenly every request hits the DB.", c:T.blue },
+    { icon:"lni-infinity", name:"Unbounded growth", desc:"No eviction or TTL → cache grows until the process OOMs. Always set maxsize.", c:T.red },
+    { icon:"lni-xmark-circle", name:"Negative caching", desc:"Caching a 404 or error response can hide the recovery. Cache failures carefully, if at all.", c:T.pink },
+    { icon:"lni-key-1", name:"Key explosion", desc:"User-specific keys with no bound (cart:<uuid>) → millions of keys, low hit rate.", c:T.purple },
+  ];
+  return e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, padding:"4px 0" } },
+    pits.map((p,i) => e(M.div, { key:p.name, initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, transition:{delay:i*0.07,...ez},
+      style:{ padding:"10px 12px", borderRadius:10, border:`1px solid ${p.c}33`, background:`${p.c}08`, display:"flex", gap:10, alignItems:"flex-start" }
+    },
+      e("div", { style:{ width:26, height:26, borderRadius:7, border:`1.5px solid ${p.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 } },
+        e("i", { className:"lni "+p.icon, style:{ color:p.c, fontSize:12 } })
+      ),
+      e("div", null,
+        e("div", { style:{ fontSize:12, fontWeight:600, color:p.c, marginBottom:2 } }, p.name),
+        e("div", { style:{ fontSize:10, color:T.text2, lineHeight:1.5 } }, p.desc)
+      )
+    ))
+  );
+};
+
+/* ─── VIEW: browser caching ─── */
+const BrowserView = () => {
+  const headers = [
+    { h:"Cache-Control", v:"max-age=3600, public", desc:"fresh for 1 hour, shared caches OK", c:T.blue },
+    { h:"ETag", v:"\"33a64df551...\"", desc:"opaque content fingerprint", c:T.teal },
+    { h:"Last-Modified", v:"Mon, 04 Oct 2025...", desc:"timestamp of last change", c:T.amber },
+    { h:"If-None-Match", v:"\"33a64df551...\"", desc:"client sends etag to revalidate", c:T.purple },
+  ];
+  return e("div", { style:{ padding:"4px 0" } },
+    e("div", { style:{ display:"flex", gap:10, marginBottom:10 } },
+      // browser box
+      e("div", { style:{ flex:1, padding:"10px 12px", borderRadius:10, border:`1px solid ${T.teal}44`, background:`${T.teal}10`, textAlign:"center" } },
+        e("i", { className:"lni lni-world-2", style:{ color:T.teal, fontSize:18 } }),
+        e("div", { style:{ fontSize:11, fontWeight:600, color:T.teal, marginTop:3 } }, "Browser"),
+        e("div", { style:{ fontSize:9, color:T.text3, fontFamily:"monospace" } }, "GET /app.js")
+      ),
+      e("div", { style:{ display:"flex", alignItems:"center", color:T.text3, fontSize:16 } }, "⇄"),
+      e("div", { style:{ flex:1, padding:"10px 12px", borderRadius:10, border:`1px solid ${T.coral}44`, background:`${T.coral}10`, textAlign:"center" } },
+        e("i", { className:"lni lni-server-1", style:{ color:T.coral, fontSize:18 } }),
+        e("div", { style:{ fontSize:11, fontWeight:600, color:T.coral, marginTop:3 } }, "Server"),
+        e("div", { style:{ fontSize:9, color:T.text3, fontFamily:"monospace" } }, "304 Not Modified")
+      )
+    ),
+    headers.map((r,i) => e(M.div, { key:r.h, initial:{opacity:0,x:-6}, animate:{opacity:1,x:0}, transition:{delay:i*0.08,...ez},
+      style:{ padding:"7px 12px", marginBottom:4, borderRadius:8, border:`1px solid ${r.c}28`, background:`${r.c}06`, display:"flex", alignItems:"center", gap:10 }
+    },
+      e("div", { style:{ fontSize:11, fontWeight:700, color:r.c, fontFamily:"monospace", minWidth:110 } }, r.h),
+      e("div", { style:{ fontSize:10, color:T.text1, fontFamily:"monospace", flex:1 } }, r.v),
+      e("div", { style:{ fontSize:9, color:T.text3, fontStyle:"italic" } }, r.desc)
+    ))
+  );
+};
+
+/* ─── FINALE ─── */
+const Finale = () => {
+  const rows = [
+    { icon:"lni-bolt-2", label:"Cache close, cache deep", sub:"Every layer — browser, CDN, proxy, app, Redis — is a chance to answer faster", c:T.teal },
+    { icon:"lni-layers-1", label:"Aside is the default", sub:"Simple, flexible, and works with any cache. Reach for through patterns when you need cleaner code", c:T.purple },
+    { icon:"lni-reload", label:"Write strategy = durability tradeoff", sub:"Write-through is safe, write-behind is fast, write-around skips the cache entirely", c:T.blue },
+    { icon:"lni-timer-3", label:"Invalidate deliberately", sub:"TTL + explicit delete + versioning — pick the tools that match your staleness budget", c:T.amber },
+    { icon:"lni-warning", label:"Plan for stampedes", sub:"Single-flight, stale-while-revalidate, and jittered TTLs prevent the thundering herd", c:T.coral },
+    { icon:"lni-stats-up", label:"Measure hit rate", sub:"A cache below ~80% hit rate is adding latency, not removing it. Track it always", c:T.green },
+  ];
+  return e("div", { style:{ padding:"8px 0" } },
+    rows.map((r,i) => e(M.div, { key:i, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.1,...ez},
+      style:{ display:"flex", alignItems:"flex-start", gap:12, padding:"11px 14px", marginBottom:8, borderRadius:10, border:`1px solid ${r.c}28`, background:`${r.c}08` }
+    },
+      e("div", { style:{ width:28, height:28, borderRadius:"50%", border:`1.5px solid ${r.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 } },
+        e("i", { className:"lni "+r.icon, style:{ color:r.c, fontSize:13 } })
+      ),
+      e("div", null,
+        e("div", { style:{ fontSize:13, fontWeight:600, color:r.c, marginBottom:2 } }, r.label),
+        e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.5 } }, r.sub)
+      )
+    ))
+  );
+};
+
+/* ─── DETAIL PANEL ─── */
+const DetailPanel = ({ detailKey, onClose }) => {
+  const d = DETAILS[detailKey];
+  if (!d) return null;
+  return e("div", {
+    style:{ width:340, flexShrink:0, background:T.surface, borderRadius:14, border:`1.5px solid ${d.color}44`, overflow:"hidden", alignSelf:"flex-start", position:"sticky", top:56 }
+  },
+    e("div", { style:{ padding:"14px 18px 12px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:8 } },
+        e("div", { style:{ width:8, height:8, borderRadius:"50%", background:d.color } }),
+        e("span", { style:{ fontSize:14, fontWeight:600, color:T.text1 } }, d.title)
+      ),
+      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6 } }, e("i", { className:"lni lni-xmark" }))
+    ),
+    e("div", { style:{ padding:"16px 18px 20px", maxHeight:"calc(100vh - 140px)", overflowY:"auto" } },
+      d.sections.map((s, i) =>
+        e("div", { key:i, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
+          e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
+        )
+      )
+    )
+  );
+};
+
+/* ─── APP ─── */
+function App() {
+  const [si, setSi] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [detail, setDetail] = useState(null);
+  const timer = useRef(null);
+  const sc = SCENES[si];
+
+  useEffect(() => { setPlaying(true); }, []);
+
+  useEffect(() => {
+    if (!playing) return;
+    const d = si===0 ? 3000 : sc.finale ? 99999 : 4200;
+    timer.current = setTimeout(() => { si < SCENES.length-1 ? setSi(i=>i+1) : setPlaying(false); }, d);
+    return () => clearTimeout(timer.current);
+  }, [playing, si]);
+
+  const go = d => { clearTimeout(timer.current); setPlaying(false); setSi(i=>Math.max(0,Math.min(SCENES.length-1,i+d))); };
+  const jump = i => { clearTimeout(timer.current); setPlaying(false); setSi(i); };
+  const togglePlay = () => { if(si===SCENES.length-1){setSi(0);setPlaying(true);}else setPlaying(p=>!p); };
+  const toggleDetail = key => { setDetail(d => d===key ? null : key); clearTimeout(timer.current); setPlaying(false); };
+
+  const renderView = () => {
+    switch(sc.view) {
+      case "intro": return e(IntroView);
+      case "hierarchy": return e(HierarchyView);
+      case "hitmiss": return e(HitMissView);
+      case "pattern": return e(PatternView, { pattern:sc.pattern });
+      case "eviction": return e(EvictionView);
+      case "invalidation": return e(InvalidationView);
+      case "stampede": return e(StampedeView);
+      case "pitfalls": return e(PitfallsView);
+      case "browser": return e(BrowserView);
+      default: return null;
+    }
+  };
+
+  return e("div", { style:{ display:"flex", gap:16, alignItems:"flex-start", justifyContent: detail ? "flex-start" : "center" } },
+  e("div", { style:{ width:760, flexShrink:0, background:T.bg, fontFamily:"system-ui,sans-serif", padding:20, borderRadius:16 } },
+
+    /* header */
+    e("div", { style:{ marginBottom:18 } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:10, marginBottom:11 } },
+        e(AP, { mode:"wait" },
+          e(M.div, { key:sc.act, initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, exit:{opacity:0}, transition:sp(400,28),
+            style:{ fontSize:9,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:T.purple,background:`${T.purple}14`,padding:"3px 10px",borderRadius:20,border:`1px solid ${T.purple}30`,flexShrink:0 }
+          }, sc.act)
+        ),
+        e("div", { style:{ flex:1, height:1, background:T.border, borderRadius:99, overflow:"hidden" } },
+          e(M.div, { animate:{width:`${si/(SCENES.length-1)*100}%`}, transition:{duration:0.5}, style:{height:"100%",background:T.purple,borderRadius:99} })
+        ),
+        e("span", { style:{ fontSize:10, color:T.text3 } }, `${si+1} / ${SCENES.length}`)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.title, initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, exit:{opacity:0,y:-8}, transition:ez,
+          style:{ fontSize:20,fontWeight:600,color:T.text1,marginBottom:4,letterSpacing:"-0.02em" }
+        }, sc.title)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
+          style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
+        }, sc.sub)
+      )
+    ),
+
+    e("div", { style:{ minHeight:460 } },
+
+      sc.finale && e(Finale),
+
+      !sc.finale && e("div", null,
+        /* view */
+        e("div", { onClick: sc.detail ? ()=>toggleDetail(sc.detail) : undefined,
+          style:{ marginBottom:10, cursor: sc.detail ? "pointer" : "default" }
+        }, renderView()),
+
+        /* code */
+        sc.code && sc.code.length > 0 && e("div", { style:{ marginBottom:10 } },
+          e(CodePanel, { tokens:sc.code, onClick:()=>toggleDetail("code") })
+        )
+      )
+
+    ),
+
+    /* controls */
+    e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginTop:16 } },
+      e("button", { onClick:()=>go(-1), disabled:si===0,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===0?T.text3:T.text2,cursor:si===0?"not-allowed":"pointer",fontSize:11 }
+      }, "← Back"),
+      e("button", { onClick:togglePlay,
+        style:{ padding:"6px 18px",borderRadius:8,border:`1px solid ${playing?T.coral:T.purple}44`,background:playing?`${T.coral}14`:`${T.purple}14`,color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600 }
+      }, playing ? "⏸  Pause" : si===SCENES.length-1 ? "↺  Replay" : "▶  Play"),
+      e("button", { onClick:()=>go(1), disabled:si===SCENES.length-1,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
+      }, "Next →"),
+      e("div", { style:{ flex:1 } }),
+      e("div", { style:{ display:"flex", gap:4, alignItems:"center" } },
+        SCENES.map((_,i) =>
+          e("button", { key:i, onClick:()=>jump(i),
+            style:{ width:i===si?16:5,height:5,borderRadius:99,border:"none",padding:0,background:i===si?T.purple:i<si?`${T.purple}55`:T.border,cursor:"pointer",transition:"all 0.25s" }
+          })
+        )
+      )
+    )
+  ),
+  detail && e(DetailPanel, { detailKey:detail, onClose:()=>setDetail(null) })
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(e(App));
+</script>
+</body>
+</html>

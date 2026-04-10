@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Load Balancing</title>
+<link href="https://cdn.lineicons.com/5.0/lineicons.css" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111118;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px 16px 24px 196px;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  #root { width: 100%; max-width: 1120px; }
+  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: system-ui, sans-serif; }
+  .topnav a { text-decoration: none; color: #8888aa; font-size: 13px; transition: color 0.2s; }
+  .topnav a:hover { color: #e8e8f0; }
+  .topnav .name { font-weight: 600; color: #e8e8f0; font-size: 13px; }
+  .topnav .sep { color: #38384a; font-size: 12px; }
+  .topnav .current { color: #7c6fcd; font-size: 13px; font-weight: 500; }
+  .sidenav { position: fixed; top: 38px; left: 0; width: 180px; height: calc(100vh - 38px); background: #111118; border-right: 1px solid #2a2a38; padding: 14px 0; overflow-y: auto; z-index: 200; font-family: system-ui, sans-serif; }
+  .sidenav a { display: block; padding: 6px 16px; font-size: 11px; color: #8888aa; text-decoration: none; transition: color 0.2s, background 0.2s; border-left: 2px solid transparent; }
+  .sidenav a:hover { color: #e8e8f0; background: rgba(124,111,205,0.06); }
+  .sidenav a.active { color: #a99cf0; border-left-color: #7c6fcd; background: rgba(124,111,205,0.1); font-weight: 600; }
+  .sidenav .nav-section { padding: 8px 16px 4px; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #44445a; }
+  .sidenav .nav-section:first-child { padding-top: 4px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="../" class="name">Sharon Zhou</a>
+  <span class="sep">/</span>
+  <a href="../">Animations</a>
+  <span class="sep">/</span>
+  <span class="current">Load Balancing</span>
+</nav>
+<nav class="sidenav">
+  <div class="nav-section">JavaScript</div>
+  <a href="../event-loop/">Event Loop</a>
+  <a href="../this-keyword/">this Keyword</a>
+  <a href="../hoisting/">Hoisting</a>
+  <a href="../closures/">Closures</a>
+  <a href="../garbage-collection/">Garbage Collection</a>
+  <a href="../event-delegation/">Event Delegation</a>
+  <a href="../iterators-generators/">Iterators & Generators</a>
+  <a href="../xhr-vs-fetch/">XHR vs fetch()</a>
+  <a href="../error-propagation/">Error Propagation</a>
+  <a href="../web-workers/">Web Workers</a>
+  <a href="../prototypal-inheritance/">Prototypal Inheritance</a>
+  <div class="nav-section">Browser</div>
+  <a href="../critical-rendering-path/">Critical Rendering Path</a>
+  <a href="../reflow-vs-repaint/">Reflow vs Repaint</a>
+  <a href="../css-box-model/">CSS Box Model & Layout</a>
+  <a href="../web-security/">Web Security</a>
+  <a href="../request-animation-frame/">requestAnimationFrame</a>
+  <a href="../cors/">CORS</a>
+  <a href="../websocket-vs-sse/">WebSocket vs SSE</a>
+  <div class="nav-section">Infrastructure</div>
+  <a href="../vms-vs-docker/">VMs vs Docker</a>
+  <a href="../opentelemetry/">OpenTelemetry</a>
+  <a href="../kubernetes/">Kubernetes</a>
+  <a href="../kafka/">Kafka</a>
+  <a href="../database-indexing/">Database Indexing</a>
+  <a href="../sql-vs-nosql/">SQL vs NoSQL</a>
+  <a href="../load-balancing/" class="active">Load Balancing</a>
+  <a href="../http-versions/">HTTP Versions</a>
+  <a href="../authentication/">Authentication</a>
+  <a href="../rate-limiting/">Rate Limiting</a>
+  <a href="../caching-strategies/">Caching Strategies</a>
+  <a href="../database-sharding/">Database Sharding</a>
+  <a href="../microservices-vs-monolith/">Microservices vs Monolith</a>
+  <a href="../debounce-vs-throttle/">Debounce vs Throttle</a>
+</nav>
+<div id="root" style="margin-top: 36px;"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/framer-motion@11/dist/framer-motion.js"></script>
+<script>
+const { useState, useEffect, useRef, useMemo } = React;
+const { motion, AnimatePresence } = window.Motion;
+const e = React.createElement;
+const M = motion;
+const AP = AnimatePresence;
+const sp = (s=380,d=28) => ({ type:"spring", stiffness:s, damping:d });
+const ez = { duration:0.32, ease:[0.22,1,0.36,1] };
+
+const T = {
+  bg:"#111118", surface:"#18181f", surface2:"#1e1e28",
+  border:"#2a2a38", border2:"#38384a",
+  text1:"#e8e8f0", text2:"#8888aa", text3:"#44445a",
+  purple:"#7c6fcd", purpleL:"#a99cf0",
+  teal:"#3db89a", tealL:"#6dd4b8",
+  coral:"#c4694a", coralL:"#e08a6a",
+  blue:"#4a8fd4", blueL:"#82b4e8",
+  amber:"#d4a84a", amberL:"#e8c86a",
+  green:"#4ac46a", greenL:"#6ae88a",
+  red:"#e05555", redL:"#ff7777",
+  pink:"#d46aa8", pinkL:"#e888c0",
+  codeBase:"#141428",
+};
+
+const TS = {
+  fn:{color:"#82aaff"}, meth:{color:"#89ddff"}, str:{color:"#c3e88d"},
+  kw:{color:"#c792ea"}, num:{color:"#f78c6c"}, punc:{color:"#89ddff"},
+  plain:{color:"#a6accd"}, cmt:{color:"#546e7a",fontStyle:"italic"},
+};
+
+/* ─── SCENES ─── */
+const SCENES = [
+  {
+    id:0, act:"01",
+    title:"One server is a bottleneck",
+    sub:"A single server handling all traffic is both a performance bottleneck and a single point of failure. When it slows down or crashes, everything stops.",
+    mode:"single",
+    code:[
+      [["cmt","// Single-server setup"]],
+      [["kw","client"],["punc"," → "],["fn","server"],["punc"," → "],["kw","db"]],
+      [["cmt","// If server dies: total outage"]],
+      [["cmt","// If server overloads: slow for everyone"]],
+    ],
+  },
+  {
+    id:1, act:"02",
+    title:"Enter the load balancer",
+    sub:"A load balancer is a single entry point that distributes incoming traffic across a pool of backend servers. Clients see one address; traffic is spread across many machines.",
+    mode:"intro",
+    code:[
+      [["cmt","// Single entry point"]],
+      [["fn","clients"],["punc"," → "],["kw","load_balancer"],["punc"," → [ "],["fn","s1"],["punc",", "],["fn","s2"],["punc",", "],["fn","s3"],["punc"," ]"]],
+      [["cmt","// Scale horizontally, not vertically"]],
+    ],
+  },
+  {
+    id:2, act:"03",
+    title:"Round robin",
+    sub:"The simplest algorithm: rotate through servers in order. Request 1 → A, request 2 → B, request 3 → C, then back to A. Fair, predictable, no server state required.",
+    mode:"roundrobin",
+    code:[
+      [["cmt","// Round robin"]],
+      [["kw","let"],["plain"," i "],["punc","= "],["num","0"]],
+      [["kw","function"],["plain"," "],["fn","pick"],["punc","("],["plain","servers"],["punc",") {"]],
+      [["plain","  "],["kw","return"],["plain"," servers"],["punc","["],["plain","i"],["punc","++ % "],["plain","servers"],["punc","."],["meth","length"],["punc","]"]],
+      [["punc","}"]],
+    ],
+  },
+  {
+    id:3, act:"04",
+    title:"Least connections",
+    sub:"Track active connections per server and send the next request to the one with the fewest. Adapts to uneven request durations — slow requests don't pile up on one server.",
+    mode:"leastconn",
+    code:[
+      [["cmt","// Least connections"]],
+      [["kw","function"],["plain"," "],["fn","pick"],["punc","("],["plain","servers"],["punc",") {"]],
+      [["plain","  "],["kw","return"],["plain"," servers"],["punc","."],["meth","reduce"],["punc","(("],["plain","a"],["punc",", "],["plain","b"],["punc",") =>"]],
+      [["plain","    a"],["punc","."],["plain","conns "],["punc","< "],["plain","b"],["punc","."],["plain","conns "],["punc","? "],["plain","a "],["punc",": "],["plain","b"],["punc",")"]],
+      [["punc","}"]],
+    ],
+  },
+  {
+    id:4, act:"05",
+    title:"Least response time",
+    sub:"Measure recent response times and route to the fastest responder. Rewards healthy, fast servers and routes around ones that are struggling under load.",
+    mode:"leastrt",
+    code:[
+      [["cmt","// Least response time"]],
+      [["kw","function"],["plain"," "],["fn","pick"],["punc","("],["plain","servers"],["punc",") {"]],
+      [["plain","  "],["kw","return"],["plain"," servers"],["punc","."],["meth","reduce"],["punc","(("],["plain","a"],["punc",", "],["plain","b"],["punc",") =>"]],
+      [["plain","    a"],["punc","."],["plain","rtt "],["punc","< "],["plain","b"],["punc","."],["plain","rtt "],["punc","? "],["plain","a "],["punc",": "],["plain","b"],["punc",")"]],
+      [["punc","}"]],
+    ],
+  },
+  {
+    id:5, act:"06",
+    title:"IP hash / consistent hashing",
+    sub:"Hash the client IP (or session key) onto a ring of servers. The same client always lands on the same server — great for caches and session affinity without central state.",
+    mode:"iphash",
+    code:[
+      [["cmt","// Consistent hashing"]],
+      [["kw","function"],["plain"," "],["fn","pick"],["punc","("],["plain","clientIp"],["punc",", "],["plain","ring"],["punc",") {"]],
+      [["plain","  "],["kw","const"],["plain"," h "],["punc","= "],["fn","hash"],["punc","("],["plain","clientIp"],["punc",")"]],
+      [["plain","  "],["kw","return"],["plain"," ring"],["punc","."],["meth","nextOnRing"],["punc","("],["plain","h"],["punc",")"]],
+      [["punc","}"]],
+    ],
+  },
+  {
+    id:6, act:"07",
+    title:"Weighted round robin",
+    sub:"Not all servers are equal. Give bigger machines higher weights so they receive proportionally more traffic. A server with weight 3 gets 3× the requests of a server with weight 1.",
+    mode:"weighted",
+    code:[
+      [["cmt","// Weighted pool"]],
+      [["kw","const"],["plain"," pool "],["punc","= ["]],
+      [["plain","  { id"],["punc",": "],["str","'A'"],["punc",", weight"],["punc",": "],["num","3"],["punc"," },"]],
+      [["plain","  { id"],["punc",": "],["str","'B'"],["punc",", weight"],["punc",": "],["num","2"],["punc"," },"]],
+      [["plain","  { id"],["punc",": "],["str","'C'"],["punc",", weight"],["punc",": "],["num","1"],["punc"," },"]],
+      [["punc","]"]],
+    ],
+  },
+  {
+    id:7, act:"08",
+    title:"Layer 4 — transport-layer LB",
+    sub:"L4 balancers operate on TCP/UDP. They see IPs and ports but not the contents of the request. Extremely fast — they just forward packets — but can't make decisions based on URL or headers.",
+    mode:"l4",
+    code:[
+      [["cmt","// L4 sees:"]],
+      [["plain","  src_ip"],["punc",": "],["num","10.0"],["punc","."],["num","1.5"]],
+      [["plain","  dst_ip"],["punc",": "],["num","10.0"],["punc","."],["num","2.8"]],
+      [["plain","  port"],["punc",":   "],["num","443"]],
+      [["plain","  proto"],["punc",":  "],["str","'TCP'"]],
+      [["cmt","// Does NOT parse HTTP"]],
+    ],
+  },
+  {
+    id:8, act:"09",
+    title:"Layer 7 — app-aware routing",
+    sub:"L7 balancers terminate the HTTP connection and can inspect paths, headers, cookies, and methods. Route /api/* to one pool, /static/* to another — even do A/B tests by header.",
+    mode:"l7",
+    code:[
+      [["cmt","// L7 rules"]],
+      [["kw","if"],["plain"," ("],["plain","path"],["punc"," ~ "],["str","/^\\/api/"],["punc",") → "],["fn","api_pool"]],
+      [["kw","if"],["plain"," ("],["plain","path"],["punc"," ~ "],["str","/^\\/static/"],["punc",") → "],["fn","cdn_pool"]],
+      [["kw","if"],["plain"," ("],["plain","header"],["punc","."],["plain","country "],["punc","== "],["str","'EU'"],["punc",") → "],["fn","eu_pool"]],
+    ],
+  },
+  {
+    id:9, act:"10",
+    title:"Sticky sessions",
+    sub:"Sometimes a user must keep hitting the same backend — e.g. for in-memory session data. The LB pins the client (via cookie or IP hash) to a specific server for the duration of their session.",
+    mode:"sticky",
+    code:[
+      [["cmt","// Sticky session via cookie"]],
+      [["plain","LB sets "],["str","'LB_STICKY=server-B'"]],
+      [["plain","Client → LB → always server-B"]],
+      [["cmt","// Simple but: sessions lost if B dies"]],
+    ],
+  },
+  {
+    id:10, act:"11",
+    title:"Health checks",
+    sub:"The load balancer continually pings each backend. If a server fails N checks in a row, it's marked unhealthy and removed from the pool. When it recovers, it's added back automatically.",
+    mode:"health",
+    code:[
+      [["cmt","// Health check loop"]],
+      [["kw","every"],["plain"," "],["num","5"],["plain","s → "],["fn","GET"],["plain"," /healthz"]],
+      [["kw","if"],["plain"," status "],["punc","!= "],["num","200"],["plain"," × "],["num","3"],["plain"," → "],["kw","drain"]],
+      [["kw","if"],["plain"," recovers × "],["num","2"],["plain"," → "],["kw","re-add"]],
+    ],
+  },
+  {
+    id:11, act:"12",
+    title:"Active-active vs active-passive",
+    sub:"The load balancer itself is an SPOF! Active-active: multiple LBs share traffic via DNS or anycast. Active-passive: a standby LB takes over via VRRP/heartbeat if the primary fails.",
+    mode:"ha",
+    code:[
+      [["cmt","// Active-active"]],
+      [["plain","DNS → [ LB1, LB2 ]  "],["cmt","// both serve"]],
+      [["cmt",""]],
+      [["cmt","// Active-passive"]],
+      [["plain","VRRP: LB1 "],["punc","(primary)"],["plain"," → LB2 "],["punc","(standby)"]],
+      [["plain","heartbeat fails → LB2 takes VIP"]],
+    ],
+  },
+  {
+    id:12, act:"DONE",
+    title:"Load balancing — summary",
+    sub:"One entry point, many backends. Choose an algorithm that fits your traffic, work at L4 or L7 depending on what decisions you need, and remember: the LB itself must be highly available.",
+    mode:"finale",
+    code:[],
+    finale:true,
+  },
+];
+
+/* ─── DETAILS ─── */
+const DETAILS = {
+  roundrobin: {
+    title:"Round Robin",
+    color:T.teal,
+    sections:[
+      {heading:"How it works",body:"Keep a counter i. For each incoming request, pick servers[i % n] and increment i. Simple modular rotation — every server gets an equal share over time."},
+      {heading:"Strengths",body:"• Zero state beyond the counter\n• Fully predictable distribution\n• Trivially fast to compute\n• Great when all servers are identical and requests are uniform"},
+      {heading:"Weaknesses",body:"• Ignores server load and connection count\n• A long request on one server doesn't make it skip the next round\n• Can overload a struggling server the same as a healthy one"},
+      {heading:"When to use",body:"Homogeneous backends serving roughly uniform requests — think static content or simple stateless APIs."},
+    ]
+  },
+  leastconn: {
+    title:"Least Connections",
+    color:T.blue,
+    sections:[
+      {heading:"How it works",body:"The LB tracks the number of active open connections to each server. The next request goes to whichever server currently has the fewest active connections."},
+      {heading:"Strengths",body:"• Adapts to uneven request durations\n• Prevents slow-query pileups on one backend\n• Works well when request cost varies a lot"},
+      {heading:"Weaknesses",body:"• Requires live connection counters\n• Doesn't account for per-request CPU cost\n• Racy under extreme concurrency unless coordinated"},
+      {heading:"When to use",body:"Long-lived connections (WebSockets, streaming) or APIs with highly variable response times."},
+    ]
+  },
+  iphash: {
+    title:"IP Hash / Consistent Hashing",
+    color:T.pinkL,
+    sections:[
+      {heading:"IP hash",body:"Compute hash(client_ip) mod n to pick a server. The same client always routes to the same backend — useful for caches or in-memory sessions without a shared store."},
+      {heading:"Consistent hashing",body:"Plain mod-n is brittle: adding/removing a server remaps nearly all keys. Consistent hashing places servers on a ring and each key maps to the next server clockwise. Adding a server only moves ~1/n of keys."},
+      {heading:"Virtual nodes",body:"To even out distribution, each physical server is placed on the ring at many points (virtual nodes). This smooths out hot spots and reduces variance across backends."},
+      {heading:"When to use",body:"Sticky caches (memcached clusters), session affinity without cookies, and distributed stores like Cassandra or DynamoDB."},
+    ]
+  },
+  l4: {
+    title:"Layer 4 Load Balancing",
+    color:T.amber,
+    sections:[
+      {heading:"What it sees",body:"L4 operates at the transport layer. It sees TCP/UDP packets — source/destination IP, port, protocol — but not the payload. It cannot read HTTP paths or headers."},
+      {heading:"How it routes",body:"Typically forwards packets via NAT or Direct Server Return (DSR). The backend may see the original client IP (DSR) or the LB's IP (NAT)."},
+      {heading:"Strengths",body:"• Extremely fast — just packet forwarding\n• Protocol-agnostic (works for anything over TCP/UDP)\n• Lower latency, lower CPU\n• Can handle raw TCP services (databases, game servers)"},
+      {heading:"Examples",body:"AWS NLB, HAProxy in TCP mode, IPVS, Google Maglev."},
+    ]
+  },
+  l7: {
+    title:"Layer 7 Load Balancing",
+    color:T.purple,
+    sections:[
+      {heading:"What it sees",body:"L7 terminates the HTTP connection and parses the request. It can see the URL path, query string, method, headers, cookies, and body."},
+      {heading:"Routing decisions",body:"• Path-based: /api/* → api pool, /static/* → cdn pool\n• Header-based: route by Host, User-Agent, Accept-Language\n• Cookie-based: stick users to specific backends or canary groups\n• Method-based: GET to read replicas, POST to primaries"},
+      {heading:"Bonus features",body:"TLS termination, compression, caching, request rewriting, rate limiting, auth, A/B testing — all at the edge. Comes at a CPU cost compared to L4."},
+      {heading:"Examples",body:"NGINX, HAProxy in HTTP mode, Envoy, AWS ALB, Traefik, Cloudflare."},
+    ]
+  },
+  sticky: {
+    title:"Sticky Sessions",
+    color:T.coral,
+    sections:[
+      {heading:"Why pin clients?",body:"If a server holds in-memory session state (login, shopping cart), subsequent requests from the same user must land on the same backend or the state is gone."},
+      {heading:"How it's implemented",body:"• Cookie-based: LB sets a cookie naming the chosen backend and reads it on subsequent requests\n• IP-based: hash the client IP (simple but fails with NAT/carrier IPs)\n• Consistent hash: distribute by session ID on a ring"},
+      {heading:"Downsides",body:"• If the pinned server dies, the user's session dies with it\n• Uneven distribution when some users are much heavier than others\n• Makes rolling deploys harder"},
+      {heading:"Better alternative",body:"Externalize session state (Redis, DB) so any server can handle any request. Sticky sessions become an optimization, not a requirement."},
+    ]
+  },
+  health: {
+    title:"Health Checks",
+    color:T.green,
+    sections:[
+      {heading:"Active checks",body:"The LB periodically hits an endpoint like /healthz on each backend. If it returns non-200 for N consecutive checks, the server is marked unhealthy and removed from the pool."},
+      {heading:"Passive checks",body:"Observe real traffic: if a backend starts returning 5xx errors or timing out, temporarily eject it. Cheaper than active checks but slower to detect."},
+      {heading:"Shallow vs deep",body:"Shallow: 'is the HTTP server up?' — fast but can miss broken dependencies.\nDeep: 'can I reach the DB, caches, downstream APIs?' — catches more but can cascade failures."},
+      {heading:"Graceful drain",body:"When removing a server (deploy, scaling down), stop sending new connections but let existing ones finish. Prevents dropped requests during rolling updates."},
+    ]
+  },
+  code: {
+    title:"Source Code",
+    color:T.purpleL,
+    sections:[
+      {heading:"Reading the examples",body:"Each scene shows a minimal pseudo-code snippet for the algorithm or concept. Real-world LBs (NGINX, HAProxy, Envoy) implement these ideas with many more optimizations and safety checks."},
+      {heading:"NGINX config example",body:"upstream backend {\n  least_conn;\n  server 10.0.1.1 weight=3;\n  server 10.0.1.2 weight=2;\n  server 10.0.1.3 backup;\n}\nserver {\n  location / { proxy_pass http://backend; }\n}"},
+      {heading:"HAProxy algorithms",body:"balance roundrobin\nbalance leastconn\nbalance source      # IP hash\nbalance uri         # L7 URI hash\nbalance hdr(Host)   # header hash"},
+    ]
+  },
+};
+
+/* ─── COMPONENTS ─── */
+const CodePanel = ({ tokens, onClick }) =>
+  e("div", { onClick, style:{ background:T.codeBase, borderRadius:12, overflow:"hidden", border:`1px solid ${T.border}`, cursor:onClick?"pointer":"default" } },
+    e("div", { style:{ padding:"10px 14px 8px", borderBottom:`1px solid ${T.border}`, display:"flex", gap:7 } },
+      ...["#ff5f57","#febc2e","#28c840"].map((c,i) =>
+        e("div", { key:i, style:{ width:11, height:11, borderRadius:"50%", background:c } })
+      )
+    ),
+    e("div", { style:{ padding:"14px 18px 16px", fontFamily:"'SF Mono','Fira Code','Consolas',monospace", fontSize:12, lineHeight:1.85, minHeight:110 } },
+      tokens.map((line, li) =>
+        e("div", { key:li },
+          line.length === 0 ? e("span", null, " ") :
+          line.map(([cls, txt], ti) =>
+            e("span", { key:ti, style:{ ...TS[cls], whiteSpace:"pre" } }, txt)
+          )
+        )
+      )
+    )
+  );
+
+/* ─── Load balancer stage ─── */
+/* Geometry (SVG viewBox 720 x 300) */
+const W = 720, H = 300;
+const CLIENT_X = 70;
+const LB_X = 330;
+const LB_Y = H/2;
+const SERVER_X = 590;
+const CLIENT_YS = [60, 130, 200, 260];
+
+/* Default 4 servers — each with: id, label, color, weight, capacity */
+const makeServers = (count=4, weights=null) => {
+  const colors = [T.teal, T.blue, T.amber, T.pink, T.coral];
+  const arr = [];
+  const gap = (H - 40) / count;
+  for (let i=0; i<count; i++) {
+    arr.push({
+      id:"s"+i,
+      label:"S"+(i+1),
+      color:colors[i % colors.length],
+      x:SERVER_X,
+      y:30 + gap*i + gap/2,
+      weight: weights ? weights[i] : 1,
+    });
+  }
+  return arr;
+};
+
+/* A client emits a dot every period. We track active dots with id, start ts, target server,
+   and animate them in two phases: client→LB, LB→server. Server load bar grows briefly. */
+const Stage = ({ mode, onClickLB, onClickServer, scene }) => {
+  const [tick, setTick] = useState(0);
+  const [dots, setDots] = useState([]);     // in-flight dots
+  const [loads, setLoads] = useState({});   // serverId -> load 0..100
+  const [rrIdx, setRrIdx] = useState(0);    // round robin index
+  const [conns, setConns] = useState({});   // serverId -> active connection count
+  const [rtt, setRtt] = useState({});       // serverId -> simulated rtt
+  const [healthDown, setHealthDown] = useState(false);
+  const nextId = useRef(0);
+  const animTimer = useRef(null);
+  const loadTimer = useRef(null);
+
+  // Reset on mode change
+  useEffect(() => {
+    setDots([]);
+    setLoads({});
+    setRrIdx(0);
+    setConns({});
+    setRtt({});
+    setHealthDown(false);
+    nextId.current = 0;
+  }, [mode]);
+
+  // Determine server pool by mode
+  const servers = useMemo(() => {
+    if (mode === "weighted") return makeServers(3, [3,2,1]);
+    if (mode === "single") return [{ id:"s0", label:"S1", color:T.coral, x:SERVER_X, y:LB_Y, weight:1 }];
+    if (mode === "ha") return makeServers(3);
+    return makeServers(4);
+  }, [mode]);
+
+  // Simulated rtt for each server (for leastrt mode)
+  useEffect(() => {
+    if (mode === "leastrt") {
+      const r = {};
+      servers.forEach((s,i) => { r[s.id] = 40 + i*20 + Math.random()*20; });
+      setRtt(r);
+    }
+  }, [mode, servers]);
+
+  // Health check: in 'health' mode after some time, one server goes down then recovers
+  useEffect(() => {
+    if (mode !== "health") return;
+    const t1 = setTimeout(() => setHealthDown(true), 2200);
+    const t2 = setTimeout(() => setHealthDown(false), 5600);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [mode]);
+
+  // Spawn requests periodically based on mode
+  useEffect(() => {
+    if (mode === "finale") return;
+    const period = mode === "single" ? 320 : 420;
+    const pickClient = () => Math.floor(Math.random() * CLIENT_YS.length);
+
+    const pickServer = (clientIdx, curRr, curConns) => {
+      if (mode === "single") return 0;
+      if (mode === "intro") return Math.floor(Math.random() * servers.length);
+      if (mode === "roundrobin") {
+        return curRr % servers.length;
+      }
+      if (mode === "leastconn") {
+        let min = Infinity, idx = 0;
+        servers.forEach((s,i) => {
+          const c = curConns[s.id] || 0;
+          if (c < min) { min = c; idx = i; }
+        });
+        return idx;
+      }
+      if (mode === "leastrt") {
+        let min = Infinity, idx = 0;
+        servers.forEach((s,i) => {
+          const r = rtt[s.id] || 50;
+          if (r < min) { min = r; idx = i; }
+        });
+        return idx;
+      }
+      if (mode === "iphash") {
+        // hash by clientIdx: deterministic
+        return clientIdx % servers.length;
+      }
+      if (mode === "weighted") {
+        // pick by weight: build an expanded list
+        const bucket = [];
+        servers.forEach((s,i) => { for (let k=0; k<s.weight; k++) bucket.push(i); });
+        return bucket[curRr % bucket.length];
+      }
+      if (mode === "l4" || mode === "l7") {
+        return curRr % servers.length;
+      }
+      if (mode === "sticky") {
+        // stick each client idx to same server
+        return clientIdx % servers.length;
+      }
+      if (mode === "health") {
+        // round robin, skipping server 1 (index 1) when down
+        let idx = curRr % servers.length;
+        if (healthDown && idx === 1) idx = (idx+1) % servers.length;
+        return idx;
+      }
+      if (mode === "ha") return curRr % servers.length;
+      return 0;
+    };
+
+    let localRr = rrIdx;
+    let localConns = { ...conns };
+
+    const spawn = () => {
+      const clientIdx = pickClient();
+      const serverIdx = pickServer(clientIdx, localRr, localConns);
+      localRr++;
+      const server = servers[serverIdx];
+      const id = nextId.current++;
+      const duration = mode === "leastconn"
+        ? 900 + Math.random()*1400
+        : 1100 + Math.random()*400;
+
+      localConns[server.id] = (localConns[server.id] || 0) + 1;
+      setConns({ ...localConns });
+
+      setDots(d => [...d, { id, clientIdx, serverId:server.id, serverIdx, phase:0, start:Date.now(), duration }]);
+
+      // phase 1: after half → reach LB then to server (handled via animate frames)
+      // we remove the dot after duration and bump server load
+      setTimeout(() => {
+        setLoads(L => {
+          const cur = L[server.id] || 0;
+          return { ...L, [server.id]: Math.min(100, cur + (mode === "weighted" ? 22 : 18)) };
+        });
+        setDots(d => d.filter(x => x.id !== id));
+        localConns[server.id] = Math.max(0, (localConns[server.id] || 1) - 1);
+        setConns({ ...localConns });
+      }, duration);
+    };
+
+    animTimer.current = setInterval(spawn, period);
+    return () => clearInterval(animTimer.current);
+  }, [mode, servers, rtt, healthDown]);
+
+  // decay server loads
+  useEffect(() => {
+    loadTimer.current = setInterval(() => {
+      setLoads(L => {
+        const out = {};
+        for (const k in L) out[k] = Math.max(0, L[k] - 3);
+        return out;
+      });
+    }, 120);
+    return () => clearInterval(loadTimer.current);
+  }, []);
+
+  // Hash ring rendering for iphash
+  const showRing = mode === "iphash";
+  const showL4 = mode === "l4";
+  const showL7 = mode === "l7";
+  const showHA = mode === "ha";
+
+  return e("div", { style:{ borderRadius:12, border:`1.5px solid ${T.border2}`, background:T.surface, overflow:"hidden" } },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", gap:6 } },
+      e("div", { style:{ width:8, height:8, borderRadius:"50%", background:T.purpleL } }),
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, scene.modeLabel || modeLabel(mode))
+    ),
+    e("div", { style:{ padding:10 } },
+      e("svg", { viewBox:`0 0 ${W} ${H}`, style:{ width:"100%", height:300, display:"block" } },
+        /* Clients */
+        CLIENT_YS.map((cy, ci) =>
+          e("g", { key:"c"+ci },
+            e("circle", { cx:CLIENT_X, cy:cy, r:14, fill:`${T.blue}22`, stroke:T.blue, strokeWidth:1.5 }),
+            e("text", { x:CLIENT_X, y:cy+4, textAnchor:"middle", fontSize:10, fill:T.blueL, fontFamily:"monospace", fontWeight:600 }, "C"+(ci+1))
+          )
+        ),
+
+        /* Load balancer box (or HA pair) */
+        !showHA && mode !== "single" && e("g", { onClick:onClickLB, style:{ cursor:"pointer" } },
+          e("rect", { x:LB_X-42, y:LB_Y-30, width:84, height:60, rx:10, fill:`${T.purple}18`, stroke:T.purple, strokeWidth:2 }),
+          e("text", { x:LB_X, y:LB_Y-6, textAnchor:"middle", fontSize:11, fill:T.purpleL, fontWeight:700, fontFamily:"monospace" }, showL4 ? "L4 LB" : showL7 ? "L7 LB" : "LB"),
+          e("text", { x:LB_X, y:LB_Y+10, textAnchor:"middle", fontSize:9, fill:T.text2, fontFamily:"monospace" }, showL4 ? "TCP/IP" : showL7 ? "HTTP" : "")
+        ),
+
+        /* single server — no LB */
+        mode === "single" && e("g", null,
+          e("line", { x1:CLIENT_X+14, y1:LB_Y, x2:SERVER_X-28, y2:LB_Y, stroke:T.text3, strokeWidth:1, strokeDasharray:"3 4" })
+        ),
+
+        /* HA: two LBs stacked */
+        showHA && e("g", null,
+          e("rect", { x:LB_X-42, y:80, width:84, height:50, rx:10, fill:`${T.purple}18`, stroke:T.purple, strokeWidth:2 }),
+          e("text", { x:LB_X, y:100, textAnchor:"middle", fontSize:11, fill:T.purpleL, fontWeight:700, fontFamily:"monospace" }, "LB1"),
+          e("text", { x:LB_X, y:116, textAnchor:"middle", fontSize:9, fill:T.green, fontFamily:"monospace" }, "active"),
+          e("rect", { x:LB_X-42, y:170, width:84, height:50, rx:10, fill:`${T.purple}10`, stroke:`${T.purple}88`, strokeWidth:2, strokeDasharray:"4 3" }),
+          e("text", { x:LB_X, y:190, textAnchor:"middle", fontSize:11, fill:T.purpleL, fontWeight:700, fontFamily:"monospace" }, "LB2"),
+          e("text", { x:LB_X, y:206, textAnchor:"middle", fontSize:9, fill:T.amber, fontFamily:"monospace" }, "standby"),
+          e("line", { x1:LB_X, y1:130, x2:LB_X, y2:170, stroke:T.amber, strokeWidth:1, strokeDasharray:"2 3" })
+        ),
+
+        /* Hash ring overlay for iphash */
+        showRing && e("g", { transform:`translate(${LB_X},${LB_Y})` },
+          e("circle", { cx:0, cy:0, r:36, fill:"none", stroke:`${T.pink}66`, strokeWidth:1.5, strokeDasharray:"3 3" }),
+          servers.map((s,i) => {
+            const ang = (i/servers.length) * Math.PI * 2 - Math.PI/2;
+            const px = Math.cos(ang)*36;
+            const py = Math.sin(ang)*36;
+            return e("circle", { key:s.id, cx:px, cy:py, r:5, fill:s.color, stroke:T.bg, strokeWidth:1.5 });
+          })
+        ),
+
+        /* Servers */
+        servers.map((s, si) => {
+          const down = mode === "health" && healthDown && si === 1;
+          const sColor = down ? T.red : s.color;
+          const load = loads[s.id] || 0;
+          const w = mode === "weighted" ? 60 : 58;
+          const h = mode === "weighted" ? (30 + s.weight*8) : 42;
+          return e("g", { key:s.id, onClick:()=>onClickServer && onClickServer(s), style:{ cursor:"pointer" } },
+            e("rect", { x:s.x-w/2, y:s.y-h/2, width:w, height:h, rx:8,
+              fill:`${sColor}18`, stroke:sColor, strokeWidth:1.5,
+              opacity: down ? 0.45 : 1 }),
+            e("text", { x:s.x, y:s.y-3, textAnchor:"middle", fontSize:11, fill:sColor, fontWeight:700, fontFamily:"monospace" }, s.label),
+            mode === "weighted" && e("text", { x:s.x, y:s.y+11, textAnchor:"middle", fontSize:9, fill:T.text2, fontFamily:"monospace" }, "w="+s.weight),
+            mode === "leastconn" && e("text", { x:s.x, y:s.y+11, textAnchor:"middle", fontSize:9, fill:T.text2, fontFamily:"monospace" }, (conns[s.id]||0)+" conn"),
+            mode === "leastrt" && e("text", { x:s.x, y:s.y+11, textAnchor:"middle", fontSize:9, fill:T.text2, fontFamily:"monospace" }, Math.round(rtt[s.id]||0)+"ms"),
+            down && e("text", { x:s.x, y:s.y+11, textAnchor:"middle", fontSize:9, fill:T.red, fontFamily:"monospace", fontWeight:700 }, "DOWN"),
+            /* load bar */
+            e("rect", { x:s.x-w/2, y:s.y+h/2+4, width:w, height:4, rx:2, fill:T.border }),
+            e("rect", { x:s.x-w/2, y:s.y+h/2+4, width:w*load/100, height:4, rx:2, fill:sColor, opacity:0.85 })
+          );
+        }),
+
+        /* Animated request dots */
+        dots.map(d => {
+          const cy = CLIENT_YS[d.clientIdx];
+          const server = servers[d.serverIdx];
+          if (!server) return null;
+          // If sticky/iphash: straight line client → LB → server (but color by client)
+          const dotColor = (mode === "sticky" || mode === "iphash") ? T.blueL : T.purpleL;
+          return e(M.circle, {
+            key:d.id,
+            r:4,
+            fill:dotColor,
+            initial:{ cx:CLIENT_X+14, cy:cy, opacity:0 },
+            animate:{
+              cx:[CLIENT_X+14, LB_X-42, LB_X+42, server.x-30],
+              cy:[cy, LB_Y, LB_Y, server.y],
+              opacity:[0, 1, 1, 0]
+            },
+            transition:{ duration:d.duration/1000, times:[0,0.35,0.55,1], ease:"linear" }
+          });
+        }),
+
+        /* Layer annotations */
+        showL4 && e("text", { x:LB_X, y:50, textAnchor:"middle", fontSize:10, fill:T.amber, fontFamily:"monospace" }, "sees: IP : port"),
+        showL7 && e("text", { x:LB_X, y:50, textAnchor:"middle", fontSize:10, fill:T.purple, fontFamily:"monospace" }, "sees: path, headers, cookies")
+      )
+    )
+  );
+};
+
+const modeLabel = m => ({
+  single:"Single Server (SPOF)",
+  intro:"Load Balancer",
+  roundrobin:"Round Robin",
+  leastconn:"Least Connections",
+  leastrt:"Least Response Time",
+  iphash:"IP Hash / Consistent Hashing",
+  weighted:"Weighted Round Robin",
+  l4:"Layer 4 (Transport)",
+  l7:"Layer 7 (Application)",
+  sticky:"Sticky Sessions",
+  health:"Health Checks",
+  ha:"High Availability",
+}[m] || "");
+
+const Finale = () => {
+  const rows = [
+    { n:"lni-direction-alt", label:"One entry, many backends", sub:"Clients see one address, traffic spreads across a pool — horizontal scaling made simple", c:T.purple },
+    { n:"lni-reload", label:"Round robin & weighted", sub:"Rotate through servers (weighted for uneven capacities). Simple and predictable", c:T.teal },
+    { n:"lni-stats-up", label:"Least conn / least RT", sub:"Route to the server doing the least work right now. Adapts to variable request cost", c:T.blue },
+    { n:"lni-network", label:"Consistent hashing", sub:"Same client → same server. Great for caches; adding a node only remaps ~1/n of keys", c:T.pink },
+    { n:"lni-layers-1", label:"L4 vs L7", sub:"L4: fast, IP/port only. L7: slower, but can route by URL/header/cookie", c:T.amber },
+    { n:"lni-heart-monitor", label:"Health checks", sub:"Ping backends; remove failing ones, re-add recovered ones. Drain gracefully", c:T.green },
+    { n:"lni-shield-2", label:"The LB itself must be HA", sub:"Active-active (DNS/anycast) or active-passive (VRRP/heartbeat) — never a single LB", c:T.coral },
+  ];
+  return e("div", { style:{ padding:"8px 0" } },
+    rows.map((r,i) => e(M.div, { key:i, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.09,...ez},
+      style:{ display:"flex", alignItems:"flex-start", gap:12, padding:"11px 14px", marginBottom:8, borderRadius:10, border:`1px solid ${r.c}28`, background:`${r.c}08` }
+    },
+      e("div", { style:{ width:28, height:28, borderRadius:"50%", border:`1.5px solid ${r.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:13, color:r.c } },
+        e("i", { className:"lni " + r.n })
+      ),
+      e("div", null,
+        e("div", { style:{ fontSize:13, fontWeight:600, color:r.c, marginBottom:2 } }, r.label),
+        e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.5 } }, r.sub)
+      )
+    ))
+  );
+};
+
+const DetailPanel = ({ detailKey, onClose }) => {
+  const d = DETAILS[detailKey];
+  if (!d) return null;
+  return e("div", {
+    style:{ width:340, flexShrink:0, background:T.surface, borderRadius:14, border:`1.5px solid ${d.color}44`, overflow:"hidden", alignSelf:"flex-start", position:"sticky", top:56 }
+  },
+    e("div", { style:{ padding:"14px 18px 12px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:8 } },
+        e("div", { style:{ width:8, height:8, borderRadius:"50%", background:d.color } }),
+        e("span", { style:{ fontSize:14, fontWeight:600, color:T.text1 } }, d.title)
+      ),
+      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6, transition:"color 0.2s" }, onMouseEnter:ev=>ev.target.style.color=T.text1, onMouseLeave:ev=>ev.target.style.color=T.text3 }, e("i", { className:"lni lni-xmark" }))
+    ),
+    e("div", { style:{ padding:"16px 18px 20px", maxHeight:"calc(100vh - 140px)", overflowY:"auto" } },
+      d.sections.map((s, i) =>
+        e("div", { key:i, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
+          e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
+        )
+      )
+    )
+  );
+};
+
+/* Map scene mode to a detail key for quick LB clicks */
+const modeToDetail = m => ({
+  roundrobin:"roundrobin",
+  leastconn:"leastconn",
+  leastrt:"leastconn",
+  iphash:"iphash",
+  weighted:"roundrobin",
+  l4:"l4",
+  l7:"l7",
+  sticky:"sticky",
+  health:"health",
+  ha:"health",
+  intro:"l7",
+}[m] || null);
+
+/* ─── APP ─── */
+function App() {
+  const [si, setSi] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [detail, setDetail] = useState(null);
+  const timer = useRef(null);
+  const sc = SCENES[si];
+
+  useEffect(() => { setPlaying(true); }, []);
+
+  useEffect(() => {
+    if (!playing) return;
+    const d = si===0 ? 3200 : sc.finale ? 99999 : 4200;
+    timer.current = setTimeout(() => { si < SCENES.length-1 ? setSi(i=>i+1) : setPlaying(false); }, d);
+    return () => clearTimeout(timer.current);
+  }, [playing, si]);
+
+  const go = d => { clearTimeout(timer.current); setPlaying(false); setSi(i=>Math.max(0,Math.min(SCENES.length-1,i+d))); };
+  const jump = i => { clearTimeout(timer.current); setPlaying(false); setSi(i); };
+  const togglePlay = () => { if(si===SCENES.length-1){setSi(0);setPlaying(true);}else setPlaying(p=>!p); };
+  const toggleDetail = key => { setDetail(d => d===key ? null : key); clearTimeout(timer.current); setPlaying(false); };
+
+  const handleLBClick = () => {
+    const k = modeToDetail(sc.mode);
+    if (k) toggleDetail(k);
+  };
+  const handleServerClick = () => {
+    if (sc.mode === "health") toggleDetail("health");
+    else if (sc.mode === "sticky") toggleDetail("sticky");
+    else if (sc.mode === "iphash") toggleDetail("iphash");
+    else toggleDetail(modeToDetail(sc.mode) || "roundrobin");
+  };
+
+  return e("div", { style:{ display:"flex", gap:16, alignItems:"flex-start", justifyContent: detail ? "flex-start" : "center" } },
+  e("div", { style:{ width:760, flexShrink:0, background:T.bg, fontFamily:"system-ui,sans-serif", padding:20, borderRadius:16 } },
+
+    /* header */
+    e("div", { style:{ marginBottom:18 } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:10, marginBottom:11 } },
+        e(AP, { mode:"wait" },
+          e(M.div, { key:sc.act, initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, exit:{opacity:0}, transition:sp(400,28),
+            style:{ fontSize:9,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:T.purple,background:`${T.purple}14`,padding:"3px 10px",borderRadius:20,border:`1px solid ${T.purple}30`,flexShrink:0 }
+          }, sc.act)
+        ),
+        e("div", { style:{ flex:1, height:1, background:T.border, borderRadius:99, overflow:"hidden" } },
+          e(M.div, { animate:{width:`${si/(SCENES.length-1)*100}%`}, transition:{duration:0.5}, style:{height:"100%",background:T.purple,borderRadius:99} })
+        ),
+        e("span", { style:{ fontSize:10, color:T.text3 } }, `${si+1} / ${SCENES.length}`)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.title, initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, exit:{opacity:0,y:-8}, transition:ez,
+          style:{ fontSize:20,fontWeight:600,color:T.text1,marginBottom:4,letterSpacing:"-0.02em" }
+        }, sc.title)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
+          style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
+        }, sc.sub)
+      )
+    ),
+
+    e("div", { style:{ minHeight:460 } },
+
+      /* finale */
+      sc.finale && e(Finale),
+
+      /* main */
+      !sc.finale && e("div", null,
+        e("div", { style:{ marginBottom:10 } },
+          e(Stage, { mode:sc.mode, scene:sc, onClickLB:handleLBClick, onClickServer:handleServerClick })
+        ),
+
+        sc.code.length > 0 && e("div", { style:{ marginBottom:10 } },
+          e(CodePanel, { tokens:sc.code, onClick:()=>toggleDetail("code") })
+        )
+      )
+    ),
+
+    /* controls */
+    e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginTop:16 } },
+      e("button", { onClick:()=>go(-1), disabled:si===0,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===0?T.text3:T.text2,cursor:si===0?"not-allowed":"pointer",fontSize:11,transition:"color 0.2s" }
+      }, "← Back"),
+      e("button", { onClick:togglePlay,
+        style:{ padding:"6px 18px",borderRadius:8,border:`1px solid ${playing?T.coral:T.purple}44`,background:playing?`${T.coral}14`:`${T.purple}14`,color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all 0.2s" }
+      }, playing ? "⏸  Pause" : si===SCENES.length-1 ? "↺  Replay" : "▶  Play"),
+      e("button", { onClick:()=>go(1), disabled:si===SCENES.length-1,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
+      }, "Next →"),
+      e("div", { style:{ flex:1 } }),
+      e("div", { style:{ display:"flex", gap:4, alignItems:"center" } },
+        SCENES.map((_,i) =>
+          e("button", { key:i, onClick:()=>jump(i),
+            style:{ width:i===si?16:5,height:5,borderRadius:99,border:"none",padding:0,background:i===si?T.purple:i<si?`${T.purple}55`:T.border,cursor:"pointer",transition:"all 0.25s" }
+          })
+        )
+      )
+    )
+  ),
+  detail && e(DetailPanel, { detailKey:detail, onClose:()=>setDetail(null) })
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(e(App));
+</script>
+</body>
+</html>
