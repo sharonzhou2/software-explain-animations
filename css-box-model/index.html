@@ -845,13 +845,13 @@ function App() {
     e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginTop:16 } },
       e("button", { onClick:()=>go(-1), disabled:si===0,
         style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===0?T.text3:T.text2,cursor:si===0?"not-allowed":"pointer",fontSize:11,transition:"color 0.2s" }
-      }, "\u2190 Back"),
+      }, e("span", { style:{ display:"inline-flex", alignItems:"center", gap:5 } }, e("i", { className:"lni lni-arrow-left" }), "Back")),
       e("button", { onClick:togglePlay,
         style:{ padding:"6px 18px",borderRadius:8,border:`1px solid ${playing?T.coral:T.purple}44`,background:playing?`${T.coral}14`:`${T.purple}14`,color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all 0.2s" }
       }, playing ? "\u23f8  Pause" : si===SCENES.length-1 ? "\u21ba  Replay" : "\u25b6  Play"),
       e("button", { onClick:()=>go(1), disabled:si===SCENES.length-1,
         style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
-      }, "Next \u2192"),
+      }, e("span", { style:{ display:"inline-flex", alignItems:"center", gap:5 } }, "Next", e("i", { className:"lni lni-arrow-right" }))),
       e("div", { style:{ flex:1 } }),
       e("div", { style:{ display:"flex", gap:4, alignItems:"center" } },
         SCENES.map((_,i) =>

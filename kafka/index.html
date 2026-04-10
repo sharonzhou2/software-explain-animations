@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kafka</title>
 <link href="https://cdn.lineicons.com/5.0/lineicons.css" rel="stylesheet">
+<script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -327,7 +328,7 @@ const SCENES = [
     viz:"ecosystem",
   },
   {
-    id:14, act:"\u2713",
+    id:14, act:"DONE",
     title:"Kafka \u2014 summary",
     sub:"Kafka is a distributed commit log that decouples producers from consumers. Topics are split into partitions for parallelism. Replication ensures durability. Consumer groups enable scalable reads.",
     code:[], viz:"finale",
@@ -454,16 +455,19 @@ const Arrow = ({color,dir="right",style:s={}}) =>
 
 /* ─── VIZ SCENES ─── */
 const VizIntro = () =>
-  e("div",{style:{display:"flex",alignItems:"center",justifyContent:"center",gap:16,minHeight:180}},
-    e(Pill,{label:"Producer",color:T.amber}),
-    e(Arrow,{color:T.text3}),
-    e("div",{style:{display:"flex",flexDirection:"column",gap:6,alignItems:"center"}},
-      e(Pill,{label:"Broker 1",color:T.blue}),
-      e(Pill,{label:"Broker 2",color:T.blue}),
-      e(Pill,{label:"Broker 3",color:T.blue}),
-    ),
-    e(Arrow,{color:T.text3}),
-    e(Pill,{label:"Consumer",color:T.teal}),
+  e("div",{style:{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:14,minHeight:220}},
+    e("iconify-icon",{ icon:"logos:kafka-icon", width:56, height:56 }),
+    e("div",{style:{display:"flex",alignItems:"center",justifyContent:"center",gap:16}},
+      e(Pill,{label:"Producer",color:T.amber}),
+      e(Arrow,{color:T.text3}),
+      e("div",{style:{display:"flex",flexDirection:"column",gap:6,alignItems:"center"}},
+        e(Pill,{label:"Broker 1",color:T.blue}),
+        e(Pill,{label:"Broker 2",color:T.blue}),
+        e(Pill,{label:"Broker 3",color:T.blue}),
+      ),
+      e(Arrow,{color:T.text3}),
+      e(Pill,{label:"Consumer",color:T.teal}),
+    )
   );
 
 const VizProblem = () => {
@@ -777,7 +781,7 @@ const DetailPanel = ({ detailKey, onClose }) => {
         e("div", { style:{ width:8, height:8, borderRadius:"50%", background:d.color } }),
         e("span", { style:{ fontSize:14, fontWeight:600, color:T.text1 } }, d.title)
       ),
-      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6, transition:"color 0.2s" }, onMouseEnter:ev=>ev.target.style.color=T.text1, onMouseLeave:ev=>ev.target.style.color=T.text3 }, "\u2715")
+      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6, transition:"color 0.2s" }, onMouseEnter:ev=>ev.target.style.color=T.text1, onMouseLeave:ev=>ev.target.style.color=T.text3 }, e("i", { className:"lni lni-xmark" }))
     ),
     e("div", { style:{ padding:"16px 18px 20px", maxHeight:"calc(100vh - 140px)", overflowY:"auto" } },
       d.sections.map((s, i) =>
@@ -865,13 +869,13 @@ function App() {
     e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginTop:16 } },
       e("button", { onClick:()=>go(-1), disabled:si===0,
         style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===0?T.text3:T.text2,cursor:si===0?"not-allowed":"pointer",fontSize:11,transition:"color 0.2s" }
-      }, "\u2190 Back"),
+      }, e("span", { style:{ display:"inline-flex", alignItems:"center", gap:5 } }, e("i", { className:"lni lni-arrow-left" }), "Back")),
       e("button", { onClick:togglePlay,
         style:{ padding:"6px 18px",borderRadius:8,border:`1px solid ${playing?T.coral:T.purple}44`,background:playing?`${T.coral}14`:`${T.purple}14`,color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all 0.2s" }
       }, playing ? "\u23f8  Pause" : si===SCENES.length-1 ? "\u21ba  Replay" : "\u25b6  Play"),
       e("button", { onClick:()=>go(1), disabled:si===SCENES.length-1,
         style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
-      }, "Next \u2192"),
+      }, e("span", { style:{ display:"inline-flex", alignItems:"center", gap:5 } }, "Next", e("i", { className:"lni lni-arrow-right" }))),
       e("div", { style:{ flex:1 } }),
       e("div", { style:{ display:"flex", gap:4, alignItems:"center" } },
         SCENES.map((_,i) =>

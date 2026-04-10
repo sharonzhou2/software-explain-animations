@@ -812,62 +812,165 @@ const ViewRebalance = () => {
 };
 
 const ViewConsistent = () => {
+  /* Animated phases:
+     0: initial 4-node ring with 6 keys
+     1: ADD node E at angle 70 (between B and C)
+     2: keys k2/k3 between B and E now route to E (highlight moved)
+     3: REMOVE node C
+     4: keys that pointed to C reroute to D (highlight moved) */
+  const [phase, setPhase] = useState(0);
+  useEffect(() => {
+    const t = setTimeout(() => setPhase(p => (p + 1) % 5), phase === 0 ? 2200 : 2400);
+    return () => clearTimeout(t);
+  }, [phase]);
+
   const cx = 220, cy = 170, r = 120;
-  /* Place nodes at angles */
-  const nodes = [
-    { ang:-80,  label:"A", color:T.blue },
-    { ang:-20,  label:"B", color:T.teal },
-    { ang:40,   label:"C", color:T.amber },
-    { ang:120,  label:"D", color:T.pink },
-    { ang:200,  label:"A'", color:T.blue, vn:true },
-    { ang:260,  label:"B'", color:T.teal, vn:true },
-  ];
-  const keys = [
-    { ang:-50, label:"k1", owner:T.teal },
-    { ang:10,  label:"k2", owner:T.amber },
-    { ang:80,  label:"k3", owner:T.pink },
-    { ang:160, label:"k4", owner:T.blue },
-    { ang:230, label:"k5", owner:T.teal },
-    { ang:-110,label:"k6", owner:T.blue },
-  ];
   const pt = (a, rad) => {
     const r2 = a*Math.PI/180;
     return { x: cx + Math.cos(r2)*rad, y: cy + Math.sin(r2)*rad };
   };
+
+  /* Base nodes always present */
+  const baseNodes = [
+    { id:"A", ang:-80, label:"A", color:T.blue },
+    { id:"B", ang:-20, label:"B", color:T.teal },
+    { id:"C", ang:40,  label:"C", color:T.amber },
+    { id:"D", ang:120, label:"D", color:T.pink },
+  ];
+  const newNode = { id:"E", ang:10, label:"E", color:T.purple };
+
+  /* Active nodes per phase */
+  const activeNodes = phase >= 3
+    ? baseNodes.filter(n => n.id !== "C").concat(phase >= 1 ? [newNode] : [])
+    : baseNodes.concat(phase >= 1 ? [newNode] : []);
+
+  /* Helper: find owner (next node clockwise) given list of nodes */
+  const ownerOf = (keyAng, ns) => {
+    /* normalize angles 0..360 */
+    const norm = a => ((a % 360) + 360) % 360;
+    const ka = norm(keyAng);
+    let best = null, bestDiff = 999;
+    ns.forEach(n => {
+      let diff = norm(n.ang) - ka;
+      if (diff < 0) diff += 360;
+      if (diff < bestDiff) { bestDiff = diff; best = n; }
+    });
+    return best;
+  };
+
+  const baseKeys = [
+    { id:"k1", ang:-50 },
+    { id:"k2", ang:-5 },
+    { id:"k3", ang:25 },
+    { id:"k4", ang:80 },
+    { id:"k5", ang:160 },
+    { id:"k6", ang:-110 },
+  ];
+  const keys = baseKeys.map(k => {
+    const owner = ownerOf(k.ang, activeNodes);
+    return { ...k, owner: owner ? owner.color : T.text3, ownerId: owner ? owner.id : null };
+  });
+
+  /* Determine moved keys (highlight) */
+  const prevNodes = phase === 2 ? baseNodes
+                   : phase === 4 ? baseNodes.concat([newNode])
+                   : null;
+  const movedKeys = prevNodes ? baseKeys.filter(k => {
+    const prevOwner = ownerOf(k.ang, prevNodes);
+    const currOwner = ownerOf(k.ang, activeNodes);
+    return prevOwner && currOwner && prevOwner.id !== currOwner.id;
+  }).map(k => k.id) : [];
+
+  const phaseLabel = ["initial: 4 nodes, 6 keys",
+                      "add node E",
+                      "only nearby keys move →",
+                      "remove node C",
+                      "C's keys reroute to D"][phase];
+
   return e("div", { style:{ display:"flex", gap:20, justifyContent:"center", alignItems:"center", minHeight:320 } },
     e("svg", { width:440, height:340, style:{ overflow:"visible" } },
       /* Ring */
       e("circle", { cx, cy, r, fill:"none", stroke:T.border2, strokeWidth:1.5, strokeDasharray:"3 4" }),
+
       /* Keys on ring */
-      ...keys.map((k,i)=>{
+      ...keys.map(k => {
         const p = pt(k.ang, r);
-        return e(M.g, { key:"k"+i, initial:{opacity:0,scale:0.5}, animate:{opacity:1,scale:1}, transition:{delay:0.8+i*0.08,...sp()} },
-          e("circle", { cx:p.x, cy:p.y, r:5, fill:k.owner, stroke:T.bg, strokeWidth:1.5 }),
-          e("text", { x:p.x, y:p.y+14, textAnchor:"middle", fontSize:8, fill:k.owner, fontFamily:"'SF Mono',monospace", fontWeight:700 }, k.label)
+        const isMoved = movedKeys.includes(k.id);
+        return e(M.g, { key:k.id },
+          e(M.circle, {
+            cx:p.x, cy:p.y, r:isMoved?7:5,
+            animate:{ fill:k.owner, r:isMoved?7:5 },
+            transition:{ duration:0.5 },
+            stroke:isMoved?T.text1:T.bg, strokeWidth:isMoved?2:1.5
+          }),
+          e(M.text, {
+            x:p.x, y:p.y+15, textAnchor:"middle", fontSize:9,
+            animate:{ fill:k.owner, fontWeight:isMoved?900:700 },
+            transition:{ duration:0.5 },
+            fontFamily:"'SF Mono',monospace"
+          }, k.id)
         );
       }),
+
+      /* Animated arc connecting moved keys to their new owner */
+      ...keys.filter(k => movedKeys.includes(k.id)).map(k => {
+        const ownerNode = activeNodes.find(n => n.id === k.ownerId);
+        if (!ownerNode) return null;
+        const p1 = pt(k.ang, r);
+        const p2 = pt(ownerNode.ang, r);
+        return e(M.line, { key:"arc"+k.id,
+          x1:p1.x, y1:p1.y, x2:p2.x, y2:p2.y,
+          stroke:k.owner, strokeWidth:2, strokeDasharray:"3 3",
+          initial:{ opacity:0, pathLength:0 },
+          animate:{ opacity:0.7, pathLength:1 },
+          transition:{ duration:0.6, delay:0.2 }
+        });
+      }),
+
       /* Nodes */
-      ...nodes.map((n,i)=>{
+      ...activeNodes.map(n => {
         const p = pt(n.ang, r);
-        const sz = n.vn ? 14 : 20;
-        return e(M.g, { key:"n"+i, initial:{opacity:0,scale:0.5}, animate:{opacity:1,scale:1}, transition:{delay:0.2+i*0.1,...sp()} },
-          e("rect", { x:p.x-sz, y:p.y-sz, width:sz*2, height:sz*2, rx:6,
-            fill:`${n.color}22`, stroke:n.color, strokeWidth:n.vn?1:2, strokeDasharray:n.vn?"2 2":"0" }),
-          e("text", { x:p.x, y:p.y+4, textAnchor:"middle", fontSize:n.vn?9:11, fill:n.color, fontFamily:"'SF Mono',monospace", fontWeight:700 }, n.label)
+        const sz = 20;
+        const isNew = n.id === "E" && phase === 1;
+        return e(M.g, { key:n.id,
+          initial:{ opacity:0, scale:0.3 },
+          animate:{ opacity:1, scale:1 },
+          exit:{ opacity:0, scale:0.3 },
+          transition:sp(360,24)
+        },
+          e(M.rect, {
+            x:p.x-sz, y:p.y-sz, width:sz*2, height:sz*2, rx:6,
+            fill:`${n.color}22`, stroke:n.color,
+            strokeWidth: isNew ? 3 : 2,
+            animate: isNew ? { strokeWidth:[2,3,2] } : {},
+            transition: isNew ? { duration:0.8, repeat:Infinity } : {}
+          }),
+          e("text", { x:p.x, y:p.y+5, textAnchor:"middle", fontSize:12, fill:n.color, fontFamily:"'SF Mono',monospace", fontWeight:700 }, n.label)
         );
       }),
+
       /* Center label */
       e("text", { x:cx, y:cy-4, textAnchor:"middle", fontSize:11, fill:T.text2, fontFamily:"'SF Mono',monospace", fontWeight:700 }, "hash ring"),
       e("text", { x:cx, y:cy+10, textAnchor:"middle", fontSize:9, fill:T.text3 }, "0 → 2³²")
     ),
-    /* Legend */
-    e("div", { style:{ display:"flex", flexDirection:"column", gap:10, minWidth:160, fontSize:11 } },
+
+    /* Legend + phase indicator */
+    e("div", { style:{ display:"flex", flexDirection:"column", gap:10, minWidth:170, fontSize:11 } },
+      /* Phase indicator */
+      e("div", { style:{ padding:"10px 12px", borderRadius:8, border:`1.5px solid ${T.purple}55`, background:`${T.purple}10` } },
+        e("div", { style:{ fontSize:9, fontWeight:700, color:T.purple, letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:4 } }, `step ${phase+1}/5`),
+        e(AP, { mode:"wait" },
+          e(M.div, { key:phase, initial:{opacity:0,y:4}, animate:{opacity:1,y:0}, exit:{opacity:0,y:-4}, transition:{duration:0.25},
+            style:{ fontSize:11, color:T.purpleL, fontFamily:"'SF Mono',monospace", fontWeight:600 }
+          }, phaseLabel)
+        )
+      ),
       e("div", { style:{ fontSize:10, fontWeight:700, color:T.text2, letterSpacing:"0.08em", textTransform:"uppercase" } }, "rules"),
       e("div", { style:{ padding:"8px 10px", borderRadius:8, border:`1px solid ${T.border}`, background:T.surface2, color:T.text2, lineHeight:1.5, fontSize:10 } },
-        e("div", null, "• node & key positioned on ring by hash"),
-        e("div", null, "• key belongs to next node clockwise"),
-        e("div", null, "• adding node: only arc moves"),
-        e("div", null, "• dashed = virtual node replica")
+        e("div", null, "• key → next node clockwise"),
+        e("div", null, "• add node: only arc moves"),
+        e("div", null, "• remove node: only its keys move"),
+        e("div", null, "• ~1/N of keys, not all of them")
       )
     )
   );

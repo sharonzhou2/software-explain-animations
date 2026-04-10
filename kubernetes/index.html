@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kubernetes</title>
 <link href="https://cdn.lineicons.com/5.0/lineicons.css" rel="stylesheet">
+<script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -340,7 +341,7 @@ const SCENES = [
     diagram:"reconciliation", highlight:null,
   },
   {
-    id:14, act:"\u2713",
+    id:14, act:"DONE",
     title:"Kubernetes \u2014 summary",
     sub:"Kubernetes orchestrates containers at scale. You declare what you want (desired state), and K8s continuously works to make it real. It handles scheduling, scaling, networking, storage, and self-healing.",
     code:[], diagram:null, highlight:null,
@@ -786,7 +787,7 @@ const K8sDiagram = ({ scene, onClickDetail }) => {
       ),
       e("div", { onClick:()=>onClickDetail("storage"), style:{ flex:1, borderRadius:10, border:`1.5px solid ${T.coral}44`, background:`${T.coral}08`, padding:12, cursor:"pointer" } },
         e("div", { style:{ fontSize:11, fontWeight:700, color:T.coralL, marginBottom:8, display:"flex", alignItems:"center", gap:5 } },
-          "\uD83D\uDD12 Secret"
+          e("iconify-icon", { icon:"tabler:lock", width:13, height:13, style:{ color:T.coralL } }), "Secret"
         ),
         e("div", { style:{ display:"flex", flexDirection:"column", gap:4 } },
           [["DB_PASS","*****"],["API_KEY","*****"],["TLS_CERT","*****"]].map(([k,v],i) =>
@@ -861,11 +862,11 @@ const K8sDiagram = ({ scene, onClickDetail }) => {
 
   if (diag === "kubectl") {
     const cmds = [
-      { cmd:"kubectl apply -f deploy.yaml", desc:"Apply manifest to cluster", icon:"\u25B6" },
-      { cmd:"kubectl get pods", desc:"List running pods", icon:"\uD83D\uDCCB" },
-      { cmd:"kubectl describe pod xyz", desc:"Detailed pod info", icon:"\uD83D\uDD0D" },
-      { cmd:"kubectl logs xyz", desc:"Container stdout/stderr", icon:"\uD83D\uDCC4" },
-      { cmd:"kubectl exec -it xyz -- sh", desc:"Shell into container", icon:"\u2328" },
+      { cmd:"kubectl apply -f deploy.yaml", desc:"Apply manifest to cluster", icon:"tabler:player-play-filled" },
+      { cmd:"kubectl get pods", desc:"List running pods", icon:"tabler:list" },
+      { cmd:"kubectl describe pod xyz", desc:"Detailed pod info", icon:"tabler:search" },
+      { cmd:"kubectl logs xyz", desc:"Container stdout/stderr", icon:"tabler:file-text" },
+      { cmd:"kubectl exec -it xyz -- sh", desc:"Shell into container", icon:"tabler:terminal" },
     ];
     return e("div", { style:{ display:"flex", flexDirection:"column", gap:6 } },
       cmds.map((c,i) =>
@@ -873,7 +874,9 @@ const K8sDiagram = ({ scene, onClickDetail }) => {
           onClick:()=>onClickDetail("code"),
           style:{ display:"flex", alignItems:"center", gap:10, padding:"8px 12px", borderRadius:8, border:`1px solid ${T.purple}28`, background:`${T.purple}06`, cursor:"pointer" }
         },
-          e("div", { style:{ width:22, height:22, borderRadius:5, border:`1px solid ${T.purple}44`, background:`${T.purple}14`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, flexShrink:0 } }, c.icon),
+          e("div", { style:{ width:22, height:22, borderRadius:5, border:`1px solid ${T.purple}44`, background:`${T.purple}14`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, flexShrink:0 } },
+            e("iconify-icon", { icon:c.icon, width:12, height:12, style:{ color:T.purpleL } })
+          ),
           e("div", { style:{ flex:1 } },
             e("div", { style:{ fontSize:10, fontWeight:600, color:T.purpleL, fontFamily:"'SF Mono',monospace" } }, c.cmd),
             e("div", { style:{ fontSize:9, color:T.text3, marginTop:1 } }, c.desc)
@@ -932,19 +935,21 @@ const K8sDiagram = ({ scene, onClickDetail }) => {
 /* ─── FINALE ─── */
 const Finale = () => {
   const rows = [
-    { icon:"\u2699", label:"Container orchestration", sub:"Kubernetes automates deploying, scaling, and managing containers across clusters of machines", c:T.k8sBlue },
-    { icon:"\uD83C\uDFDB", label:"Control Plane + Nodes", sub:"Brain (API Server, etcd, Scheduler, Controllers) + Muscle (kubelet, kube-proxy, runtime)", c:T.k8sBlue },
-    { icon:"\uD83D\uDCE6", label:"Pods & Deployments", sub:"Pods wrap containers; Deployments manage desired replica count with rolling updates", c:T.podGreen },
-    { icon:"\uD83C\uDF10", label:"Services & Ingress", sub:"Stable networking for ephemeral pods; HTTP routing from outside the cluster", c:T.blue },
-    { icon:"\uD83D\uDCBE", label:"Storage & Config", sub:"PersistentVolumes outlive pods; ConfigMaps & Secrets externalize configuration", c:T.amber },
-    { icon:"\uD83D\uDCC8", label:"Autoscaling", sub:"HPA scales pods on metrics; Cluster Autoscaler scales nodes on demand", c:T.green },
-    { icon:"\u21BB", label:"Reconciliation loop", sub:"Controllers continuously compare desired state vs actual state and converge", c:T.purple },
+    { icon:"logos:kubernetes", label:"Container orchestration", sub:"Kubernetes automates deploying, scaling, and managing containers across clusters of machines", c:T.k8sBlue },
+    { icon:"tabler:building-bank", label:"Control Plane + Nodes", sub:"Brain (API Server, etcd, Scheduler, Controllers) + Muscle (kubelet, kube-proxy, runtime)", c:T.k8sBlue },
+    { icon:"tabler:package", label:"Pods & Deployments", sub:"Pods wrap containers; Deployments manage desired replica count with rolling updates", c:T.podGreen },
+    { icon:"tabler:world", label:"Services & Ingress", sub:"Stable networking for ephemeral pods; HTTP routing from outside the cluster", c:T.blue },
+    { icon:"tabler:device-floppy", label:"Storage & Config", sub:"PersistentVolumes outlive pods; ConfigMaps & Secrets externalize configuration", c:T.amber },
+    { icon:"tabler:chart-arrows", label:"Autoscaling", sub:"HPA scales pods on metrics; Cluster Autoscaler scales nodes on demand", c:T.green },
+    { icon:"tabler:refresh", label:"Reconciliation loop", sub:"Controllers continuously compare desired state vs actual state and converge", c:T.purple },
   ];
   return e("div", { style:{ padding:"8px 0" } },
     rows.map((r,i) => e(M.div, { key:i, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.1,...ez},
       style:{ display:"flex", alignItems:"flex-start", gap:12, padding:"11px 14px", marginBottom:8, borderRadius:10, border:`1px solid ${r.c}28`, background:`${r.c}08` }
     },
-      e("div", { style:{ width:28, height:28, borderRadius:"50%", border:`1.5px solid ${r.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:13 } }, r.icon),
+      e("div", { style:{ width:28, height:28, borderRadius:"50%", border:`1.5px solid ${r.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 } },
+        e("iconify-icon", { icon:r.icon, width:15, height:15, style:{ color:r.c } })
+      ),
       e("div", null,
         e("div", { style:{ fontSize:13, fontWeight:600, color:r.c, marginBottom:2 } }, r.label),
         e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.5 } }, r.sub)
@@ -965,7 +970,7 @@ const DetailPanel = ({ detailKey, onClose }) => {
         e("div", { style:{ width:8, height:8, borderRadius:"50%", background:d.color } }),
         e("span", { style:{ fontSize:14, fontWeight:600, color:T.text1 } }, d.title)
       ),
-      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6, transition:"color 0.2s" }, onMouseEnter:ev=>ev.target.style.color=T.text1, onMouseLeave:ev=>ev.target.style.color=T.text3 }, "\u2715")
+      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6, transition:"color 0.2s" }, onMouseEnter:ev=>ev.target.style.color=T.text1, onMouseLeave:ev=>ev.target.style.color=T.text3 }, e("i", { className:"lni lni-xmark" }))
     ),
     e("div", { style:{ padding:"16px 18px 20px", maxHeight:"calc(100vh - 140px)", overflowY:"auto" } },
       d.sections.map((s, i) =>
@@ -1053,13 +1058,13 @@ function App() {
     e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginTop:16 } },
       e("button", { onClick:()=>go(-1), disabled:si===0,
         style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===0?T.text3:T.text2,cursor:si===0?"not-allowed":"pointer",fontSize:11,transition:"color 0.2s" }
-      }, "\u2190 Back"),
+      }, e("span", { style:{ display:"inline-flex", alignItems:"center", gap:5 } }, e("i", { className:"lni lni-arrow-left" }), "Back")),
       e("button", { onClick:togglePlay,
         style:{ padding:"6px 18px",borderRadius:8,border:`1px solid ${playing?T.coral:T.purple}44`,background:playing?`${T.coral}14`:`${T.purple}14`,color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all 0.2s" }
-      }, playing ? "\u23F8  Pause" : si===SCENES.length-1 ? "\u21BA  Replay" : "\u25B6  Play"),
+      }, playing ? e("span", { style:{ display:"inline-flex", alignItems:"center", gap:6 } }, e("i", { className:"lni lni-pause" }), "Pause") : si===SCENES.length-1 ? e("span", { style:{ display:"inline-flex", alignItems:"center", gap:6 } }, e("i", { className:"lni lni-refresh-circle-1-clockwise" }), "Replay") : e("span", { style:{ display:"inline-flex", alignItems:"center", gap:6 } }, e("i", { className:"lni lni-play" }), "Play")),
       e("button", { onClick:()=>go(1), disabled:si===SCENES.length-1,
         style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
-      }, "Next \u2192"),
+      }, e("span", { style:{ display:"inline-flex", alignItems:"center", gap:5 } }, "Next", e("i", { className:"lni lni-arrow-right" }))),
       e("div", { style:{ flex:1 } }),
       e("div", { style:{ display:"flex", gap:4, alignItems:"center" } },
         SCENES.map((_,i) =>
