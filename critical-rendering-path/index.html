@@ -244,34 +244,7 @@ const SCENES = [
       [["tag","  <body>"]],
       [["tag","    <h1>"],["plain","Hello"],["tag","</h1>"]],
       [["tag","    <p>"],["plain","World"],["tag","</p>"]],
-      [["tag","  <script>
-/* sidenav: persist which groups are open across pages */
-(function(){
-  var KEY = "sidenavGroupsOpen";
-  var nav = document.querySelector(".sidenav");
-  if (!nav) return;
-  var stored = null;
-  try { stored = JSON.parse(localStorage.getItem(KEY) || "null"); } catch(e){}
-  var groups = nav.querySelectorAll("details");
-  groups.forEach(function(d){
-    var sum = d.querySelector("summary");
-    if (!sum) return;
-    var name = sum.textContent.trim();
-    if (stored && Object.prototype.hasOwnProperty.call(stored, name)) {
-      d.open = !!stored[name];
-    }
-    d.addEventListener("toggle", function(){
-      var state = {};
-      groups.forEach(function(d2){
-        var s2 = d2.querySelector("summary");
-        if (s2) state[s2.textContent.trim()] = d2.open;
-      });
-      try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){}
-    });
-  });
-})();
-</script>
-</body>"]],
+      [["tag","  </body>"]],
       [["tag","</html>"]],
     ],
     viz:"tree",

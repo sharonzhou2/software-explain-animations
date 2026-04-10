@@ -894,37 +894,27 @@ function App() {
     /* main grid */
     !sc.finale && e("div", null,
 
-      /* row 1: code panel */
+      /* row 1: code panel + concept/api stack */
       e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:10 } },
         e("div", { onClick:()=>toggleDetail("code"), style:{cursor:"pointer"} },
           e(CodePanel, { tokens: sc.code })
         ),
-        e(Panel, { label:"Thread Visualization", onClick:()=>toggleDetail("threads") },
-          e(AP, { mode:"wait" },
-            e(M.div, { key:sc.id, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.15} },
-              e(SceneViz, { scene:sc })
-            )
-          )
-        )
-      ),
-
-      /* row 2: detail panels */
-      e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 } },
-        e(Panel, { label:"Concept", onClick:()=>toggleDetail("concept") },
-          e("div", { style:{ minHeight:52 } },
-            e(AP, { mode:"wait" },
-              e(M.div, { key:sc.id, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.15} },
-                e("div", { style:{ fontSize:13, fontWeight:600, color:T.tealL, marginBottom:4 } },
-                  sc.title
-                ),
-                e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.6 } },
-                  sc.sub.length > 100 ? sc.sub.slice(0,100)+"..." : sc.sub
+        e("div", { style:{ display:"flex", flexDirection:"column", gap:10 } },
+          e(Panel, { label:"Concept", onClick:()=>toggleDetail("concept") },
+            e("div", { style:{ minHeight:52 } },
+              e(AP, { mode:"wait" },
+                e(M.div, { key:sc.id, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.15} },
+                  e("div", { style:{ fontSize:13, fontWeight:600, color:T.tealL, marginBottom:4 } },
+                    sc.title
+                  ),
+                  e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.6 } },
+                    sc.sub.length > 100 ? sc.sub.slice(0,100)+"..." : sc.sub
+                  )
                 )
               )
             )
-          )
-        ),
-        e(Panel, { label:"API Reference", onClick:()=>toggleDetail("api") },
+          ),
+          e(Panel, { label:"API Reference", onClick:()=>toggleDetail("api") },
           e("div", { style:{ minHeight:52 } },
             e(AP, { mode:"wait" },
               e(M.div, { key:sc.id, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.15} },
@@ -938,6 +928,15 @@ function App() {
                   : e("div", { style:{ fontSize:11, color:T.text3 } }, "Click for API details")
               )
             )
+          )
+        )
+      ),
+
+      /* row 2: full-width thread visualization */
+      e(Panel, { label:"Thread Visualization", onClick:()=>toggleDetail("threads"), style:{ marginTop:0 } },
+        e(AP, { mode:"wait" },
+          e(M.div, { key:sc.id, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.15} },
+            e(SceneViz, { scene:sc })
           )
         )
       )
