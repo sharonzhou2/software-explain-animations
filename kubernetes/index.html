@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kubernetes</title>
+<link href="https://cdn.lineicons.com/5.0/lineicons.css" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111118;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px 16px 24px 196px;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  #root { width: 100%; max-width: 1120px; }
+  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: system-ui, sans-serif; }
+  .topnav a { text-decoration: none; color: #8888aa; font-size: 13px; transition: color 0.2s; }
+  .topnav a:hover { color: #e8e8f0; }
+  .topnav .name { font-weight: 600; color: #e8e8f0; font-size: 13px; }
+  .topnav .sep { color: #38384a; font-size: 12px; }
+  .topnav .current { color: #7c6fcd; font-size: 13px; font-weight: 500; }
+  .sidenav { position: fixed; top: 38px; left: 0; width: 180px; height: calc(100vh - 38px); background: #111118; border-right: 1px solid #2a2a38; padding: 14px 0; overflow-y: auto; z-index: 200; font-family: system-ui, sans-serif; }
+  .sidenav a { display: block; padding: 6px 16px; font-size: 11px; color: #8888aa; text-decoration: none; transition: color 0.2s, background 0.2s; border-left: 2px solid transparent; }
+  .sidenav a:hover { color: #e8e8f0; background: rgba(124,111,205,0.06); }
+  .sidenav a.active { color: #a99cf0; border-left-color: #7c6fcd; background: rgba(124,111,205,0.1); font-weight: 600; }
+  .sidenav .nav-section { padding: 8px 16px 4px; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #44445a; }
+  .sidenav .nav-section:first-child { padding-top: 4px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="../" class="name">Sharon Zhou</a>
+  <span class="sep">/</span>
+  <a href="../">Animations</a>
+  <span class="sep">/</span>
+  <span class="current">Kubernetes</span>
+</nav>
+<nav class="sidenav">
+  <div class="nav-section">JavaScript</div>
+  <a href="../event-loop/">Event Loop</a>
+  <a href="../this-keyword/">this Keyword</a>
+  <a href="../hoisting/">Hoisting</a>
+  <a href="../closures/">Closures</a>
+  <a href="../garbage-collection/">Garbage Collection</a>
+  <a href="../event-delegation/">Event Delegation</a>
+  <a href="../iterators-generators/">Iterators & Generators</a>
+  <a href="../xhr-vs-fetch/">XHR vs fetch()</a>
+  <a href="../error-propagation/">Error Propagation</a>
+  <a href="../web-workers/">Web Workers</a>
+  <a href="../prototypal-inheritance/">Prototypal Inheritance</a>
+  <div class="nav-section">Browser</div>
+  <a href="../critical-rendering-path/">Critical Rendering Path</a>
+  <a href="../reflow-vs-repaint/">Reflow vs Repaint</a>
+  <a href="../css-box-model/">CSS Box Model & Layout</a>
+  <a href="../web-security/">Web Security</a>
+  <a href="../request-animation-frame/">requestAnimationFrame</a>
+  <a href="../cors/">CORS</a>
+  <a href="../websocket-vs-sse/">WebSocket vs SSE</a>
+  <div class="nav-section">Infrastructure</div>
+  <a href="../vms-vs-docker/">VMs vs Docker</a>
+  <a href="../opentelemetry/">OpenTelemetry</a>
+  <a href="../kubernetes/" class="active">Kubernetes</a>
+  <a href="../kafka/">Kafka</a>
+</nav>
+<div id="root" style="margin-top: 36px;"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/framer-motion@11/dist/framer-motion.js"></script>
+<script>
+const { useState, useEffect, useRef } = React;
+const { motion, AnimatePresence } = window.Motion;
+const e = React.createElement;
+const M = motion;
+const AP = AnimatePresence;
+const sp = (s=380,d=28) => ({ type:"spring", stiffness:s, damping:d });
+const ez = { duration:0.32, ease:[0.22,1,0.36,1] };
+
+const T = {
+  bg:"#111118", surface:"#18181f", surface2:"#1e1e28",
+  border:"#2a2a38", border2:"#38384a",
+  text1:"#e8e8f0", text2:"#8888aa", text3:"#44445a",
+  purple:"#7c6fcd", purpleL:"#a99cf0",
+  teal:"#3db89a", tealL:"#6dd4b8",
+  coral:"#c4694a", coralL:"#e08a6a",
+  blue:"#4a8fd4", blueL:"#82b4e8",
+  amber:"#d4a84a", amberL:"#e8c86a",
+  green:"#4ac46a", greenL:"#6ae88a",
+  red:"#e05555", redL:"#ff7777",
+  k8sBlue:"#326CE5", k8sBlueL:"#6a9ef0",
+  nodeTeal:"#3db89a", nodeTealL:"#6dd4b8",
+  podGreen:"#4ac46a", podGreenL:"#6ae88a",
+  podCoral:"#c4694a", podCoralL:"#e08a6a",
+  codeBase:"#141428",
+};
+
+const TS = {
+  fn:{color:"#82aaff"}, meth:{color:"#89ddff"}, str:{color:"#c3e88d"},
+  kw:{color:"#c792ea"}, num:{color:"#f78c6c"}, punc:{color:"#89ddff"},
+  plain:{color:"#a6accd"}, cmt:{color:"#546e7a",fontStyle:"italic"},
+};
+
+/* ─── SCENES ─── */
+const SCENES = [
+  {
+    id:0, act:"01",
+    title:"What is Kubernetes?",
+    sub:"Kubernetes (K8s) is an open-source container orchestration platform. It automates deploying, scaling, and managing containerized applications across clusters of machines.",
+    code:[
+      [["cmt","// The problem K8s solves:"]],
+      [["cmt","// You have hundreds of Docker containers."]],
+      [["cmt","// Which machine runs each one?"]],
+      [["cmt","// What happens when one crashes?"]],
+      [["cmt","// How do you scale up at 2am?"]],
+    ],
+    diagram:"intro", highlight:null,
+  },
+  {
+    id:1, act:"02",
+    title:"The problem: containers at scale",
+    sub:"Docker is great for running one container on one machine. But in production you have dozens of services across many servers. Manual management doesn't scale \u2014 you need an orchestrator.",
+    code:[
+      [["cmt","// Manual container management:"]],
+      [["fn","ssh"],["plain"," server-1 && "],["fn","docker"],["plain"," run app-a"]],
+      [["fn","ssh"],["plain"," server-2 && "],["fn","docker"],["plain"," run app-b"]],
+      [["fn","ssh"],["plain"," server-3 && "],["fn","docker"],["plain"," run app-c"]],
+      [["cmt","// Server-2 dies at 3am... now what?"]],
+    ],
+    diagram:"problem", highlight:null,
+  },
+  {
+    id:2, act:"03",
+    title:"K8s architecture overview",
+    sub:"A Kubernetes cluster has two parts: the Control Plane (the brain) that makes decisions, and Worker Nodes (the muscle) that run your containers. The control plane watches and directs; nodes execute.",
+    code:[
+      [["cmt","// Cluster = Control Plane + Worker Nodes"]],
+      [["cmt","//"]],
+      [["cmt","// Control Plane: decides WHAT to run WHERE"]],
+      [["cmt","// Worker Nodes:  actually RUN the containers"]],
+      [["cmt","//"]],
+      [["cmt","// You tell K8s the desired state,"]],
+      [["cmt","// it figures out the rest."]],
+    ],
+    diagram:"architecture", highlight:null,
+  },
+  {
+    id:3, act:"04",
+    title:"Control Plane components",
+    sub:"The control plane has four key components: the API Server (front door), etcd (memory), the Scheduler (matchmaker), and the Controller Manager (enforcer). Together they manage the entire cluster.",
+    code:[
+      [["fn","kube-apiserver"],["plain","   "],["cmt","// REST API, all communication"]],
+      [["fn","etcd"],["plain","             "],["cmt","// key-value store, cluster state"]],
+      [["fn","kube-scheduler"],["plain","   "],["cmt","// assigns pods to nodes"]],
+      [["fn","controller-mgr"],["plain","   "],["cmt","// runs control loops"]],
+    ],
+    diagram:"control-plane", highlight:"control-plane",
+  },
+  {
+    id:4, act:"05",
+    title:"Worker Node components",
+    sub:"Each worker node runs three components: kubelet (the agent that talks to the control plane), kube-proxy (networking rules), and a container runtime (like Docker or containerd) that actually runs containers.",
+    code:[
+      [["fn","kubelet"],["plain","       "],["cmt","// node agent, reports to API server"]],
+      [["fn","kube-proxy"],["plain","    "],["cmt","// network proxy, iptables/IPVS rules"]],
+      [["fn","containerd"],["plain","    "],["cmt","// container runtime (runs containers)"]],
+    ],
+    diagram:"worker-node", highlight:"nodes",
+  },
+  {
+    id:5, act:"06",
+    title:"Pods \u2014 the smallest unit",
+    sub:"A Pod is the smallest deployable unit in K8s \u2014 not a container, but a wrapper around one or more containers that share networking and storage. Most pods run a single container, but sidecar patterns use multiple.",
+    code:[
+      [["kw","apiVersion"],["punc",": "],["str","v1"]],
+      [["kw","kind"],["punc",": "],["str","Pod"]],
+      [["kw","metadata"],["punc",":"]],
+      [["plain","  "],["kw","name"],["punc",": "],["str","my-app"]],
+      [["kw","spec"],["punc",":"]],
+      [["plain","  "],["kw","containers"],["punc",":"]],
+      [["plain","  - "],["kw","name"],["punc",": "],["str","app"]],
+      [["plain","    "],["kw","image"],["punc",": "],["str","nginx:1.25"]],
+    ],
+    diagram:"pods", highlight:"pods",
+  },
+  {
+    id:6, act:"07",
+    title:"Deployments \u2014 declarative desired state",
+    sub:"A Deployment tells K8s: \"I want 3 replicas of this pod, always running.\" K8s handles rolling updates, rollbacks, and self-healing. You declare the desired state; K8s makes it happen.",
+    code:[
+      [["kw","apiVersion"],["punc",": "],["str","apps/v1"]],
+      [["kw","kind"],["punc",": "],["str","Deployment"]],
+      [["kw","spec"],["punc",":"]],
+      [["plain","  "],["kw","replicas"],["punc",": "],["num","3"]],
+      [["plain","  "],["kw","strategy"],["punc",":"]],
+      [["plain","    "],["kw","type"],["punc",": "],["str","RollingUpdate"]],
+      [["plain","    "],["kw","maxSurge"],["punc",": "],["num","1"]],
+      [["plain","    "],["kw","maxUnavailable"],["punc",": "],["num","0"]],
+    ],
+    diagram:"deployments", highlight:"deployments",
+  },
+  {
+    id:7, act:"08",
+    title:"Services \u2014 stable networking",
+    sub:"Pods get random IPs and come and go. A Service provides a stable IP and DNS name that routes traffic to healthy pods. ClusterIP (internal), NodePort (external port), LoadBalancer (cloud LB).",
+    code:[
+      [["kw","kind"],["punc",": "],["str","Service"]],
+      [["kw","spec"],["punc",":"]],
+      [["plain","  "],["kw","type"],["punc",": "],["str","ClusterIP"]],
+      [["plain","  "],["kw","selector"],["punc",":"]],
+      [["plain","    "],["kw","app"],["punc",": "],["str","my-app"]],
+      [["plain","  "],["kw","ports"],["punc",":"]],
+      [["plain","  - "],["kw","port"],["punc",": "],["num","80"]],
+      [["plain","    "],["kw","targetPort"],["punc",": "],["num","8080"]],
+    ],
+    diagram:"services", highlight:"services",
+  },
+  {
+    id:8, act:"09",
+    title:"Ingress \u2014 HTTP routing",
+    sub:"Ingress exposes HTTP/HTTPS routes from outside the cluster to Services inside. It handles host-based and path-based routing, TLS termination, and load balancing \u2014 like a smart reverse proxy for your cluster.",
+    code:[
+      [["kw","kind"],["punc",": "],["str","Ingress"]],
+      [["kw","spec"],["punc",":"]],
+      [["plain","  "],["kw","rules"],["punc",":"]],
+      [["plain","  - "],["kw","host"],["punc",": "],["str","api.example.com"]],
+      [["plain","    "],["kw","http"],["punc",":"]],
+      [["plain","      "],["kw","paths"],["punc",":"]],
+      [["plain","      - "],["kw","path"],["punc",": "],["str","/"]],
+      [["plain","        "],["kw","backend"],["punc",": "],["str","my-svc:80"]],
+    ],
+    diagram:"ingress", highlight:"services",
+  },
+  {
+    id:9, act:"10",
+    title:"ConfigMaps & Secrets",
+    sub:"ConfigMaps store non-sensitive configuration (env vars, config files). Secrets store sensitive data (passwords, tokens) with base64 encoding. Both decouple config from container images.",
+    code:[
+      [["kw","kind"],["punc",": "],["str","ConfigMap"]],
+      [["kw","data"],["punc",":"]],
+      [["plain","  "],["kw","DB_HOST"],["punc",": "],["str","postgres.default.svc"]],
+      [["cmt","---"]],
+      [["kw","kind"],["punc",": "],["str","Secret"]],
+      [["kw","data"],["punc",":"]],
+      [["plain","  "],["kw","DB_PASS"],["punc",": "],["str","cGFzc3dvcmQ="]],
+      [["plain","  "],["cmt","# base64 encoded"]],
+    ],
+    diagram:"config", highlight:"storage",
+  },
+  {
+    id:10, act:"11",
+    title:"Persistent Volumes",
+    sub:"Containers are ephemeral \u2014 when a pod dies, its data is gone. PersistentVolumes (PV) and PersistentVolumeClaims (PVC) provide storage that outlives pods. The cluster admin provisions PVs; apps claim them with PVCs.",
+    code:[
+      [["kw","kind"],["punc",": "],["str","PersistentVolumeClaim"]],
+      [["kw","spec"],["punc",":"]],
+      [["plain","  "],["kw","accessModes"],["punc",":"]],
+      [["plain","  - "],["str","ReadWriteOnce"]],
+      [["plain","  "],["kw","resources"],["punc",":"]],
+      [["plain","    "],["kw","requests"],["punc",":"]],
+      [["plain","      "],["kw","storage"],["punc",": "],["str","10Gi"]],
+    ],
+    diagram:"storage", highlight:"storage",
+  },
+  {
+    id:11, act:"12",
+    title:"Horizontal Pod Autoscaler",
+    sub:"HPA automatically scales the number of pod replicas based on CPU, memory, or custom metrics. When load increases, HPA adds pods. When it drops, HPA removes them. No manual intervention needed.",
+    code:[
+      [["kw","kind"],["punc",": "],["str","HorizontalPodAutoscaler"]],
+      [["kw","spec"],["punc",":"]],
+      [["plain","  "],["kw","minReplicas"],["punc",": "],["num","2"]],
+      [["plain","  "],["kw","maxReplicas"],["punc",": "],["num","10"]],
+      [["plain","  "],["kw","metrics"],["punc",":"]],
+      [["plain","  - "],["kw","type"],["punc",": "],["str","Resource"]],
+      [["plain","    "],["kw","resource"],["punc",": "],["str","cpu"]],
+      [["plain","    "],["kw","targetUtilization"],["punc",": "],["num","70"]],
+    ],
+    diagram:"scaling", highlight:"scaling",
+  },
+  {
+    id:12, act:"13",
+    title:"kubectl \u2014 the CLI",
+    sub:"kubectl is the command-line tool for interacting with K8s. You apply manifests, inspect resources, read logs, and exec into containers. It talks to the API server, which does the actual work.",
+    code:[
+      [["fn","kubectl"],["plain"," apply -f "],["str","deploy.yaml"]],
+      [["fn","kubectl"],["plain"," get pods"]],
+      [["fn","kubectl"],["plain"," describe pod "],["str","my-app-xyz"]],
+      [["fn","kubectl"],["plain"," logs "],["str","my-app-xyz"]],
+      [["fn","kubectl"],["plain"," exec -it "],["str","my-app-xyz"]],
+      [["plain","         -- "],["fn","/bin/sh"]],
+      [["fn","kubectl"],["plain"," scale deploy/my-app"],],
+      [["plain","         --replicas="],["num","5"]],
+    ],
+    diagram:"kubectl", highlight:"code",
+  },
+  {
+    id:13, act:"14",
+    title:"The reconciliation loop",
+    sub:"This is the heart of K8s: controllers continuously compare desired state (what you declared) with actual state (what's running). If they differ, the controller takes action to converge. This loop runs forever.",
+    code:[
+      [["cmt","// The core K8s pattern:"]],
+      [["kw","while"],["plain"," ("],["num","true"],["plain",") {"]],
+      [["plain","  desired = "],["fn","readFromEtcd"],["punc","()"]],
+      [["plain","  actual  = "],["fn","observeCluster"],["punc","()"]],
+      [["plain","  "],["kw","if"],["plain"," (desired !== actual) {"]],
+      [["plain","    "],["fn","reconcile"],["punc","(desired, actual)"]],
+      [["plain","  }"]],
+      [["plain","}"]],
+    ],
+    diagram:"reconciliation", highlight:null,
+  },
+  {
+    id:14, act:"\u2713",
+    title:"Kubernetes \u2014 summary",
+    sub:"Kubernetes orchestrates containers at scale. You declare what you want (desired state), and K8s continuously works to make it real. It handles scheduling, scaling, networking, storage, and self-healing.",
+    code:[], diagram:null, highlight:null,
+    finale:true,
+  },
+];
+
+/* ─── DETAIL CONTENT ─── */
+const DETAILS = {
+  "control-plane": {
+    title:"Control Plane",
+    color:T.k8sBlue,
+    sections:[
+      {heading:"API Server",body:"kube-apiserver is the front door to the cluster. Every kubectl command, every internal component, talks through the API server. It validates requests, authenticates users, and writes state to etcd. It's the only component that directly accesses etcd."},
+      {heading:"etcd",body:"A distributed key-value store that holds all cluster state: what pods exist, what nodes are available, what configs are set. It's the single source of truth. If etcd is lost, the cluster is lost. Always run it replicated (3 or 5 nodes)."},
+      {heading:"Scheduler",body:"kube-scheduler watches for newly created pods with no assigned node. It evaluates constraints (resource requests, node selectors, taints/tolerations, affinity rules) and picks the best node. It doesn't run the pod \u2014 it just decides WHERE."},
+      {heading:"Controller Manager",body:"Runs a set of control loops (controllers): Deployment controller, ReplicaSet controller, Node controller, Job controller, etc. Each watches for differences between desired and actual state, then takes corrective action."},
+    ]
+  },
+  nodes: {
+    title:"Worker Nodes",
+    color:T.nodeTeal,
+    sections:[
+      {heading:"kubelet",body:"The agent running on every worker node. It receives pod specs from the API server and ensures the described containers are running and healthy. It reports node status back to the control plane and restarts failed containers."},
+      {heading:"kube-proxy",body:"Maintains network rules on each node. When a Service is created, kube-proxy sets up iptables or IPVS rules so that traffic to the Service IP gets forwarded to the correct pod IPs. It enables the Service abstraction."},
+      {heading:"Container Runtime",body:"The software that actually runs containers. Kubernetes supports any CRI-compliant runtime: containerd (most common), CRI-O, or Docker (via dockershim, now deprecated). It pulls images, creates containers, and manages their lifecycle."},
+      {heading:"Node capacity",body:"Each node has finite CPU, memory, and storage. The scheduler considers these resources when placing pods. Nodes report their capacity and current usage to the control plane, enabling intelligent scheduling decisions."},
+    ]
+  },
+  pods: {
+    title:"Pods",
+    color:T.podGreen,
+    sections:[
+      {heading:"What is a Pod?",body:"The smallest deployable unit in Kubernetes. A pod encapsulates one or more containers that share:\n\u2022 Network namespace (same IP, can use localhost)\n\u2022 Storage volumes\n\u2022 Lifecycle (created and destroyed together)\n\nMost pods run a single container."},
+      {heading:"Pod lifecycle",body:"Pending \u2192 Running \u2192 Succeeded/Failed\n\nPending: scheduled but not yet running (pulling image, waiting for resources)\nRunning: at least one container is running\nSucceeded: all containers exited with 0\nFailed: at least one container exited non-zero"},
+      {heading:"Sidecar pattern",body:"Multi-container pods are used for sidecars \u2014 helper containers that augment the main app:\n\u2022 Log collector sidecar\n\u2022 Service mesh proxy (Envoy/Istio)\n\u2022 Config reloader\n\u2022 TLS certificate rotator"},
+      {heading:"Health checks",body:"Liveness probe: Is the container alive? (restart if not)\nReadiness probe: Can it serve traffic? (remove from service if not)\nStartup probe: Has it finished starting? (don't check liveness yet)\n\nProbes can be HTTP, TCP, or exec-based."},
+    ]
+  },
+  services: {
+    title:"Services & Ingress",
+    color:T.blue,
+    sections:[
+      {heading:"Why Services?",body:"Pod IPs are ephemeral \u2014 they change on every restart. A Service provides a stable virtual IP (ClusterIP) and DNS name. It uses label selectors to find pods and load-balances across them. Pods come and go; the Service stays."},
+      {heading:"Service types",body:"ClusterIP: Internal only. Default. Only reachable within the cluster.\n\nNodePort: Exposes on each node's IP at a static port (30000-32767).\n\nLoadBalancer: Provisions a cloud load balancer (AWS ELB, GCP LB). The standard way to expose services externally.\n\nExternalName: Maps to a DNS name (CNAME)."},
+      {heading:"Ingress",body:"An Ingress is an API object that manages external HTTP/HTTPS access. It provides:\n\u2022 Host-based routing (api.example.com \u2192 api-svc)\n\u2022 Path-based routing (/api \u2192 api-svc, /web \u2192 web-svc)\n\u2022 TLS termination\n\nRequires an Ingress Controller (nginx, traefik, etc.)."},
+      {heading:"Service discovery",body:"K8s provides built-in DNS. Every Service gets a DNS entry:\n<service>.<namespace>.svc.cluster.local\n\nContainers can reach services by name. No hardcoded IPs needed."},
+    ]
+  },
+  deployments: {
+    title:"Deployments",
+    color:T.purple,
+    sections:[
+      {heading:"Declarative management",body:"A Deployment describes the desired state: which image to run, how many replicas, resource limits, env vars. You apply the manifest; K8s figures out how to get there. If a pod crashes, the Deployment controller replaces it."},
+      {heading:"Rolling updates",body:"When you update the image version, K8s performs a rolling update:\n1. Creates new pods with the new image\n2. Waits for them to be healthy\n3. Terminates old pods one by one\n\nZero downtime. Configurable with maxSurge and maxUnavailable."},
+      {heading:"Rollbacks",body:"Every update creates a new ReplicaSet (revision). If the new version is broken:\n\nkubectl rollout undo deployment/my-app\n\nInstantly rolls back to the previous working version. K8s keeps revision history for exactly this purpose."},
+      {heading:"Scaling",body:"Manual: kubectl scale deployment/my-app --replicas=5\n\nAutomatic: HorizontalPodAutoscaler watches metrics and adjusts replica count. Cluster Autoscaler adds/removes nodes when pods can't be scheduled."},
+    ]
+  },
+  storage: {
+    title:"Storage & Config",
+    color:T.amber,
+    sections:[
+      {heading:"ConfigMaps",body:"Store non-sensitive configuration as key-value pairs. Consumed as:\n\u2022 Environment variables\n\u2022 Command-line arguments\n\u2022 Mounted config files\n\nChanges to ConfigMaps can be picked up without restarting pods (if mounted as volumes)."},
+      {heading:"Secrets",body:"Similar to ConfigMaps but for sensitive data (passwords, tokens, keys). Base64 encoded (not encrypted by default!). For real security:\n\u2022 Enable encryption at rest in etcd\n\u2022 Use external secret managers (Vault, AWS Secrets Manager)\n\u2022 Use RBAC to restrict access"},
+      {heading:"Persistent Volumes",body:"PersistentVolume (PV): A piece of storage provisioned by an admin or dynamically.\nPersistentVolumeClaim (PVC): A request for storage by a pod.\n\nThe PV/PVC abstraction decouples storage provisioning from consumption. Pods claim storage; admins provide it."},
+      {heading:"Storage Classes",body:"Define different tiers of storage:\n\u2022 fast-ssd: High IOPS SSD storage\n\u2022 standard: Regular disk storage\n\u2022 archive: Cheap, slow storage\n\nDynamic provisioning creates PVs on demand when a PVC is created."},
+    ]
+  },
+  scaling: {
+    title:"Autoscaling",
+    color:T.green,
+    sections:[
+      {heading:"Horizontal Pod Autoscaler",body:"Adjusts replica count based on metrics:\n\u2022 CPU utilization\n\u2022 Memory usage\n\u2022 Custom metrics (requests/sec, queue depth)\n\nChecks metrics every 15s by default. Uses a stabilization window to avoid flapping."},
+      {heading:"Vertical Pod Autoscaler",body:"Adjusts resource requests/limits for individual pods. Useful when you don't know how much CPU/memory an app needs. VPA monitors actual usage and recommends (or applies) better resource settings."},
+      {heading:"Cluster Autoscaler",body:"Adds or removes worker nodes from the cluster. When pods are pending because no node has capacity, the Cluster Autoscaler provisions a new node. When nodes are underutilized, it drains and removes them."},
+      {heading:"Scaling best practices",body:"\u2022 Set resource requests and limits on all pods\n\u2022 Use HPA for stateless workloads\n\u2022 Start with CPU-based scaling, add custom metrics later\n\u2022 Set appropriate min/max replica bounds\n\u2022 Test scaling behavior under load"},
+    ]
+  },
+  code: {
+    title:"kubectl Reference",
+    color:T.purpleL,
+    sections:[
+      {heading:"Resource management",body:"kubectl apply -f manifest.yaml\nkubectl delete -f manifest.yaml\nkubectl get pods/deployments/services\nkubectl describe pod <name>\nkubectl edit deployment <name>"},
+      {heading:"Debugging",body:"kubectl logs <pod> [-f] [--previous]\nkubectl exec -it <pod> -- /bin/sh\nkubectl port-forward <pod> 8080:80\nkubectl top pods/nodes\nkubectl get events --sort-by=.lastTimestamp"},
+      {heading:"Cluster info",body:"kubectl cluster-info\nkubectl get nodes\nkubectl get namespaces\nkubectl config current-context\nkubectl api-resources"},
+      {heading:"Common patterns",body:"# Watch resources in real-time\nkubectl get pods -w\n\n# All namespaces\nkubectl get pods -A\n\n# Output as YAML\nkubectl get deploy my-app -o yaml\n\n# Dry run to preview\nkubectl apply -f x.yaml --dry-run=client"},
+    ]
+  },
+};
+
+/* ─── COMPONENTS ─── */
+const CodePanel = ({ tokens, onClick }) =>
+  e("div", { onClick, style:{ background:T.codeBase, borderRadius:12, overflow:"hidden", border:`1px solid ${T.border}`, cursor:onClick?"pointer":"default" } },
+    e("div", { style:{ padding:"10px 14px 8px", borderBottom:`1px solid ${T.border}`, display:"flex", gap:7 } },
+      ...["#ff5f57","#febc2e","#28c840"].map((c,i) =>
+        e("div", { key:i, style:{ width:11, height:11, borderRadius:"50%", background:c } })
+      )
+    ),
+    e("div", { style:{ padding:"14px 18px 16px", fontFamily:"'SF Mono','Fira Code','Consolas',monospace", fontSize:12, lineHeight:1.85 } },
+      tokens.map((line, li) =>
+        e("div", { key:li },
+          line.map(([cls, txt], ti) =>
+            e("span", { key:ti, style:{ ...TS[cls], whiteSpace:"pre" } }, txt)
+          )
+        )
+      )
+    )
+  );
+
+const Panel = ({ label, children, style={}, focused=false, onClick }) =>
+  e(M.div, {
+    onClick,
+    animate:{
+      borderColor: focused ? T.purple : T.border2,
+      boxShadow: focused ? `0 0 16px ${T.purple}30, inset 0 0 12px ${T.purple}08` : "0 0 0px transparent"
+    },
+    transition:{ duration:0.4 },
+    style:{ borderRadius:12, border:"1.5px solid", background:T.surface, overflow:"hidden", cursor:onClick?"pointer":"default", ...style }
+  },
+    label && e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, label)
+    ),
+    e("div", { style:{ padding:12 } }, children)
+  );
+
+/* ─── K8S ARCHITECTURE DIAGRAM ─── */
+const PodBox = ({ label, color, small }) =>
+  e(M.div, {
+    initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, transition:sp(360,24),
+    style:{ padding: small?"4px 8px":"6px 10px", borderRadius:6, border:`1px solid ${color}55`, background:`${color}18`,
+            display:"inline-flex", alignItems:"center", gap:4, fontSize: small?9:10, fontWeight:600, color, fontFamily:"'SF Mono',monospace" }
+  },
+    e("div", { style:{ width: small?5:6, height: small?5:6, borderRadius:"50%", background:color } }),
+    label
+  );
+
+const NodeBox = ({ label, pods, color, borderColor, onClick }) =>
+  e("div", {
+    onClick,
+    style:{ flex:1, borderRadius:10, border:`1.5px solid ${borderColor||color}44`, background:`${color}08`, padding:10, cursor:"pointer", minHeight:90 }
+  },
+    e("div", { style:{ fontSize:10, fontWeight:700, color, marginBottom:8, letterSpacing:"0.04em" } }, label),
+    e("div", { style:{ display:"flex", flexWrap:"wrap", gap:5 } },
+      pods.map((p,i) => e(PodBox, { key:i, label:p.label, color:p.color, small:true }))
+    )
+  );
+
+const ControlPlaneBox = ({ onClick, highlight }) =>
+  e("div", {
+    onClick,
+    style:{ borderRadius:12, border:`1.5px solid ${T.k8sBlue}${highlight?'88':'44'}`, background:`${T.k8sBlue}0a`, padding:14, cursor:"pointer",
+            boxShadow: highlight?`0 0 20px ${T.k8sBlue}20`:'none', transition:"box-shadow 0.3s" }
+  },
+    e("div", { style:{ fontSize:11, fontWeight:700, color:T.k8sBlueL, marginBottom:10, letterSpacing:"0.06em", display:"flex", alignItems:"center", gap:6 } },
+      e("div", { style:{ width:8, height:8, borderRadius:"50%", background:T.k8sBlue } }),
+      "CONTROL PLANE"
+    ),
+    e("div", { style:{ display:"flex", gap:8, flexWrap:"wrap" } },
+      ["API Server","etcd","Scheduler","Controller Mgr"].map((c,i) =>
+        e(M.div, { key:i, initial:{opacity:0,y:6}, animate:{opacity:1,y:0}, transition:{delay:i*0.08,...ez},
+          style:{ padding:"6px 10px", borderRadius:6, border:`1px solid ${T.k8sBlue}44`, background:`${T.k8sBlue}14`,
+                  fontSize:10, fontWeight:600, color:T.k8sBlueL, fontFamily:"'SF Mono',monospace" }
+        }, c)
+      )
+    )
+  );
+
+const WorkerNodesBox = ({ nodes, onClick, highlight }) =>
+  e("div", {
+    style:{ borderRadius:12, border:`1.5px solid ${T.nodeTeal}${highlight?'88':'44'}`, background:`${T.nodeTeal}08`, padding:14,
+            boxShadow: highlight?`0 0 20px ${T.nodeTeal}20`:'none', transition:"box-shadow 0.3s" }
+  },
+    e("div", { style:{ fontSize:11, fontWeight:700, color:T.nodeTealL, marginBottom:10, letterSpacing:"0.06em", display:"flex", alignItems:"center", gap:6 } },
+      e("div", { style:{ width:8, height:8, borderRadius:"50%", background:T.nodeTeal } }),
+      "WORKER NODES"
+    ),
+    e("div", { style:{ display:"flex", gap:8 } },
+      nodes.map((n,i) =>
+        e(NodeBox, { key:i, label:n.label, pods:n.pods, color:T.nodeTeal, onClick })
+      )
+    )
+  );
+
+/* Arrow connector */
+const Arrow = ({ label, color, direction }) =>
+  e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", padding:"4px 0" } },
+    e("div", { style:{ width:1, height:12, background:`${color||T.text3}66` } }),
+    label && e("div", { style:{ fontSize:8, color:color||T.text3, padding:"2px 6px", letterSpacing:"0.05em" } }, label),
+    e("div", { style:{ width:0, height:0, borderLeft:"4px solid transparent", borderRight:"4px solid transparent", borderTop:`5px solid ${color||T.text3}88` } })
+  );
+
+/* Main K8s diagram component */
+const K8sDiagram = ({ scene, onClickDetail }) => {
+  const diag = scene.diagram;
+  const hl = scene.highlight;
+
+  if (diag === "intro") {
+    return e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:16, padding:"20px 0" } },
+      e(M.div, { initial:{opacity:0,scale:0.9}, animate:{opacity:1,scale:1}, transition:sp(300,22),
+        style:{ width:80, height:80, borderRadius:"50%", border:`2px solid ${T.k8sBlue}`, background:`${T.k8sBlue}14`,
+                display:"flex", alignItems:"center", justifyContent:"center", fontSize:36 }
+      }, "\u2699"),
+      e(M.div, { initial:{opacity:0,y:10}, animate:{opacity:1,y:0}, transition:{delay:0.2,...ez},
+        style:{ fontSize:14, fontWeight:600, color:T.k8sBlueL, textAlign:"center" }
+      }, "Container Orchestration"),
+      e("div", { style:{ display:"flex", gap:10, flexWrap:"wrap", justifyContent:"center" } },
+        ["Scheduling","Scaling","Networking","Self-healing","Rolling updates","Service discovery"].map((t,i) =>
+          e(M.div, { key:i, initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, transition:{delay:0.3+i*0.06,...ez},
+            style:{ padding:"5px 12px", borderRadius:20, border:`1px solid ${T.k8sBlue}33`, background:`${T.k8sBlue}0c`, fontSize:10, color:T.k8sBlueL }
+          }, t)
+        )
+      )
+    );
+  }
+
+  if (diag === "problem") {
+    const servers = [
+      { name:"server-1", containers:["app-a","app-d","app-g"], status:"ok" },
+      { name:"server-2", containers:["app-b","app-e"], status:"down" },
+      { name:"server-3", containers:["app-c","app-f","app-h","app-i"], status:"ok" },
+    ];
+    return e("div", { style:{ display:"flex", gap:8 } },
+      servers.map((s,i) =>
+        e(M.div, { key:i, initial:{opacity:0,y:10}, animate:{opacity:1,y:0}, transition:{delay:i*0.1,...ez},
+          style:{ flex:1, borderRadius:10, border:`1.5px solid ${s.status==="down"?T.coral:T.nodeTeal}44`,
+                  background:`${s.status==="down"?T.coral:T.nodeTeal}08`, padding:10 }
+        },
+          e("div", { style:{ fontSize:10, fontWeight:700, color:s.status==="down"?T.coralL:T.nodeTealL, marginBottom:8, display:"flex", alignItems:"center", gap:5 } },
+            e("div", { style:{ width:6, height:6, borderRadius:"50%", background:s.status==="down"?T.coral:T.podGreen } }),
+            s.name,
+            s.status==="down" && e("span", { style:{ fontSize:8, color:T.coral, marginLeft:4 } }, "\u2716 DOWN")
+          ),
+          e("div", { style:{ display:"flex", flexDirection:"column", gap:4 } },
+            s.containers.map((c,ci) =>
+              e(M.div, { key:ci, initial:{opacity:0,x:-5}, animate:{opacity: s.status==="down"?0.3:1, x:0}, transition:{delay:0.2+ci*0.05,...ez},
+                style:{ padding:"4px 8px", borderRadius:5, border:`1px solid ${s.status==="down"?T.coral:T.podGreen}44`,
+                        background:`${s.status==="down"?T.coral:T.podGreen}14`, fontSize:9, fontWeight:600,
+                        color:s.status==="down"?T.coralL:T.podGreenL, fontFamily:"'SF Mono',monospace",
+                        textDecoration:s.status==="down"?"line-through":"none" }
+              }, c)
+            )
+          )
+        )
+      )
+    );
+  }
+
+  if (diag === "architecture") {
+    return e("div", { style:{ display:"flex", flexDirection:"column", gap:4 } },
+      e(ControlPlaneBox, { onClick:()=>onClickDetail("control-plane"), highlight:false }),
+      e(Arrow, { label:"API calls", color:T.k8sBlue }),
+      e(WorkerNodesBox, {
+        nodes:[
+          { label:"Node 1", pods:[{label:"pod-a",color:T.podGreen},{label:"pod-b",color:T.podGreen}] },
+          { label:"Node 2", pods:[{label:"pod-c",color:T.podGreen},{label:"pod-d",color:T.podGreen}] },
+          { label:"Node 3", pods:[{label:"pod-e",color:T.podGreen}] },
+        ],
+        onClick:()=>onClickDetail("nodes"), highlight:false
+      })
+    );
+  }
+
+  if (diag === "control-plane") {
+    return e("div", { style:{ display:"flex", flexDirection:"column", gap:10 } },
+      ["API Server \u2014 Front door, validates & routes all requests","etcd \u2014 Distributed key-value store, cluster state","Scheduler \u2014 Assigns unscheduled pods to nodes","Controller Manager \u2014 Runs reconciliation loops"].map((item,i) => {
+        const [name, desc] = item.split(" \u2014 ");
+        return e(M.div, { key:i, initial:{opacity:0,x:-12}, animate:{opacity:1,x:0}, transition:{delay:i*0.1,...ez},
+          onClick:()=>onClickDetail("control-plane"),
+          style:{ display:"flex", alignItems:"flex-start", gap:10, padding:"10px 12px", borderRadius:8, border:`1px solid ${T.k8sBlue}33`, background:`${T.k8sBlue}0a`, cursor:"pointer" }
+        },
+          e("div", { style:{ width:24, height:24, borderRadius:6, border:`1px solid ${T.k8sBlue}55`, background:`${T.k8sBlue}18`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:10, fontWeight:700, color:T.k8sBlueL } }, i+1),
+          e("div", null,
+            e("div", { style:{ fontSize:11, fontWeight:600, color:T.k8sBlueL, marginBottom:2 } }, name),
+            e("div", { style:{ fontSize:10, color:T.text2, lineHeight:1.4 } }, desc)
+          )
+        );
+      })
+    );
+  }
+
+  if (diag === "worker-node") {
+    return e("div", { style:{ display:"flex", flexDirection:"column", gap:10 } },
+      ["kubelet \u2014 Node agent, ensures pods are running as specified","kube-proxy \u2014 Network rules for Service routing (iptables/IPVS)","containerd \u2014 Container runtime, pulls images & runs containers"].map((item,i) => {
+        const [name, desc] = item.split(" \u2014 ");
+        return e(M.div, { key:i, initial:{opacity:0,x:-12}, animate:{opacity:1,x:0}, transition:{delay:i*0.1,...ez},
+          onClick:()=>onClickDetail("nodes"),
+          style:{ display:"flex", alignItems:"flex-start", gap:10, padding:"10px 12px", borderRadius:8, border:`1px solid ${T.nodeTeal}33`, background:`${T.nodeTeal}0a`, cursor:"pointer" }
+        },
+          e("div", { style:{ width:24, height:24, borderRadius:6, border:`1px solid ${T.nodeTeal}55`, background:`${T.nodeTeal}18`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:10, fontWeight:700, color:T.nodeTealL } }, i+1),
+          e("div", null,
+            e("div", { style:{ fontSize:11, fontWeight:600, color:T.nodeTealL, marginBottom:2 } }, name),
+            e("div", { style:{ fontSize:10, color:T.text2, lineHeight:1.4 } }, desc)
+          )
+        );
+      }),
+      e("div", { style:{ marginTop:4 } },
+        e(WorkerNodesBox, {
+          nodes:[
+            { label:"Node 1", pods:[{label:"pod-a",color:T.podGreen},{label:"pod-b",color:T.podGreen}] },
+            { label:"Node 2", pods:[{label:"pod-c",color:T.podGreen}] },
+          ],
+          onClick:()=>onClickDetail("nodes"), highlight:true
+        })
+      )
+    );
+  }
+
+  if (diag === "pods") {
+    return e("div", { style:{ display:"flex", flexDirection:"column", gap:10 } },
+      e("div", { onClick:()=>onClickDetail("pods"), style:{ borderRadius:10, border:`1.5px solid ${T.podGreen}55`, background:`${T.podGreen}0a`, padding:14, cursor:"pointer" } },
+        e("div", { style:{ fontSize:11, fontWeight:700, color:T.podGreenL, marginBottom:10 } }, "Single-container Pod (most common)"),
+        e("div", { style:{ display:"flex", gap:8, alignItems:"center" } },
+          e("div", { style:{ flex:1, padding:"10px 14px", borderRadius:8, border:`1px solid ${T.podGreen}44`, background:`${T.podGreen}14`, textAlign:"center" } },
+            e("div", { style:{ fontSize:10, fontWeight:600, color:T.podGreenL, fontFamily:"'SF Mono',monospace" } }, "nginx:1.25"),
+            e("div", { style:{ fontSize:8, color:T.text3, marginTop:2 } }, "Container")
+          ),
+          e("div", { style:{ fontSize:9, color:T.text3, padding:"4px 8px" } }, "Shared: IP, volumes")
+        )
+      ),
+      e("div", { onClick:()=>onClickDetail("pods"), style:{ borderRadius:10, border:`1.5px solid ${T.blue}55`, background:`${T.blue}0a`, padding:14, cursor:"pointer" } },
+        e("div", { style:{ fontSize:11, fontWeight:700, color:T.blueL, marginBottom:10 } }, "Multi-container Pod (sidecar pattern)"),
+        e("div", { style:{ display:"flex", gap:8, alignItems:"center" } },
+          e("div", { style:{ flex:1, padding:"8px 12px", borderRadius:8, border:`1px solid ${T.podGreen}44`, background:`${T.podGreen}14`, textAlign:"center" } },
+            e("div", { style:{ fontSize:10, fontWeight:600, color:T.podGreenL, fontFamily:"'SF Mono',monospace" } }, "app"),
+            e("div", { style:{ fontSize:8, color:T.text3, marginTop:2 } }, "Main container")
+          ),
+          e("div", { style:{ flex:1, padding:"8px 12px", borderRadius:8, border:`1px solid ${T.amber}44`, background:`${T.amber}14`, textAlign:"center" } },
+            e("div", { style:{ fontSize:10, fontWeight:600, color:T.amberL, fontFamily:"'SF Mono',monospace" } }, "log-collector"),
+            e("div", { style:{ fontSize:8, color:T.text3, marginTop:2 } }, "Sidecar")
+          ),
+          e("div", { style:{ fontSize:9, color:T.text3, padding:"4px 8px" } }, "Shared: IP, volumes")
+        )
+      )
+    );
+  }
+
+  if (diag === "deployments") {
+    const replicas = [
+      { name:"my-app-abc12", version:"v2", status:"Running", color:T.podGreen },
+      { name:"my-app-def34", version:"v2", status:"Running", color:T.podGreen },
+      { name:"my-app-ghi56", version:"v2", status:"Running", color:T.podGreen },
+      { name:"my-app-old99", version:"v1", status:"Terminating", color:T.coral },
+    ];
+    return e("div", { style:{ display:"flex", flexDirection:"column", gap:8 } },
+      e("div", { onClick:()=>onClickDetail("deployments"), style:{ borderRadius:10, border:`1.5px solid ${T.purple}55`, background:`${T.purple}0a`, padding:12, cursor:"pointer" } },
+        e("div", { style:{ fontSize:11, fontWeight:700, color:T.purpleL, marginBottom:4 } }, "Deployment: my-app"),
+        e("div", { style:{ fontSize:10, color:T.text2 } }, "replicas: 3 | strategy: RollingUpdate")
+      ),
+      e(Arrow, { label:"manages", color:T.purple }),
+      e("div", { style:{ display:"flex", flexDirection:"column", gap:5 } },
+        replicas.map((r,i) =>
+          e(M.div, { key:i, initial:{opacity:0,x:-10}, animate:{opacity:1,x:0}, transition:{delay:i*0.08,...ez},
+            onClick:()=>onClickDetail("pods"),
+            style:{ display:"flex", alignItems:"center", gap:8, padding:"7px 12px", borderRadius:8, border:`1px solid ${r.color}44`, background:`${r.color}0c`, cursor:"pointer" }
+          },
+            e("div", { style:{ width:6, height:6, borderRadius:"50%", background:r.color } }),
+            e("span", { style:{ fontSize:10, fontWeight:600, color:r.color, fontFamily:"'SF Mono',monospace", flex:1 } }, r.name),
+            e("span", { style:{ fontSize:9, color:T.text3, padding:"2px 6px", borderRadius:4, border:`1px solid ${T.border}`, background:T.surface } }, r.version),
+            e("span", { style:{ fontSize:9, color:r.status==="Running"?T.podGreenL:T.coralL } }, r.status)
+          )
+        )
+      )
+    );
+  }
+
+  if (diag === "services") {
+    return e("div", { style:{ display:"flex", flexDirection:"column", gap:6 } },
+      e("div", { style:{ textAlign:"center", padding:"6px 0" } },
+        e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.1,...ez},
+          style:{ display:"inline-block", padding:"6px 16px", borderRadius:20, border:`1px solid ${T.text3}44`, background:`${T.text3}0c`, fontSize:10, color:T.text2 }
+        }, "External Traffic")
+      ),
+      e(Arrow, { label:"", color:T.text3 }),
+      e("div", { onClick:()=>onClickDetail("services"), style:{ borderRadius:10, border:`1.5px solid ${T.blue}55`, background:`${T.blue}08`, padding:12, cursor:"pointer" } },
+        e("div", { style:{ fontSize:11, fontWeight:700, color:T.blueL, marginBottom:6 } }, "Service: my-app-svc (ClusterIP 10.96.0.1)"),
+        e("div", { style:{ fontSize:10, color:T.text2 } }, "port: 80 \u2192 targetPort: 8080 | selector: app=my-app")
+      ),
+      e(Arrow, { label:"load balances", color:T.blue }),
+      e("div", { style:{ display:"flex", gap:6 } },
+        ["my-app-abc12","my-app-def34","my-app-ghi56"].map((p,i) =>
+          e(M.div, { key:i, initial:{opacity:0,scale:0.9}, animate:{opacity:1,scale:1}, transition:{delay:0.2+i*0.08,...ez},
+            onClick:()=>onClickDetail("pods"),
+            style:{ flex:1, padding:"8px 10px", borderRadius:8, border:`1px solid ${T.podGreen}44`, background:`${T.podGreen}0c`, textAlign:"center", cursor:"pointer" }
+          },
+            e("div", { style:{ fontSize:9, fontWeight:600, color:T.podGreenL, fontFamily:"'SF Mono',monospace" } }, p),
+            e("div", { style:{ fontSize:8, color:T.text3, marginTop:2 } }, ":8080")
+          )
+        )
+      )
+    );
+  }
+
+  if (diag === "ingress") {
+    return e("div", { style:{ display:"flex", flexDirection:"column", gap:6 } },
+      e("div", { style:{ display:"flex", gap:8, justifyContent:"center" } },
+        ["api.example.com/users","web.example.com/"].map((u,i) =>
+          e(M.div, { key:i, initial:{opacity:0,y:-8}, animate:{opacity:1,y:0}, transition:{delay:i*0.1,...ez},
+            style:{ padding:"5px 12px", borderRadius:20, border:`1px solid ${T.text3}44`, background:`${T.text3}0c`, fontSize:9, color:T.text2, fontFamily:"'SF Mono',monospace" }
+          }, u)
+        )
+      ),
+      e(Arrow, { label:"HTTP routing", color:T.amber }),
+      e("div", { onClick:()=>onClickDetail("services"), style:{ borderRadius:10, border:`1.5px solid ${T.amber}55`, background:`${T.amber}08`, padding:12, cursor:"pointer" } },
+        e("div", { style:{ fontSize:11, fontWeight:700, color:T.amberL, marginBottom:6 } }, "Ingress Controller (nginx)"),
+        e("div", { style:{ display:"flex", gap:6 } },
+          [{host:"api.example.com",svc:"api-svc"},{host:"web.example.com",svc:"web-svc"}].map((r,i) =>
+            e("div", { key:i, style:{ flex:1, padding:"6px 8px", borderRadius:6, border:`1px solid ${T.amber}33`, background:`${T.amber}0a`, fontSize:9, color:T.amberL } },
+              e("div", { style:{ fontWeight:600 } }, r.host),
+              e("div", { style:{ color:T.text3, marginTop:2 } }, "\u2192 " + r.svc)
+            )
+          )
+        )
+      ),
+      e(Arrow, { label:"", color:T.blue }),
+      e("div", { style:{ display:"flex", gap:6 } },
+        [{name:"api-svc",color:T.blue},{name:"web-svc",color:T.teal}].map((s,i) =>
+          e("div", { key:i, onClick:()=>onClickDetail("services"),
+            style:{ flex:1, padding:"8px 10px", borderRadius:8, border:`1px solid ${s.color}44`, background:`${s.color}0c`, textAlign:"center", cursor:"pointer" }
+          },
+            e("div", { style:{ fontSize:10, fontWeight:600, color:s.color, fontFamily:"'SF Mono',monospace" } }, s.name),
+            e("div", { style:{ fontSize:8, color:T.text3, marginTop:2 } }, "ClusterIP")
+          )
+        )
+      )
+    );
+  }
+
+  if (diag === "config") {
+    return e("div", { style:{ display:"flex", gap:10 } },
+      e("div", { onClick:()=>onClickDetail("storage"), style:{ flex:1, borderRadius:10, border:`1.5px solid ${T.teal}44`, background:`${T.teal}08`, padding:12, cursor:"pointer" } },
+        e("div", { style:{ fontSize:11, fontWeight:700, color:T.tealL, marginBottom:8 } }, "ConfigMap"),
+        e("div", { style:{ display:"flex", flexDirection:"column", gap:4 } },
+          [["DB_HOST","postgres.svc"],["LOG_LEVEL","info"],["PORT","8080"]].map(([k,v],i) =>
+            e(M.div, { key:i, initial:{opacity:0,x:-6}, animate:{opacity:1,x:0}, transition:{delay:i*0.06,...ez},
+              style:{ display:"flex", justifyContent:"space-between", padding:"4px 8px", borderRadius:4, background:`${T.teal}0c`, fontSize:9 }
+            },
+              e("span", { style:{ color:T.tealL, fontWeight:600, fontFamily:"'SF Mono',monospace" } }, k),
+              e("span", { style:{ color:T.text2, fontFamily:"'SF Mono',monospace" } }, v)
+            )
+          )
+        )
+      ),
+      e("div", { onClick:()=>onClickDetail("storage"), style:{ flex:1, borderRadius:10, border:`1.5px solid ${T.coral}44`, background:`${T.coral}08`, padding:12, cursor:"pointer" } },
+        e("div", { style:{ fontSize:11, fontWeight:700, color:T.coralL, marginBottom:8, display:"flex", alignItems:"center", gap:5 } },
+          "\uD83D\uDD12 Secret"
+        ),
+        e("div", { style:{ display:"flex", flexDirection:"column", gap:4 } },
+          [["DB_PASS","*****"],["API_KEY","*****"],["TLS_CERT","*****"]].map(([k,v],i) =>
+            e(M.div, { key:i, initial:{opacity:0,x:-6}, animate:{opacity:1,x:0}, transition:{delay:i*0.06,...ez},
+              style:{ display:"flex", justifyContent:"space-between", padding:"4px 8px", borderRadius:4, background:`${T.coral}0c`, fontSize:9 }
+            },
+              e("span", { style:{ color:T.coralL, fontWeight:600, fontFamily:"'SF Mono',monospace" } }, k),
+              e("span", { style:{ color:T.text3, fontFamily:"'SF Mono',monospace" } }, v)
+            )
+          )
+        )
+      )
+    );
+  }
+
+  if (diag === "storage") {
+    return e("div", { style:{ display:"flex", flexDirection:"column", gap:8 } },
+      e("div", { onClick:()=>onClickDetail("storage"), style:{ display:"flex", gap:8, cursor:"pointer" } },
+        e("div", { style:{ flex:1, borderRadius:10, border:`1.5px solid ${T.amber}44`, background:`${T.amber}08`, padding:12 } },
+          e("div", { style:{ fontSize:10, fontWeight:700, color:T.amberL, marginBottom:6 } }, "PersistentVolume"),
+          e("div", { style:{ fontSize:9, color:T.text2 } }, "50Gi SSD\nProvisioned by admin"),
+          e("div", { style:{ marginTop:6, padding:"3px 8px", borderRadius:4, background:`${T.podGreen}14`, border:`1px solid ${T.podGreen}33`, fontSize:8, color:T.podGreenL, display:"inline-block" } }, "Bound")
+        ),
+        e("div", { style:{ display:"flex", flexDirection:"column", justifyContent:"center", alignItems:"center" } },
+          e("div", { style:{ fontSize:8, color:T.text3 } }, "binds to"),
+          e("div", { style:{ fontSize:14, color:T.text3 } }, "\u2194")
+        ),
+        e("div", { style:{ flex:1, borderRadius:10, border:`1.5px solid ${T.purple}44`, background:`${T.purple}08`, padding:12 } },
+          e("div", { style:{ fontSize:10, fontWeight:700, color:T.purpleL, marginBottom:6 } }, "PersistentVolumeClaim"),
+          e("div", { style:{ fontSize:9, color:T.text2 } }, "Request: 10Gi\nAccessMode: RWO"),
+          e("div", { style:{ marginTop:6, padding:"3px 8px", borderRadius:4, background:`${T.podGreen}14`, border:`1px solid ${T.podGreen}33`, fontSize:8, color:T.podGreenL, display:"inline-block" } }, "Bound")
+        )
+      ),
+      e(Arrow, { label:"mounted in", color:T.purple }),
+      e("div", { onClick:()=>onClickDetail("pods"), style:{ borderRadius:8, border:`1px solid ${T.podGreen}44`, background:`${T.podGreen}0c`, padding:"8px 12px", textAlign:"center", cursor:"pointer" } },
+        e("div", { style:{ fontSize:10, fontWeight:600, color:T.podGreenL, fontFamily:"'SF Mono',monospace" } }, "Pod: my-db-0"),
+        e("div", { style:{ fontSize:8, color:T.text3, marginTop:2 } }, "mountPath: /var/lib/data")
+      )
+    );
+  }
+
+  if (diag === "scaling") {
+    const stages = [
+      { replicas:2, cpu:30, label:"Normal load", color:T.podGreen },
+      { replicas:4, cpu:72, label:"Traffic spike", color:T.amber },
+      { replicas:7, cpu:85, label:"Peak traffic", color:T.coral },
+      { replicas:3, cpu:40, label:"Load decreases", color:T.podGreen },
+    ];
+    return e("div", { style:{ display:"flex", flexDirection:"column", gap:10 } },
+      e("div", { onClick:()=>onClickDetail("scaling"), style:{ borderRadius:10, border:`1.5px solid ${T.green}55`, background:`${T.green}08`, padding:12, cursor:"pointer" } },
+        e("div", { style:{ fontSize:11, fontWeight:700, color:T.greenL, marginBottom:4 } }, "HorizontalPodAutoscaler"),
+        e("div", { style:{ fontSize:10, color:T.text2 } }, "min: 2 | max: 10 | target CPU: 70%")
+      ),
+      e("div", { style:{ display:"flex", gap:6 } },
+        stages.map((s,i) =>
+          e(M.div, { key:i, initial:{opacity:0,y:10}, animate:{opacity:1,y:0}, transition:{delay:i*0.12,...ez},
+            style:{ flex:1, borderRadius:8, border:`1px solid ${s.color}33`, background:`${s.color}08`, padding:8, textAlign:"center" }
+          },
+            e("div", { style:{ fontSize:8, color:T.text3, marginBottom:4 } }, s.label),
+            e("div", { style:{ fontSize:16, fontWeight:700, color:s.color, fontFamily:"'SF Mono',monospace" } }, s.replicas),
+            e("div", { style:{ fontSize:8, color:T.text3, margin:"2px 0" } }, "replicas"),
+            e("div", { style:{ height:4, background:T.border, borderRadius:99, overflow:"hidden", marginTop:4 } },
+              e(M.div, { initial:{width:0}, animate:{width:`${s.cpu}%`}, transition:{duration:0.6,delay:i*0.12},
+                style:{ height:"100%", background:s.color, borderRadius:99 } })
+            ),
+            e("div", { style:{ fontSize:8, color:s.color, marginTop:2 } }, s.cpu+"% CPU")
+          )
+        )
+      )
+    );
+  }
+
+  if (diag === "kubectl") {
+    const cmds = [
+      { cmd:"kubectl apply -f deploy.yaml", desc:"Apply manifest to cluster", icon:"\u25B6" },
+      { cmd:"kubectl get pods", desc:"List running pods", icon:"\uD83D\uDCCB" },
+      { cmd:"kubectl describe pod xyz", desc:"Detailed pod info", icon:"\uD83D\uDD0D" },
+      { cmd:"kubectl logs xyz", desc:"Container stdout/stderr", icon:"\uD83D\uDCC4" },
+      { cmd:"kubectl exec -it xyz -- sh", desc:"Shell into container", icon:"\u2328" },
+    ];
+    return e("div", { style:{ display:"flex", flexDirection:"column", gap:6 } },
+      cmds.map((c,i) =>
+        e(M.div, { key:i, initial:{opacity:0,x:-10}, animate:{opacity:1,x:0}, transition:{delay:i*0.08,...ez},
+          onClick:()=>onClickDetail("code"),
+          style:{ display:"flex", alignItems:"center", gap:10, padding:"8px 12px", borderRadius:8, border:`1px solid ${T.purple}28`, background:`${T.purple}06`, cursor:"pointer" }
+        },
+          e("div", { style:{ width:22, height:22, borderRadius:5, border:`1px solid ${T.purple}44`, background:`${T.purple}14`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, flexShrink:0 } }, c.icon),
+          e("div", { style:{ flex:1 } },
+            e("div", { style:{ fontSize:10, fontWeight:600, color:T.purpleL, fontFamily:"'SF Mono',monospace" } }, c.cmd),
+            e("div", { style:{ fontSize:9, color:T.text3, marginTop:1 } }, c.desc)
+          )
+        )
+      )
+    );
+  }
+
+  if (diag === "reconciliation") {
+    return e("div", { style:{ display:"flex", flexDirection:"column", gap:8, alignItems:"center" } },
+      e("div", { style:{ display:"flex", gap:20, width:"100%" } },
+        e(M.div, { initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:0.1,...ez},
+          style:{ flex:1, borderRadius:10, border:`1.5px solid ${T.k8sBlue}44`, background:`${T.k8sBlue}08`, padding:12, textAlign:"center" }
+        },
+          e("div", { style:{ fontSize:10, fontWeight:700, color:T.k8sBlueL, marginBottom:6 } }, "Desired State (etcd)"),
+          e("div", { style:{ fontSize:9, color:T.text2 } }, "replicas: 3"),
+          e("div", { style:{ fontSize:9, color:T.text2 } }, "image: app:v2"),
+          e("div", { style:{ fontSize:9, color:T.text2 } }, "all healthy")
+        ),
+        e(M.div, { initial:{opacity:0,x:20}, animate:{opacity:1,x:0}, transition:{delay:0.1,...ez},
+          style:{ flex:1, borderRadius:10, border:`1.5px solid ${T.coral}44`, background:`${T.coral}08`, padding:12, textAlign:"center" }
+        },
+          e("div", { style:{ fontSize:10, fontWeight:700, color:T.coralL, marginBottom:6 } }, "Actual State (cluster)"),
+          e("div", { style:{ fontSize:9, color:T.text2 } }, "replicas: 2"),
+          e("div", { style:{ fontSize:9, color:T.coral } }, "1 pod crashed"),
+          e("div", { style:{ fontSize:9, color:T.text2 } }, "image: app:v2")
+        )
+      ),
+      e(M.div, {
+        initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1,rotate:[0,360]},
+        transition:{ opacity:{delay:0.3,...ez}, scale:{delay:0.3,...ez}, rotate:{duration:3,repeat:Infinity,ease:"linear"} },
+        style:{ width:40, height:40, borderRadius:"50%", border:`2px solid ${T.amber}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, margin:"4px 0" }
+      }, "\u21BB"),
+      e(M.div, { initial:{opacity:0,y:10}, animate:{opacity:1,y:0}, transition:{delay:0.5,...ez},
+        style:{ fontSize:10, fontWeight:600, color:T.amberL, textAlign:"center" }
+      }, "Controller detects drift \u2192 schedules new pod \u2192 converges to desired state"),
+      e(M.div, { initial:{opacity:0,y:10}, animate:{opacity:1,y:0}, transition:{delay:0.7,...ez},
+        style:{ width:"100%", borderRadius:10, border:`1.5px solid ${T.podGreen}44`, background:`${T.podGreen}08`, padding:12, textAlign:"center" }
+      },
+        e("div", { style:{ fontSize:10, fontWeight:700, color:T.podGreenL, marginBottom:6 } }, "Reconciled State"),
+        e("div", { style:{ display:"flex", gap:6, justifyContent:"center" } },
+          [1,2,3].map(i =>
+            e(M.div, { key:i, initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, transition:{delay:0.8+i*0.1,...ez},
+              style:{ padding:"5px 12px", borderRadius:6, border:`1px solid ${T.podGreen}44`, background:`${T.podGreen}14`, fontSize:9, fontWeight:600, color:T.podGreenL, fontFamily:"'SF Mono',monospace" }
+            }, `pod-${i}`)
+          )
+        )
+      )
+    );
+  }
+
+  return null;
+};
+
+/* ─── FINALE ─── */
+const Finale = () => {
+  const rows = [
+    { icon:"\u2699", label:"Container orchestration", sub:"Kubernetes automates deploying, scaling, and managing containers across clusters of machines", c:T.k8sBlue },
+    { icon:"\uD83C\uDFDB", label:"Control Plane + Nodes", sub:"Brain (API Server, etcd, Scheduler, Controllers) + Muscle (kubelet, kube-proxy, runtime)", c:T.k8sBlue },
+    { icon:"\uD83D\uDCE6", label:"Pods & Deployments", sub:"Pods wrap containers; Deployments manage desired replica count with rolling updates", c:T.podGreen },
+    { icon:"\uD83C\uDF10", label:"Services & Ingress", sub:"Stable networking for ephemeral pods; HTTP routing from outside the cluster", c:T.blue },
+    { icon:"\uD83D\uDCBE", label:"Storage & Config", sub:"PersistentVolumes outlive pods; ConfigMaps & Secrets externalize configuration", c:T.amber },
+    { icon:"\uD83D\uDCC8", label:"Autoscaling", sub:"HPA scales pods on metrics; Cluster Autoscaler scales nodes on demand", c:T.green },
+    { icon:"\u21BB", label:"Reconciliation loop", sub:"Controllers continuously compare desired state vs actual state and converge", c:T.purple },
+  ];
+  return e("div", { style:{ padding:"8px 0" } },
+    rows.map((r,i) => e(M.div, { key:i, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.1,...ez},
+      style:{ display:"flex", alignItems:"flex-start", gap:12, padding:"11px 14px", marginBottom:8, borderRadius:10, border:`1px solid ${r.c}28`, background:`${r.c}08` }
+    },
+      e("div", { style:{ width:28, height:28, borderRadius:"50%", border:`1.5px solid ${r.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:13 } }, r.icon),
+      e("div", null,
+        e("div", { style:{ fontSize:13, fontWeight:600, color:r.c, marginBottom:2 } }, r.label),
+        e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.5 } }, r.sub)
+      )
+    ))
+  );
+};
+
+/* ─── DETAIL PANEL ─── */
+const DetailPanel = ({ detailKey, onClose }) => {
+  const d = DETAILS[detailKey];
+  if (!d) return null;
+  return e("div", {
+    style:{ width:340, flexShrink:0, background:T.surface, borderRadius:14, border:`1.5px solid ${d.color}44`, overflow:"hidden", alignSelf:"flex-start", position:"sticky", top:56 }
+  },
+    e("div", { style:{ padding:"14px 18px 12px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:8 } },
+        e("div", { style:{ width:8, height:8, borderRadius:"50%", background:d.color } }),
+        e("span", { style:{ fontSize:14, fontWeight:600, color:T.text1 } }, d.title)
+      ),
+      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6, transition:"color 0.2s" }, onMouseEnter:ev=>ev.target.style.color=T.text1, onMouseLeave:ev=>ev.target.style.color=T.text3 }, "\u2715")
+    ),
+    e("div", { style:{ padding:"16px 18px 20px", maxHeight:"calc(100vh - 140px)", overflowY:"auto" } },
+      d.sections.map((s, i) =>
+        e("div", { key:i, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
+          e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
+        )
+      )
+    )
+  );
+};
+
+/* ─── APP ─── */
+function App() {
+  const [si, setSi] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [detail, setDetail] = useState(null);
+  const timer = useRef(null);
+  const sc = SCENES[si];
+
+  useEffect(() => { setPlaying(true); }, []);
+
+  useEffect(() => {
+    if (!playing) return;
+    const d = si===0 ? 3000 : sc.finale ? 99999 : 3400;
+    timer.current = setTimeout(() => { si < SCENES.length-1 ? setSi(i=>i+1) : setPlaying(false); }, d);
+    return () => clearTimeout(timer.current);
+  }, [playing, si]);
+
+  const go = d => { clearTimeout(timer.current); setPlaying(false); setSi(i=>Math.max(0,Math.min(SCENES.length-1,i+d))); };
+  const jump = i => { clearTimeout(timer.current); setPlaying(false); setSi(i); };
+  const togglePlay = () => { if(si===SCENES.length-1){setSi(0);setPlaying(true);}else setPlaying(p=>!p); };
+  const toggleDetail = key => { setDetail(d => d===key ? null : key); clearTimeout(timer.current); setPlaying(false); };
+
+  return e("div", { style:{ display:"flex", gap:16, alignItems:"flex-start", justifyContent: detail ? "flex-start" : "center" } },
+  e("div", { style:{ width:760, flexShrink:0, background:T.bg, fontFamily:"system-ui,sans-serif", padding:20, borderRadius:16 } },
+
+    /* header */
+    e("div", { style:{ marginBottom:18 } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:10, marginBottom:11 } },
+        e(AP, { mode:"wait" },
+          e(M.div, { key:sc.act, initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, exit:{opacity:0}, transition:sp(400,28),
+            style:{ fontSize:9,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:T.purple,background:`${T.purple}14`,padding:"3px 10px",borderRadius:20,border:`1px solid ${T.purple}30`,flexShrink:0 }
+          }, sc.act)
+        ),
+        e("div", { style:{ flex:1, height:1, background:T.border, borderRadius:99, overflow:"hidden" } },
+          e(M.div, { animate:{width:`${si/(SCENES.length-1)*100}%`}, transition:{duration:0.5}, style:{height:"100%",background:T.purple,borderRadius:99} })
+        ),
+        e("span", { style:{ fontSize:10, color:T.text3 } }, `${si+1} / ${SCENES.length}`)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.title, initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, exit:{opacity:0,y:-8}, transition:ez,
+          style:{ fontSize:20,fontWeight:600,color:T.text1,marginBottom:4,letterSpacing:"-0.02em" }
+        }, sc.title)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
+          style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
+        }, sc.sub)
+      )
+    ),
+
+    e("div", { style:{ minHeight:460 } },
+
+    /* finale */
+    sc.finale && e(Finale),
+
+    /* main */
+    !sc.finale && e("div", null,
+
+      /* K8s diagram */
+      sc.diagram && e("div", { style:{ marginBottom:10 } },
+        e(K8sDiagram, { scene:sc, onClickDetail:toggleDetail })
+      ),
+
+      /* code */
+      sc.code.length > 0 && e("div", { style:{ marginBottom:10 } },
+        e(CodePanel, { tokens:sc.code, onClick:()=>toggleDetail("code") })
+      )
+    ),
+
+    ), /* close minHeight wrapper */
+
+    /* controls */
+    e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginTop:16 } },
+      e("button", { onClick:()=>go(-1), disabled:si===0,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===0?T.text3:T.text2,cursor:si===0?"not-allowed":"pointer",fontSize:11,transition:"color 0.2s" }
+      }, "\u2190 Back"),
+      e("button", { onClick:togglePlay,
+        style:{ padding:"6px 18px",borderRadius:8,border:`1px solid ${playing?T.coral:T.purple}44`,background:playing?`${T.coral}14`:`${T.purple}14`,color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all 0.2s" }
+      }, playing ? "\u23F8  Pause" : si===SCENES.length-1 ? "\u21BA  Replay" : "\u25B6  Play"),
+      e("button", { onClick:()=>go(1), disabled:si===SCENES.length-1,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
+      }, "Next \u2192"),
+      e("div", { style:{ flex:1 } }),
+      e("div", { style:{ display:"flex", gap:4, alignItems:"center" } },
+        SCENES.map((_,i) =>
+          e("button", { key:i, onClick:()=>jump(i),
+            style:{ width:i===si?16:5,height:5,borderRadius:99,border:"none",padding:0,background:i===si?T.purple:i<si?`${T.purple}55`:T.border,cursor:"pointer",transition:"all 0.25s" }
+          })
+        )
+      )
+    )
+  ),
+  detail && e(DetailPanel, { detailKey:detail, onClose:()=>setDetail(null) })
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(e(App));
+</script>
+</body>
+</html>

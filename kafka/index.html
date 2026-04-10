@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kafka</title>
+<link href="https://cdn.lineicons.com/5.0/lineicons.css" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111118;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px 16px 24px 196px;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  #root { width: 100%; max-width: 1120px; }
+  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: system-ui, sans-serif; }
+  .topnav a { text-decoration: none; color: #8888aa; font-size: 13px; transition: color 0.2s; }
+  .topnav a:hover { color: #e8e8f0; }
+  .topnav .name { font-weight: 600; color: #e8e8f0; font-size: 13px; }
+  .topnav .sep { color: #38384a; font-size: 12px; }
+  .topnav .current { color: #7c6fcd; font-size: 13px; font-weight: 500; }
+  .sidenav { position: fixed; top: 38px; left: 0; width: 180px; height: calc(100vh - 38px); background: #111118; border-right: 1px solid #2a2a38; padding: 14px 0; overflow-y: auto; z-index: 200; font-family: system-ui, sans-serif; }
+  .sidenav a { display: block; padding: 6px 16px; font-size: 11px; color: #8888aa; text-decoration: none; transition: color 0.2s, background 0.2s; border-left: 2px solid transparent; }
+  .sidenav a:hover { color: #e8e8f0; background: rgba(124,111,205,0.06); }
+  .sidenav a.active { color: #a99cf0; border-left-color: #7c6fcd; background: rgba(124,111,205,0.1); font-weight: 600; }
+  .sidenav .nav-section { padding: 8px 16px 4px; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #44445a; }
+  .sidenav .nav-section:first-child { padding-top: 4px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="../" class="name">Sharon Zhou</a>
+  <span class="sep">/</span>
+  <a href="../">Animations</a>
+  <span class="sep">/</span>
+  <span class="current">Kafka</span>
+</nav>
+<nav class="sidenav">
+  <div class="nav-section">JavaScript</div>
+  <a href="../event-loop/">Event Loop</a>
+  <a href="../this-keyword/">this Keyword</a>
+  <a href="../hoisting/">Hoisting</a>
+  <a href="../closures/">Closures</a>
+  <a href="../garbage-collection/">Garbage Collection</a>
+  <a href="../event-delegation/">Event Delegation</a>
+  <a href="../iterators-generators/">Iterators & Generators</a>
+  <a href="../xhr-vs-fetch/">XHR vs fetch()</a>
+  <a href="../error-propagation/">Error Propagation</a>
+  <a href="../web-workers/">Web Workers</a>
+  <a href="../prototypal-inheritance/">Prototypal Inheritance</a>
+  <div class="nav-section">Browser</div>
+  <a href="../critical-rendering-path/">Critical Rendering Path</a>
+  <a href="../reflow-vs-repaint/">Reflow vs Repaint</a>
+  <a href="../css-box-model/">CSS Box Model & Layout</a>
+  <a href="../web-security/">Web Security</a>
+  <a href="../request-animation-frame/">requestAnimationFrame</a>
+  <a href="../cors/">CORS</a>
+  <a href="../websocket-vs-sse/">WebSocket vs SSE</a>
+  <div class="nav-section">Infrastructure</div>
+  <a href="../vms-vs-docker/">VMs vs Docker</a>
+  <a href="../opentelemetry/">OpenTelemetry</a>
+  <a href="../kubernetes/">Kubernetes</a>
+  <a href="../kafka/" class="active">Kafka</a>
+</nav>
+<div id="root" style="margin-top: 36px;"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/framer-motion@11/dist/framer-motion.js"></script>
+<script>
+const { useState, useEffect, useRef } = React;
+const { motion, AnimatePresence } = window.Motion;
+const e = React.createElement;
+const M = motion;
+const AP = AnimatePresence;
+const sp = (s=380,d=28) => ({ type:"spring", stiffness:s, damping:d });
+const ez = { duration:0.32, ease:[0.22,1,0.36,1] };
+
+const T = {
+  bg:"#111118", surface:"#18181f", surface2:"#1e1e28",
+  border:"#2a2a38", border2:"#38384a",
+  text1:"#e8e8f0", text2:"#8888aa", text3:"#44445a",
+  purple:"#7c6fcd", purpleL:"#a99cf0",
+  teal:"#3db89a", tealL:"#6dd4b8",
+  coral:"#c4694a", coralL:"#e08a6a",
+  blue:"#4a8fd4", blueL:"#82b4e8",
+  amber:"#d4a84a", amberL:"#e8c86a",
+  green:"#4ac46a", greenL:"#6ae88a",
+  red:"#e05555", redL:"#ff7777",
+  codeBase:"#141428",
+};
+
+const TS = {
+  fn:{color:"#82aaff"}, meth:{color:"#89ddff"}, str:{color:"#c3e88d"},
+  kw:{color:"#c792ea"}, num:{color:"#f78c6c"}, punc:{color:"#89ddff"},
+  plain:{color:"#a6accd"}, cmt:{color:"#546e7a",fontStyle:"italic"},
+};
+
+/* ─── SCENES ─── */
+const SCENES = [
+  {
+    id:0, act:"01",
+    title:"What is Apache Kafka?",
+    sub:"Kafka is a distributed event streaming platform. It lets services produce and consume streams of events in real time, decoupling producers from consumers through a durable, ordered log.",
+    code:[
+      [["cmt","// Event streaming:"]],
+      [["cmt","// Producer  -->  Kafka  -->  Consumer"]],
+      [["cmt","//"]],
+      [["cmt","// Durable, ordered, replayable"]],
+      [["cmt","// Distributed across many brokers"]],
+    ],
+    viz:"intro",
+  },
+  {
+    id:1, act:"02",
+    title:"The problem: point-to-point chaos",
+    sub:"Without Kafka, every service talks directly to every other service. N services need N*(N-1) connections. Adding a new service means updating all the others. Data gets siloed and fragile.",
+    code:[
+      [["cmt","// Point-to-point integrations"]],
+      [["cmt","// 4 services = 12 connections"]],
+      [["cmt","// 10 services = 90 connections"]],
+      [["cmt","// Each with its own protocol,"]],
+      [["cmt","// retry logic, schema..."]],
+    ],
+    viz:"problem",
+  },
+  {
+    id:2, act:"03",
+    title:"Kafka as a distributed commit log",
+    sub:"At its core, Kafka is an append-only, immutable, ordered log of records. Producers append to the end. Consumers read from any position. Records are never modified or deleted (until retention expires).",
+    code:[
+      [["cmt","// Append-only log:"]],
+      [["plain","  offset "],["num","0"],["plain"," | "],["str","\"user.signup\""]],
+      [["plain","  offset "],["num","1"],["plain"," | "],["str","\"order.placed\""]],
+      [["plain","  offset "],["num","2"],["plain"," | "],["str","\"payment.done\""]],
+      [["plain","  offset "],["num","3"],["plain"," | "],["str","\"item.shipped\""]],
+      [["cmt","  // immutable, ordered, durable"]],
+    ],
+    viz:"commitlog",
+  },
+  {
+    id:3, act:"04",
+    title:"Core concepts",
+    sub:"Producers write events. Brokers store them in topics. Consumers read them. Topics are the categories of events. Everything flows through the broker cluster.",
+    code:[
+      [["kw","Producer"],["plain"," "],["punc","->"],["plain"," "],["fn","Broker"],["plain"," (Topic)"]],
+      [["fn","Broker"],["plain"," (Topic) "],["punc","->"],["plain"," "],["kw","Consumer"]],
+      [["cmt",""]],
+      [["cmt","// Producer: writes events"]],
+      [["cmt","// Broker: stores & serves events"]],
+      [["cmt","// Consumer: reads events"]],
+      [["cmt","// Topic: named stream of events"]],
+    ],
+    viz:"concepts",
+  },
+  {
+    id:4, act:"05",
+    title:"Topics and partitions",
+    sub:"A topic is split into partitions for parallelism. Each partition is an independent ordered log. Partitions are spread across brokers. More partitions = more throughput.",
+    code:[
+      [["cmt","// Topic: 'orders'"]],
+      [["cmt","//   Partition 0: [0][1][2][3]"]],
+      [["cmt","//   Partition 1: [0][1][2]"]],
+      [["cmt","//   Partition 2: [0][1][2][3][4]"]],
+      [["cmt",""]],
+      [["cmt","// Each partition = ordered log"]],
+      [["cmt","// Partitions spread across brokers"]],
+    ],
+    viz:"partitions",
+  },
+  {
+    id:5, act:"06",
+    title:"How producers write",
+    sub:"Producers send records to a topic. Each record has an optional key. If a key is set, records with the same key always go to the same partition (hash partitioning). No key = round-robin.",
+    code:[
+      [["fn","producer"],["punc","."],["meth","send"],["punc","({"]],
+      [["plain","  "],["str","topic"],["punc",": "],["str","'orders'"],["punc",","]],
+      [["plain","  "],["str","key"],["punc",":   "],["str","'user-42'"],["punc",","]],
+      [["plain","  "],["str","value"],["punc",": "],["str","'{\"item\":\"book\"}'"]],
+      [["punc","})"]],
+      [["cmt","// key hash -> partition assignment"]],
+    ],
+    viz:"producers",
+  },
+  {
+    id:6, act:"07",
+    title:"How consumers read",
+    sub:"Consumers read from partitions at their own pace using offsets. A consumer group shares the partitions: each partition is consumed by exactly one member of the group.",
+    code:[
+      [["cmt","// Consumer group 'analytics'"]],
+      [["cmt","// 3 consumers, 3 partitions"]],
+      [["cmt","//   C1 reads P0 at offset 5"]],
+      [["cmt","//   C2 reads P1 at offset 3"]],
+      [["cmt","//   C3 reads P2 at offset 7"]],
+      [["cmt","// Each partition -> 1 consumer"]],
+    ],
+    viz:"consumers",
+  },
+  {
+    id:7, act:"08",
+    title:"Consumer groups",
+    sub:"Multiple consumer groups can read the same topic independently. Adding consumers to a group scales reads. If a consumer leaves, its partitions are rebalanced to surviving members.",
+    code:[
+      [["cmt","// Group A: 3 consumers (analytics)"]],
+      [["cmt","// Group B: 2 consumers (billing)"]],
+      [["cmt","// Both read 'orders' independently"]],
+      [["cmt",""]],
+      [["cmt","// Consumer dies -> rebalance"]],
+      [["cmt","// Its partitions assigned to others"]],
+    ],
+    viz:"groups",
+  },
+  {
+    id:8, act:"09",
+    title:"Offsets and commits",
+    sub:"Each consumer tracks its position (offset) per partition. After processing a record, the consumer commits the offset. On restart, it resumes from the last committed offset.",
+    code:[
+      [["cmt","// Consumer reads offset 5"]],
+      [["cmt","// Processes message"]],
+      [["fn","consumer"],["punc","."],["meth","commitSync"],["punc","()"]],
+      [["cmt","// Offset 6 committed"]],
+      [["cmt",""]],
+      [["cmt","// at-least-once: commit after process"]],
+      [["cmt","// at-most-once:  commit before process"]],
+    ],
+    viz:"offsets",
+  },
+  {
+    id:9, act:"10",
+    title:"Replication",
+    sub:"Each partition is replicated across multiple brokers. One replica is the leader (handles reads/writes), others are followers. The ISR (In-Sync Replicas) are followers caught up with the leader.",
+    code:[
+      [["cmt","// Partition 0, replication factor 3"]],
+      [["cmt","//   Broker 1: Leader   [0-7]"]],
+      [["cmt","//   Broker 2: Follower [0-7] (ISR)"]],
+      [["cmt","//   Broker 3: Follower [0-6] (catching up)"]],
+      [["cmt",""]],
+      [["kw","replication.factor"],["punc","="],["num","3"]],
+    ],
+    viz:"replication",
+  },
+  {
+    id:10, act:"11",
+    title:"Broker failure and recovery",
+    sub:"When a leader broker fails, Kafka elects a new leader from the ISR. Consumers and producers switch to the new leader automatically. No data is lost as long as ISR has members.",
+    code:[
+      [["cmt","// Broker 1 (leader) goes down"]],
+      [["cmt","// Controller detects failure"]],
+      [["cmt","// Broker 2 (ISR) elected leader"]],
+      [["cmt","// Producers/consumers redirect"]],
+      [["cmt",""]],
+      [["kw","min.insync.replicas"],["punc","="],["num","2"]],
+      [["cmt","// guarantees durability"]],
+    ],
+    viz:"failure",
+  },
+  {
+    id:11, act:"12",
+    title:"Kafka vs message queues",
+    sub:"Traditional queues (RabbitMQ) delete messages after consumption. Kafka retains them. Consumers can replay from any offset. Multiple groups read independently. It's a log, not a queue.",
+    code:[
+      [["cmt","// RabbitMQ: message consumed -> deleted"]],
+      [["cmt","// Kafka:    message consumed -> stays"]],
+      [["cmt",""]],
+      [["cmt","// Kafka advantages:"]],
+      [["cmt","//   Replay from any offset"]],
+      [["cmt","//   Multiple consumer groups"]],
+      [["cmt","//   Time-based retention (7 days default)"]],
+    ],
+    viz:"vsqueue",
+  },
+  {
+    id:12, act:"13",
+    title:"Common use cases",
+    sub:"Kafka powers event sourcing, change data capture (CDC), real-time stream processing, metrics pipelines, log aggregation, and activity tracking at massive scale.",
+    code:[
+      [["cmt","// Event sourcing"]],
+      [["cmt","//   Every state change is an event"]],
+      [["cmt","// CDC (Change Data Capture)"]],
+      [["cmt","//   DB changes -> Kafka -> downstream"]],
+      [["cmt","// Stream processing"]],
+      [["cmt","//   Real-time transformations"]],
+      [["cmt","// Metrics & logging pipelines"]],
+    ],
+    viz:"usecases",
+  },
+  {
+    id:13, act:"14",
+    title:"Kafka ecosystem",
+    sub:"Kafka Connect moves data in/out of Kafka without code. Kafka Streams processes streams in your app. Schema Registry manages event schemas. ksqlDB lets you query streams with SQL.",
+    code:[
+      [["kw","Connect"],["plain","    "],["cmt","// DB <-> Kafka connectors"]],
+      [["kw","Streams"],["plain","    "],["cmt","// stream processing library"]],
+      [["kw","Schema Reg"],["plain"," "],["cmt","// Avro/Protobuf schemas"]],
+      [["kw","ksqlDB"],["plain","     "],["cmt","// SQL over streams"]],
+    ],
+    viz:"ecosystem",
+  },
+  {
+    id:14, act:"\u2713",
+    title:"Kafka \u2014 summary",
+    sub:"Kafka is a distributed commit log that decouples producers from consumers. Topics are split into partitions for parallelism. Replication ensures durability. Consumer groups enable scalable reads.",
+    code:[], viz:"finale",
+    finale:true,
+  },
+];
+
+/* ─── DETAIL CONTENT ─── */
+const DETAILS = {
+  producers: {
+    title:"Producers",
+    color:T.amber,
+    sections:[
+      {heading:"What is a producer?",body:"A Kafka producer is a client that publishes (writes) events to Kafka topics. Producers choose which topic and optionally which partition to send each record to."},
+      {heading:"Key-based partitioning",body:"If a record has a key, Kafka hashes it to determine the partition:\n  partition = hash(key) % num_partitions\n\nRecords with the same key always go to the same partition, preserving per-key ordering."},
+      {heading:"Acks and durability",body:"Producers configure acknowledgment level:\n\n  acks=0  Fire and forget (fastest, may lose)\n  acks=1  Leader acknowledged (balanced)\n  acks=all  All ISR acknowledged (safest)\n\nHigher acks = more durability, more latency."},
+      {heading:"Batching",body:"Producers batch records before sending for efficiency. batch.size and linger.ms control when batches are flushed. Larger batches = higher throughput, higher latency."},
+    ]
+  },
+  brokers: {
+    title:"Brokers",
+    color:T.blue,
+    sections:[
+      {heading:"What is a broker?",body:"A Kafka broker is a server in the Kafka cluster that stores data and serves client requests. A cluster typically has 3+ brokers for fault tolerance."},
+      {heading:"Storage",body:"Brokers store partition data as segment files on disk. Each segment is a sequential append-only file. Kafka uses zero-copy transfer (sendfile) for high throughput reads."},
+      {heading:"Controller",body:"One broker is elected as the controller. It manages partition leader election, replica assignment, and cluster metadata. If the controller fails, another broker takes over."},
+      {heading:"KRaft mode",body:"Kafka 3.x+ replaces ZooKeeper with KRaft (Kafka Raft) for metadata management. The controller quorum manages cluster state using Raft consensus, simplifying operations."},
+    ]
+  },
+  consumers: {
+    title:"Consumers",
+    color:T.teal,
+    sections:[
+      {heading:"What is a consumer?",body:"A Kafka consumer reads events from topics. It subscribes to one or more topics and pulls records from assigned partitions at its own pace."},
+      {heading:"Consumer groups",body:"Consumers with the same group.id form a consumer group. Kafka assigns each partition to exactly one consumer in the group. This enables parallel consumption."},
+      {heading:"Rebalancing",body:"When consumers join or leave a group, Kafka triggers a rebalance. Partitions are redistributed among active consumers. Rebalancing causes a brief processing pause."},
+      {heading:"Offset management",body:"Consumers track their position per partition using offsets. Offsets are committed to a special __consumer_offsets topic. On restart, consumers resume from the last committed offset."},
+    ]
+  },
+  partitions: {
+    title:"Partitions",
+    color:T.blue,
+    sections:[
+      {heading:"What is a partition?",body:"A partition is an ordered, immutable sequence of records within a topic. Each record has a sequential offset number. Partitions are the unit of parallelism in Kafka."},
+      {heading:"Ordering guarantees",body:"Ordering is guaranteed within a partition, not across partitions. Records with the same key go to the same partition, so per-key ordering is maintained."},
+      {heading:"Partition count",body:"More partitions = more parallelism but more overhead. A topic with N partitions can have at most N consumers in a group. Choose partition count based on throughput needs."},
+      {heading:"Log compaction",body:"Instead of time-based deletion, log compaction keeps the latest value for each key. This is useful for changelog topics where you need the current state of each entity."},
+    ]
+  },
+  replication: {
+    title:"Replication",
+    color:T.coral,
+    sections:[
+      {heading:"How replication works",body:"Each partition has a configurable replication factor (typically 3). One replica is the leader; others are followers. The leader handles all reads and writes. Followers replicate data."},
+      {heading:"ISR (In-Sync Replicas)",body:"Followers that are caught up with the leader are in the ISR set. If a follower falls behind, it's removed from ISR. Only ISR members can be elected leader."},
+      {heading:"Leader election",body:"When a leader fails, the controller elects a new leader from the ISR. With min.insync.replicas=2 and acks=all, you guarantee no data loss even if a broker fails."},
+      {heading:"Unclean leader election",body:"If all ISR members fail, Kafka can elect an out-of-sync replica (if unclean.leader.election.enable=true). This risks data loss but maintains availability. Disabled by default."},
+    ]
+  },
+  offsets: {
+    title:"Offsets",
+    color:T.green,
+    sections:[
+      {heading:"What is an offset?",body:"An offset is a sequential ID assigned to each record in a partition. Offsets start at 0 and increment by 1. They uniquely identify a record within a partition."},
+      {heading:"Commit strategies",body:"At-least-once: Process then commit. If crash after process but before commit, record is reprocessed.\n\nAt-most-once: Commit then process. If crash after commit but before process, record is skipped.\n\nExactly-once: Uses transactions and idempotent producers."},
+      {heading:"Auto vs manual commit",body:"enable.auto.commit=true: Commits periodically (default 5s). Simple but may reprocess on crash.\n\nManual commit: Call commitSync() or commitAsync() after processing. More control, more code."},
+      {heading:"Seeking",body:"Consumers can seek to any offset:\n  seekToBeginning() - replay all\n  seekToEnd() - skip to latest\n  seek(partition, offset) - specific position\n\nThis enables replay and reprocessing."},
+    ]
+  },
+  code: {
+    title:"Source Code",
+    color:T.purpleL,
+    sections:[
+      {heading:"Producer example",body:"const producer = kafka.producer()\nawait producer.connect()\nawait producer.send({\n  topic: 'orders',\n  messages: [\n    { key: 'user-42', value: '{\"item\":\"book\"}' }\n  ]\n})"},
+      {heading:"Consumer example",body:"const consumer = kafka.consumer({ groupId: 'analytics' })\nawait consumer.connect()\nawait consumer.subscribe({ topic: 'orders' })\nawait consumer.run({\n  eachMessage: async ({ topic, partition, message }) => {\n    console.log(message.value.toString())\n  }\n})"},
+      {heading:"Key CLI commands",body:"kafka-topics --create --topic orders --partitions 3 --replication-factor 3\nkafka-console-producer --topic orders\nkafka-console-consumer --topic orders --from-beginning\nkafka-consumer-groups --describe --group analytics"},
+    ]
+  },
+};
+
+/* ─── COMPONENTS ─── */
+const CodePanel = ({ tokens, onClick }) =>
+  e("div", { onClick, style:{ background:T.codeBase, borderRadius:12, overflow:"hidden", border:`1px solid ${T.border}`, cursor:onClick?"pointer":"default" } },
+    e("div", { style:{ padding:"10px 14px 8px", borderBottom:`1px solid ${T.border}`, display:"flex", gap:7 } },
+      ...["#ff5f57","#febc2e","#28c840"].map((c,i) =>
+        e("div", { key:i, style:{ width:11, height:11, borderRadius:"50%", background:c } })
+      )
+    ),
+    e("div", { style:{ padding:"14px 18px 16px", fontFamily:"'SF Mono','Fira Code','Consolas',monospace", fontSize:12, lineHeight:1.85 } },
+      tokens.map((line, li) =>
+        e("div", { key:li },
+          line.map(([cls, txt], ti) =>
+            e("span", { key:ti, style:{ ...TS[cls], whiteSpace:"pre" } }, txt)
+          )
+        )
+      )
+    )
+  );
+
+/* ─── Kafka viz building blocks ─── */
+const Pill = ({label,color,small,style:s={}}) =>
+  e(M.div, {
+    initial:{opacity:0,scale:0.85}, animate:{opacity:1,scale:1}, transition:sp(360,24),
+    style:{padding:small?"3px 8px":"6px 12px",borderRadius:8,border:`1px solid ${color}44`,background:`${color}14`,textAlign:"center",fontSize:small?9:11,fontWeight:600,color,fontFamily:"'SF Mono',monospace",...s}
+  }, label);
+
+const LogBar = ({offsets,color,label,highlight,style:s={}}) =>
+  e("div",{style:{...s}},
+    label && e("div",{style:{fontSize:9,color:T.text3,marginBottom:3,fontWeight:600}},label),
+    e("div",{style:{display:"flex",gap:2,alignItems:"center"}},
+      offsets.map((o,i) =>
+        e(M.div,{key:i,initial:{opacity:0,scale:0.7},animate:{opacity:1,scale:1},transition:{delay:i*0.04,...ez},
+          style:{width:24,height:22,borderRadius:4,border:`1px solid ${highlight!=null&&i<=highlight?color:color+"44"}`,background:highlight!=null&&i<=highlight?color+"30":color+"10",display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,fontWeight:700,color:highlight!=null&&i<=highlight?color:T.text3}
+        },o)
+      )
+    )
+  );
+
+const Arrow = ({color,dir="right",style:s={}}) =>
+  e(M.div,{
+    initial:{opacity:0,x:dir==="right"?-6:6},animate:{opacity:1,x:0},transition:ez,
+    style:{color,fontSize:16,fontWeight:700,display:"flex",alignItems:"center",...s}
+  }, dir==="right"?"\u2192":"\u2190");
+
+/* ─── VIZ SCENES ─── */
+const VizIntro = () =>
+  e("div",{style:{display:"flex",alignItems:"center",justifyContent:"center",gap:16,minHeight:180}},
+    e(Pill,{label:"Producer",color:T.amber}),
+    e(Arrow,{color:T.text3}),
+    e("div",{style:{display:"flex",flexDirection:"column",gap:6,alignItems:"center"}},
+      e(Pill,{label:"Broker 1",color:T.blue}),
+      e(Pill,{label:"Broker 2",color:T.blue}),
+      e(Pill,{label:"Broker 3",color:T.blue}),
+    ),
+    e(Arrow,{color:T.text3}),
+    e(Pill,{label:"Consumer",color:T.teal}),
+  );
+
+const VizProblem = () => {
+  const svcs = ["Svc A","Svc B","Svc C","Svc D"];
+  return e("div",{style:{display:"flex",flexDirection:"column",alignItems:"center",gap:12,minHeight:180}},
+    e("div",{style:{display:"flex",gap:12}},
+      svcs.map((s,i) => e(Pill,{key:i,label:s,color:T.coral}))
+    ),
+    e("div",{style:{fontSize:10,color:T.text3,textAlign:"center",lineHeight:1.7}},
+      "Every service connected to every other service\n4 services = 12 connections\nFragile, hard to change, data silos"
+    ),
+    e("svg",{width:300,height:80,style:{marginTop:4}},
+      [[0,1],[0,2],[0,3],[1,2],[1,3],[2,3]].map(([a,b],i) => {
+        const x1=a*86+40, x2=b*86+40;
+        return e(M.line,{key:i,x1,y1:10,x2,y2:60,stroke:T.coral,strokeWidth:1.5,strokeOpacity:0.4,
+          initial:{pathLength:0},animate:{pathLength:1},transition:{delay:i*0.07,duration:0.4}});
+      })
+    )
+  );
+};
+
+const VizCommitLog = () =>
+  e("div",{style:{display:"flex",flexDirection:"column",gap:12,alignItems:"center",minHeight:180,justifyContent:"center"}},
+    e("div",{style:{fontSize:11,color:T.blueL,fontWeight:600,marginBottom:4}},"Append-only commit log"),
+    e(LogBar,{offsets:[0,1,2,3,4,5,6,7],color:T.blue,highlight:7}),
+    e("div",{style:{display:"flex",gap:24,marginTop:8}},
+      e("div",{style:{fontSize:10,color:T.amber,display:"flex",alignItems:"center",gap:4}},"\u2192 Producers append here"),
+      e("div",{style:{fontSize:10,color:T.teal,display:"flex",alignItems:"center",gap:4}},"\u2190 Consumers read from any offset"),
+    )
+  );
+
+const VizConcepts = ({onDetail}) =>
+  e("div",{style:{display:"flex",alignItems:"center",justifyContent:"center",gap:20,minHeight:180}},
+    e("div",{onClick:()=>onDetail("producers"),style:{cursor:"pointer",display:"flex",flexDirection:"column",gap:6}},
+      e(Pill,{label:"Producer 1",color:T.amber}),
+      e(Pill,{label:"Producer 2",color:T.amber}),
+    ),
+    e("div",{style:{display:"flex",flexDirection:"column",alignItems:"center",gap:4}},
+      e(Arrow,{color:T.amber}),
+    ),
+    e("div",{onClick:()=>onDetail("brokers"),style:{cursor:"pointer",display:"flex",flexDirection:"column",gap:6,alignItems:"center"}},
+      e("div",{style:{fontSize:9,color:T.text3,fontWeight:600,marginBottom:2}},"BROKER CLUSTER"),
+      e("div",{style:{border:`1px solid ${T.blue}33`,borderRadius:10,padding:12,background:`${T.blue}08`,display:"flex",flexDirection:"column",gap:6}},
+        e(LogBar,{offsets:[0,1,2,3],color:T.blue,label:"Topic: orders",highlight:3}),
+        e(LogBar,{offsets:[0,1,2],color:T.blue,label:"Topic: payments",highlight:2}),
+      ),
+    ),
+    e("div",{style:{display:"flex",flexDirection:"column",alignItems:"center",gap:4}},
+      e(Arrow,{color:T.teal}),
+    ),
+    e("div",{onClick:()=>onDetail("consumers"),style:{cursor:"pointer",display:"flex",flexDirection:"column",gap:6}},
+      e(Pill,{label:"Consumer 1",color:T.teal}),
+      e(Pill,{label:"Consumer 2",color:T.teal}),
+    ),
+  );
+
+const VizPartitions = ({onDetail}) =>
+  e("div",{onClick:()=>onDetail("partitions"),style:{cursor:"pointer",display:"flex",flexDirection:"column",gap:10,alignItems:"center",minHeight:180,justifyContent:"center"}},
+    e("div",{style:{fontSize:11,color:T.blueL,fontWeight:600}},"Topic: 'orders' \u2014 3 partitions"),
+    e("div",{style:{display:"flex",flexDirection:"column",gap:8,padding:14,border:`1px solid ${T.blue}33`,borderRadius:10,background:`${T.blue}08`}},
+      e(LogBar,{offsets:[0,1,2,3,4,5],color:T.blue,label:"Partition 0 (Broker 1)",highlight:5}),
+      e(LogBar,{offsets:[0,1,2,3],color:T.blue,label:"Partition 1 (Broker 2)",highlight:3}),
+      e(LogBar,{offsets:[0,1,2,3,4],color:T.blue,label:"Partition 2 (Broker 3)",highlight:4}),
+    ),
+    e("div",{style:{fontSize:10,color:T.text3}},"Each partition is an independent ordered log"),
+  );
+
+const VizProducers = ({onDetail}) =>
+  e("div",{style:{display:"flex",alignItems:"center",gap:16,minHeight:180,justifyContent:"center"}},
+    e("div",{onClick:()=>onDetail("producers"),style:{cursor:"pointer",display:"flex",flexDirection:"column",gap:6}},
+      e(Pill,{label:'key: "user-42"',color:T.amber}),
+      e(Pill,{label:'key: "user-7"',color:T.amber}),
+      e(Pill,{label:'key: null',color:T.amberL,small:true}),
+    ),
+    e("div",{style:{display:"flex",flexDirection:"column",gap:4,alignItems:"center"}},
+      e("div",{style:{fontSize:9,color:T.text3,fontWeight:600}},"hash(key) % 3"),
+      e(Arrow,{color:T.amber}),
+    ),
+    e("div",{style:{display:"flex",flexDirection:"column",gap:6}},
+      e(LogBar,{offsets:[0,1,2,"*"],color:T.amber,label:"P0 \u2190 user-42"}),
+      e(LogBar,{offsets:[0,1,"*"],color:T.amber,label:"P1 \u2190 user-7"}),
+      e(LogBar,{offsets:[0,1,2,3,"*"],color:T.amberL,label:"P2 \u2190 round-robin"}),
+    ),
+  );
+
+const VizConsumers = ({onDetail}) =>
+  e("div",{style:{display:"flex",alignItems:"center",gap:16,minHeight:180,justifyContent:"center"}},
+    e("div",{onClick:()=>onDetail("partitions"),style:{cursor:"pointer",display:"flex",flexDirection:"column",gap:6}},
+      e(LogBar,{offsets:[0,1,2,3,4,5],color:T.blue,label:"P0",highlight:4}),
+      e(LogBar,{offsets:[0,1,2,3],color:T.blue,label:"P1",highlight:2}),
+      e(LogBar,{offsets:[0,1,2,3,4],color:T.blue,label:"P2",highlight:3}),
+    ),
+    e("div",{style:{display:"flex",flexDirection:"column",alignItems:"center",gap:2}},
+      e("div",{style:{fontSize:9,color:T.text3,fontWeight:600}},"offsets"),
+      e(Arrow,{color:T.teal}),
+    ),
+    e("div",{onClick:()=>onDetail("consumers"),style:{cursor:"pointer",display:"flex",flexDirection:"column",gap:6}},
+      e(Pill,{label:"C1 reads P0 @5",color:T.teal}),
+      e(Pill,{label:"C2 reads P1 @3",color:T.teal}),
+      e(Pill,{label:"C3 reads P2 @4",color:T.teal}),
+      e("div",{style:{fontSize:9,color:T.text3,textAlign:"center",marginTop:2}},"Consumer Group 'analytics'"),
+    ),
+  );
+
+const VizGroups = ({onDetail}) =>
+  e("div",{style:{display:"flex",alignItems:"flex-start",gap:20,minHeight:180,justifyContent:"center"}},
+    e("div",{style:{display:"flex",flexDirection:"column",gap:6,alignItems:"center"}},
+      e("div",{style:{fontSize:10,color:T.blueL,fontWeight:600}},"Topic: orders"),
+      e(LogBar,{offsets:[0,1,2,3,4],color:T.blue,label:"P0",highlight:4}),
+      e(LogBar,{offsets:[0,1,2,3],color:T.blue,label:"P1",highlight:3}),
+      e(LogBar,{offsets:[0,1,2],color:T.blue,label:"P2",highlight:2}),
+    ),
+    e("div",{style:{display:"flex",flexDirection:"column",gap:14}},
+      e("div",{onClick:()=>onDetail("consumers"),style:{cursor:"pointer",border:`1px solid ${T.teal}33`,borderRadius:10,padding:10,background:`${T.teal}08`}},
+        e("div",{style:{fontSize:9,color:T.tealL,fontWeight:600,marginBottom:4}},"Group A (analytics)"),
+        e("div",{style:{display:"flex",gap:4}},
+          e(Pill,{label:"C1",color:T.teal,small:true}),
+          e(Pill,{label:"C2",color:T.teal,small:true}),
+          e(Pill,{label:"C3",color:T.teal,small:true}),
+        ),
+      ),
+      e("div",{style:{border:`1px solid ${T.green}33`,borderRadius:10,padding:10,background:`${T.green}08`}},
+        e("div",{style:{fontSize:9,color:T.greenL,fontWeight:600,marginBottom:4}},"Group B (billing)"),
+        e("div",{style:{display:"flex",gap:4}},
+          e(Pill,{label:"C4",color:T.green,small:true}),
+          e(Pill,{label:"C5",color:T.green,small:true}),
+        ),
+      ),
+      e("div",{style:{fontSize:10,color:T.text3,textAlign:"center"}},"Both groups read independently"),
+    ),
+  );
+
+const VizOffsets = ({onDetail}) =>
+  e("div",{onClick:()=>onDetail("offsets"),style:{cursor:"pointer",display:"flex",flexDirection:"column",gap:12,alignItems:"center",minHeight:180,justifyContent:"center"}},
+    e("div",{style:{fontSize:11,color:T.greenL,fontWeight:600}},"Offset tracking per partition"),
+    e("div",{style:{display:"flex",gap:20}},
+      e("div",{style:{display:"flex",flexDirection:"column",gap:6}},
+        e(LogBar,{offsets:[0,1,2,3,4,5,6,7],color:T.blue,label:"Partition 0",highlight:4}),
+        e("div",{style:{display:"flex",alignItems:"center",gap:4,marginLeft:4*26}},
+          e(M.div,{initial:{opacity:0,y:-6},animate:{opacity:1,y:0},transition:{delay:0.3,...ez},
+            style:{fontSize:10,color:T.teal,fontWeight:700}},"^ committed offset=5"),
+        ),
+      ),
+    ),
+    e("div",{style:{display:"flex",gap:20,marginTop:8}},
+      e("div",{style:{padding:"6px 12px",borderRadius:8,border:`1px solid ${T.teal}33`,background:`${T.teal}08`,fontSize:10,color:T.tealL}},"at-least-once: process then commit"),
+      e("div",{style:{padding:"6px 12px",borderRadius:8,border:`1px solid ${T.coral}33`,background:`${T.coral}08`,fontSize:10,color:T.coralL}},"at-most-once: commit then process"),
+    ),
+  );
+
+const VizReplication = ({onDetail}) =>
+  e("div",{onClick:()=>onDetail("replication"),style:{cursor:"pointer",display:"flex",flexDirection:"column",gap:10,alignItems:"center",minHeight:180,justifyContent:"center"}},
+    e("div",{style:{fontSize:11,color:T.coralL,fontWeight:600}},"Partition 0 \u2014 replication factor 3"),
+    e("div",{style:{display:"flex",flexDirection:"column",gap:8}},
+      e("div",{style:{display:"flex",alignItems:"center",gap:8}},
+        e(Pill,{label:"Broker 1",color:T.blue}),
+        e(LogBar,{offsets:[0,1,2,3,4,5,6,7],color:T.blue,highlight:7}),
+        e(Pill,{label:"LEADER",color:T.blue,small:true}),
+      ),
+      e("div",{style:{display:"flex",alignItems:"center",gap:8}},
+        e(Pill,{label:"Broker 2",color:T.coral}),
+        e(LogBar,{offsets:[0,1,2,3,4,5,6,7],color:T.coral,highlight:7}),
+        e(Pill,{label:"ISR",color:T.coral,small:true}),
+      ),
+      e("div",{style:{display:"flex",alignItems:"center",gap:8}},
+        e(Pill,{label:"Broker 3",color:T.coral}),
+        e(LogBar,{offsets:[0,1,2,3,4,5,6],color:T.coral,highlight:6}),
+        e(Pill,{label:"catching up",color:T.text3,small:true}),
+      ),
+    ),
+  );
+
+const VizFailure = ({onDetail}) =>
+  e("div",{onClick:()=>onDetail("replication"),style:{cursor:"pointer",display:"flex",flexDirection:"column",gap:10,alignItems:"center",minHeight:180,justifyContent:"center"}},
+    e("div",{style:{fontSize:11,color:T.redL,fontWeight:600}},"Broker 1 fails \u2014 leader election"),
+    e("div",{style:{display:"flex",flexDirection:"column",gap:8}},
+      e("div",{style:{display:"flex",alignItems:"center",gap:8,opacity:0.3}},
+        e(Pill,{label:"Broker 1",color:T.red}),
+        e(LogBar,{offsets:[0,1,2,3,4,5,6,7],color:T.red,highlight:7}),
+        e(M.div,{initial:{opacity:0},animate:{opacity:1},transition:{delay:0.3},style:{fontSize:10,color:T.red,fontWeight:700}},"DEAD"),
+      ),
+      e("div",{style:{display:"flex",alignItems:"center",gap:8}},
+        e(Pill,{label:"Broker 2",color:T.teal}),
+        e(LogBar,{offsets:[0,1,2,3,4,5,6,7],color:T.teal,highlight:7}),
+        e(M.div,{initial:{opacity:0,scale:0.8},animate:{opacity:1,scale:1},transition:{delay:0.5,...ez},style:{fontSize:10,color:T.tealL,fontWeight:700}},"NEW LEADER"),
+      ),
+      e("div",{style:{display:"flex",alignItems:"center",gap:8}},
+        e(Pill,{label:"Broker 3",color:T.coral}),
+        e(LogBar,{offsets:[0,1,2,3,4,5,6,7],color:T.coral,highlight:7}),
+        e(Pill,{label:"ISR",color:T.coral,small:true}),
+      ),
+    ),
+    e("div",{style:{fontSize:10,color:T.text3,marginTop:4}},"No data loss \u2014 ISR replica promoted to leader"),
+  );
+
+const VizVsQueue = () =>
+  e("div",{style:{display:"flex",gap:16,minHeight:180,justifyContent:"center",alignItems:"flex-start"}},
+    e("div",{style:{flex:1,border:`1px solid ${T.coral}33`,borderRadius:10,padding:12,background:`${T.coral}08`}},
+      e("div",{style:{fontSize:12,fontWeight:600,color:T.coralL,marginBottom:8}},"Message Queue (RabbitMQ)"),
+      e("div",{style:{display:"flex",gap:2,marginBottom:6}},
+        [0,1,2].map(i => e("div",{key:i,style:{width:24,height:22,borderRadius:4,border:`1px solid ${T.coral}44`,background:`${T.coral}10`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,color:T.coral,fontWeight:700}},i)),
+        e("div",{key:"x",style:{width:24,height:22,borderRadius:4,border:`1px dashed ${T.text3}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,color:T.text3}},"\u2717"),
+      ),
+      ["Consumed = deleted","One consumer per message","No replay capability"].map((t,i) =>
+        e("div",{key:i,style:{fontSize:10,color:T.text2,padding:"2px 0",display:"flex",gap:4}},"\u2022 ",t)
+      )
+    ),
+    e("div",{style:{flex:1,border:`1px solid ${T.blue}33`,borderRadius:10,padding:12,background:`${T.blue}08`}},
+      e("div",{style:{fontSize:12,fontWeight:600,color:T.blueL,marginBottom:8}},"Kafka (Log)"),
+      e(LogBar,{offsets:[0,1,2,3,4,5],color:T.blue,highlight:5}),
+      e("div",{style:{marginTop:6}},
+        ["Consumed = stays","Multiple consumer groups","Replay from any offset","Time-based retention"].map((t,i) =>
+          e("div",{key:i,style:{fontSize:10,color:T.text2,padding:"2px 0",display:"flex",gap:4}},"\u2022 ",t)
+        )
+      )
+    ),
+  );
+
+const VizUseCases = () =>
+  e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,minHeight:180}},
+    [{label:"Event Sourcing",desc:"Every state change captured as an immutable event",color:T.amber},
+     {label:"CDC (Change Data Capture)",desc:"Database changes streamed to downstream systems",color:T.blue},
+     {label:"Stream Processing",desc:"Real-time transformations and aggregations",color:T.teal},
+     {label:"Metrics & Logging",desc:"High-throughput ingestion of telemetry data",color:T.coral},
+    ].map((uc,i) =>
+      e(M.div,{key:i,initial:{opacity:0,y:10},animate:{opacity:1,y:0},transition:{delay:i*0.1,...ez},
+        style:{borderRadius:10,border:`1px solid ${uc.color}33`,background:`${uc.color}08`,padding:12}},
+        e("div",{style:{fontSize:12,fontWeight:600,color:uc.color,marginBottom:4}},uc.label),
+        e("div",{style:{fontSize:10,color:T.text2,lineHeight:1.5}},uc.desc),
+      )
+    )
+  );
+
+const VizEcosystem = () =>
+  e("div",{style:{display:"flex",flexDirection:"column",gap:10,alignItems:"center",minHeight:180,justifyContent:"center"}},
+    e("div",{style:{display:"flex",gap:10,alignItems:"center"}},
+      e(Pill,{label:"Source DB",color:T.text3}),
+      e(Arrow,{color:T.amber}),
+      e(Pill,{label:"Connect",color:T.amber}),
+      e(Arrow,{color:T.amber}),
+      e(Pill,{label:"Kafka",color:T.blue}),
+      e(Arrow,{color:T.teal}),
+      e(Pill,{label:"Connect",color:T.teal}),
+      e(Arrow,{color:T.teal}),
+      e(Pill,{label:"Sink DB",color:T.text3}),
+    ),
+    e("div",{style:{display:"flex",gap:10,marginTop:8}},
+      [{label:"Streams",desc:"Process in-app",color:T.purple},
+       {label:"Schema Registry",desc:"Manage schemas",color:T.green},
+       {label:"ksqlDB",desc:"SQL over streams",color:T.coral},
+      ].map((t,i) =>
+        e(M.div,{key:i,initial:{opacity:0,y:8},animate:{opacity:1,y:0},transition:{delay:0.2+i*0.1,...ez},
+          style:{borderRadius:8,border:`1px solid ${t.color}33`,background:`${t.color}08`,padding:"8px 14px",textAlign:"center"}},
+          e("div",{style:{fontSize:11,fontWeight:600,color:t.color}},t.label),
+          e("div",{style:{fontSize:9,color:T.text3}},t.desc),
+        )
+      )
+    ),
+  );
+
+const Finale = () => {
+  const rows = [
+    { n:"1", label:"Distributed commit log", sub:"Append-only, immutable, ordered records retained for replay", c:T.blue },
+    { n:"2", label:"Producers and consumers", sub:"Producers append events; consumers read at their own pace via offsets", c:T.amber },
+    { n:"3", label:"Topics and partitions", sub:"Topics split into partitions for parallelism; ordering within partition", c:T.teal },
+    { n:"4", label:"Consumer groups", sub:"Partitions assigned 1:1 to group members; rebalancing on join/leave", c:T.green },
+    { n:"5", label:"Replication and durability", sub:"Leader/follower replicas with ISR; automatic leader election on failure", c:T.coral },
+    { n:"6", label:"Log vs queue semantics", sub:"Messages retained after consumption; multiple groups read independently; replay", c:T.purple },
+  ];
+  return e("div", { style:{ padding:"8px 0" } },
+    rows.map((r,i) => e(M.div, { key:i, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.1,...ez},
+      style:{ display:"flex", alignItems:"flex-start", gap:12, padding:"11px 14px", marginBottom:8, borderRadius:10, border:`1px solid ${r.c}28`, background:`${r.c}08` }
+    },
+      e("div", { style:{ width:28, height:28, borderRadius:"50%", border:`1.5px solid ${r.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:12, fontWeight:700, color:r.c } }, r.n),
+      e("div", null,
+        e("div", { style:{ fontSize:13, fontWeight:600, color:r.c, marginBottom:2 } }, r.label),
+        e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.5 } }, r.sub)
+      )
+    ))
+  );
+};
+
+const VizRouter = ({viz,onDetail}) => {
+  switch(viz){
+    case "intro": return e(VizIntro);
+    case "problem": return e(VizProblem);
+    case "commitlog": return e(VizCommitLog);
+    case "concepts": return e(VizConcepts,{onDetail});
+    case "partitions": return e(VizPartitions,{onDetail});
+    case "producers": return e(VizProducers,{onDetail});
+    case "consumers": return e(VizConsumers,{onDetail});
+    case "groups": return e(VizGroups,{onDetail});
+    case "offsets": return e(VizOffsets,{onDetail});
+    case "replication": return e(VizReplication,{onDetail});
+    case "failure": return e(VizFailure,{onDetail});
+    case "vsqueue": return e(VizVsQueue);
+    case "usecases": return e(VizUseCases);
+    case "ecosystem": return e(VizEcosystem);
+    default: return null;
+  }
+};
+
+const DetailPanel = ({ detailKey, onClose }) => {
+  const d = DETAILS[detailKey];
+  if (!d) return null;
+  return e("div", {
+    style:{ width:340, flexShrink:0, background:T.surface, borderRadius:14, border:`1.5px solid ${d.color}44`, overflow:"hidden", alignSelf:"flex-start", position:"sticky", top:56 }
+  },
+    e("div", { style:{ padding:"14px 18px 12px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:8 } },
+        e("div", { style:{ width:8, height:8, borderRadius:"50%", background:d.color } }),
+        e("span", { style:{ fontSize:14, fontWeight:600, color:T.text1 } }, d.title)
+      ),
+      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6, transition:"color 0.2s" }, onMouseEnter:ev=>ev.target.style.color=T.text1, onMouseLeave:ev=>ev.target.style.color=T.text3 }, "\u2715")
+    ),
+    e("div", { style:{ padding:"16px 18px 20px", maxHeight:"calc(100vh - 140px)", overflowY:"auto" } },
+      d.sections.map((s, i) =>
+        e("div", { key:i, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
+          e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
+        )
+      )
+    )
+  );
+};
+
+/* ─── APP ─── */
+function App() {
+  const [si, setSi] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [detail, setDetail] = useState(null);
+  const timer = useRef(null);
+  const sc = SCENES[si];
+
+  useEffect(() => { setPlaying(true); }, []);
+
+  useEffect(() => {
+    if (!playing) return;
+    const d = si===0 ? 3000 : sc.finale ? 99999 : 3400;
+    timer.current = setTimeout(() => { si < SCENES.length-1 ? setSi(i=>i+1) : setPlaying(false); }, d);
+    return () => clearTimeout(timer.current);
+  }, [playing, si]);
+
+  const go = d => { clearTimeout(timer.current); setPlaying(false); setSi(i=>Math.max(0,Math.min(SCENES.length-1,i+d))); };
+  const jump = i => { clearTimeout(timer.current); setPlaying(false); setSi(i); };
+  const togglePlay = () => { if(si===SCENES.length-1){setSi(0);setPlaying(true);}else setPlaying(p=>!p); };
+  const toggleDetail = key => { setDetail(d => d===key ? null : key); clearTimeout(timer.current); setPlaying(false); };
+
+  return e("div", { style:{ display:"flex", gap:16, alignItems:"flex-start", justifyContent: detail ? "flex-start" : "center" } },
+  e("div", { style:{ width:760, flexShrink:0, background:T.bg, fontFamily:"system-ui,sans-serif", padding:20, borderRadius:16 } },
+
+    /* header */
+    e("div", { style:{ marginBottom:18 } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:10, marginBottom:11 } },
+        e(AP, { mode:"wait" },
+          e(M.div, { key:sc.act, initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, exit:{opacity:0}, transition:sp(400,28),
+            style:{ fontSize:9,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:T.purple,background:`${T.purple}14`,padding:"3px 10px",borderRadius:20,border:`1px solid ${T.purple}30`,flexShrink:0 }
+          }, sc.act)
+        ),
+        e("div", { style:{ flex:1, height:1, background:T.border, borderRadius:99, overflow:"hidden" } },
+          e(M.div, { animate:{width:`${si/(SCENES.length-1)*100}%`}, transition:{duration:0.5}, style:{height:"100%",background:T.purple,borderRadius:99} })
+        ),
+        e("span", { style:{ fontSize:10, color:T.text3 } }, `${si+1} / ${SCENES.length}`)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.title, initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, exit:{opacity:0,y:-8}, transition:ez,
+          style:{ fontSize:20,fontWeight:600,color:T.text1,marginBottom:4,letterSpacing:"-0.02em" }
+        }, sc.title)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
+          style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
+        }, sc.sub)
+      )
+    ),
+
+    e("div", { style:{ minHeight:460 } },
+
+    /* finale */
+    sc.finale && e(Finale),
+
+    /* main viz + code */
+    !sc.finale && e("div", null,
+
+      /* visualization */
+      e("div", { style:{ marginBottom:10, padding:16, borderRadius:12, border:`1.5px solid ${T.border2}`, background:T.surface } },
+        e(VizRouter, { viz:sc.viz, onDetail:toggleDetail })
+      ),
+
+      /* code */
+      sc.code.length > 0 && e("div", { style:{ marginBottom:10 } },
+        e(CodePanel, { tokens:sc.code, onClick:()=>toggleDetail("code") })
+      )
+    ),
+
+    ), /* close minHeight wrapper */
+
+    /* controls */
+    e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginTop:16 } },
+      e("button", { onClick:()=>go(-1), disabled:si===0,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===0?T.text3:T.text2,cursor:si===0?"not-allowed":"pointer",fontSize:11,transition:"color 0.2s" }
+      }, "\u2190 Back"),
+      e("button", { onClick:togglePlay,
+        style:{ padding:"6px 18px",borderRadius:8,border:`1px solid ${playing?T.coral:T.purple}44`,background:playing?`${T.coral}14`:`${T.purple}14`,color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all 0.2s" }
+      }, playing ? "\u23f8  Pause" : si===SCENES.length-1 ? "\u21ba  Replay" : "\u25b6  Play"),
+      e("button", { onClick:()=>go(1), disabled:si===SCENES.length-1,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
+      }, "Next \u2192"),
+      e("div", { style:{ flex:1 } }),
+      e("div", { style:{ display:"flex", gap:4, alignItems:"center" } },
+        SCENES.map((_,i) =>
+          e("button", { key:i, onClick:()=>jump(i),
+            style:{ width:i===si?16:5,height:5,borderRadius:99,border:"none",padding:0,background:i===si?T.purple:i<si?`${T.purple}55`:T.border,cursor:"pointer",transition:"all 0.25s" }
+          })
+        )
+      )
+    )
+  ),
+  detail && e(DetailPanel, { detailKey:detail, onClose:()=>setDetail(null) })
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(e(App));
+</script>
+</body>
+</html>
