@@ -568,15 +568,114 @@ const SceneViz = ({ scene }) => {
   }
 
   if (v==="two-threads") {
-    return e("div", { style:{ padding:"12px 0" } },
-      e(ThreadLane, { label:"Main Thread", color:T.blue, items:[
-        {t:"UI render"}, {t:"events"}, {t:"DOM updates"}
-      ]}),
-      e(MessageArrow, { direction:"right", label:"postMessage", color:T.purple, delay:0.3 }),
-      e(MessageArrow, { direction:"left", label:"result", color:T.teal, delay:0.6 }),
-      e(ThreadLane, { label:"Worker Thread", color:T.teal, items:[
-        {t:"heavy compute"}, {t:"own event loop"}, {t:"isolated scope"}
-      ]}),
+    /* Parallel-timeline viz: main keeps responding while worker grinds. */
+    const W = 880, H = 240;
+    const left = 80, right = W - 30;
+    const mainY = 70, workerY = 170;
+    const sendX = 220;   /* postMessage out */
+    const recvX = 720;   /* result back in */
+    /* Main-thread small tasks — appear continuously (UI never freezes) */
+    const mainTasks = [
+      { x:120, label:"render", c:T.blueL },
+      { x:170, label:"click",  c:T.blueL },
+      { x:280, label:"frame",  c:T.blueL },
+      { x:340, label:"input",  c:T.blueL },
+      { x:410, label:"render", c:T.blueL },
+      { x:480, label:"frame",  c:T.blueL },
+      { x:550, label:"scroll", c:T.blueL },
+      { x:620, label:"frame",  c:T.blueL },
+      { x:680, label:"render", c:T.blueL },
+      { x:760, label:"frame",  c:T.blueL },
+    ];
+    return e("div", { style:{ padding:"4px 0" } },
+      e("svg", { width:"100%", viewBox:`0 0 ${W} ${H}`, style:{ display:"block" } },
+        /* track baselines */
+        e("line", { x1:left, y1:mainY,   x2:right, y2:mainY,   stroke:T.border2, strokeWidth:1.5 }),
+        e("line", { x1:left, y1:workerY, x2:right, y2:workerY, stroke:T.border2, strokeWidth:1.5 }),
+        /* track labels */
+        e("g", null,
+          e("circle", { cx:left-50, cy:mainY,   r:5, fill:T.blueL }),
+          e("text", { x:left-38, y:mainY+4, fontSize:11, fontWeight:700, fill:T.blueL, letterSpacing:"0.05em", fontFamily:"'JetBrains Mono','SF Mono',monospace" }, "MAIN"),
+          e("circle", { cx:left-50, cy:workerY, r:5, fill:T.tealL }),
+          e("text", { x:left-38, y:workerY+4, fontSize:11, fontWeight:700, fill:T.tealL, letterSpacing:"0.05em", fontFamily:"'JetBrains Mono','SF Mono',monospace" }, "WORKER"),
+        ),
+        /* tick marks */
+        ...[0,1,2,3,4,5,6,7,8,9,10].map(i =>
+          e("g", { key:"t"+i },
+            e("line", { x1:left+i*78, y1:mainY-3,   x2:left+i*78, y2:mainY+3,   stroke:T.text3, strokeWidth:1 }),
+            e("line", { x1:left+i*78, y1:workerY-3, x2:left+i*78, y2:workerY+3, stroke:T.text3, strokeWidth:1 }),
+          )
+        ),
+        /* time arrows */
+        e("text", { x:right, y:mainY+22, textAnchor:"end", fontSize:9, fill:T.text3, fontFamily:"'JetBrains Mono','SF Mono',monospace" }, "time \u2192"),
+        /* main thread small tasks — animated in sequence forever */
+        ...mainTasks.map((t,i) =>
+          e(M.g, { key:"mt"+i,
+            initial:{ opacity:0, scale:0.6 },
+            animate:{ opacity:[0, 1, 1, 0.7], scale:[0.6, 1, 1, 0.95] },
+            transition:{ delay:i*0.18, duration:1.4, repeat:Infinity, repeatDelay:mainTasks.length*0.18 }
+          },
+            e("rect", { x:t.x-22, y:mainY-12, width:44, height:24, rx:5, fill:`${t.c}22`, stroke:t.c, strokeWidth:1.2 }),
+            e("text", { x:t.x, y:mainY+4, textAnchor:"middle", fontSize:9, fontWeight:600, fill:t.c, fontFamily:"'JetBrains Mono','SF Mono',monospace" }, t.label)
+          )
+        ),
+        /* worker long block — heavy compute hogging the worker track */
+        e(M.rect, {
+          x:sendX, y:workerY-16, height:32, rx:6,
+          fill:`${T.tealL}18`, stroke:T.tealL, strokeWidth:1.8,
+          initial:{ width:0, opacity:0 },
+          animate:{ width:recvX-sendX, opacity:1 },
+          transition:{ duration:1.2, delay:0.4, ease:[0.22,1,0.36,1] }
+        }),
+        e(M.text, {
+          x:(sendX+recvX)/2, y:workerY+5, textAnchor:"middle",
+          fontSize:13, fontWeight:700, fill:T.tealL,
+          fontFamily:"'JetBrains Mono','SF Mono',monospace",
+          initial:{ opacity:0 }, animate:{ opacity:1 }, transition:{ delay:0.9 }
+        }, "heavyCompute()"),
+        /* postMessage flow main → worker */
+        e(M.path, {
+          d:`M ${sendX} ${mainY+12} Q ${sendX} ${(mainY+workerY)/2}, ${sendX} ${workerY-16}`,
+          stroke:T.purple, strokeWidth:1.6, fill:"none", strokeDasharray:"3 3",
+          initial:{ pathLength:0 }, animate:{ pathLength:1 }, transition:{ delay:0.2, duration:0.5 }
+        }),
+        e(M.circle, {
+          r:5, fill:T.purple,
+          initial:{ cx:sendX, cy:mainY+12, opacity:0 },
+          animate:{ cx:sendX, cy:[mainY+12, workerY-16], opacity:[0,1,1,0] },
+          transition:{ delay:0.5, duration:0.6 }
+        }),
+        e(M.text, {
+          x:sendX-10, y:(mainY+workerY)/2+4, textAnchor:"end",
+          fontSize:10, fill:T.purpleL, fontFamily:"'JetBrains Mono','SF Mono',monospace",
+          initial:{ opacity:0 }, animate:{ opacity:1 }, transition:{ delay:0.4 }
+        }, "postMessage(input)"),
+        /* result flow worker → main */
+        e(M.path, {
+          d:`M ${recvX} ${workerY-16} Q ${recvX} ${(mainY+workerY)/2}, ${recvX} ${mainY+12}`,
+          stroke:T.teal, strokeWidth:1.6, fill:"none", strokeDasharray:"3 3",
+          initial:{ pathLength:0 }, animate:{ pathLength:1 }, transition:{ delay:1.6, duration:0.5 }
+        }),
+        e(M.circle, {
+          r:5, fill:T.tealL,
+          initial:{ cx:recvX, cy:workerY-16, opacity:0 },
+          animate:{ cx:recvX, cy:[workerY-16, mainY+12], opacity:[0,1,1,0] },
+          transition:{ delay:1.9, duration:0.6 }
+        }),
+        e(M.text, {
+          x:recvX+10, y:(mainY+workerY)/2+4, textAnchor:"start",
+          fontSize:10, fill:T.tealL, fontFamily:"'JetBrains Mono','SF Mono',monospace",
+          initial:{ opacity:0 }, animate:{ opacity:1 }, transition:{ delay:1.7 }
+        }, "onmessage(result)"),
+      ),
+      /* Insight callout below */
+      e("div", { style:{ display:"flex", gap:10, padding:"10px 14px", marginTop:8, borderRadius:8, border:`1px solid ${T.tealL}33`, background:`${T.teal}08` } },
+        e("span", { style:{ fontSize:18, color:T.tealL } }, e("i", { className:"lni lni-bolt-3" })),
+        e("div", null,
+          e("div", { style:{ fontSize:12, fontWeight:600, color:T.tealL, marginBottom:2 } }, "True parallelism"),
+          e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.5 } }, "The worker grinds on ", e("code", { style:{color:T.tealL} }, "heavyCompute()"), " in its own thread while the main thread keeps painting frames, handling clicks, and updating the DOM. Communication is via ", e("code", { style:{color:T.purpleL} }, "postMessage"), " — no shared memory, no race conditions.")
+        )
+      )
     );
   }
 
