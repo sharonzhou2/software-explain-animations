@@ -6,6 +6,7 @@
 <title>Caching Strategies</title>
 <link href="https://cdn.lineicons.com/5.0/lineicons.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -111,6 +112,15 @@ const TS = {
   fn:{color:"#82aaff"}, meth:{color:"#89ddff"}, str:{color:"#c3e88d"},
   kw:{color:"#c792ea"}, num:{color:"#f78c6c"}, punc:{color:"#89ddff"},
   plain:{color:"#a6accd"}, cmt:{color:"#546e7a",fontStyle:"italic"},
+};
+
+/* render LineIcon (`lni-*`) or Iconify icon (`iconify:<name>`) */
+const renderIcon = (name, color, size) => {
+  if (!name) return null;
+  if (name.indexOf("iconify:") === 0) {
+    return e("iconify-icon", { icon: name.slice(8), width: size, height: size, style:{ display:"inline-block", verticalAlign:"middle" } });
+  }
+  return e("i", { className: "lni " + name, style:{ color, fontSize: size } });
 };
 
 /* ─── SCENES ─── */
@@ -445,7 +455,7 @@ const IntroView = () => {
       style:{ padding:"14px 16px", borderRadius:12, border:`1px solid ${it.c}33`, background:`${it.c}0c`, display:"flex", alignItems:"flex-start", gap:11 }
     },
       e("div", { style:{ width:32, height:32, borderRadius:10, border:`1.5px solid ${it.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 } },
-        e("i", { className:"lni "+it.icon, style:{ color:it.c, fontSize:14 } })
+        renderIcon(it.icon, it.c, 16)
       ),
       e("div", null,
         e("div", { style:{ fontSize:13, fontWeight:600, color:it.c, marginBottom:3 } }, it.label),
@@ -463,7 +473,7 @@ const HierarchyView = () => {
     { id:"cdn", label:"CDN edge", icon:"lni-cloud-network", c:T.blueL, t:"~10 ms" },
     { id:"proxy", label:"Reverse proxy", icon:"lni-shield-2", c:T.blue, t:"~1 ms" },
     { id:"app", label:"App in-memory", icon:"lni-rocket-5", c:T.green, t:"~0.01 ms" },
-    { id:"redis", label:"Redis / Memcached", icon:"lni-database-1", c:T.coral, t:"~1 ms" },
+    { id:"redis", label:"Redis / Memcached", icon:"iconify:logos:redis", c:T.coral, t:"~1 ms" },
     { id:"db", label:"Database", icon:"lni-hard-drive", c:T.red, t:"~10-100 ms" },
   ];
   const [step, setStep] = useState(0);
@@ -483,7 +493,7 @@ const HierarchyView = () => {
           transition:"border 0.25s, background 0.25s" }
       },
         e("div", { style:{ width:28, height:28, borderRadius:8, border:`1.5px solid ${L.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, background: active?`${L.c}22`:"transparent" } },
-          e("i", { className:"lni "+L.icon, style:{ color:L.c, fontSize:13 } })
+          renderIcon(L.icon, L.c, 14)
         ),
         e("div", { style:{ flex:1 } },
           e("div", { style:{ fontSize:12, fontWeight:600, color:L.c } }, L.label)
@@ -509,7 +519,7 @@ const HitMissView = () => {
   const Box = ({ x, w, c, label, icon }) => e("div", {
     style:{ position:"absolute", left:x, top:40, width:w, height:56, borderRadius:10, border:`1.5px solid ${c}`, background:`${c}14`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:3 }
   },
-    e("i", { className:"lni "+icon, style:{ color:c, fontSize:14 } }),
+    renderIcon(icon, c, 16),
     e("div", { style:{ fontSize:10, fontWeight:700, color:c, fontFamily:"monospace" } }, label)
   );
 
@@ -521,8 +531,8 @@ const HitMissView = () => {
     ),
     e("div", { style:{ position:"relative", height:150, background:T.surface2, borderRadius:12, border:`1px solid ${T.border}` } },
       e(Box, { x:16, w:120, c:T.text2, label:"app", icon:"lni-rocket-5" }),
-      e(Box, { x:220, w:130, c:T.amber, label:"cache", icon:"lni-bolt-2" }),
-      e(Box, { x:430, w:140, c:T.coral, label:"database", icon:"lni-database-1" }),
+      e(Box, { x:220, w:130, c:T.amber, label:"cache", icon:"iconify:logos:redis" }),
+      e(Box, { x:430, w:140, c:T.coral, label:"database", icon:"iconify:logos:postgresql" }),
       // request arrow app → cache (always)
       e(M.div, { initial:false, animate:{ opacity: 1 },
         style:{ position:"absolute", left:136, top:64, width:84, height:2, background:T.text2 }
@@ -562,8 +572,8 @@ const HitMissView = () => {
 const PatternView = ({ pattern }) => {
   // box positions
   const APP = { x:18, y:50, w:110, h:54, c:T.purpleL, label:"app", icon:"lni-rocket-5" };
-  const CACHE = { x:218, y:50, w:130, h:54, c:T.amber, label:"cache", icon:"lni-bolt-2" };
-  const DB = { x:438, y:50, w:130, h:54, c:T.coral, label:"database", icon:"lni-database-1" };
+  const CACHE = { x:218, y:50, w:130, h:54, c:T.amber, label:"cache", icon:"iconify:logos:redis" };
+  const DB = { x:438, y:50, w:130, h:54, c:T.coral, label:"database", icon:"iconify:logos:postgresql" };
 
   // each pattern defines an animation of arrows
   const patterns = {
@@ -625,7 +635,7 @@ const PatternView = ({ pattern }) => {
     key:n.label,
     style:{ position:"absolute", left:n.x, top:n.y, width:n.w, height:n.h, borderRadius:10, border:`1.5px solid ${highlight?n.c:n.c+"66"}`, background: highlight?`${n.c}22`:`${n.c}10`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:3, transition:"border 0.25s, background 0.25s" }
   },
-    e("i", { className:"lni "+n.icon, style:{ color:n.c, fontSize:14 } }),
+    renderIcon(n.icon, n.c, 16),
     e("div", { style:{ fontSize:10, fontWeight:700, color:n.c, fontFamily:"monospace" } }, n.label)
   );
 
@@ -787,7 +797,7 @@ const InvalidationView = () => {
       style:{ display:"flex", alignItems:"center", gap:11, padding:"8px 12px", marginBottom:5, borderRadius:9, border:`1px solid ${a.c}28`, background:`${a.c}07` }
     },
       e("div", { style:{ width:26, height:26, borderRadius:7, border:`1.5px solid ${a.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 } },
-        e("i", { className:"lni "+a.icon, style:{ color:a.c, fontSize:12 } })
+        renderIcon(a.icon, a.c, 13)
       ),
       e("div", { style:{ flex:1, minWidth:0 } },
         e("div", { style:{ fontSize:12, fontWeight:600, color:a.c } }, a.name),
@@ -828,12 +838,12 @@ const StampedeView = () => {
       ),
       // cache
       e("div", { style:{ position:"absolute", left:160, top:72, width:100, height:56, borderRadius:10, border:`1.5px solid ${phase===1?T.red:T.amber}`, background:`${phase===1?T.red:T.amber}14`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:2 } },
-        e("i", { className:"lni lni-bolt-2", style:{ color:phase===1?T.red:T.amber, fontSize:14 } }),
+        e("iconify-icon", { icon:"logos:redis", width:16, height:16 }),
         e("div", { style:{ fontSize:9, fontWeight:700, color:phase===1?T.red:T.amber, fontFamily:"monospace" } }, phase===1?"EXPIRED":"cache")
       ),
       // DB
       e("div", { style:{ position:"absolute", left:340, top:72, width:100, height:56, borderRadius:10, border:`1.5px solid ${T.coral}`, background:`${T.coral}14`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:2 } },
-        e("i", { className:"lni lni-database-1", style:{ color:T.coral, fontSize:14 } }),
+        e("iconify-icon", { icon:"logos:postgresql", width:16, height:16 }),
         e("div", { style:{ fontSize:9, fontWeight:700, color:T.coral, fontFamily:"monospace" } }, "database")
       ),
       // arrows from clients
@@ -883,7 +893,7 @@ const PitfallsView = () => {
       style:{ padding:"10px 12px", borderRadius:10, border:`1px solid ${p.c}33`, background:`${p.c}08`, display:"flex", gap:10, alignItems:"flex-start" }
     },
       e("div", { style:{ width:26, height:26, borderRadius:7, border:`1.5px solid ${p.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 } },
-        e("i", { className:"lni "+p.icon, style:{ color:p.c, fontSize:12 } })
+        renderIcon(p.icon, p.c, 13)
       ),
       e("div", null,
         e("div", { style:{ fontSize:12, fontWeight:600, color:p.c, marginBottom:2 } }, p.name),
@@ -941,7 +951,7 @@ const Finale = () => {
       style:{ display:"flex", alignItems:"flex-start", gap:12, padding:"11px 14px", marginBottom:8, borderRadius:10, border:`1px solid ${r.c}28`, background:`${r.c}08` }
     },
       e("div", { style:{ width:28, height:28, borderRadius:"50%", border:`1.5px solid ${r.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 } },
-        e("i", { className:"lni "+r.icon, style:{ color:r.c, fontSize:13 } })
+        renderIcon(r.icon, r.c, 14)
       ),
       e("div", null,
         e("div", { style:{ fontSize:13, fontWeight:600, color:r.c, marginBottom:2 } }, r.label),

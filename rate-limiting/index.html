@@ -6,6 +6,7 @@
 <title>Rate Limiting</title>
 <link href="https://cdn.lineicons.com/5.0/lineicons.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -400,7 +401,7 @@ const IntroViz = () => {
         transition:{ duration:0.6, repeat:Infinity, repeatDelay:0.8 },
         style:{ width:72, height:88, borderRadius:8, border:`2px solid ${T.red}`, background:`${T.red}14`, display:"flex", alignItems:"center", justifyContent:"center" }
       },
-        e("i", { className:"lni lni-database-1", style:{ fontSize:32, color:T.red } })
+        e("iconify-icon", { icon:"lucide:server", width:32, height:32, style:{ color:T.red } })
       ),
       e("div", { style:{ fontSize:11, color:T.redL, fontWeight:600 } }, "Server (overwhelmed)"),
     )
@@ -815,7 +816,7 @@ const DistributedViz = () => {
       ),
       /* redis */
       e("div", { style:{ padding:"14px 18px", borderRadius:12, border:`2px solid ${T.redis}`, background:`${T.redis}14`, display:"flex", flexDirection:"column", alignItems:"center", gap:6 } },
-        e("i", { className:"lni lni-database-1", style:{ fontSize:32, color:T.redisL } }),
+        e("iconify-icon", { icon:"logos:redis", width:36, height:36 }),
         e("div", { style:{ fontSize:12, fontWeight:700, color:T.redisL, fontFamily:"monospace" } }, "Redis"),
         e("div", { style:{ fontSize:10, color:T.text3, fontFamily:"monospace" } }, `rl:u42:${Math.floor(pulse/4)}`),
         e(M.div, {
@@ -903,7 +904,7 @@ const Finale = () => {
     { n:"lni-layers-1", label:"Sliding window", sub:"Log (exact, memory-heavy) or counter (approximate, O(1) memory)", c:T.teal },
     { n:"lni-cloud", label:"Token bucket", sub:"Tokens refill at steady rate; allows bursts up to bucket capacity", c:T.amber },
     { n:"lni-drop-1", label:"Leaky bucket", sub:"FIFO queue draining at fixed rate — smooths any bursty input", c:T.coral },
-    { n:"lni-database-1", label:"Distributed", sub:"Redis INCR + EXPIRE gives shared, atomic counters across a fleet", c:T.redis },
+    { n:"iconify:logos:redis", label:"Distributed", sub:"Redis INCR + EXPIRE gives shared, atomic counters across a fleet", c:T.redis },
     { n:"lni-warning", label:"429 + Retry-After", sub:"Return X-RateLimit-* headers; on reject, send 429 with Retry-After", c:T.purple },
   ];
   return e("div", { style:{ padding:"8px 0" } },
@@ -911,7 +912,9 @@ const Finale = () => {
       style:{ display:"flex", alignItems:"flex-start", gap:12, padding:"11px 14px", marginBottom:8, borderRadius:10, border:`1px solid ${r.c}28`, background:`${r.c}08` }
     },
       e("div", { style:{ width:28, height:28, borderRadius:"50%", border:`1.5px solid ${r.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, color:r.c } },
-        e("i", { className:"lni " + r.n, style:{ fontSize:13 } })
+        r.n.indexOf("iconify:") === 0
+          ? e("iconify-icon", { icon:r.n.slice(8), width:14, height:14 })
+          : e("i", { className:"lni " + r.n, style:{ fontSize:13 } })
       ),
       e("div", null,
         e("div", { style:{ fontSize:13, fontWeight:600, color:r.c, marginBottom:2 } }, r.label),
