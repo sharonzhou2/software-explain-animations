@@ -404,8 +404,8 @@ const DETAILS = {
     sections:[
       {heading:"Definition",body:"Debouncing delays the invocation of a function until after a specified period of inactivity. Each new event cancels the previous pending invocation and restarts the clock."},
       {heading:"Mental model",body:"Imagine an elevator that waits to close its doors. Every time someone new steps in, the timer resets. It only closes when nobody has entered for N seconds."},
-      {heading:"When to use",body:"• Search-as-you-type: only query when the user pauses\n• Window resize: only reflow when they stop dragging\n• Form autosave: only save when typing stops\n• Validation on blur with typeahead"},
-      {heading:"Watch out for",body:"If events never stop, the handler never fires. Use lodash's maxWait option to guarantee periodic firing even under continuous input."},
+      {heading:"When to use",body:"• Search-as-you-type: only query when the user pauses\n• Window resize: only **reflow** when they stop dragging\n• Form autosave: only save when typing stops\n• Validation on blur with typeahead"},
+      {heading:"Watch out for",body:"If events **never** stop, the handler **never** fires. Use lodash's maxWait option to guarantee periodic firing even under continuous input."},
     ]
   },
   throttle: {
@@ -415,7 +415,7 @@ const DETAILS = {
       {heading:"Definition",body:"Throttling ensures a function runs at most once per N milliseconds. Events arriving within the cooldown window are dropped (or queued for the end of the window, depending on the variant)."},
       {heading:"Mental model",body:"A water valve that only opens for a fraction of a second, then closes for a fixed duration regardless of how much water is pushing on it."},
       {heading:"When to use",body:"• Scroll listeners that drive visual effects\n• Mousemove for drag-and-drop or canvas drawing\n• API calls you want to sample uniformly\n• Game input polling"},
-      {heading:"Watch out for",body:"Leading-edge throttle fires immediately and may miss the final state. Trailing-edge throttle misses the initial event. Many libraries fire on both edges by default."},
+      {heading:"Watch out for",body:"Leading-edge **throttle** fires immediately and may miss the final state. Trailing-edge **throttle** misses the initial event. Many libraries fire on both edges by default."},
     ]
   },
   leading: {
@@ -424,7 +424,7 @@ const DETAILS = {
     sections:[
       {heading:"What it means",body:"The handler runs on the FIRST event of a burst, before the wait period begins. Subsequent events within the window are suppressed."},
       {heading:"Good for",body:"• Immediate feedback (e.g., button click that shouldn't be debounced)\n• Throttled scroll: you want updates as soon as scrolling starts\n• Preventing double-submit on a button"},
-      {heading:"Trade-off",body:"You may miss the final state. If the user's last keystroke was the one that matters, a purely leading-edge debounce would drop it."},
+      {heading:"Trade-off",body:"You may miss the final state. If the user's last keystroke was the one that matters, a purely leading-edge **debounce** would drop it."},
     ]
   },
   trailing: {
@@ -433,23 +433,23 @@ const DETAILS = {
     sections:[
       {heading:"What it means",body:"The handler runs at the END of the burst — after the last event, once the wait period has elapsed with no new events."},
       {heading:"Good for",body:"• Search inputs: you want the final query, not each keystroke\n• Autosave: capture the end state\n• Window resize: one layout pass after dragging stops"},
-      {heading:"Trade-off",body:"There's always a delay. The user sees a small pause between finishing their action and seeing results."},
+      {heading:"Trade-off",body:"There's **always** a delay. The user sees a small pause between finishing their action and seeing results."},
     ]
   },
   usecases: {
     title:"Use Cases",
     color:T.purpleL,
     sections:[
-      {heading:"Debounce examples",body:"• Search-as-you-type (wait for pause, then query API)\n• Window resize handlers (reflow once after drag ends)\n• Form field validation (check after user stops typing)\n• Autosave editors (persist after idle period)"},
+      {heading:"Debounce examples",body:"• Search-as-you-type (wait for pause, then query API)\n• Window resize handlers (**reflow** once after drag ends)\n• Form field validation (check after user stops typing)\n• Autosave editors (persist after idle period)"},
       {heading:"Throttle examples",body:"• Scroll-driven animations (sample position at 60fps max)\n• Infinite scroll loaders (check once every 200ms)\n• Mousemove tracking (e.g., drag, canvas draw)\n• Rate-limited API polling"},
-      {heading:"Rule of thumb",body:"Ask: 'Do I need the final value only, or continuous updates?' Final value → debounce. Continuous → throttle."},
+      {heading:"Rule of thumb",body:"Ask: 'Do I need the final value only, or continuous updates?' Final value → **debounce**. Continuous → **throttle**."},
     ]
   },
   code: {
     title:"Source Code",
     color:T.purpleL,
     sections:[
-      {heading:"Both are closures",body:"Both patterns use a closure to retain state (a timer ID or a timestamp) across calls. The returned function is what you attach to your event listener."},
+      {heading:"Both are closures",body:"Both patterns use a **closure** to retain state (a timer ID or a timestamp) across calls. The returned function is what you attach to your event listener."},
       {heading:"Debounce core",body:"clearTimeout on every call, then schedule a new setTimeout. The timer is the state that gets reset."},
       {heading:"Throttle core",body:"Store a lastFire timestamp. On each call, compare Date.now() - lastFire against the wait. Only fire and update if the window has elapsed."},
       {heading:"this and args",body:"Use fn.apply(this, args) so the wrapped function sees the correct context and forwarded arguments."},
@@ -732,6 +732,16 @@ const Finale = () => {
   );
 };
 
+const renderBody = (text) => {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((p, i) => {
+    if (p.startsWith("**") && p.endsWith("**")) {
+      return e("strong", { key:i, style:{ color:T.text1, fontWeight:600 } }, p.slice(2, -2));
+    }
+    return p;
+  });
+};
+
 const DetailPanel = ({ detailKey, onClose }) => {
   const d = DETAILS[detailKey];
   if (!d) return null;
@@ -749,7 +759,7 @@ const DetailPanel = ({ detailKey, onClose }) => {
       d.sections.map((s, i) =>
         e("div", { key:i, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
           e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
-          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, renderBody(s.body))
         )
       )
     )

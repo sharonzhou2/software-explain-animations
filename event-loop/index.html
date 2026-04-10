@@ -253,59 +253,59 @@ const DETAILS = {
     title: "Call Stack",
     color: T.blue,
     sections: [
-      { heading: "What is it?", body: "A LIFO (last-in, first-out) data structure that tracks which function is currently executing. JavaScript has exactly one call stack — this is why it's called single-threaded." },
-      { heading: "How it works", body: "When a function is invoked, a new frame is pushed onto the stack. When the function returns, its frame is popped off. If the stack is empty, the engine is idle and the event loop can push new work onto it." },
-      { heading: "Stack overflow", body: "If a function calls itself recursively without a base case, frames pile up until the browser's stack size limit is hit — causing a \"Maximum call stack size exceeded\" error." },
-      { heading: "Key insight", body: "The call stack must be empty before any queued async callback can execute. This is why a long-running synchronous function blocks the entire UI." },
+      { heading: "What is it?", body: "A **LIFO** (last-in, first-out) data structure that tracks which function is currently executing. JavaScript has **exactly one call stack** — this is why it's called **single-threaded**." },
+      { heading: "How it works", body: "When a function is invoked, a new **frame is pushed** onto the stack. When the function returns, its frame is **popped off**. If the stack is empty, the engine is idle and the event loop can push new work onto it." },
+      { heading: "Stack overflow", body: "If a function calls itself recursively without a base case, frames pile up until the browser's stack size limit is hit — causing a **\"Maximum call stack size exceeded\"** error." },
+      { heading: "Key insight", body: "**The call stack must be empty** before any queued async callback can execute. This is why a long-running synchronous function **blocks the entire UI**." },
     ]
   },
   webapis: {
     title: "Web APIs",
     color: T.teal,
     sections: [
-      { heading: "What are they?", body: "Browser-provided interfaces that live outside the JS engine. They handle async operations like timers, network requests, DOM events, and storage — all in separate threads managed by the browser." },
-      { heading: "How they work", body: "When you call setTimeout() or fetch(), the JS engine hands the work off to the browser's C++ layer. The call stack is immediately freed. When the operation completes, the browser pushes the callback into the appropriate queue." },
-      { heading: "Common Web APIs", body: "setTimeout / setInterval (Timer API), fetch / XMLHttpRequest (Network), addEventListener (DOM Events), localStorage / indexedDB (Storage), requestAnimationFrame (Rendering), Geolocation, Web Workers." },
-      { heading: "Key insight", body: "Web APIs are NOT part of JavaScript itself — they're provided by the host environment (browser or Node.js). This is how JS achieves concurrency without multiple threads." },
+      { heading: "What are they?", body: "Browser-provided interfaces that live **outside the JS engine**. They handle async operations like timers, network requests, DOM events, and storage — all in **separate threads** managed by the browser." },
+      { heading: "How they work", body: "When you call setTimeout() or fetch(), the JS engine **hands the work off** to the browser's C++ layer. The call stack is **immediately freed**. When the operation completes, the browser pushes the callback into the appropriate queue." },
+      { heading: "Common Web APIs", body: "**setTimeout / setInterval** (Timer API), **fetch / XMLHttpRequest** (Network), **addEventListener** (DOM Events), **localStorage / indexedDB** (Storage), **requestAnimationFrame** (Rendering), Geolocation, Web Workers." },
+      { heading: "Key insight", body: "Web APIs are **NOT part of JavaScript itself** — they're provided by the host environment (browser or Node.js). This is how JS achieves concurrency without multiple threads." },
     ]
   },
   loop: {
     title: "Event Loop",
     color: T.purple,
     sections: [
-      { heading: "What is it?", body: "A continuously running process that monitors the call stack and the task queues. Its job: when the stack is empty, move the next task from a queue onto the stack for execution." },
-      { heading: "The algorithm", body: "1) Check if the call stack is empty.\n2) Drain ALL microtasks (promises, queueMicrotask, MutationObserver).\n3) Pick ONE macrotask (setTimeout, setInterval, I/O).\n4) Run rendering steps if needed (requestAnimationFrame, layout, paint).\n5) Repeat." },
-      { heading: "Microtasks vs Macrotasks", body: "Microtasks always have priority. The entire microtask queue is drained before the loop picks a single macrotask. New microtasks added during draining are also processed in the same cycle." },
-      { heading: "Key insight", body: "The event loop is what makes async JavaScript possible on a single thread. It's not part of the V8 engine — it's implemented by the embedding environment (browser's libuv in Node, or the browser's event loop)." },
+      { heading: "What is it?", body: "A continuously running process that monitors the call stack and the task queues. Its job: **when the stack is empty, move the next task from a queue onto the stack** for execution." },
+      { heading: "The algorithm", body: "1) Check if the call stack is empty.\n2) **Drain ALL microtasks** (promises, queueMicrotask, MutationObserver).\n3) **Pick ONE macrotask** (setTimeout, setInterval, I/O).\n4) Run rendering steps if needed (requestAnimationFrame, layout, paint).\n5) Repeat." },
+      { heading: "Microtasks vs Macrotasks", body: "**Microtasks always have priority.** The entire microtask queue is drained before the loop picks a single macrotask. New microtasks added during draining are also processed in the same cycle." },
+      { heading: "Key insight", body: "The event loop is what makes async JavaScript possible on a single thread. It's **not part of the V8 engine** — it's implemented by the embedding environment (browser's libuv in Node, or the browser's event loop)." },
     ]
   },
   macro: {
     title: "Task Queue (Macrotask)",
     color: T.teal,
     sections: [
-      { heading: "What is it?", body: "A FIFO queue holding callbacks from completed Web API operations — setTimeout, setInterval, I/O events, UI rendering events, and MessageChannel." },
-      { heading: "How it works", body: "When a Web API operation finishes (e.g., a timer expires), it places its callback into the task queue. The event loop picks one task per iteration — only after the microtask queue is completely empty." },
-      { heading: "One at a time", body: "Unlike microtasks, the event loop only dequeues one macrotask per tick. This gives the browser a chance to render between tasks, keeping the UI responsive." },
-      { heading: "Key insight", body: "setTimeout(fn, 0) doesn't mean \"run immediately\" — it means \"run as soon as possible after the current script finishes AND all microtasks are drained.\" The 0ms is a minimum delay, not a guarantee." },
+      { heading: "What is it?", body: "A **FIFO queue** holding callbacks from completed Web API operations — setTimeout, setInterval, I/O events, UI rendering events, and MessageChannel." },
+      { heading: "How it works", body: "When a Web API operation finishes (e.g., a timer expires), it places its callback into the task queue. The event loop picks **one task per iteration** — only after the microtask queue is completely empty." },
+      { heading: "One at a time", body: "Unlike microtasks, the event loop only **dequeues one macrotask per tick**. This gives the browser a chance to render between tasks, keeping the UI responsive." },
+      { heading: "Key insight", body: "**setTimeout(fn, 0) doesn't mean \"run immediately\"** — it means \"run as soon as possible after the current script finishes AND all microtasks are drained.\" The 0ms is a **minimum delay, not a guarantee**." },
     ]
   },
   micro: {
     title: "Microtask Queue",
     color: T.coral,
     sections: [
-      { heading: "What is it?", body: "A high-priority FIFO queue for callbacks from Promises (.then, .catch, .finally), queueMicrotask(), MutationObserver, and process.nextTick() in Node.js." },
-      { heading: "How it works", body: "When a promise resolves, its .then() callback is placed into the microtask queue — not the task queue. The event loop drains this queue completely before moving to any macrotask." },
-      { heading: "Starvation risk", body: "Because the entire microtask queue is drained before any macrotask runs, a microtask that keeps scheduling more microtasks can starve the task queue and block rendering indefinitely." },
-      { heading: "Key insight", body: "This is why Promise.resolve().then(cb) always runs before setTimeout(cb, 0) — microtasks have strictly higher priority. The spec guarantees this ordering." },
+      { heading: "What is it?", body: "A **high-priority FIFO queue** for callbacks from Promises (.then, .catch, .finally), queueMicrotask(), MutationObserver, and process.nextTick() in Node.js." },
+      { heading: "How it works", body: "When a promise resolves, its .then() callback is placed into the **microtask queue — not the task queue**. The event loop **drains this queue completely** before moving to any macrotask." },
+      { heading: "Starvation risk", body: "Because the entire microtask queue is drained before any macrotask runs, a microtask that **keeps scheduling more microtasks can starve the task queue** and block rendering indefinitely." },
+      { heading: "Key insight", body: "This is why **Promise.resolve().then(cb) always runs before setTimeout(cb, 0)** — microtasks have strictly higher priority. The spec guarantees this ordering." },
     ]
   },
   code: {
     title: "Source Code",
     color: T.purpleL,
     sections: [
-      { heading: "This example", body: "This code demonstrates all three execution phases plus a real network request: synchronous code runs first, then microtasks (promises), then macrotasks (setTimeout), and finally the fetch response's .then() — which is also a microtask, just one that resolves later." },
-      { heading: "Why this order?", body: "1) console.log('start') — sync, runs immediately.\n2) setTimeout — registers callback with Timer API.\n3) fetch('/api').then() — hands off to Network API, registers .then() for later.\n4) Promise.resolve().then() — already resolved, callback goes to microtask queue now.\n5) console.log('end') — sync, runs immediately.\n6) Stack empty → microtasks drain → 'promise'.\n7) Macrotask → 'timeout'.\n8) Network responds → fetch .then() → microtask → 'fetched'." },
-      { heading: "fetch vs Promise.resolve", body: "Both use .then() and both create microtasks. The difference: Promise.resolve() is already settled so its callback queues immediately. fetch() must wait for the network — its .then() only queues when the response arrives." },
+      { heading: "This example", body: "This code demonstrates all three execution phases plus a real network request: **synchronous** code runs first, then microtasks (promises), then macrotasks (setTimeout), and finally the fetch response's .then() — which is also a **microtask**, just one that resolves later." },
+      { heading: "Why this order?", body: "1) console.log('start') — sync, runs immediately.\n2) setTimeout — registers callback with Timer API.\n3) fetch('/api').then() — hands off to Network API, registers .then() for later.\n4) Promise.resolve().then() — already resolved, callback goes to **microtask** queue now.\n5) console.log('end') — sync, runs immediately.\n6) Stack empty → microtasks drain → 'promise'.\n7) **Macrotask** → 'timeout'.\n8) Network responds → fetch .then() → **microtask** → 'fetched'." },
+      { heading: "fetch vs Promise.resolve", body: "Both use .then() and both create microtasks. The difference: Promise.resolve() is already settled so its callback queues immediately. fetch() **must** wait for the network — its .then() only queues when the response arrives." },
     ]
   },
   console: {
@@ -313,10 +313,20 @@ const DETAILS = {
     color: T.tealL,
     sections: [
       { heading: "What it shows", body: "The console displays output in the exact order statements execute — making it the ultimate proof of JavaScript's execution model." },
-      { heading: "The guaranteed order", body: "1) \"start\" — first synchronous statement.\n2) \"end\" — second synchronous statement (setTimeout, fetch, and Promise.then are just registrations, not executions).\n3) \"promise\" — microtask from already-resolved promise.\n4) \"timeout\" — macrotask, runs after microtasks.\n5) \"fetched\" — microtask from fetch .then(), but queued later because it waited for the network." },
-      { heading: "Key insight", body: "\"fetched\" prints last not because it has lower priority, but because the network response hasn't arrived yet when the first microtask drain happens. Once it arrives, its .then() callback is a microtask — same priority as Promise.resolve().then()." },
+      { heading: "The guaranteed order", body: "1) \"start\" — first **synchronous** statement.\n2) \"end\" — second **synchronous** statement (setTimeout, fetch, and Promise.then are just registrations, not executions).\n3) \"promise\" — **microtask** from already-resolved promise.\n4) \"timeout\" — **macrotask**, runs after microtasks.\n5) \"fetched\" — **microtask** from fetch .then(), but queued later because it waited for the network." },
+      { heading: "Key insight", body: "\"fetched\" prints last not because it has lower priority, but because the network response hasn't arrived yet when the first **microtask** drain happens. Once it arrives, its .then() callback is a **microtask** — same priority as Promise.resolve().then()." },
     ]
   },
+};
+
+const renderBody = (text) => {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((p, i) => {
+    if (p.startsWith("**") && p.endsWith("**")) {
+      return e("strong", { key:i, style:{ color:T.text1, fontWeight:600 } }, p.slice(2, -2));
+    }
+    return p;
+  });
 };
 
 const DetailPanel = ({ detailKey, onClose }) => {
@@ -336,7 +346,7 @@ const DetailPanel = ({ detailKey, onClose }) => {
       d.sections.map((s, i) =>
         e("div", { key:i, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
           e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
-          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, renderBody(s.body))
         )
       )
     )

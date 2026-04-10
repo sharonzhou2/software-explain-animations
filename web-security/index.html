@@ -460,7 +460,7 @@ const DETAILS = {
     color:T.purpleL,
     sections:[
       {heading:"What to watch",body:"Each scene shows either a vulnerable code pattern (highlighted in red) or a defensive configuration (highlighted in green). Pay attention to the contrast between insecure and secure approaches."},
-      {heading:"Common patterns",body:"• Never trust user input\n• Always escape output context-specifically\n• Use parameterized queries for SQL\n• Set security headers on every response\n• Validate on the server, not just the client"},
+      {heading:"Common patterns",body:"• **Never** trust user input\n• **Always** escape output context-specifically\n• Use parameterized queries for SQL\n• Set security headers on every response\n• Validate on the server, not just the client"},
     ]
   },
   attack: {
@@ -468,14 +468,14 @@ const DETAILS = {
     color:T.redL,
     sections:[
       {heading:"How attacks work",body:"Most web attacks exploit trust boundaries:\n\n• XSS: Server trusts user input as safe HTML\n• CSRF: Server trusts any request with valid cookies\n• SQL Injection: Database trusts query strings\n• Clickjacking: User trusts what they see\n\nEach exploits a different layer of the stack."},
-      {heading:"Attack surface",body:"Every point where data enters your application is a potential attack vector: form inputs, URL parameters, headers, cookies, file uploads, API endpoints, WebSocket messages."},
+      {heading:"Attack surface",body:"Every point where data enters your application is a potential attack vector: form inputs, URL parameters, headers, cookies, file uploads, API endpoints, **WebSocket** messages."},
     ]
   },
   defense: {
     title:"Defense Strategy",
     color:T.greenL,
     sections:[
-      {heading:"Defense in depth",body:"No single defense is sufficient. Layer protections:\n\n1. Input validation — reject bad data early\n2. Output encoding — escape for the right context\n3. Security headers — CSP, X-Frame-Options\n4. Cookie flags — HttpOnly, Secure, SameSite\n5. HTTPS — encrypt everything in transit\n6. Monitoring — detect and respond to attacks"},
+      {heading:"Defense in depth",body:"No single defense is sufficient. Layer protections:\n\n1. Input validation — reject bad data early\n2. Output encoding — escape for the right context\n3. Security headers — CSP, X-Frame-**Options**\n4. Cookie flags — **HttpOnly**, Secure, **SameSite**\n5. HTTPS — encrypt everything in transit\n6. Monitoring — detect and respond to attacks"},
       {heading:"Principle of least privilege",body:"Give each component only the access it needs. Don't run services as root. Don't grant broad database permissions. Don't expose internal APIs to the public."},
     ]
   },
@@ -483,7 +483,7 @@ const DETAILS = {
     title:"Attack Flow",
     color:T.blueL,
     sections:[
-      {heading:"Reading the diagram",body:"Red arrows show malicious data flow — the path an attacker's payload takes through the system. Green arrows show defensive measures blocking or sanitizing the attack. Blue arrows show normal, legitimate traffic."},
+      {heading:"Reading the diagram",body:"Red arrows show malicious data flow — the path an attacker's payload takes through the system. Green arrows show defensive measures **blocking** or sanitizing the attack. Blue arrows show normal, legitimate traffic."},
       {heading:"Trust boundaries",body:"Every arrow that crosses from one actor to another crosses a trust boundary. Security vulnerabilities exist where these boundaries aren't properly enforced."},
     ]
   },
@@ -711,6 +711,16 @@ const Finale = () => {
   );
 };
 
+const renderBody = (text) => {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((p, i) => {
+    if (p.startsWith("**") && p.endsWith("**")) {
+      return e("strong", { key:i, style:{ color:T.text1, fontWeight:600 } }, p.slice(2, -2));
+    }
+    return p;
+  });
+};
+
 const DetailPanel = ({ detailKey, onClose }) => {
   const d = DETAILS[detailKey];
   if (!d) return null;
@@ -728,7 +738,7 @@ const DetailPanel = ({ detailKey, onClose }) => {
       d.sections.map((s, i) =>
         e("div", { key:i, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
           e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
-          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, renderBody(s.body))
         )
       )
     )

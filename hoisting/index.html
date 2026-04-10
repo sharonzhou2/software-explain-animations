@@ -325,7 +325,7 @@ const DETAILS = {
     color:T.purpleL,
     sections:[
       {heading:"What to watch for",body:"Each scene shows a different declaration type and what happens when you try to use it before it\u2019s declared. The key is understanding the two-phase execution model."},
-      {heading:"Two phases",body:"1. Creation phase: Engine scans for declarations, allocates memory.\n2. Execution phase: Code runs line by line, assignments happen.\n\nHoisting only affects the creation phase \u2014 assignments always happen during execution."},
+      {heading:"Two phases",body:"1. Creation phase: Engine scans for declarations, allocates memory.\n2. Execution phase: Code runs line by line, assignments happen.\n\nHoisting only affects the creation phase \u2014 assignments **always** happen during execution."},
     ]
   },
   memory: {
@@ -333,9 +333,9 @@ const DETAILS = {
     color:T.teal,
     sections:[
       {heading:"What is it?",body:"This panel shows what\u2019s allocated in memory after the creation phase \u2014 before any code executes. It reveals what the engine \u2018sees\u2019 after scanning declarations."},
-      {heading:"Creation phase rules",body:"\u2022 var \u2192 allocated with undefined\n\u2022 function declaration \u2192 allocated with full body\n\u2022 let/const/class \u2192 allocated but in TDZ (Temporal Dead Zone)"},
-      {heading:"Temporal Dead Zone",body:"The TDZ is the period between entering a scope and reaching the declaration line. Variables exist in memory but are completely inaccessible. Trying to read them throws ReferenceError."},
-      {heading:"Key insight",body:"All declarations are hoisted \u2014 even let, const, and class. The difference is initialization: var gets undefined, functions get their body, and everything else sits in the TDZ until the declaration line executes."},
+      {heading:"Creation phase rules",body:"\u2022 var \u2192 allocated with undefined\n\u2022 function declaration \u2192 allocated with full body\n\u2022 let/const/class \u2192 allocated but in **TDZ** (**Temporal Dead Zone**)"},
+      {heading:"Temporal Dead Zone",body:"The **TDZ** is the period between entering a scope and reaching the declaration line. Variables exist in memory but are completely inaccessible. Trying to read them throws ReferenceError."},
+      {heading:"Key insight",body:"All declarations are hoisted \u2014 even let, const, and class. The difference is initialization: var gets undefined, functions get their body, and everything else sits in the **TDZ** until the declaration line executes."},
     ]
   },
   rule: {
@@ -344,17 +344,17 @@ const DETAILS = {
     sections:[
       {heading:"function declarations",body:"Fully hoisted. Both the name and the entire function body are available from the very first line of the scope. This is why you can call a function before its declaration."},
       {heading:"var",body:"The variable name is hoisted and initialized with undefined. The actual value assignment happens when execution reaches that line. This is why console.log(x) gives undefined, not an error."},
-      {heading:"let / const / class",body:"Hoisted into the Temporal Dead Zone. The engine knows they exist (that\u2019s why you get ReferenceError \u2018cannot access before initialization\u2019, not \u2018not defined\u2019), but they\u2019re inaccessible until the declaration line."},
-      {heading:"Function expressions",body:"Follow the rules of their variable type. `var f = function(){}` \u2192 f is undefined until assignment. `const f = () => {}` \u2192 f is in TDZ until assignment."},
+      {heading:"let / const / class",body:"Hoisted into the **Temporal Dead Zone**. The engine knows they exist (that\u2019s why you get ReferenceError \u2018cannot access before initialization\u2019, not \u2018not defined\u2019), but they\u2019re inaccessible until the declaration line."},
+      {heading:"Function expressions",body:"Follow the rules of their variable type. `var f = function(){}` \u2192 f is undefined until assignment. `const f = () => {}` \u2192 f is in **TDZ** until assignment."},
     ]
   },
   console: {
     title:"Console Output",
     color:T.tealL,
     sections:[
-      {heading:"What it shows",body:"The console output reveals what value each variable holds at the moment of access \u2014 proving hoisting behavior."},
-      {heading:"Three outcomes",body:"\u2022 A value (undefined, number, string) \u2192 variable was accessible\n\u2022 TypeError \u2192 variable exists but isn\u2019t callable (var function expression)\n\u2022 ReferenceError \u2192 variable is in the TDZ (let/const/class before declaration)"},
-      {heading:"TypeError vs ReferenceError",body:"TypeError means the variable exists but isn\u2019t the right type (e.g., calling undefined as a function). ReferenceError means you can\u2019t access it at all \u2014 it\u2019s in the TDZ."},
+      {heading:"What it shows",body:"The console output reveals what value each variable holds at the moment of access \u2014 proving **hoisting** behavior."},
+      {heading:"Three outcomes",body:"\u2022 A value (undefined, number, string) \u2192 variable was accessible\n\u2022 TypeError \u2192 variable exists but isn\u2019t callable (var function expression)\n\u2022 ReferenceError \u2192 variable is in the **TDZ** (let/const/class before declaration)"},
+      {heading:"TypeError vs ReferenceError",body:"TypeError means the variable exists but isn\u2019t the right type (e.g., calling undefined as a function). ReferenceError means you can\u2019t access it at all \u2014 it\u2019s in the **TDZ**."},
     ]
   },
 };
@@ -487,6 +487,16 @@ const Finale = () => {
   );
 };
 
+const renderBody = (text) => {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((p, i) => {
+    if (p.startsWith("**") && p.endsWith("**")) {
+      return e("strong", { key:i, style:{ color:T.text1, fontWeight:600 } }, p.slice(2, -2));
+    }
+    return p;
+  });
+};
+
 const DetailPanel = ({ detailKey, onClose }) => {
   const d = DETAILS[detailKey];
   if (!d) return null;
@@ -504,7 +514,7 @@ const DetailPanel = ({ detailKey, onClose }) => {
       d.sections.map((s, i) =>
         e("div", { key:i, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
           e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
-          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, renderBody(s.body))
         )
       )
     )

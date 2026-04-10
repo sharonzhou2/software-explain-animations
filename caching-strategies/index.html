@@ -369,28 +369,28 @@ const DETAILS = {
     color:T.teal,
     sections:[
       {heading:"Cache hit",body:"The requested key is found in the cache. Return immediately — typically sub-millisecond from in-memory, a few ms from Redis. No DB load, no network to the origin."},
-      {heading:"Cache miss",body:"Key not in cache. The app (or cache) must fetch from the source of truth — DB, API, or computation. Then usually store the result so the next request is a hit."},
+      {heading:"Cache miss",body:"Key not in cache. The app (or cache) **must** fetch from the source of truth — DB, API, or computation. Then usually store the result so the next request is a hit."},
       {heading:"Hit rate matters",body:"Hit rate = hits / (hits + misses). A cache with 20% hit rate barely helps; 95%+ transforms performance. Track it in metrics — it's the single most important cache number."},
-      {heading:"Cost of a miss",body:"A miss is always more expensive than no cache at all (you pay for the lookup + the fetch + the store). The cache only pays for itself if hits dominate."},
+      {heading:"Cost of a miss",body:"A miss is **always** more expensive than no cache at all (you pay for the lookup + the fetch + the store). The cache only pays for itself if hits dominate."},
     ]
   },
   aside: {
     title:"Cache-aside",
     color:T.purple,
     sections:[
-      {heading:"How it works",body:"1. App reads from cache\n2. If miss, app reads from DB\n3. App writes the result back to cache\n4. Return to caller\n\nThe cache is passive — it never talks to the DB itself."},
+      {heading:"How it works",body:"1. App reads from cache\n2. If miss, app reads from DB\n3. App writes the result back to cache\n4. Return to caller\n\nThe cache is passive — it **never** talks to the DB itself."},
       {heading:"Strengths",body:"• Simple, language-agnostic\n• Cache failure doesn't break reads (just slower)\n• You control exactly what gets cached and when\n• Works with any cache (Redis, Memcached, in-process Map)"},
-      {heading:"Weaknesses",body:"• First request for any key always misses (cold cache)\n• Writes don't touch the cache → stale data until TTL or explicit invalidation\n• Every caller must remember the pattern (easy to forget)"},
-      {heading:"When to use",body:"The default choice. If you're not sure, use cache-aside. Most real systems use this with a write-through or explicit invalidation on top."},
+      {heading:"Weaknesses",body:"• First request for any key **always** misses (cold cache)\n• Writes don't touch the cache → stale data until TTL or explicit invalidation\n• Every caller **must** remember the pattern (easy to forget)"},
+      {heading:"When to use",body:"The default choice. If you're not sure, use **cache-aside**. Most real systems use this with a **write-through** or explicit invalidation on top."},
     ]
   },
   through: {
     title:"Read/Write-through",
     color:T.blue,
     sections:[
-      {heading:"Read-through",body:"The cache is the front door. App calls cache.get(key); on miss, the cache loads from the DB itself via a registered loader function. App never sees the DB directly."},
-      {heading:"Write-through",body:"On write, the cache synchronously writes to both itself and the DB before returning. The cache is always in sync with the DB — no stale reads possible from this path."},
-      {heading:"Write-around",body:"Writes go straight to the DB, bypassing the cache. The cache is only populated on reads. Good for write-heavy workloads where most written data is never read again."},
+      {heading:"Read-through",body:"The cache is the front door. App calls cache.get(key); on miss, the cache loads from the DB itself via a registered loader function. App **never** sees the DB directly."},
+      {heading:"Write-through",body:"On write, the cache synchronously writes to both itself and the DB before returning. The cache is **always** in sync with the DB — no stale reads possible from this path."},
+      {heading:"Write-around",body:"Writes go straight to the DB, bypassing the cache. The cache is only populated on reads. Good for write-heavy workloads where most written data is **never** read again."},
       {heading:"Trade-offs",body:"Through patterns move complexity into the cache layer — cleaner app code but requires a cache that supports loaders/writers. Every write pays for both stores, so writes are slower."},
     ]
   },
@@ -398,8 +398,8 @@ const DETAILS = {
     title:"Write-behind",
     color:T.coral,
     sections:[
-      {heading:"How it works",body:"Write to the cache and return immediately. The cache queues the write and flushes to the DB later, often in batches. Think of it as async write-through."},
-      {heading:"Strengths",body:"• Very fast writes (no DB wait)\n• Batches many writes into few DB operations\n• Absorbs spiky write load\n• Great for counters, metrics, session updates"},
+      {heading:"How it works",body:"Write to the cache and return immediately. The cache queues the write and flushes to the DB later, often in batches. Think of it as async **write-through**."},
+      {heading:"Strengths",body:"• Very fast writes (no DB wait)\n• Batches many writes into few DB operations\n• Absorbs spiky write load\n• Great for counters, metrics, **session** updates"},
       {heading:"Risks",body:"• If the cache crashes before flush → data lost\n• Write order can be reordered or coalesced\n• Harder to reason about consistency\n• Need durable queues for critical data"},
       {heading:"When to use",body:"High write throughput where some data loss is acceptable, or where the cache itself is durable (e.g., Redis AOF with fsync). Common in analytics, leaderboards, telemetry."},
     ]
@@ -409,10 +409,10 @@ const DETAILS = {
     color:T.amber,
     sections:[
       {heading:"LRU — Least Recently Used",body:"Evict the item that hasn't been accessed for the longest time. Great general-purpose default — matches typical access patterns (recent = likely soon again). Implemented as a hash map + doubly-linked list."},
-      {heading:"LFU — Least Frequently Used",body:"Evict the item with the fewest accesses. Better for workloads with a stable \"hot set\" that LRU might evict on a temporary scan. Harder to implement efficiently; often approximated (TinyLFU)."},
-      {heading:"FIFO — First In First Out",body:"Evict in insertion order, ignoring access. Dead simple but usually worse than LRU. Occasionally used when access patterns are uniform or tracking is too expensive."},
-      {heading:"TTL — Time To Live",body:"Items self-expire after N seconds. Not really an eviction policy on its own — combined with LRU/LFU. Essential for bounding staleness when invalidation is hard."},
-      {heading:"Random / 2-random",body:"Pick N random items, evict the worst by some metric. Used in Redis' maxmemory-policy (allkeys-lru is actually approximate LRU over 5 random samples)."},
+      {heading:"LFU — Least Frequently Used",body:"Evict the item with the fewest accesses. Better for workloads with a stable \"hot set\" that **LRU** might evict on a temporary scan. Harder to implement efficiently; often approximated (TinyLFU)."},
+      {heading:"FIFO — First In First Out",body:"Evict in insertion order, ignoring access. Dead simple but usually worse than **LRU**. Occasionally used when access patterns are uniform or tracking is too expensive."},
+      {heading:"TTL — Time To Live",body:"Items self-expire after N seconds. Not really an eviction policy on its own — combined with **LRU**/LFU. Essential for bounding staleness when invalidation is hard."},
+      {heading:"Random / 2-random",body:"Pick N random items, evict the worst by some metric. Used in Redis' maxmemory-policy (allkeys-**lru** is actually approximate **LRU** over 5 random samples)."},
     ]
   },
   invalidation: {
@@ -420,18 +420,18 @@ const DETAILS = {
     color:T.red,
     sections:[
       {heading:"Why it's hard",body:"The source of truth changed. How do all the caches that might hold a copy find out? In a distributed system with multiple replicas, this is a consistency problem disguised as a caching problem."},
-      {heading:"TTL-based",body:"Simplest: just expire after N seconds. Bounded staleness, zero coordination. Downside: you always see data up to TTL seconds stale, and a short TTL kills hit rate."},
+      {heading:"TTL-based",body:"Simplest: just expire after N seconds. Bounded staleness, zero coordination. Downside: you **always** see data up to TTL seconds stale, and a short TTL kills hit rate."},
       {heading:"Write-through update",body:"On write, update the cache at the same time. Works for single-key writes, but breaks down if the same data is cached under multiple keys or in multiple caches."},
       {heading:"Explicit delete",body:"On write, the app calls cache.delete(key). Simple but relies on the app remembering every cache location. Miss one call site and you ship stale data."},
       {heading:"Event-driven",body:"DB changes emit events (CDC, outbox pattern) that invalidate caches. Correct but complex — requires infrastructure for reliable event delivery."},
-      {heading:"Versioning",body:"Embed a version in the cache key: user:42:v7. On update, bump the version. Old entries become orphans and age out via LRU. Never serves stale data."},
+      {heading:"Versioning",body:"Embed a version in the cache key: user:42:v7. On update, bump the version. Old entries become orphans and age out via **LRU**. **Never** serves stale data."},
     ]
   },
   browser: {
     title:"Browser Caching",
     color:T.blue,
     sections:[
-      {heading:"Cache-Control",body:"The main HTTP caching header.\n• max-age=N — fresh for N seconds\n• public / private — shared or per-user\n• no-cache — revalidate before using\n• no-store — never cache\n• immutable — never revalidate (for hashed URLs)"},
+      {heading:"Cache-Control",body:"The main HTTP caching header.\n• max-age=N — fresh for N seconds\n• public / private — shared or per-user\n• no-cache — revalidate before using\n• no-store — **never** cache\n• immutable — **never** revalidate (for hashed URLs)"},
       {heading:"ETag",body:"An opaque identifier the server sends with a response. The browser stores it. On revalidation, it sends If-None-Match: <etag>. If unchanged, the server replies 304 Not Modified with no body."},
       {heading:"Last-Modified",body:"A timestamp the server sends. The browser sends If-Modified-Since: <date> on revalidation. Weaker than ETag (second-granularity, clock drift) but simpler."},
       {heading:"Strategy",body:"Long-lived assets: hash the URL (app.a3f2.js) and send max-age=31536000, immutable.\n\nHTML: short max-age + ETag so content updates propagate quickly.\n\nAPI responses: usually private or no-store unless you know what you're doing."},
@@ -442,7 +442,7 @@ const DETAILS = {
     color:T.purpleL,
     sections:[
       {heading:"Reading the examples",body:"Each scene shows the minimal code for the pattern. In real systems you'd add error handling, metrics, and a serialization layer."},
-      {heading:"Common libraries",body:"Node: lru-cache, node-cache, ioredis\nPython: functools.lru_cache, cachetools, redis-py\nGo: groupcache, ristretto, go-redis\nJava: Caffeine, Ehcache, Spring Cache"},
+      {heading:"Common libraries",body:"Node: **lru**-cache, node-cache, ioredis\nPython: functools.lru_cache, cachetools, redis-py\nGo: groupcache, ristretto, go-redis\nJava: Caffeine, Ehcache, Spring Cache"},
       {heading:"Redis basics",body:"GET key\nSET key value EX 3600\nDEL key\nINCR counter\nEXPIRE key 60\n\nUse pipelining for batches; use SCAN (not KEYS) in production."},
     ]
   },
@@ -989,6 +989,16 @@ const Finale = () => {
 };
 
 /* ─── DETAIL PANEL ─── */
+const renderBody = (text) => {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((p, i) => {
+    if (p.startsWith("**") && p.endsWith("**")) {
+      return e("strong", { key:i, style:{ color:T.text1, fontWeight:600 } }, p.slice(2, -2));
+    }
+    return p;
+  });
+};
+
 const DetailPanel = ({ detailKey, onClose }) => {
   const d = DETAILS[detailKey];
   if (!d) return null;
@@ -1006,7 +1016,7 @@ const DetailPanel = ({ detailKey, onClose }) => {
       d.sections.map((s, i) =>
         e("div", { key:i, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
           e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
-          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, renderBody(s.body))
         )
       )
     )

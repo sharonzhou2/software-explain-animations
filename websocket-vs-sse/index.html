@@ -344,9 +344,9 @@ const DETAILS = {
     title:"WebSocket",
     color:T.ws,
     sections:[
-      {heading:"What is WebSocket?",body:"WebSocket (RFC 6455) is a protocol that provides full-duplex communication over a single, long-lived TCP connection. After an HTTP upgrade handshake, both client and server can send messages independently at any time."},
-      {heading:"How it works",body:"1. Client sends HTTP request with Upgrade: websocket\n2. Server responds with 101 Switching Protocols\n3. Connection upgrades to WebSocket binary framing\n4. Both sides send/receive frames independently\n5. Either side can close the connection"},
-      {heading:"Frame format",body:"WebSocket frames are lightweight:\n\u2022 Opcode (4 bits): text, binary, ping, pong, close\n\u2022 Payload length: 7, 16, or 64 bits\n\u2022 Masking key: 32 bits (client-to-server only)\n\u2022 Minimum overhead: 2 bytes per frame"},
+      {heading:"What is WebSocket?",body:"**WebSocket** (RFC 6455) is a protocol that provides full-duplex communication over a single, long-lived **TCP** connection. After an HTTP upgrade handshake, both client and server can send messages independently at any time."},
+      {heading:"How it works",body:"1. Client sends HTTP request with Upgrade: **websocket**\n2. Server responds with 101 Switching Protocols\n3. Connection upgrades to **WebSocket** binary framing\n4. Both sides send/receive frames independently\n5. Either side can close the connection"},
+      {heading:"Frame format",body:"**WebSocket** frames are lightweight:\n\u2022 Opcode (4 bits): text, binary, ping, pong, close\n\u2022 Payload length: 7, 16, or 64 bits\n\u2022 Masking key: 32 bits (client-to-server only)\n\u2022 Minimum overhead: 2 bytes per frame"},
       {heading:"Strengths",body:"\u2022 True bidirectional communication\n\u2022 Very low per-message overhead (2-14 bytes)\n\u2022 Supports text and binary data\n\u2022 No HTTP header overhead after handshake\n\u2022 Sub-millisecond latency"},
     ]
   },
@@ -354,10 +354,10 @@ const DETAILS = {
     title:"Server-Sent Events",
     color:T.sse,
     sections:[
-      {heading:"What is SSE?",body:"Server-Sent Events (SSE) is a standard (HTML5) for servers to push real-time updates to clients over a single HTTP connection. The browser's EventSource API handles connection management and automatic reconnection."},
+      {heading:"What is SSE?",body:"Server-Sent Events (**SSE**) is a standard (HTML5) for servers to push real-time updates to clients over a single HTTP connection. The browser's EventSource API handles connection management and automatic reconnection."},
       {heading:"How it works",body:"1. Client opens EventSource connection (GET request)\n2. Server responds with Content-Type: text/event-stream\n3. Server sends text events separated by blank lines\n4. If connection drops, browser auto-reconnects\n5. Last-Event-ID header enables resume from last event"},
       {heading:"Event format",body:"event: notification\ndata: {\"title\": \"New message\"}\nid: 42\nretry: 5000\n\nFields:\n\u2022 event: named event type\n\u2022 data: payload (multi-line supported)\n\u2022 id: event identifier for resume\n\u2022 retry: reconnection interval (ms)"},
-      {heading:"Strengths",body:"\u2022 Works over standard HTTP (firewalls, proxies)\n\u2022 Automatic reconnection built in\n\u2022 Event ID enables resumable streams\n\u2022 Multiplexed over HTTP/2\n\u2022 Simple text format, easy to debug\n\u2022 No special server infrastructure needed"},
+      {heading:"Strengths",body:"\u2022 Works over standard HTTP (firewalls, proxies)\n\u2022 Automatic reconnection built in\n\u2022 Event ID enables resumable streams\n\u2022 Multiplexed over **HTTP/2**\n\u2022 Simple text format, easy to debug\n\u2022 No special server infrastructure needed"},
     ]
   },
   code: {
@@ -365,7 +365,7 @@ const DETAILS = {
     color:T.purpleL,
     sections:[
       {heading:"Reading the examples",body:"Each scene shows client-side code or protocol details relevant to the concept being explained. The code panel highlights JavaScript APIs, HTTP headers, and protocol formats."},
-      {heading:"WebSocket API",body:"const ws = new WebSocket('ws://host/path');\nws.onopen = () => ws.send('hello');\nws.onmessage = (e) => console.log(e.data);\nws.onclose = () => console.log('closed');\nws.onerror = (e) => console.error(e);"},
+      {heading:"WebSocket API",body:"const ws = new **WebSocket**('ws://host/path');\nws.onopen = () => ws.send('hello');\nws.onmessage = (e) => console.log(e.data);\nws.onclose = () => console.log('closed');\nws.onerror = (e) => console.error(e);"},
       {heading:"EventSource API",body:"const src = new EventSource('/events');\nsrc.onmessage = (e) => console.log(e.data);\nsrc.addEventListener('custom', handler);\nsrc.onerror = (e) => console.log('reconnecting...');\nsrc.close();"},
     ]
   },
@@ -373,8 +373,8 @@ const DETAILS = {
     title:"Comparison",
     color:T.purple,
     sections:[
-      {heading:"Quick reference",body:"                  WebSocket       SSE\nDirection:       Bidirectional   Server\u2192Client\nProtocol:        ws:// (TCP)     HTTP\nData format:     Text + Binary   Text only\nReconnect:       Manual          Automatic\nHTTP/2:          No benefit      Multiplexed\nBrowser:         All modern      All modern*\nOverhead:        2-14 bytes      ~50 bytes\n\n*IE does not support SSE (polyfill available)"},
-      {heading:"Together",body:"Many apps use both:\n\u2022 SSE for server push (notifications, feeds)\n\u2022 Regular HTTP POST for client-to-server\n\u2022 WebSocket only when true bidirectional is needed\n\nSSE + HTTP POST often replaces WebSocket with simpler infrastructure."},
+      {heading:"Quick reference",body:"                  **WebSocket**       **SSE**\nDirection:       Bidirectional   Server\u2192Client\nProtocol:        ws:// (**TCP**)     HTTP\nData format:     Text + Binary   Text only\nReconnect:       Manual          Automatic\nHTTP/2:          No benefit      Multiplexed\nBrowser:         All modern      All modern*\nOverhead:        2-14 bytes      ~50 bytes\n\n*IE **does not** support **SSE** (polyfill available)"},
+      {heading:"Together",body:"Many apps use both:\n\u2022 **SSE** for server push (notifications, feeds)\n\u2022 Regular HTTP POST for client-to-server\n\u2022 **WebSocket** only when true bidirectional is needed\n\nSSE + HTTP POST often replaces **WebSocket** with simpler infrastructure."},
     ]
   },
 };
@@ -762,6 +762,16 @@ const Finale = () => {
   );
 };
 
+const renderBody = (text) => {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((p, i) => {
+    if (p.startsWith("**") && p.endsWith("**")) {
+      return e("strong", { key:i, style:{ color:T.text1, fontWeight:600 } }, p.slice(2, -2));
+    }
+    return p;
+  });
+};
+
 const DetailPanel = ({ detailKey, onClose }) => {
   const d = DETAILS[detailKey];
   if (!d) return null;
@@ -779,7 +789,7 @@ const DetailPanel = ({ detailKey, onClose }) => {
       d.sections.map((s, i) =>
         e("div", { key:i, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
           e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
-          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, renderBody(s.body))
         )
       )
     )

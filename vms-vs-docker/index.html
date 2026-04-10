@@ -472,8 +472,8 @@ const DETAILS = {
     title:"Virtual Machines",
     color:T.vm,
     sections:[
-      {heading:"What is a VM?",body:"A Virtual Machine is a software emulation of a complete computer. It runs its own operating system (the \"guest OS\") on virtualized hardware provided by the hypervisor. To the software inside, it looks and behaves like a real, independent machine."},
-      {heading:"How it works",body:"The hypervisor intercepts hardware access from the guest OS and translates it:\n• CPU instructions → hardware virtualization (VT-x/AMD-V)\n• Memory → shadow page tables or EPT\n• Disk → virtual disk files (.vmdk, .qcow2)\n• Network → virtual NICs and switches"},
+      {heading:"What is a VM?",body:"A Virtual Machine is a software emulation of a complete computer. It runs its own operating system (the \"guest OS\") on virtualized hardware provided by the **hypervisor**. To the software inside, it looks and behaves like a real, independent machine."},
+      {heading:"How it works",body:"The **hypervisor** intercepts hardware access from the guest OS and translates it:\n• CPU instructions → hardware virtualization (VT-x/AMD-V)\n• Memory → shadow page tables or EPT\n• Disk → virtual disk files (.vmdk, .qcow2)\n• Network → virtual NICs and switches"},
       {heading:"Types of hypervisors",body:"Type 1 (bare-metal): Runs directly on hardware. Examples: VMware ESXi, KVM, Hyper-V.\n\nType 2 (hosted): Runs on top of a host OS. Examples: VirtualBox, VMware Workstation, Parallels."},
       {heading:"Strengths",body:"• Complete isolation — separate kernel per VM\n• Can run different OSes (Linux VM on Windows host)\n• Mature security model\n• Hardware-level boundary stops most attacks"},
     ]
@@ -482,9 +482,9 @@ const DETAILS = {
     title:"Docker Containers",
     color:T.docker,
     sections:[
-      {heading:"What is a container?",body:"A container is an isolated process (or group of processes) that shares the host's kernel but has its own filesystem, network, and process namespace. It bundles only the app and its dependencies — not a full OS."},
-      {heading:"How it works",body:"Docker uses Linux kernel features:\n• Namespaces — isolate PID, network, mount, user, IPC\n• cgroups — limit CPU, memory, I/O per container\n• OverlayFS — layered filesystem (images are read-only layers)\n• seccomp — restrict system calls"},
-      {heading:"Images & layers",body:"A Docker image is built from a Dockerfile as a stack of read-only layers. Each instruction (FROM, COPY, RUN) creates a new layer. Layers are cached and shared between images — only changed layers are transferred."},
+      {heading:"What is a container?",body:"A **container** is an isolated process (or group of processes) that shares the host's kernel but has its own filesystem, network, and process namespace. It bundles only the app and its dependencies — not a full OS."},
+      {heading:"How it works",body:"**Docker** uses Linux kernel features:\n• Namespaces — isolate PID, network, mount, user, IPC\n• cgroups — limit CPU, memory, I/O per **container**\n• OverlayFS — layered filesystem (images are read-only layers)\n• seccomp — restrict system calls"},
+      {heading:"Images & layers",body:"A **Docker** image is built from a Dockerfile as a stack of read-only layers. Each instruction (FROM, COPY, RUN) creates a new layer. Layers are cached and shared between images — only changed layers are transferred."},
       {heading:"Strengths",body:"• Millisecond startup (just fork a process)\n• Minimal overhead (no guest OS)\n• Portable — OCI standard, runs anywhere\n• Perfect for microservices and CI/CD\n• Reproducible builds via Dockerfile"},
     ]
   },
@@ -493,7 +493,7 @@ const DETAILS = {
     color:T.purpleL,
     sections:[
       {heading:"Reading the examples",body:"Each scene shows configuration or comparison relevant to that concept. The code panel highlights commands, Dockerfile syntax, or architectural notes."},
-      {heading:"Key Docker commands",body:"docker build -t myapp .\ndocker run -d -p 8080:80 myapp\ndocker ps\ndocker logs <container>\ndocker stop <container>"},
+      {heading:"Key Docker commands",body:"**docker** build -t myapp .\ndocker run -d -p 8080:80 myapp\ndocker ps\ndocker logs <**container**>\ndocker stop <**container**>"},
       {heading:"Key VM commands (libvirt)",body:"virsh create vm.xml\nvirsh list\nvirsh console <vm>\nvirsh shutdown <vm>"},
     ]
   },
@@ -501,8 +501,8 @@ const DETAILS = {
     title:"Comparison",
     color:T.purple,
     sections:[
-      {heading:"Quick reference",body:"                    VM          Docker\nStartup:         30-60s      < 1s\nSize:            GBs         MBs\nIsolation:       Hardware    OS-level\nOS:              Any         Linux*\nDensity:         ~10/host    100+/host\nPortability:     Limited     Excellent\n\n*Docker Desktop uses a Linux VM on Mac/Windows"},
-      {heading:"Best together",body:"Many production setups run containers inside VMs:\n• Cloud VMs (EC2, GCE) run Docker/Kubernetes\n• The VM provides hardware isolation between tenants\n• Containers provide fast, dense app deployment within"},
+      {heading:"Quick reference",body:"                    VM          **Docker**\nStartup:         30-60s      < 1s\nSize:            GBs         MBs\nIsolation:       Hardware    OS-level\nOS:              Any         Linux*\nDensity:         ~10/host    100+/host\nPortability:     Limited     Excellent\n\n***Docker** Desktop uses a Linux VM on Mac/Windows"},
+      {heading:"Best together",body:"Many production setups run containers inside VMs:\n• Cloud VMs (EC2, GCE) run **Docker**/**Kubernetes**\n• The VM provides hardware isolation between tenants\n• Containers provide fast, dense app deployment within"},
     ]
   },
 };
@@ -742,6 +742,16 @@ const Finale = () => {
   );
 };
 
+const renderBody = (text) => {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((p, i) => {
+    if (p.startsWith("**") && p.endsWith("**")) {
+      return e("strong", { key:i, style:{ color:T.text1, fontWeight:600 } }, p.slice(2, -2));
+    }
+    return p;
+  });
+};
+
 const DetailPanel = ({ detailKey, onClose }) => {
   const d = DETAILS[detailKey];
   if (!d) return null;
@@ -759,7 +769,7 @@ const DetailPanel = ({ detailKey, onClose }) => {
       d.sections.map((s, i) =>
         e("div", { key:i, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
           e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
-          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, renderBody(s.body))
         )
       )
     )

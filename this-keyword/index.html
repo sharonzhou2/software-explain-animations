@@ -360,35 +360,35 @@ const DETAILS = {
     title:"Source Code",
     color:T.purpleL,
     sections:[
-      {heading:"What to watch for",body:"Each scene shows a different way this gets bound. Pay attention to how the function is called — that's what determines this, not where the code is written."},
-      {heading:"Common patterns",body:"• obj.method() → this = obj\n• func() → this = global\n• new Func() → this = new object\n• func.call(x) → this = x\n• () => {} → this = outer scope"},
+      {heading:"What to watch for",body:"Each scene shows a different way this gets bound. **Pay attention to how the function is called** — that's what determines this, not where the code is written."},
+      {heading:"Common patterns",body:"• obj.method() → **this = obj**\n• func() → **this = global**\n• new Func() → **this = new object**\n• func.call(x) → **this = x**\n• () => {} → **this = outer scope**"},
     ]
   },
   binding: {
     title:"this Binding",
     color:T.amber,
     sections:[
-      {heading:"How this is determined",body:"JavaScript uses 4 rules (in priority order) to determine what this refers to:\n\n1. new binding — called with new?\n2. Explicit binding — called with call/apply/bind?\n3. Implicit binding — called as a method (obj.fn)?\n4. Default binding — plain function call"},
-      {heading:"Arrow functions",body:"Arrow functions are special — they completely ignore the 4 rules above. Instead, they capture this from whatever scope they were defined in. This makes them great for callbacks but dangerous as methods."},
-      {heading:"Strict mode",body:"In strict mode ('use strict'), the default binding gives undefined instead of the global object. This catches bugs where you accidentally use global this."},
+      {heading:"How this is determined",body:"JavaScript uses **4 rules** (in priority order) to determine what this refers to:\n\n1. **new binding** — called with new?\n2. **Explicit binding** — called with call/apply/bind?\n3. **Implicit binding** — called as a method (obj.fn)?\n4. **Default binding** — plain function call"},
+      {heading:"Arrow functions",body:"Arrow functions are special — they **completely ignore the 4 rules above**. Instead, they capture this from **whatever scope they were defined in**. This makes them great for callbacks but **dangerous as methods**."},
+      {heading:"Strict mode",body:"In strict mode ('use strict'), the default binding gives **undefined** instead of the global object. This catches bugs where you accidentally use global this."},
     ]
   },
   rule: {
     title:"Binding Rules",
     color:T.teal,
     sections:[
-      {heading:"Default binding",body:"A plain function call: greet(). No dot, no new, no call/apply. this defaults to the global object (window in browsers), or undefined in strict mode."},
-      {heading:"Implicit binding",body:"A method call: obj.greet(). The object before the dot becomes this. But beware — if you extract the method (const fn = obj.greet), the binding is lost."},
-      {heading:"Explicit binding",body:"Using call(), apply(), or bind() to manually set this. call and apply invoke immediately; bind returns a new permanently-bound function."},
-      {heading:"new binding",body:"Calling with new: new User(). JavaScript creates a fresh empty object, sets this to it, runs the constructor, and returns the object."},
+      {heading:"Default binding",body:"A plain function call: greet(). **No dot, no new, no call/apply.** this defaults to the **global object** (window in browsers), or **undefined in strict mode**."},
+      {heading:"Implicit binding",body:"A method call: obj.greet(). **The object before the dot becomes this.** But beware — if you **extract the method** (const fn = obj.greet), **the binding is lost**."},
+      {heading:"Explicit binding",body:"Using **call()**, **apply()**, or **bind()** to manually set this. call and apply **invoke immediately**; bind returns a **new permanently-bound function**."},
+      {heading:"new binding",body:"Calling with **new**: new User(). JavaScript creates a **fresh empty object**, sets this to it, runs the constructor, and returns the object."},
     ]
   },
   console: {
     title:"Console Output",
     color:T.tealL,
     sections:[
-      {heading:"What it shows",body:"The console output proves what this resolved to in each context. Watch how the same function can produce different results depending on how it's called."},
-      {heading:"Debugging this",body:"If this isn't what you expect, ask:\n1. Is it an arrow function? → check the enclosing scope\n2. Was it called with new? → this = new object\n3. Was call/apply/bind used? → this = that argument\n4. Was it called as obj.method()? → this = obj\n5. None of the above? → this = global or undefined"},
+      {heading:"What it shows",body:"The console output proves what this resolved to in each context. Watch how the **same function can produce different results** depending on how it's called."},
+      {heading:"Debugging this",body:"If this isn't what you expect, ask:\n1. **Is it an arrow function?** → check the enclosing scope\n2. **Was it called with new?** → this = new object\n3. **Was call/apply/bind used?** → this = that argument\n4. **Was it called as obj.method()?** → this = obj\n5. **None of the above?** → this = global or undefined"},
     ]
   },
 };
@@ -532,6 +532,16 @@ const Finale = () => {
   );
 };
 
+const renderBody = (text) => {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((p, i) => {
+    if (p.startsWith("**") && p.endsWith("**")) {
+      return e("strong", { key:i, style:{ color:T.text1, fontWeight:600 } }, p.slice(2, -2));
+    }
+    return p;
+  });
+};
+
 const DetailPanel = ({ detailKey, onClose }) => {
   const d = DETAILS[detailKey];
   if (!d) return null;
@@ -549,7 +559,7 @@ const DetailPanel = ({ detailKey, onClose }) => {
       d.sections.map((s, i) =>
         e("div", { key:i, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
           e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
-          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, renderBody(s.body))
         )
       )
     )

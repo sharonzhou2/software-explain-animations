@@ -338,10 +338,10 @@ const DETAILS = {
     title:"Replication",
     color:T.blue,
     sections:[
-      {heading:"What it is",body:"Replication keeps the same data on multiple nodes. It's the primary tool for high availability, disaster recovery, and scaling reads. Every serious database supports it."},
+      {heading:"What it is",body:"**Replication** keeps the same data on multiple nodes. It's the primary tool for high availability, disaster recovery, and scaling reads. Every serious database supports it."},
       {heading:"Primary-replica (leader-follower)",body:"One node accepts writes (the primary). It ships its change log to one or more replicas, which apply the changes in order. Reads can hit any node. If the primary dies, a replica is promoted — this is called a failover."},
-      {heading:"Sync vs async",body:"Synchronous replication waits until a replica acknowledges the write before returning success. Safer, but slower and vulnerable if the replica is down.\n\nAsynchronous is fast but can lose writes on primary failure (the replica might not have received them yet)."},
-      {heading:"Replication lag",body:"Under async replication, replicas are always slightly behind. Typical lag is single-digit milliseconds, but under load it can grow to seconds or minutes. Reading your own write immediately from a replica can return stale data — this is eventual consistency."},
+      {heading:"Sync vs async",body:"**Synchronous** **replication** waits until a replica acknowledges the write before returning success. Safer, but slower and vulnerable if the replica is down.\n\nAsynchronous is fast but can lose writes on primary failure (the replica might not have received them yet)."},
+      {heading:"Replication lag",body:"Under async **replication**, replicas are **always** slightly behind. Typical lag is single-digit milliseconds, but under load it can grow to seconds or minutes. Reading your own write immediately from a replica can return stale data — this is eventual consistency."},
       {heading:"Multi-primary",body:"Multiple nodes accept writes simultaneously. Good for multi-region latency (every region writes locally), but conflicts happen when two regions edit the same row. Resolution strategies: last-write-wins, vector clocks, CRDTs, or app-level merging."},
     ]
   },
@@ -389,10 +389,10 @@ const DETAILS = {
     title:"Deciding to Shard",
     color:T.purple,
     sections:[
-      {heading:"Try everything else first",body:"Sharding is expensive in engineering time and operational complexity. Exhaust cheaper options first:\n• Add proper indexes\n• Cache frequent reads (Redis, Memcached)\n• Scale up to a bigger machine\n• Add read replicas\n• Archive cold data"},
+      {heading:"Try everything else first",body:"**Sharding** is expensive in engineering time and operational complexity. Exhaust cheaper **options** first:\n• Add proper indexes\n• Cache frequent reads (Redis, Memcached)\n• Scale up to a bigger machine\n• Add read replicas\n• Archive cold data"},
       {heading:"Signs you actually need it",body:"• Single-node can't hold your working set in memory\n• Write throughput exceeds what one primary can handle\n• Data size exceeds what fits on the largest practical disk\n• You need geographic distribution for latency"},
-      {heading:"Choosing a shard key",body:"This is the most important decision. A bad shard key causes hot shards, cross-shard queries, and painful re-sharding. Pick something:\n• High cardinality (many distinct values)\n• Evenly distributed (not timestamp-skewed)\n• Naturally part of your common queries"},
-      {heading:"Managed options",body:"Before rolling your own sharding, consider databases that do it for you: Vitess, Citus (Postgres), CockroachDB, Spanner, DynamoDB, Cassandra. They handle rebalancing, routing, and failure recovery."},
+      {heading:"Choosing a shard key",body:"This is the most important decision. A bad shard key causes hot shards, cross-shard queries, and painful re-**sharding**. Pick something:\n• High cardinality (many distinct values)\n• Evenly distributed (not timestamp-skewed)\n• Naturally part of your common queries"},
+      {heading:"Managed options",body:"Before rolling your own **sharding**, consider databases that do it for you: Vitess, Citus (Postgres), CockroachDB, Spanner, DynamoDB, Cassandra. They handle rebalancing, routing, and failure recovery."},
     ]
   },
 };
@@ -1074,6 +1074,16 @@ const Finale = () => {
   );
 };
 
+const renderBody = (text) => {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((p, i) => {
+    if (p.startsWith("**") && p.endsWith("**")) {
+      return e("strong", { key:i, style:{ color:T.text1, fontWeight:600 } }, p.slice(2, -2));
+    }
+    return p;
+  });
+};
+
 const DetailPanel = ({ detailKey, onClose }) => {
   const d = DETAILS[detailKey];
   if (!d) return null;
@@ -1091,7 +1101,7 @@ const DetailPanel = ({ detailKey, onClose }) => {
       d.sections.map((s, i) =>
         e("div", { key:i, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
           e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
-          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, renderBody(s.body))
         )
       )
     )

@@ -359,29 +359,29 @@ const DETAILS = {
     title:"Sessions",
     color:T.session,
     sections:[
-      {heading:"How it works",body:"1. User POSTs credentials to /login.\n2. Server verifies, creates a random session ID, and stores { sessionId → userId } in its session store.\n3. Server returns Set-Cookie: sid=... (ideally HttpOnly, Secure, SameSite).\n4. Browser attaches the cookie to every subsequent request.\n5. Server looks up the session ID on each request."},
-      {heading:"Storage options",body:"• In-memory — fine for a single server, dies on restart.\n• Redis / Memcached — the standard for multi-server apps.\n• Database — durable but slower.\n• Signed cookies — session data in the cookie itself (this is basically a JWT)."},
-      {heading:"Strengths",body:"• Instant revocation — just delete the record.\n• Small cookie (just an ID).\n• Easy to rotate IDs on login to prevent fixation.\n• Server has full visibility into active sessions."},
-      {heading:"Weaknesses",body:"• Stateful — requires sticky load balancing or a shared store.\n• Cross-origin APIs need CORS credentials and careful cookie handling.\n• Harder for mobile and native clients."},
+      {heading:"How it works",body:"1. User POSTs credentials to /login.\n2. Server verifies, creates a random **session** ID, and stores { sessionId → userId } in its **session** store.\n3. Server returns Set-Cookie: sid=... (ideally **HttpOnly**, Secure, **SameSite**).\n4. Browser attaches the cookie to every subsequent request.\n5. Server looks up the **session** ID on each request."},
+      {heading:"Storage options",body:"• In-memory — fine for a single server, dies on restart.\n• Redis / Memcached — the standard for multi-server apps.\n• Database — durable but slower.\n• Signed cookies — **session** data in the cookie itself (this is basically a **JWT**)."},
+      {heading:"Strengths",body:"• Instant revocation — just delete the record.\n• Small cookie (just an ID).\n• Easy to rotate IDs on login to **prevent** fixation.\n• Server has full visibility into active sessions."},
+      {heading:"Weaknesses",body:"• Stateful — requires sticky load balancing or a shared store.\n• Cross-origin APIs need **CORS** credentials and careful cookie handling.\n• Harder for mobile and native clients."},
     ]
   },
   jwt: {
     title:"JSON Web Tokens",
     color:T.jwt,
     sections:[
-      {heading:"Anatomy",body:"A JWT is three base64url-encoded parts joined by dots:\n\n  header.payload.signature\n\n• Header: { alg: \"HS256\", typ: \"JWT\" }\n• Payload: claims like sub, exp, iat, iss, aud, plus custom fields.\n• Signature: HMAC-SHA256(header + \".\" + payload, secret)."},
+      {heading:"Anatomy",body:"A **JWT** is three base64url-encoded parts joined by dots:\n\n  header.payload.signature\n\n• Header: { alg: \"HS256\", typ: \"**JWT**\" }\n• Payload: claims like sub, exp, iat, iss, aud, plus custom fields.\n• Signature: HMAC-SHA256(header + \".\" + payload, secret)."},
       {heading:"Standard claims",body:"sub — subject (user id)\niss — issuer\naud — audience\nexp — expiration timestamp\niat — issued at\nnbf — not valid before\njti — unique token id"},
       {heading:"Verification",body:"The server recomputes the signature with its secret and compares. If it matches and exp is in the future, the token is trusted — no database lookup needed. This is the stateless superpower."},
-      {heading:"Pitfalls",body:"• Payload is base64, NOT encrypted — never store secrets in it.\n• Hard to revoke before exp. Keep access tokens short (5-15 min).\n• The 'alg: none' vulnerability — always enforce the expected algorithm server-side.\n• localStorage is XSS-exposed; prefer httpOnly cookies for long-lived tokens."},
+      {heading:"Pitfalls",body:"• Payload is base64, NOT encrypted — **never** store secrets in it.\n• Hard to revoke before exp. Keep access tokens short (5-15 min).\n• The 'alg: none' vulnerability — **always** enforce the expected algorithm server-side.\n• localStorage is XSS-exposed; prefer **httpOnly** cookies for long-lived tokens."},
     ]
   },
   oauth: {
     title:"OAuth 2.0",
     color:T.oauth,
     sections:[
-      {heading:"What it actually is",body:"OAuth 2.0 is a delegated authorization framework. A user (resource owner) lets a client app access their data on a resource server, brokered by an authorization server — without sharing their password with the client."},
+      {heading:"What it actually is",body:"**OAuth 2.0** is a delegated authorization framework. A user (resource owner) lets a client app access their data on a resource server, brokered by an authorization server — without sharing their password with the client."},
       {heading:"The four roles",body:"• Resource Owner — the user\n• Client — your application\n• Authorization Server — Google, GitHub, Okta, Auth0\n• Resource Server — the API holding the data"},
-      {heading:"Grant types",body:"• Authorization Code (+ PKCE) — the standard for web and mobile apps.\n• Client Credentials — service-to-service, no user involved.\n• Device Code — TVs, CLIs, constrained devices.\n• Refresh Token — exchange a refresh token for a new access token.\n\nImplicit and Password grants are deprecated."},
+      {heading:"Grant types",body:"• Authorization Code (+ PKCE) — the standard for web and mobile apps.\n• Client Credentials — service-to-service, no user involved.\n• Device Code — TVs, CLIs, constrained devices.\n• **Refresh Token** — exchange a **refresh token** for a new **access token**.\n\nImplicit and Password grants are deprecated."},
       {heading:"PKCE",body:"Proof Key for Code Exchange protects public clients (SPAs, mobile) that can't safely store a client_secret. The client generates a random verifier, sends its SHA-256 hash with the /authorize request, and presents the original verifier at /token — binding the code to the same client."},
     ]
   },
@@ -389,9 +389,9 @@ const DETAILS = {
     title:"OpenID Connect",
     color:T.purpleL,
     sections:[
-      {heading:"Identity on top of OAuth",body:"OpenID Connect (OIDC) is a thin identity layer built on OAuth 2.0. Adding scope=openid to an OAuth request makes the authorization server return an id_token alongside the access_token."},
-      {heading:"The id_token",body:"A signed JWT containing claims about the user — sub (stable user id), email, name, picture, iss, aud, exp. The client verifies the signature against the provider's public keys (fetched from the /jwks endpoint)."},
-      {heading:"OAuth vs OIDC",body:"• OAuth 2.0 alone answers: \"can this client call this API?\"\n• OIDC answers: \"who is the user, and can this client call this API on their behalf?\"\n\nIf you want 'Sign in with Google' to log a user into your app, you want OIDC — not raw OAuth."},
+      {heading:"Identity on top of OAuth",body:"OpenID Connect (**OIDC**) is a thin identity layer built on **OAuth 2.0**. Adding scope=openid to an **OAuth** request makes the authorization server return an id_token alongside the access_token."},
+      {heading:"The id_token",body:"A signed **JWT** containing claims about the user — sub (stable user id), email, name, picture, iss, aud, exp. The client verifies the signature against the provider's public keys (fetched from the /jwks endpoint)."},
+      {heading:"OAuth vs OIDC",body:"• **OAuth 2.0** alone answers: \"can this client call this API?\"\n• **OIDC** answers: \"who is the user, and can this client call this API on their behalf?\"\n\nIf you want 'Sign in with Google' to log a user into your app, you want **OIDC** — not raw **OAuth**."},
     ]
   },
   refresh: {
@@ -399,8 +399,8 @@ const DETAILS = {
     color:T.coralL,
     sections:[
       {heading:"Why two tokens?",body:"Access tokens are sent on every API request, so the attack surface is large. Keeping them short-lived (5-15 min) limits the damage if one is stolen. Refresh tokens are sent only to a single /token endpoint, much rarer and easier to protect."},
-      {heading:"Storage",body:"• Access token — memory is safest; short-lived so leakage is bounded.\n• Refresh token — httpOnly, Secure, SameSite=Strict cookie scoped to /api/auth. Never in localStorage (XSS)."},
-      {heading:"Rotation",body:"Best practice: each /refresh call returns a NEW refresh token and invalidates the old one. If the old token is ever presented again, assume it was stolen and kill the whole session family — 'refresh token reuse detection'."},
+      {heading:"Storage",body:"• **Access token** — memory is safest; short-lived so leakage is bounded.\n• **Refresh token** — **httpOnly**, Secure, **SameSite**=Strict cookie scoped to /api/auth. **Never** in localStorage (XSS)."},
+      {heading:"Rotation",body:"Best practice: each /refresh call returns a NEW **refresh token** and invalidates the old one. If the old token is ever presented again, assume it was stolen and kill the whole **session** family — '**refresh token** reuse detection'."},
       {heading:"Revocation",body:"Unlike plain JWTs, refresh tokens are usually tracked server-side (hashed, with an id), so you can revoke on logout, password change, or suspicious activity."},
     ]
   },
@@ -408,19 +408,19 @@ const DETAILS = {
     title:"Cookie & Token Security",
     color:T.red,
     sections:[
-      {heading:"The four cookie flags",body:"HttpOnly — JavaScript cannot read the cookie. Defeats XSS token theft.\n\nSecure — cookie only sent over HTTPS. Never send credentials over plaintext.\n\nSameSite — Strict (never cross-site), Lax (top-level nav only), or None (must be Secure). Your first line of CSRF defense.\n\nPath / Domain — scope the cookie as narrowly as possible."},
-      {heading:"XSS",body:"If an attacker can inject JavaScript into your page, tokens in localStorage are gone instantly. HttpOnly cookies survive XSS token exfiltration. The fix for XSS itself is output encoding + a strict Content-Security-Policy."},
-      {heading:"CSRF",body:"If cookies are attached automatically, a malicious site can trigger state-changing requests on your behalf. Defenses:\n• SameSite=Lax or Strict (usually enough).\n• CSRF tokens (double-submit cookie or synchronizer token).\n• Require custom headers on mutating requests (blocked by CORS)."},
-      {heading:"Checklist",body:"[x] HTTPS everywhere\n[x] httpOnly + Secure + SameSite on auth cookies\n[x] Short-lived access tokens\n[x] Rotate refresh tokens, detect reuse\n[x] Verify JWT alg server-side (never trust header)\n[x] Rate limit /login and /token\n[x] Hash passwords with bcrypt / argon2"},
+      {heading:"The four cookie flags",body:"**HttpOnly** — JavaScript **cannot** read the cookie. Defeats XSS token theft.\n\nSecure — cookie only sent over HTTPS. **Never** send credentials over plaintext.\n\nSameSite — Strict (**never** cross-site), Lax (top-level nav only), or None (**must** be Secure). Your first line of CSRF defense.\n\nPath / Domain — scope the cookie as narrowly as possible."},
+      {heading:"XSS",body:"If an attacker can inject JavaScript into your page, tokens in localStorage are gone instantly. **HttpOnly** cookies survive XSS token exfiltration. The fix for XSS itself is output encoding + a strict Content-Security-Policy."},
+      {heading:"CSRF",body:"If cookies are attached automatically, a malicious site can trigger state-changing requests on your behalf. Defenses:\n• **SameSite**=Lax or Strict (usually enough).\n• CSRF tokens (double-submit cookie or synchronizer token).\n• Require custom headers on mutating requests (blocked by **CORS**)."},
+      {heading:"Checklist",body:"[x] HTTPS everywhere\n[x] **httpOnly** + Secure + **SameSite** on auth cookies\n[x] Short-lived access tokens\n[x] Rotate refresh tokens, detect reuse\n[x] Verify **JWT** alg server-side (**never** trust header)\n[x] Rate limit /login and /token\n[x] Hash passwords with bcrypt / argon2"},
     ]
   },
   code: {
     title:"Source Code",
     color:T.purpleL,
     sections:[
-      {heading:"Reading the examples",body:"Each scene shows a small code fragment matching the flow on screen — cookie headers, JWT signing, OAuth redirects, and refresh token exchanges."},
-      {heading:"Sign & verify a JWT",body:"const jwt = require('jsonwebtoken');\n\nconst token = jwt.sign(\n  { sub: user.id, role: user.role },\n  process.env.JWT_SECRET,\n  { expiresIn: '15m', algorithm: 'HS256' }\n);\n\nconst claims = jwt.verify(\n  token,\n  process.env.JWT_SECRET,\n  { algorithms: ['HS256'] }\n);"},
-      {heading:"Set a secure cookie",body:"res.cookie('refresh', token, {\n  httpOnly: true,\n  secure: true,\n  sameSite: 'strict',\n  path: '/api/auth',\n  maxAge: 30 * 24 * 3600 * 1000,\n});"},
+      {heading:"Reading the examples",body:"Each scene shows a small code fragment matching the flow on screen — cookie headers, **JWT** signing, **OAuth** redirects, and **refresh token** exchanges."},
+      {heading:"Sign & verify a JWT",body:"const **jwt** = require('jsonwebtoken');\n\nconst token = **jwt**.sign(\n  { sub: user.id, role: user.role },\n  process.env.JWT_SECRET,\n  { expiresIn: '15m', algorithm: 'HS256' }\n);\n\nconst claims = **jwt**.verify(\n  token,\n  process.env.JWT_SECRET,\n  { algorithms: ['HS256'] }\n);"},
+      {heading:"Set a secure cookie",body:"res.cookie('refresh', token, {\n  **httpOnly**: true,\n  secure: true,\n  **sameSite**: 'strict',\n  path: '/api/auth',\n  maxAge: 30 * 24 * 3600 * 1000,\n});"},
       {heading:"OAuth authorize URL",body:"https://accounts.google.com/o/oauth2/v2/auth\n  ?client_id=CLIENT_ID\n  &redirect_uri=https://app.example.com/callback\n  &response_type=code\n  &scope=openid%20email%20profile\n  &state=RANDOM\n  &code_challenge=HASH\n  &code_challenge_method=S256"},
     ]
   },
@@ -818,6 +818,16 @@ const Finale = () => {
   );
 };
 
+const renderBody = (text) => {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((p, i) => {
+    if (p.startsWith("**") && p.endsWith("**")) {
+      return e("strong", { key:i, style:{ color:T.text1, fontWeight:600 } }, p.slice(2, -2));
+    }
+    return p;
+  });
+};
+
 const DetailPanel = ({ detailKey, onClose }) => {
   const d = DETAILS[detailKey];
   if (!d) return null;
@@ -862,7 +872,7 @@ const DetailPanel = ({ detailKey, onClose }) => {
           }, s.heading),
           e("div", {
             style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" }
-          }, s.body)
+          }, renderBody(s.body))
         )
       )
     )

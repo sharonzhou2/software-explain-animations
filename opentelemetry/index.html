@@ -434,7 +434,7 @@ const DETAILS = {
     color:T.purple,
     sections:[
       {heading:"Why a collector?",body:"You could export directly from your app to a backend. But a Collector in between gives you:\n• Buffering and retry on failure\n• Processing (filtering, sampling, enrichment)\n• Fan-out to multiple backends\n• Decouples app from backend choice"},
-      {heading:"Deployment modes",body:"• Sidecar — one Collector per pod (Kubernetes)\n• DaemonSet — one per node\n• Gateway — centralized fleet of Collectors\n• No Collector — SDK exports directly (simple but limited)"},
+      {heading:"Deployment modes",body:"• Sidecar — one Collector per **pod** (**Kubernetes**)\n• DaemonSet — one per node\n• Gateway — centralized fleet of Collectors\n• No Collector — SDK exports directly (simple but limited)"},
       {heading:"Pipeline config",body:"A Collector config defines pipelines:\n\nservice:\n  pipelines:\n    traces:\n      receivers: [otlp]\n      processors: [batch, filter]\n      exporters: [jaeger]\n    metrics:\n      receivers: [otlp, prometheus]\n      processors: [batch]\n      exporters: [prometheus]"},
     ]
   },
@@ -451,7 +451,7 @@ const DETAILS = {
     title:"Context Propagation",
     color:T.blue,
     sections:[
-      {heading:"What is propagation?",body:"When Service A calls Service B, the trace must continue. Context propagation injects trace metadata into outgoing requests (HTTP headers, gRPC metadata) and extracts it on the receiving side."},
+      {heading:"What is propagation?",body:"When Service A calls Service B, the trace **must** continue. Context propagation injects trace metadata into outgoing requests (HTTP headers, gRPC metadata) and extracts it on the receiving side."},
       {heading:"W3C Trace Context",body:"The standard format (used by default):\n\ntraceparent: 00-<trace-id>-<parent-span-id>-<flags>\n\n• 00 — version\n• trace-id — 32 hex chars, shared by all spans in the trace\n• parent-span-id — 16 hex chars, the calling span\n• flags — 01 = sampled"},
       {heading:"Propagators",body:"OTel supports multiple propagation formats:\n• W3C TraceContext (default)\n• B3 (Zipkin format)\n• Jaeger propagation\n• AWS X-Ray\n\nYou can use multiple simultaneously for migration."},
     ]
@@ -644,6 +644,16 @@ const Finale = () => {
   );
 };
 
+const renderBody = (text) => {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((p, i) => {
+    if (p.startsWith("**") && p.endsWith("**")) {
+      return e("strong", { key:i, style:{ color:T.text1, fontWeight:600 } }, p.slice(2, -2));
+    }
+    return p;
+  });
+};
+
 const DetailPanel = ({ detailKey, onClose }) => {
   const d = DETAILS[detailKey];
   if (!d) return null;
@@ -661,7 +671,7 @@ const DetailPanel = ({ detailKey, onClose }) => {
       d.sections.map((s, i) =>
         e("div", { key:i, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
           e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
-          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, renderBody(s.body))
         )
       )
     )

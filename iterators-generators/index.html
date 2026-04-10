@@ -406,7 +406,7 @@ const DETAILS = {
     color:T.purpleL,
     sections:[
       {heading:"What to watch for",body:"Each scene shows a different aspect of the iteration protocol and generators. Pay attention to the function* syntax, yield keyword, and the { value, done } return shape."},
-      {heading:"Key syntax",body:"\u2022 function* \u2014 declares a generator function\n\u2022 yield \u2014 pauses and emits a value\n\u2022 yield* \u2014 delegates to another iterable\n\u2022 [Symbol.iterator]() \u2014 makes an object iterable\n\u2022 .next() \u2014 advances the iterator one step"},
+      {heading:"Key syntax",body:"\u2022 function* \u2014 declares a **generator** function\n\u2022 yield \u2014 pauses and emits a value\n\u2022 yield* \u2014 delegates to another iterable\n\u2022 [**Symbol.iterator**]() \u2014 makes an object iterable\n\u2022 .next() \u2014 advances the iterator one step"},
     ]
   },
   iterator: {
@@ -414,7 +414,7 @@ const DETAILS = {
     color:T.amber,
     sections:[
       {heading:"The { value, done } contract",body:"Every call to .next() returns an object with two properties:\n\n\u2022 value \u2014 the current value being yielded\n\u2022 done \u2014 boolean, true when iteration is complete\n\nThis simple contract powers for...of, spread, destructuring, and more."},
-      {heading:"Iterator vs Iterable",body:"An iterable has [Symbol.iterator]() that returns an iterator.\nAn iterator has a next() method.\n\nArrays are iterables. Calling arr[Symbol.iterator]() gives you an iterator."},
+      {heading:"Iterator vs Iterable",body:"An iterable has [**Symbol.iterator**]() that returns an iterator.\nAn iterator has a next() method.\n\nArrays are iterables. Calling arr[**Symbol.iterator**]() gives you an iterator."},
       {heading:"Lazy evaluation",body:"Iterators compute values on demand. Unlike arrays that store all values in memory, an iterator only computes the next value when .next() is called."},
     ]
   },
@@ -422,10 +422,10 @@ const DETAILS = {
     title:"What's a generator?",
     color:T.teal,
     sections:[
-      {heading:"Plain-English definition",body:"A generator is a function you can PAUSE and RESUME. Every other function runs from top to bottom in one go. A generator runs a bit, hands you a value, freezes, and waits for you to say \"give me the next one.\"\n\nThink of it like a stopwatch with a pause button — the function's local state stays exactly as it was between pauses."},
+      {heading:"Plain-English definition",body:"A **generator** is a function you can PAUSE and RESUME. Every other function runs from top to bottom in one go. A **generator** runs a bit, hands you a value, freezes, and waits for you to say \"give me the next one.\"\n\nThink of it like a stopwatch with a pause button — the function's local state stays exactly as it was between pauses."},
       {heading:"Why does this exist?",body:"Two main reasons:\n\n1. Lazy sequences — you can represent something infinite (or huge) without computing it all upfront. The caller pulls values one at a time.\n\n2. Custom iterators — before generators, making your own iterator required writing a whole object with a next() method. Generators make it a few lines."},
-      {heading:"How to spot one",body:"\u2022 Declared with function* (asterisk)\n\u2022 Uses yield to emit a value and pause\n\u2022 Calling it does NOT run the body — it returns a generator object\n\u2022 You drive it with .next() — or loop it with for...of\n\u2022 Each .next() returns { value, done }"},
-      {heading:"State preservation",body:"When a generator pauses at yield, all local variables are preserved and the execution position is saved. This is fundamentally different from normal functions which run to completion."},
+      {heading:"How to spot one",body:"\u2022 Declared with function* (asterisk)\n\u2022 Uses yield to emit a value and pause\n\u2022 Calling it **does NOT** run the body — it returns a **generator** object\n\u2022 You drive it with .next() — or loop it with for...of\n\u2022 Each .next() returns { value, done }"},
+      {heading:"State preservation",body:"When a **generator** pauses at yield, all local variables are preserved and the execution position is saved. This is fundamentally different from normal functions which run to completion."},
       {heading:"Are generators used today?",body:"Not much in day-to-day app code. async/await replaced the main use case (async flow). But they still show up in:\n\u2022 Custom iterables for data structures\n\u2022 Redux-saga (side-effect management)\n\u2022 Library internals where lazy/pull-based sequences matter\n\nKnowing them is interview-relevant and helps you understand how async/await actually works under the hood."},
     ]
   },
@@ -433,8 +433,8 @@ const DETAILS = {
     title:"Console Output",
     color:T.tealL,
     sections:[
-      {heading:"Reading iterator results",body:"Each .next() call returns { value, done }. The value is whatever was yielded, and done indicates if the generator has finished."},
-      {heading:"Console.log in generators",body:"Log statements between yields only execute when the generator resumes. This proves that execution truly pauses \u2014 logs before a yield run, then nothing until .next() is called again."},
+      {heading:"Reading iterator results",body:"Each .next() call returns { value, done }. The value is whatever was yielded, and done indicates if the **generator** has finished."},
+      {heading:"Console.log in generators",body:"Log statements between yields only execute when the **generator** resumes. This proves that execution truly pauses \u2014 logs before a yield run, then nothing until .next() is called again."},
     ]
   },
 };
@@ -700,6 +700,16 @@ const Finale = () => {
   );
 };
 
+const renderBody = (text) => {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((p, i) => {
+    if (p.startsWith("**") && p.endsWith("**")) {
+      return e("strong", { key:i, style:{ color:T.text1, fontWeight:600 } }, p.slice(2, -2));
+    }
+    return p;
+  });
+};
+
 const DetailPanel = ({ detailKey, onClose }) => {
   const d = DETAILS[detailKey];
   if (!d) return null;
@@ -717,7 +727,7 @@ const DetailPanel = ({ detailKey, onClose }) => {
       d.sections.map((s, i) =>
         e("div", { key:i, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
           e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
-          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, renderBody(s.body))
         )
       )
     )
