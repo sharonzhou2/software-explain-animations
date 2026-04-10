@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Database Sharding & Replication</title>
+<link href="https://cdn.lineicons.com/5.0/lineicons.css" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111118;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px 16px 24px 196px;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  #root { width: 100%; max-width: 1120px; }
+  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: system-ui, sans-serif; }
+  .topnav a { text-decoration: none; color: #8888aa; font-size: 13px; transition: color 0.2s; }
+  .topnav a:hover { color: #e8e8f0; }
+  .topnav .name { font-weight: 600; color: #e8e8f0; font-size: 13px; }
+  .topnav .sep { color: #38384a; font-size: 12px; }
+  .topnav .current { color: #7c6fcd; font-size: 13px; font-weight: 500; }
+  .sidenav { position: fixed; top: 38px; left: 0; width: 180px; height: calc(100vh - 38px); background: #111118; border-right: 1px solid #2a2a38; padding: 14px 0; overflow-y: auto; z-index: 200; font-family: system-ui, sans-serif; }
+  .sidenav a { display: block; padding: 6px 16px; font-size: 11px; color: #8888aa; text-decoration: none; transition: color 0.2s, background 0.2s; border-left: 2px solid transparent; }
+  .sidenav a:hover { color: #e8e8f0; background: rgba(124,111,205,0.06); }
+  .sidenav a.active { color: #a99cf0; border-left-color: #7c6fcd; background: rgba(124,111,205,0.1); font-weight: 600; }
+  .sidenav .nav-section { padding: 8px 16px 4px; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #44445a; }
+  .sidenav .nav-section:first-child { padding-top: 4px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="../" class="name">Sharon Zhou</a>
+  <span class="sep">/</span>
+  <a href="../">Animations</a>
+  <span class="sep">/</span>
+  <span class="current">Database Sharding</span>
+</nav>
+<nav class="sidenav">
+  <div class="nav-section">JavaScript</div>
+  <a href="../event-loop/">Event Loop</a>
+  <a href="../this-keyword/">this Keyword</a>
+  <a href="../hoisting/">Hoisting</a>
+  <a href="../closures/">Closures</a>
+  <a href="../garbage-collection/">Garbage Collection</a>
+  <a href="../event-delegation/">Event Delegation</a>
+  <a href="../iterators-generators/">Iterators & Generators</a>
+  <a href="../xhr-vs-fetch/">XHR vs fetch()</a>
+  <a href="../error-propagation/">Error Propagation</a>
+  <a href="../web-workers/">Web Workers</a>
+  <a href="../prototypal-inheritance/">Prototypal Inheritance</a>
+  <div class="nav-section">Browser</div>
+  <a href="../critical-rendering-path/">Critical Rendering Path</a>
+  <a href="../reflow-vs-repaint/">Reflow vs Repaint</a>
+  <a href="../css-box-model/">CSS Box Model & Layout</a>
+  <a href="../web-security/">Web Security</a>
+  <a href="../request-animation-frame/">requestAnimationFrame</a>
+  <a href="../cors/">CORS</a>
+  <a href="../websocket-vs-sse/">WebSocket vs SSE</a>
+  <a href="../debounce-vs-throttle/">Debounce vs Throttle</a>
+  <div class="nav-section">Infrastructure</div>
+  <a href="../vms-vs-docker/">VMs vs Docker</a>
+  <a href="../opentelemetry/">OpenTelemetry</a>
+  <a href="../kubernetes/">Kubernetes</a>
+  <a href="../kafka/">Kafka</a>
+  <a href="../database-indexing/">Database Indexing</a>
+  <a href="../sql-vs-nosql/">SQL vs NoSQL</a>
+  <a href="../load-balancing/">Load Balancing</a>
+  <a href="../caching-strategies/">Caching Strategies</a>
+  <a href="../authentication/">Authentication</a>
+  <a href="../http-versions/">HTTP Versions</a>
+  <a href="../rate-limiting/">Rate Limiting</a>
+  <a href="../database-sharding/" class="active">Database Sharding</a>
+  <a href="../microservices-vs-monolith/">Microservices vs Monolith</a>
+</nav>
+<div id="root" style="margin-top: 36px;"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/framer-motion@11/dist/framer-motion.js"></script>
+<script>
+const { useState, useEffect, useRef } = React;
+const { motion, AnimatePresence } = window.Motion;
+const e = React.createElement;
+const M = motion;
+const AP = AnimatePresence;
+const sp = (s=380,d=28) => ({ type:"spring", stiffness:s, damping:d });
+const ez = { duration:0.32, ease:[0.22,1,0.36,1] };
+
+const T = {
+  bg:"#111118", surface:"#18181f", surface2:"#1e1e28",
+  border:"#2a2a38", border2:"#38384a",
+  text1:"#e8e8f0", text2:"#8888aa", text3:"#44445a",
+  purple:"#7c6fcd", purpleL:"#a99cf0",
+  teal:"#3db89a", tealL:"#6dd4b8",
+  coral:"#c4694a", coralL:"#e08a6a",
+  blue:"#4a8fd4", blueL:"#82b4e8",
+  amber:"#d4a84a", amberL:"#e8c86a",
+  green:"#4ac46a", greenL:"#6ae88a",
+  red:"#e05555", redL:"#ff7777",
+  pink:"#d46aa8", pinkL:"#e88ac4",
+  codeBase:"#141428",
+};
+
+const TS = {
+  fn:{color:"#82aaff"}, meth:{color:"#89ddff"}, str:{color:"#c3e88d"},
+  kw:{color:"#c792ea"}, num:{color:"#f78c6c"}, punc:{color:"#89ddff"},
+  plain:{color:"#a6accd"}, cmt:{color:"#546e7a",fontStyle:"italic"},
+};
+
+const SHARD_COLORS = [T.blue, T.teal, T.amber, T.pink];
+
+const SCENES = [
+  {
+    id:0, act:"01",
+    title:"One database, one bottleneck",
+    sub:"Every app starts with a single database. It's simple, consistent, easy to reason about. But as users and data grow, one machine eventually can't keep up — CPU, RAM, disk, and network all have limits.",
+    code:[
+      [["cmt","// The happy path"]],
+      [["kw","SELECT"],["plain"," * "],["kw","FROM"],["plain"," users "],["kw","WHERE"],["plain"," id "],["punc","="],["plain"," "],["num","42"],["punc",";"]],
+      [["cmt","// Works fine at 1K users..."]],
+      [["cmt","// Starts crying at 100M users."]],
+    ],
+    view:"single",
+  },
+  {
+    id:1, act:"02",
+    title:"Scale up vs scale out",
+    sub:"Two ways to grow: vertical scaling buys a bigger machine (more CPU, RAM, SSD). Horizontal scaling adds more machines. Vertical is simple but has a ceiling; horizontal is harder but virtually unlimited.",
+    code:[
+      [["cmt","// Vertical  — scale up"]],
+      [["plain","  4 CPU  "],["punc","→"],["plain","  64 CPU"]],
+      [["plain","  16 GB  "],["punc","→"],["plain","  1 TB RAM"]],
+      [["cmt","// Horizontal — scale out"]],
+      [["plain","  1 node "],["punc","→"],["plain","  100 nodes"]],
+    ],
+    view:"scaling",
+  },
+  {
+    id:2, act:"03",
+    title:"Replication: copy, copy, copy",
+    sub:"Replication means keeping multiple copies of the same data on different machines. If the primary dies, a replica takes over. If a disk fails, you haven't lost everything. It's the foundation of availability.",
+    code:[
+      [["cmt","// One primary, many followers"]],
+      [["plain","primary "],["punc","→"],["plain"," replica_1"]],
+      [["plain","primary "],["punc","→"],["plain"," replica_2"]],
+      [["plain","primary "],["punc","→"],["plain"," replica_3"]],
+    ],
+    view:"replication", replicaCount:3, showWrites:false,
+    detail:"replication",
+  },
+  {
+    id:3, act:"04",
+    title:"Primary-replica: writes vs reads",
+    sub:"In primary-replica (leader-follower), all writes go to the primary. Replicas stream changes from the primary and serve read queries. This scales reads massively — perfect for read-heavy workloads like feeds and timelines.",
+    code:[
+      [["cmt","// Writes → primary only"]],
+      [["kw","INSERT"],["plain"," "],["kw","INTO"],["plain"," orders "],["punc","..."]],
+      [["cmt","// Reads → any replica"]],
+      [["kw","SELECT"],["plain"," * "],["kw","FROM"],["plain"," orders"]],
+    ],
+    view:"replication", replicaCount:3, showWrites:true,
+    detail:"replication",
+  },
+  {
+    id:4, act:"05",
+    title:"Replication lag & eventual consistency",
+    sub:"Replicas don't update instantly — there's a delay between a write landing on the primary and showing up on a replica. Read your own write from a replica and you might see stale data. This is eventual consistency.",
+    code:[
+      [["cmt","// T=0ms  — write to primary"]],
+      [["kw","UPDATE"],["plain"," users "],["kw","SET"],["plain"," name"],["punc","="],["str","'Alice'"]],
+      [["cmt","// T=5ms  — read from replica"]],
+      [["cmt","// still sees old 'Alicia' 😬"]],
+      [["cmt","// T=50ms — replica catches up ✓"]],
+    ],
+    view:"lag",
+    detail:"replication",
+  },
+  {
+    id:5, act:"06",
+    title:"Multi-primary: write anywhere",
+    sub:"Multi-primary (multi-master) lets every node accept writes. Great for multi-region latency — but now two regions can write to the same row simultaneously. You need conflict resolution: last-write-wins, CRDTs, or app-level merging.",
+    code:[
+      [["cmt","// Both primaries accept writes"]],
+      [["plain","US-East  "],["punc","⇄"],["plain","  EU-West"]],
+      [["cmt","// Conflict!"]],
+      [["plain","name "],["punc","="],["plain"," "],["str","'Alice'"],["plain","  (east)"]],
+      [["plain","name "],["punc","="],["plain"," "],["str","'Alicia'"],["plain"," (west)"]],
+    ],
+    view:"multiprimary",
+    detail:"replication",
+  },
+  {
+    id:6, act:"07",
+    title:"Sharding: split the data itself",
+    sub:"Replication copies all data to many nodes. Sharding does the opposite — it splits the data across nodes so each one only stores a subset. Now you can scale writes and storage, not just reads.",
+    code:[
+      [["cmt","// Each shard holds a slice"]],
+      [["plain","shard_1  → A-G"]],
+      [["plain","shard_2  → H-M"]],
+      [["plain","shard_3  → N-T"]],
+      [["plain","shard_4  → U-Z"]],
+    ],
+    view:"shardintro",
+  },
+  {
+    id:7, act:"08",
+    title:"Range-based sharding",
+    sub:"Split by key ranges: A-G on shard 1, H-M on shard 2, and so on. Range scans are efficient because related keys live together. But if writes cluster on recent data (timestamps!), you get hot shards.",
+    code:[
+      [["cmt","// Route by first letter"]],
+      [["kw","function"],["plain"," "],["fn","shardFor"],["punc","("],["plain","key"],["punc",") {"]],
+      [["plain","  "],["kw","if"],["plain"," (key "],["punc","<="],["plain"," "],["str","'G'"],["punc",") "],["kw","return"],["plain"," "],["num","1"],["punc",";"]],
+      [["plain","  "],["kw","if"],["plain"," (key "],["punc","<="],["plain"," "],["str","'M'"],["punc",") "],["kw","return"],["plain"," "],["num","2"],["punc",";"]],
+      [["plain","  "],["kw","if"],["plain"," (key "],["punc","<="],["plain"," "],["str","'T'"],["punc",") "],["kw","return"],["plain"," "],["num","3"],["punc",";"]],
+      [["plain","  "],["kw","return"],["plain"," "],["num","4"],["punc",";"]],
+      [["punc","}"]],
+    ],
+    view:"range",
+    detail:"range",
+  },
+  {
+    id:8, act:"09",
+    title:"Hash-based sharding",
+    sub:"Hash the key and mod by the number of shards. Same key always goes to the same shard, and hashing spreads load evenly — no hot shards from sequential keys. But you lose range scan locality.",
+    code:[
+      [["cmt","// Distribute by hash"]],
+      [["kw","function"],["plain"," "],["fn","shardFor"],["punc","("],["plain","key"],["punc",") {"]],
+      [["plain","  "],["kw","return"],["plain"," "],["fn","hash"],["punc","("],["plain","key"],["punc",") "],["punc","%"],["plain"," N"],["punc",";"]],
+      [["punc","}"]],
+      [["cmt","// Even distribution ✓"]],
+      [["cmt","// Range scans ✗"]],
+    ],
+    view:"hash",
+    detail:"hash",
+  },
+  {
+    id:9, act:"10",
+    title:"The rebalancing nightmare",
+    sub:"Add one shard (N=4 → N=5) and hash(key) % N changes for almost every key. Nearly all your data has to move between nodes. For a real database this means hours of downtime or a thundering herd of network traffic.",
+    code:[
+      [["cmt","// N = 4  → N = 5"]],
+      [["fn","hash"],["punc","("],["str","'alice'"],["punc",") % "],["num","4"],["plain"," = "],["num","2"]],
+      [["fn","hash"],["punc","("],["str","'alice'"],["punc",") % "],["num","5"],["plain"," = "],["num","0"],["cmt","  // moved!"]],
+      [["cmt","// ~80% of keys relocate 💥"]],
+    ],
+    view:"rebalance",
+    detail:"hash",
+  },
+  {
+    id:10, act:"11",
+    title:"Consistent hashing",
+    sub:"Put nodes on a ring at hashed positions. A key goes to the next node clockwise. Add or remove a node and only keys in that arc move — roughly 1/N of the data, not all of it. Virtual nodes smooth out the distribution.",
+    code:[
+      [["cmt","// Ring positions"]],
+      [["plain","node_A "],["punc","→"],["plain"," "],["fn","hash"],["punc","("],["str","'A'"],["punc",")"]],
+      [["plain","node_B "],["punc","→"],["plain"," "],["fn","hash"],["punc","("],["str","'B'"],["punc",")"]],
+      [["cmt","// Key lookup"]],
+      [["plain","key  "],["punc","→"],["plain"," next node clockwise"]],
+    ],
+    view:"consistent",
+    detail:"consistent",
+  },
+  {
+    id:11, act:"12",
+    title:"Cross-shard queries are hard",
+    sub:"A JOIN between users on shard 1 and orders on shard 3 can't happen inside a single database. You have to query every shard, ship the results back, and merge in the application — or denormalize to avoid the join entirely.",
+    code:[
+      [["cmt","// Single-shard query ✓"]],
+      [["kw","SELECT"],["plain"," * "],["kw","FROM"],["plain"," users "],["kw","WHERE"],["plain"," id"],["punc","="],["num","42"]],
+      [["cmt","// Cross-shard query ✗"]],
+      [["kw","SELECT"],["plain"," u.name, "],["fn","SUM"],["punc","("],["plain","o.total"],["punc",")"]],
+      [["kw","FROM"],["plain"," users u "],["kw","JOIN"],["plain"," orders o "],["punc","..."]],
+      [["cmt","// Must scatter-gather across shards"]],
+    ],
+    view:"crossshard",
+    detail:"queries",
+  },
+  {
+    id:12, act:"13",
+    title:"When should you shard?",
+    sub:"Sharding adds massive operational complexity. Only shard when you have to: when vertical scaling, read replicas, caching, and indexing can't keep up. Most apps never need it — and the ones that do usually wait too long.",
+    code:[
+      [["cmt","// Try first:"]],
+      [["cmt","//   1. Add indexes"]],
+      [["cmt","//   2. Cache hot reads"]],
+      [["cmt","//   3. Scale up hardware"]],
+      [["cmt","//   4. Add read replicas"]],
+      [["cmt","// Only then: shard."]],
+    ],
+    view:"when",
+    detail:"code",
+  },
+  {
+    id:13, act:"DONE",
+    title:"Sharding & replication — summary",
+    sub:"Replication copies data for availability and read scale. Sharding splits data for write and storage scale. Together they let a database span the planet — at the cost of consistency, complexity, and painful rebalancing.",
+    view:"finale", finale:true,
+  },
+];
+
+/* ─── DETAIL CONTENT ─── */
+const DETAILS = {
+  replication: {
+    title:"Replication",
+    color:T.blue,
+    sections:[
+      {heading:"What it is",body:"Replication keeps the same data on multiple nodes. It's the primary tool for high availability, disaster recovery, and scaling reads. Every serious database supports it."},
+      {heading:"Primary-replica (leader-follower)",body:"One node accepts writes (the primary). It ships its change log to one or more replicas, which apply the changes in order. Reads can hit any node. If the primary dies, a replica is promoted — this is called a failover."},
+      {heading:"Sync vs async",body:"Synchronous replication waits until a replica acknowledges the write before returning success. Safer, but slower and vulnerable if the replica is down.\n\nAsynchronous is fast but can lose writes on primary failure (the replica might not have received them yet)."},
+      {heading:"Replication lag",body:"Under async replication, replicas are always slightly behind. Typical lag is single-digit milliseconds, but under load it can grow to seconds or minutes. Reading your own write immediately from a replica can return stale data — this is eventual consistency."},
+      {heading:"Multi-primary",body:"Multiple nodes accept writes simultaneously. Good for multi-region latency (every region writes locally), but conflicts happen when two regions edit the same row. Resolution strategies: last-write-wins, vector clocks, CRDTs, or app-level merging."},
+    ]
+  },
+  range: {
+    title:"Range-Based Sharding",
+    color:T.amber,
+    sections:[
+      {heading:"How it works",body:"Keys are divided into contiguous ranges, and each range is assigned to a shard. Example: user_id 1-1M on shard 1, 1M-2M on shard 2, etc. HBase and MongoDB (default) use this."},
+      {heading:"Strengths",body:"• Range scans are efficient — related keys are on the same shard\n• Easy to reason about and debug\n• Works well for keys without a natural skew"},
+      {heading:"Weaknesses",body:"• Hot shards: sequential keys (timestamps, auto-increment IDs) all write to one shard\n• Uneven distribution if data isn't uniformly spread across the key space\n• Rebalancing requires splitting and moving ranges"},
+      {heading:"When to use",body:"When your queries are range-based (date ranges, alphabetical scans) and your keys are naturally well-distributed, not monotonically increasing."},
+    ]
+  },
+  hash: {
+    title:"Hash-Based Sharding",
+    color:T.teal,
+    sections:[
+      {heading:"How it works",body:"Apply a hash function to the shard key, then mod by the number of shards: shard = hash(key) % N. Same key → same shard. Good hash functions spread keys uniformly, so load is balanced even for sequential input."},
+      {heading:"Strengths",body:"• No hot shards from sequential keys\n• Even load distribution\n• Simple to implement"},
+      {heading:"Weaknesses",body:"• Range scans require querying every shard (scatter-gather)\n• Rebalancing is catastrophic — adding a shard changes N, so almost every key moves\n• Hard to colocate related data"},
+      {heading:"The rebalancing problem",body:"With modulo hashing, going from N shards to N+1 means (N-1)/N of all keys move to a different shard. For N=4 that's 80% of your data. For a database with terabytes of data this is operationally devastating."},
+    ]
+  },
+  consistent: {
+    title:"Consistent Hashing",
+    color:T.purpleL,
+    sections:[
+      {heading:"The idea",body:"Instead of hash(key) % N, map both nodes AND keys to positions on a ring (0 to 2^32 for example). A key belongs to the first node you reach going clockwise from the key's position."},
+      {heading:"Why it's better",body:"Adding a node only affects the arc between the new node and its clockwise neighbor. On average, only 1/N of the keys move — not ~all of them. Removing a node similarly only moves its keys to the next clockwise node."},
+      {heading:"Virtual nodes",body:"A naive ring is lumpy — some nodes get big arcs, others tiny ones. Fix: each physical node is placed at many random positions on the ring (e.g. 100 virtual nodes per real node). This smooths out the distribution and makes rebalancing more uniform."},
+      {heading:"Where it's used",body:"DynamoDB, Cassandra, Riak, and most distributed caches (memcached clients, Redis Cluster variants). It's the standard technique for partitioning data across a dynamic set of nodes."},
+    ]
+  },
+  queries: {
+    title:"Cross-Shard Queries",
+    color:T.coral,
+    sections:[
+      {heading:"The core problem",body:"A sharded database is really N independent databases. A query that needs data from multiple shards can't use a single SQL statement — you have to query each shard separately and combine results in the application (scatter-gather)."},
+      {heading:"JOINs",body:"A JOIN across shards is the worst case. You either:\n• Denormalize — copy the joined data onto the same shard\n• Scatter-gather — query all shards and join in the app\n• Use a shard key that colocates related rows (e.g. shard users and their orders by user_id)"},
+      {heading:"Transactions",body:"A transaction touching multiple shards requires a distributed protocol like two-phase commit. These are slow, complex, and vulnerable to partial failures. Most sharded systems avoid cross-shard transactions entirely."},
+      {heading:"Practical advice",body:"Pick a shard key that colocates data your queries actually need together. If you shard users by user_id, make sure orders, sessions, and preferences for that user live on the same shard."},
+    ]
+  },
+  code: {
+    title:"Deciding to Shard",
+    color:T.purple,
+    sections:[
+      {heading:"Try everything else first",body:"Sharding is expensive in engineering time and operational complexity. Exhaust cheaper options first:\n• Add proper indexes\n• Cache frequent reads (Redis, Memcached)\n• Scale up to a bigger machine\n• Add read replicas\n• Archive cold data"},
+      {heading:"Signs you actually need it",body:"• Single-node can't hold your working set in memory\n• Write throughput exceeds what one primary can handle\n• Data size exceeds what fits on the largest practical disk\n• You need geographic distribution for latency"},
+      {heading:"Choosing a shard key",body:"This is the most important decision. A bad shard key causes hot shards, cross-shard queries, and painful re-sharding. Pick something:\n• High cardinality (many distinct values)\n• Evenly distributed (not timestamp-skewed)\n• Naturally part of your common queries"},
+      {heading:"Managed options",body:"Before rolling your own sharding, consider databases that do it for you: Vitess, Citus (Postgres), CockroachDB, Spanner, DynamoDB, Cassandra. They handle rebalancing, routing, and failure recovery."},
+    ]
+  },
+};
+
+/* ─── COMPONENTS ─── */
+const CodePanel = ({ tokens, onClick }) =>
+  e("div", { onClick, style:{ background:T.codeBase, borderRadius:12, overflow:"hidden", border:`1px solid ${T.border}`, cursor:onClick?"pointer":"default" } },
+    e("div", { style:{ padding:"10px 14px 8px", borderBottom:`1px solid ${T.border}`, display:"flex", gap:7 } },
+      ...["#ff5f57","#febc2e","#28c840"].map((c,i) =>
+        e("div", { key:i, style:{ width:11, height:11, borderRadius:"50%", background:c } })
+      )
+    ),
+    e("div", { style:{ padding:"14px 18px 16px", fontFamily:"'SF Mono','Fira Code','Consolas',monospace", fontSize:12, lineHeight:1.85 } },
+      tokens.map((line, li) =>
+        e("div", { key:li },
+          line.map(([cls, txt], ti) =>
+            e("span", { key:ti, style:{ ...TS[cls], whiteSpace:"pre" } }, txt)
+          )
+        )
+      )
+    )
+  );
+
+/* ─── Node ─── a stylized DB cylinder ─── */
+const DbNode = ({ label, color, size=60, sub, icon="lni-database", dim=false, onClick }) =>
+  e(M.div, {
+    onClick,
+    layout:true,
+    style:{
+      width:size, minHeight:size, borderRadius:12,
+      border:`1.5px solid ${color}${dim?"33":"66"}`,
+      background:`${color}${dim?"08":"18"}`,
+      display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+      padding:"8px 6px", gap:3, cursor:onClick?"pointer":"default", flexShrink:0,
+    }
+  },
+    e("i", { className:"lni "+icon, style:{ color:dim?color+"88":color, fontSize:Math.round(size*0.32) } }),
+    e("div", { style:{ fontSize:Math.max(9,Math.round(size*0.18)), fontWeight:700, color:dim?color+"88":color, fontFamily:"'SF Mono',monospace", textAlign:"center", lineHeight:1.2 } }, label),
+    sub && e("div", { style:{ fontSize:8, color:T.text3, textAlign:"center" } }, sub)
+  );
+
+/* Arrow component — simple animated line with optional label */
+const Arrow = ({ x1, y1, x2, y2, color=T.text3, dashed=false, label, delay=0, thick=1.5 }) => {
+  const mx = (x1+x2)/2, my = (y1+y2)/2;
+  const dx = x2-x1, dy = y2-y1;
+  const len = Math.hypot(dx,dy);
+  const ux = dx/len, uy = dy/len;
+  const ah = 6; /* arrow head size */
+  const bx = x2 - ux*ah, by = y2 - uy*ah;
+  const px = -uy, py = ux;
+  return e("g", null,
+    e(M.line, {
+      x1, y1, x2:bx, y2:by,
+      stroke:color, strokeWidth:thick,
+      strokeDasharray: dashed ? "4 4" : "0",
+      initial:{ pathLength:0, opacity:0 },
+      animate:{ pathLength:1, opacity:1 },
+      transition:{ duration:0.5, delay }
+    }),
+    e(M.polygon, {
+      points:`${x2},${y2} ${bx+px*4},${by+py*4} ${bx-px*4},${by-py*4}`,
+      fill:color,
+      initial:{opacity:0}, animate:{opacity:1}, transition:{delay:delay+0.3}
+    }),
+    label && e(M.text, {
+      x:mx, y:my-6, fontSize:9, fill:color, textAnchor:"middle",
+      fontFamily:"'SF Mono',monospace", fontWeight:700,
+      initial:{opacity:0}, animate:{opacity:1}, transition:{delay:delay+0.2}
+    }, label)
+  );
+};
+
+/* ─── VIEWS ─── */
+
+const ViewSingle = () =>
+  e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:300, gap:18 } },
+    e("div", { style:{ display:"flex", gap:10, alignItems:"center" } },
+      ...Array.from({length:6}).map((_,i)=>
+        e(M.div, { key:i, initial:{opacity:0,y:-6}, animate:{opacity:1,y:0}, transition:{delay:i*0.06},
+          style:{ width:22, height:22, borderRadius:"50%", border:`1.5px solid ${T.purple}66`, background:`${T.purple}14`, display:"flex", alignItems:"center", justifyContent:"center" }
+        }, e("i", { className:"lni lni-user-4", style:{ color:T.purpleL, fontSize:10 } }))
+      )
+    ),
+    e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 } },
+      ...Array.from({length:6}).map((_,i)=>
+        e(M.div, { key:i, initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.3+i*0.05},
+          style:{ width:1.5, height:10, background:T.purple+"77" }
+        })
+      )
+    ),
+    e(M.div, { initial:{scale:0.85,opacity:0}, animate:{scale:1,opacity:1}, transition:sp(300,22),
+      style:{ width:160, padding:"18px 14px", borderRadius:14, border:`2px solid ${T.red}66`, background:`${T.red}12`, display:"flex", flexDirection:"column", alignItems:"center", gap:6 }
+    },
+      e("i", { className:"lni lni-database", style:{ color:T.red, fontSize:28 } }),
+      e("div", { style:{ fontSize:12, fontWeight:700, color:T.redL, fontFamily:"'SF Mono',monospace" } }, "single DB"),
+      e("div", { style:{ fontSize:10, color:T.red+"cc", fontWeight:600 } }, "🔥 at capacity"),
+    )
+  );
+
+const ViewScaling = () =>
+  e("div", { style:{ display:"flex", gap:14, justifyContent:"center", alignItems:"stretch", minHeight:340, padding:"16px 10px" } },
+    /* Vertical scaling */
+    e("div", { style:{ flex:1, borderRadius:12, border:`1.5px solid ${T.amber}44`, background:`${T.amber}08`, padding:14, display:"flex", flexDirection:"column", alignItems:"center", gap:10 } },
+      e("div", { style:{ fontSize:11, fontWeight:700, color:T.amberL, letterSpacing:"0.04em", textTransform:"uppercase" } }, "Vertical — scale up"),
+      e("div", { style:{ display:"flex", alignItems:"flex-end", gap:16, marginTop:8 } },
+        e(M.div, { initial:{height:40}, animate:{height:40}, style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 } },
+          e("div", { style:{ width:38, height:40, borderRadius:8, border:`1.5px solid ${T.amber}`, background:`${T.amber}18`, display:"flex", alignItems:"center", justifyContent:"center" } },
+            e("i", { className:"lni lni-database", style:{ color:T.amberL, fontSize:16 } })
+          ),
+          e("div", { style:{ fontSize:9, color:T.text3 } }, "small")
+        ),
+        e("i", { className:"lni lni-arrow-right", style:{ color:T.amberL, fontSize:14 } }),
+        e(M.div, { initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, transition:{delay:0.3,...sp()}, style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 } },
+          e("div", { style:{ width:70, height:100, borderRadius:10, border:`2px solid ${T.amber}`, background:`${T.amber}22`, display:"flex", alignItems:"center", justifyContent:"center" } },
+            e("i", { className:"lni lni-database", style:{ color:T.amberL, fontSize:34 } })
+          ),
+          e("div", { style:{ fontSize:9, color:T.amberL, fontWeight:700 } }, "BIG")
+        )
+      ),
+      e("div", { style:{ fontSize:10, color:T.text2, textAlign:"center", lineHeight:1.5, marginTop:"auto" } }, "More CPU, more RAM,\nfaster SSD — same machine")
+    ),
+    /* Horizontal scaling */
+    e("div", { style:{ flex:1, borderRadius:12, border:`1.5px solid ${T.teal}44`, background:`${T.teal}08`, padding:14, display:"flex", flexDirection:"column", alignItems:"center", gap:10 } },
+      e("div", { style:{ fontSize:11, fontWeight:700, color:T.tealL, letterSpacing:"0.04em", textTransform:"uppercase" } }, "Horizontal — scale out"),
+      e("div", { style:{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6, marginTop:12 } },
+        ...Array.from({length:8}).map((_,i)=>
+          e(M.div, { key:i, initial:{opacity:0,y:-6}, animate:{opacity:1,y:0}, transition:{delay:i*0.07,...sp()},
+            style:{ width:34, height:42, borderRadius:7, border:`1.5px solid ${T.teal}`, background:`${T.teal}16`, display:"flex", alignItems:"center", justifyContent:"center" }
+          }, e("i", { className:"lni lni-database", style:{ color:T.tealL, fontSize:14 } }))
+        )
+      ),
+      e("div", { style:{ fontSize:10, color:T.text2, textAlign:"center", lineHeight:1.5, marginTop:"auto" } }, "Many cheap machines\nworking together")
+    )
+  );
+
+const ViewReplication = ({ replicaCount=3, showWrites=false }) => {
+  const W = 700, H = 320;
+  const primaryX = 180, primaryY = 160;
+  const replicas = Array.from({length:replicaCount}).map((_,i)=>({
+    x: 500,
+    y: 60 + i * (200/(replicaCount-1 || 1)),
+    label:`replica_${i+1}`,
+  }));
+  return e("div", { style:{ display:"flex", justifyContent:"center", minHeight:320 } },
+    e("svg", { width:W, height:H, style:{ overflow:"visible" } },
+      /* App/client box */
+      showWrites && e("g", null,
+        e(M.rect, { x:20, y:60, width:80, height:36, rx:8,
+          fill:`${T.purple}12`, stroke:T.purple, strokeWidth:1.5,
+          initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.1}
+        }),
+        e("text", { x:60, y:78, textAnchor:"middle", fontSize:10, fill:T.purpleL, fontFamily:"'SF Mono',monospace", fontWeight:700 }, "WRITE"),
+        e("text", { x:60, y:90, textAnchor:"middle", fontSize:8, fill:T.text3 }, "app"),
+        e(M.rect, { x:20, y:200, width:80, height:36, rx:8,
+          fill:`${T.teal}12`, stroke:T.teal, strokeWidth:1.5,
+          initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.1}
+        }),
+        e("text", { x:60, y:218, textAnchor:"middle", fontSize:10, fill:T.tealL, fontFamily:"'SF Mono',monospace", fontWeight:700 }, "READ"),
+        e("text", { x:60, y:230, textAnchor:"middle", fontSize:8, fill:T.text3 }, "app"),
+      ),
+      /* Arrow from write app to primary */
+      showWrites && e(Arrow, { x1:105, y1:78, x2:primaryX-50, y2:primaryY-10, color:T.purple, delay:0.25, thick:2 }),
+      /* Arrows from read app to replicas */
+      showWrites && replicas.map((r,i)=>
+        e(Arrow, { key:"r"+i, x1:105, y1:218, x2:r.x-30, y2:r.y+8, color:T.teal, dashed:true, delay:0.4+i*0.08 })
+      ),
+      /* Primary node */
+      e(M.g, { initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, transition:sp() },
+        e("rect", { x:primaryX-50, y:primaryY-35, width:100, height:70, rx:12,
+          fill:`${T.red}14`, stroke:T.red, strokeWidth:2 }),
+        e("text", { x:primaryX, y:primaryY-12, textAnchor:"middle", fontSize:11, fontWeight:700, fill:T.redL, fontFamily:"'SF Mono',monospace" }, "PRIMARY"),
+        e("text", { x:primaryX, y:primaryY+4, textAnchor:"middle", fontSize:9, fill:T.text2 }, "accepts writes"),
+        e("text", { x:primaryX, y:primaryY+20, textAnchor:"middle", fontSize:18, fill:T.red }, "⬤")
+      ),
+      /* Replication arrows */
+      replicas.map((r,i)=>
+        e(Arrow, { key:"rep"+i, x1:primaryX+50, y1:primaryY, x2:r.x-30, y2:r.y+8, color:T.blue, delay:0.5+i*0.1, label: i===0?"replicate":null })
+      ),
+      /* Replica nodes */
+      replicas.map((r,i)=>
+        e(M.g, { key:"rnode"+i, initial:{opacity:0,x:10}, animate:{opacity:1,x:0}, transition:{delay:0.6+i*0.1,...sp()} },
+          e("rect", { x:r.x-30, y:r.y-8, width:90, height:30, rx:8,
+            fill:`${T.blue}14`, stroke:T.blue, strokeWidth:1.5 }),
+          e("text", { x:r.x+15, y:r.y+12, textAnchor:"middle", fontSize:10, fontWeight:700, fill:T.blueL, fontFamily:"'SF Mono',monospace" }, r.label)
+        )
+      )
+    )
+  );
+};
+
+const ViewLag = () => {
+  const W = 700, H = 320;
+  return e("div", { style:{ display:"flex", justifyContent:"center", minHeight:320 } },
+    e("svg", { width:W, height:H, style:{ overflow:"visible" } },
+      /* Primary */
+      e("rect", { x:50, y:130, width:110, height:60, rx:12, fill:`${T.red}14`, stroke:T.red, strokeWidth:2 }),
+      e("text", { x:105, y:152, textAnchor:"middle", fontSize:11, fontWeight:700, fill:T.redL, fontFamily:"'SF Mono',monospace" }, "PRIMARY"),
+      e("text", { x:105, y:170, textAnchor:"middle", fontSize:10, fill:T.greenL, fontFamily:"'SF Mono',monospace" }, "name: Alice"),
+      /* Replica */
+      e("rect", { x:520, y:130, width:120, height:60, rx:12, fill:`${T.blue}14`, stroke:T.blue, strokeWidth:1.5 }),
+      e("text", { x:580, y:152, textAnchor:"middle", fontSize:11, fontWeight:700, fill:T.blueL, fontFamily:"'SF Mono',monospace" }, "REPLICA"),
+      e(M.text, { x:580, y:170, textAnchor:"middle", fontSize:10,
+        initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.1},
+        fill:T.amberL, fontFamily:"'SF Mono',monospace" }, "name: Alicia"),
+      /* Animated packet from primary to replica */
+      e(M.circle, {
+        r:7, fill:T.greenL,
+        initial:{cx:160,cy:160,opacity:0},
+        animate:{cx:[160,340,520],cy:[160,100,160],opacity:[0,1,1,0]},
+        transition:{duration:2.4,delay:0.5,times:[0,0.1,0.9,1],repeat:Infinity,repeatDelay:0.6}
+      }),
+      /* Replication lag label */
+      e("text", { x:340, y:90, textAnchor:"middle", fontSize:10, fill:T.text2, fontFamily:"'SF Mono',monospace" }, "replication lag"),
+      e("text", { x:340, y:104, textAnchor:"middle", fontSize:9, fill:T.text3 }, "~5-50ms"),
+      /* Client below reading stale */
+      e("g", null,
+        e("rect", { x:500, y:250, width:160, height:40, rx:8, fill:`${T.coral}10`, stroke:T.coral, strokeWidth:1.2, strokeDasharray:"4 4" }),
+        e("text", { x:580, y:266, textAnchor:"middle", fontSize:10, fill:T.coralL, fontWeight:700 }, "client reads replica"),
+        e("text", { x:580, y:280, textAnchor:"middle", fontSize:9, fill:T.text3, fontFamily:"'SF Mono',monospace" }, "sees stale 'Alicia' 😬"),
+      ),
+      /* Arrow from replica to client */
+      e("line", { x1:580, y1:190, x2:580, y2:250, stroke:T.coral, strokeWidth:1.2, strokeDasharray:"3 3" }),
+      /* Write-in label */
+      e("text", { x:105, y:210, textAnchor:"middle", fontSize:9, fill:T.text3 }, "UPDATE name='Alice'")
+    )
+  );
+};
+
+const ViewMultiPrimary = () => {
+  const W = 700, H = 320;
+  return e("div", { style:{ display:"flex", justifyContent:"center", minHeight:320 } },
+    e("svg", { width:W, height:H, style:{ overflow:"visible" } },
+      /* US-East primary */
+      e("g", null,
+        e("rect", { x:50, y:130, width:140, height:70, rx:12, fill:`${T.blue}14`, stroke:T.blue, strokeWidth:2 }),
+        e("text", { x:120, y:154, textAnchor:"middle", fontSize:11, fontWeight:700, fill:T.blueL, fontFamily:"'SF Mono',monospace" }, "US-EAST"),
+        e("text", { x:120, y:170, textAnchor:"middle", fontSize:9, fill:T.text2 }, "primary"),
+        e("text", { x:120, y:186, textAnchor:"middle", fontSize:9, fill:T.greenL, fontFamily:"'SF Mono',monospace" }, "name: Alice"),
+      ),
+      /* EU-West primary */
+      e("g", null,
+        e("rect", { x:510, y:130, width:140, height:70, rx:12, fill:`${T.amber}14`, stroke:T.amber, strokeWidth:2 }),
+        e("text", { x:580, y:154, textAnchor:"middle", fontSize:11, fontWeight:700, fill:T.amberL, fontFamily:"'SF Mono',monospace" }, "EU-WEST"),
+        e("text", { x:580, y:170, textAnchor:"middle", fontSize:9, fill:T.text2 }, "primary"),
+        e("text", { x:580, y:186, textAnchor:"middle", fontSize:9, fill:T.coralL, fontFamily:"'SF Mono',monospace" }, "name: Alicia"),
+      ),
+      /* Two-way arrows */
+      e(M.path, { d:"M 200 150 Q 350 90 500 150", stroke:T.purple, strokeWidth:1.5, fill:"none",
+        initial:{pathLength:0}, animate:{pathLength:1}, transition:{duration:0.8,delay:0.3} }),
+      e(M.path, { d:"M 500 180 Q 350 240 200 180", stroke:T.purple, strokeWidth:1.5, fill:"none",
+        initial:{pathLength:0}, animate:{pathLength:1}, transition:{duration:0.8,delay:0.5} }),
+      e("text", { x:350, y:82, textAnchor:"middle", fontSize:10, fill:T.purpleL, fontFamily:"'SF Mono',monospace" }, "bidirectional sync"),
+      /* Conflict marker */
+      e(M.g, { initial:{opacity:0,scale:0.6}, animate:{opacity:1,scale:1}, transition:{delay:1.2,...sp()} },
+        e("circle", { cx:350, cy:270, r:26, fill:`${T.red}18`, stroke:T.red, strokeWidth:1.5 }),
+        e("text", { x:350, y:275, textAnchor:"middle", fontSize:18 }, "⚡"),
+        e("text", { x:350, y:304, textAnchor:"middle", fontSize:10, fill:T.redL, fontWeight:700 }, "CONFLICT")
+      )
+    )
+  );
+};
+
+const ViewShardIntro = () => {
+  const buckets = [
+    { label:"A-G", color:T.blue },
+    { label:"H-M", color:T.teal },
+    { label:"N-T", color:T.amber },
+    { label:"U-Z", color:T.pink },
+  ];
+  return e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:320, gap:24 } },
+    /* Original single DB */
+    e(M.div, { layout:true, initial:{opacity:0,y:-6}, animate:{opacity:1,y:0},
+      style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:6 } },
+      e("div", { style:{ padding:"12px 22px", borderRadius:12, border:`1.5px solid ${T.red}55`, background:`${T.red}10`, display:"flex", alignItems:"center", gap:10 } },
+        e("i", { className:"lni lni-database", style:{ color:T.red, fontSize:22 } }),
+        e("div", { style:{ fontSize:12, fontWeight:700, color:T.redL, fontFamily:"'SF Mono',monospace" } }, "all_data (A-Z)")
+      ),
+    ),
+    /* Split arrow */
+    e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.3},
+      style:{ display:"flex", flexDirection:"column", alignItems:"center" } },
+      e("i", { className:"lni lni-arrow-down", style:{ color:T.text3, fontSize:18 } }),
+      e("div", { style:{ fontSize:9, color:T.text3, fontFamily:"monospace" } }, "shard")
+    ),
+    /* Shards */
+    e("div", { style:{ display:"flex", gap:12 } },
+      ...buckets.map((b,i)=>
+        e(M.div, { key:i, initial:{opacity:0,y:10}, animate:{opacity:1,y:0}, transition:{delay:0.5+i*0.1,...sp()},
+          style:{ padding:"12px 16px", borderRadius:12, border:`1.5px solid ${b.color}66`, background:`${b.color}14`, display:"flex", flexDirection:"column", alignItems:"center", gap:4 }
+        },
+          e("i", { className:"lni lni-database", style:{ color:b.color, fontSize:20 } }),
+          e("div", { style:{ fontSize:10, fontWeight:700, color:b.color, fontFamily:"'SF Mono',monospace" } }, `shard_${i+1}`),
+          e("div", { style:{ fontSize:9, color:T.text3, fontFamily:"'SF Mono',monospace" } }, b.label)
+        )
+      )
+    )
+  );
+};
+
+const ViewRange = () => {
+  const buckets = [
+    { label:"A-G", color:T.blue,  samples:["alice","bob","carol","dan","evan","frank"] },
+    { label:"H-M", color:T.teal,  samples:["hank","iris","jake","kate","liam","maya"] },
+    { label:"N-T", color:T.amber, samples:["nate","olive","pete","quinn","rose","sam"] },
+    { label:"U-Z", color:T.pink,  samples:["umar","vera","will","xena","yves","zoe"] },
+  ];
+  return e("div", { style:{ display:"flex", gap:10, justifyContent:"center", minHeight:320, padding:"10px 6px" } },
+    ...buckets.map((b,bi)=>
+      e(M.div, { key:bi, layout:true, initial:{opacity:0,y:10}, animate:{opacity:1,y:0}, transition:{delay:bi*0.1,...sp()},
+        style:{ flex:1, borderRadius:12, border:`1.5px solid ${b.color}66`, background:`${b.color}10`, overflow:"hidden", display:"flex", flexDirection:"column" }
+      },
+        e("div", { style:{ padding:"8px 10px", borderBottom:`1px solid ${b.color}44`, display:"flex", alignItems:"center", gap:6 } },
+          e("i", { className:"lni lni-database", style:{ color:b.color, fontSize:13 } }),
+          e("div", { style:{ fontSize:10, fontWeight:700, color:b.color, fontFamily:"'SF Mono',monospace" } }, `shard_${bi+1}`),
+          e("div", { style:{ flex:1 } }),
+          e("div", { style:{ fontSize:9, color:b.color+"cc", fontFamily:"'SF Mono',monospace", fontWeight:700 } }, b.label)
+        ),
+        e("div", { style:{ padding:8, display:"flex", flexDirection:"column", gap:4 } },
+          ...b.samples.map((s,i)=>
+            e(M.div, { key:i, initial:{opacity:0,x:-6}, animate:{opacity:1,x:0}, transition:{delay:bi*0.1+0.3+i*0.05},
+              style:{ fontSize:10, color:T.text2, padding:"3px 8px", background:`${b.color}10`, borderRadius:5, fontFamily:"'SF Mono',monospace" }
+            }, s)
+          )
+        )
+      )
+    )
+  );
+};
+
+const ViewHash = () => {
+  /* Simulate hash → shard assignment */
+  const records = [
+    { key:"alice",  s:2 },
+    { key:"bob",    s:0 },
+    { key:"carol",  s:3 },
+    { key:"dan",    s:1 },
+    { key:"evan",   s:2 },
+    { key:"frank",  s:0 },
+    { key:"grace",  s:3 },
+    { key:"hank",   s:1 },
+    { key:"iris",   s:0 },
+    { key:"jake",   s:2 },
+    { key:"kate",   s:3 },
+    { key:"liam",   s:1 },
+  ];
+  const shardLabels = ["shard_1","shard_2","shard_3","shard_4"];
+  return e("div", { style:{ display:"flex", flexDirection:"column", gap:14, minHeight:320, padding:"6px 0" } },
+    /* Hash box */
+    e("div", { style:{ display:"flex", flexWrap:"wrap", gap:6, justifyContent:"center", padding:"10px 14px", borderRadius:10, border:`1px dashed ${T.border2}`, background:T.surface } },
+      ...records.map((r,i)=>
+        e(M.div, { key:i, initial:{opacity:0,y:-6}, animate:{opacity:1,y:0}, transition:{delay:i*0.04},
+          style:{ padding:"3px 8px", borderRadius:5, border:`1px solid ${SHARD_COLORS[r.s]}66`, background:`${SHARD_COLORS[r.s]}14`, fontSize:10, color:SHARD_COLORS[r.s], fontFamily:"'SF Mono',monospace", fontWeight:600 }
+        }, r.key)
+      )
+    ),
+    e("div", { style:{ textAlign:"center", fontSize:10, color:T.text2, fontFamily:"'SF Mono',monospace" } }, "hash(key) % 4  ↓"),
+    /* Shards */
+    e("div", { style:{ display:"flex", gap:10, justifyContent:"center" } },
+      ...SHARD_COLORS.map((c,si)=>{
+        const mine = records.filter(r=>r.s===si);
+        return e(M.div, { key:si, initial:{opacity:0,y:10}, animate:{opacity:1,y:0}, transition:{delay:0.5+si*0.1,...sp()},
+          style:{ flex:1, borderRadius:12, border:`1.5px solid ${c}66`, background:`${c}10`, padding:10, display:"flex", flexDirection:"column", alignItems:"center", gap:6 }
+        },
+          e("i", { className:"lni lni-database", style:{ color:c, fontSize:18 } }),
+          e("div", { style:{ fontSize:10, fontWeight:700, color:c, fontFamily:"'SF Mono',monospace" } }, shardLabels[si]),
+          e("div", { style:{ display:"flex", flexDirection:"column", gap:3, width:"100%", marginTop:4 } },
+            ...mine.map((r,i)=>
+              e(M.div, { key:i, initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.8+i*0.06},
+                style:{ fontSize:9, padding:"2px 6px", background:`${c}18`, borderRadius:4, color:c, fontFamily:"'SF Mono',monospace", textAlign:"center" }
+              }, r.key)
+            )
+          )
+        );
+      })
+    )
+  );
+};
+
+const ViewRebalance = () => {
+  const records = ["alice","bob","carol","dan","evan","frank","grace","hank"];
+  /* Pretend old/new mapping */
+  const old4 = [2,0,3,1,2,0,3,1];
+  const new5 = [0,2,4,3,1,0,2,4];
+  return e("div", { style:{ display:"flex", flexDirection:"column", gap:14, minHeight:320, padding:"6px 0", alignItems:"center" } },
+    e("div", { style:{ display:"flex", gap:26, alignItems:"flex-start" } },
+      /* Before */
+      e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:8 } },
+        e("div", { style:{ fontSize:10, fontWeight:700, color:T.text2, letterSpacing:"0.08em", textTransform:"uppercase" } }, "N = 4"),
+        e("div", { style:{ display:"grid", gridTemplateColumns:"repeat(4,44px)", gap:5 } },
+          ...Array.from({length:4}).map((_,si)=>
+            e("div", { key:si, style:{ padding:"6px 4px", borderRadius:8, border:`1.5px solid ${SHARD_COLORS[si]}66`, background:`${SHARD_COLORS[si]}14`, display:"flex", flexDirection:"column", alignItems:"center", gap:3, minHeight:100 } },
+              e("i", { className:"lni lni-database", style:{ color:SHARD_COLORS[si], fontSize:12 } }),
+              ...records.map((r,ri)=> old4[ri]===si ? e("div",{key:ri,style:{fontSize:8,color:SHARD_COLORS[si],fontFamily:"'SF Mono',monospace"}},r) : null)
+            )
+          )
+        )
+      ),
+      /* Arrow */
+      e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:6, paddingTop:30 } },
+        e("i", { className:"lni lni-arrow-right", style:{ color:T.red, fontSize:18 } }),
+        e("div", { style:{ fontSize:9, color:T.redL, fontFamily:"monospace", fontWeight:700 } }, "add shard"),
+        e("div", { style:{ fontSize:9, color:T.redL, fontFamily:"monospace", fontWeight:700 } }, "~80% move!"),
+      ),
+      /* After */
+      e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:8 } },
+        e("div", { style:{ fontSize:10, fontWeight:700, color:T.text2, letterSpacing:"0.08em", textTransform:"uppercase" } }, "N = 5"),
+        e("div", { style:{ display:"grid", gridTemplateColumns:"repeat(5,44px)", gap:5 } },
+          ...Array.from({length:5}).map((_,si)=>{
+            const color = si<4 ? SHARD_COLORS[si] : T.purpleL;
+            return e(M.div, { key:si, initial:{opacity:0,y:6}, animate:{opacity:1,y:0}, transition:{delay:si*0.08},
+              style:{ padding:"6px 4px", borderRadius:8, border:`1.5px solid ${color}66`, background:`${color}14`, display:"flex", flexDirection:"column", alignItems:"center", gap:3, minHeight:100 }
+            },
+              e("i", { className:"lni lni-database", style:{ color, fontSize:12 } }),
+              ...records.map((r,ri)=> new5[ri]===si ? e(M.div,{key:ri,initial:{opacity:0},animate:{opacity:1},transition:{delay:0.8+ri*0.04},style:{fontSize:8,color,fontFamily:"'SF Mono',monospace"}},r) : null)
+            );
+          })
+        )
+      )
+    ),
+    e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:1.4},
+      style:{ padding:"8px 14px", borderRadius:8, border:`1px solid ${T.red}44`, background:`${T.red}10`, fontSize:10, color:T.redL, fontFamily:"'SF Mono',monospace", textAlign:"center" }
+    }, "hash(key) % N changes → (N-1)/N of all keys move")
+  );
+};
+
+const ViewConsistent = () => {
+  const cx = 220, cy = 170, r = 120;
+  /* Place nodes at angles */
+  const nodes = [
+    { ang:-80,  label:"A", color:T.blue },
+    { ang:-20,  label:"B", color:T.teal },
+    { ang:40,   label:"C", color:T.amber },
+    { ang:120,  label:"D", color:T.pink },
+    { ang:200,  label:"A'", color:T.blue, vn:true },
+    { ang:260,  label:"B'", color:T.teal, vn:true },
+  ];
+  const keys = [
+    { ang:-50, label:"k1", owner:T.teal },
+    { ang:10,  label:"k2", owner:T.amber },
+    { ang:80,  label:"k3", owner:T.pink },
+    { ang:160, label:"k4", owner:T.blue },
+    { ang:230, label:"k5", owner:T.teal },
+    { ang:-110,label:"k6", owner:T.blue },
+  ];
+  const pt = (a, rad) => {
+    const r2 = a*Math.PI/180;
+    return { x: cx + Math.cos(r2)*rad, y: cy + Math.sin(r2)*rad };
+  };
+  return e("div", { style:{ display:"flex", gap:20, justifyContent:"center", alignItems:"center", minHeight:320 } },
+    e("svg", { width:440, height:340, style:{ overflow:"visible" } },
+      /* Ring */
+      e("circle", { cx, cy, r, fill:"none", stroke:T.border2, strokeWidth:1.5, strokeDasharray:"3 4" }),
+      /* Keys on ring */
+      ...keys.map((k,i)=>{
+        const p = pt(k.ang, r);
+        return e(M.g, { key:"k"+i, initial:{opacity:0,scale:0.5}, animate:{opacity:1,scale:1}, transition:{delay:0.8+i*0.08,...sp()} },
+          e("circle", { cx:p.x, cy:p.y, r:5, fill:k.owner, stroke:T.bg, strokeWidth:1.5 }),
+          e("text", { x:p.x, y:p.y+14, textAnchor:"middle", fontSize:8, fill:k.owner, fontFamily:"'SF Mono',monospace", fontWeight:700 }, k.label)
+        );
+      }),
+      /* Nodes */
+      ...nodes.map((n,i)=>{
+        const p = pt(n.ang, r);
+        const sz = n.vn ? 14 : 20;
+        return e(M.g, { key:"n"+i, initial:{opacity:0,scale:0.5}, animate:{opacity:1,scale:1}, transition:{delay:0.2+i*0.1,...sp()} },
+          e("rect", { x:p.x-sz, y:p.y-sz, width:sz*2, height:sz*2, rx:6,
+            fill:`${n.color}22`, stroke:n.color, strokeWidth:n.vn?1:2, strokeDasharray:n.vn?"2 2":"0" }),
+          e("text", { x:p.x, y:p.y+4, textAnchor:"middle", fontSize:n.vn?9:11, fill:n.color, fontFamily:"'SF Mono',monospace", fontWeight:700 }, n.label)
+        );
+      }),
+      /* Center label */
+      e("text", { x:cx, y:cy-4, textAnchor:"middle", fontSize:11, fill:T.text2, fontFamily:"'SF Mono',monospace", fontWeight:700 }, "hash ring"),
+      e("text", { x:cx, y:cy+10, textAnchor:"middle", fontSize:9, fill:T.text3 }, "0 → 2³²")
+    ),
+    /* Legend */
+    e("div", { style:{ display:"flex", flexDirection:"column", gap:10, minWidth:160, fontSize:11 } },
+      e("div", { style:{ fontSize:10, fontWeight:700, color:T.text2, letterSpacing:"0.08em", textTransform:"uppercase" } }, "rules"),
+      e("div", { style:{ padding:"8px 10px", borderRadius:8, border:`1px solid ${T.border}`, background:T.surface2, color:T.text2, lineHeight:1.5, fontSize:10 } },
+        e("div", null, "• node & key positioned on ring by hash"),
+        e("div", null, "• key belongs to next node clockwise"),
+        e("div", null, "• adding node: only arc moves"),
+        e("div", null, "• dashed = virtual node replica")
+      )
+    )
+  );
+};
+
+const ViewCrossShard = () => {
+  return e("div", { style:{ display:"flex", flexDirection:"column", gap:14, minHeight:320, padding:"6px 0" } },
+    /* App */
+    e("div", { style:{ display:"flex", justifyContent:"center" } },
+      e("div", { style:{ padding:"10px 18px", borderRadius:10, border:`1.5px solid ${T.purple}55`, background:`${T.purple}14`, display:"flex", alignItems:"center", gap:8 } },
+        e("i", { className:"lni lni-code-alt", style:{ color:T.purpleL, fontSize:14 } }),
+        e("div", { style:{ fontSize:11, fontWeight:700, color:T.purpleL, fontFamily:"'SF Mono',monospace" } }, "app (scatter-gather)")
+      )
+    ),
+    /* Four outgoing queries */
+    e("svg", { width:680, height:60, style:{ alignSelf:"center" } },
+      ...[0,1,2,3].map(i=>
+        e(M.line, { key:i, x1:340, y1:0, x2:80+i*175, y2:56,
+          stroke:SHARD_COLORS[i], strokeWidth:1.5, strokeDasharray:"3 3",
+          initial:{pathLength:0,opacity:0}, animate:{pathLength:1,opacity:1}, transition:{delay:0.2+i*0.1,duration:0.5}
+        })
+      ),
+      e("text", { x:340, y:32, textAnchor:"middle", fontSize:9, fill:T.text2, fontFamily:"'SF Mono',monospace" }, "query all shards")
+    ),
+    /* Shards */
+    e("div", { style:{ display:"flex", gap:10, justifyContent:"center" } },
+      ...SHARD_COLORS.map((c,i)=>
+        e(M.div, { key:i, initial:{opacity:0,y:10}, animate:{opacity:1,y:0}, transition:{delay:0.6+i*0.08,...sp()},
+          style:{ width:130, padding:10, borderRadius:12, border:`1.5px solid ${c}66`, background:`${c}10`, display:"flex", flexDirection:"column", alignItems:"center", gap:4 }
+        },
+          e("i", { className:"lni lni-database", style:{ color:c, fontSize:18 } }),
+          e("div", { style:{ fontSize:10, fontWeight:700, color:c, fontFamily:"'SF Mono',monospace" } }, `shard_${i+1}`),
+          e("div", { style:{ fontSize:9, color:T.text3 } }, i===1 || i===2 ? "partial match" : "no match")
+        )
+      )
+    ),
+    e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:1.2},
+      style:{ padding:"8px 14px", margin:"0 auto", borderRadius:8, border:`1px solid ${T.coral}44`, background:`${T.coral}10`, fontSize:10, color:T.coralL, fontFamily:"'SF Mono',monospace", textAlign:"center", maxWidth:480 }
+    }, "merge results in app → slow, fragile, no transactions")
+  );
+};
+
+const ViewWhen = () => {
+  const steps = [
+    { label:"Add indexes",        icon:"lni-key-1",      c:T.teal,   ok:true },
+    { label:"Cache hot reads",    icon:"lni-bolt-2",     c:T.amber,  ok:true },
+    { label:"Scale up hardware",  icon:"lni-arrow-top",  c:T.blue,   ok:true },
+    { label:"Add read replicas",  icon:"lni-layers-1",   c:T.pink,   ok:true },
+    { label:"Shard",              icon:"lni-network-2",  c:T.purple, ok:false },
+  ];
+  return e("div", { style:{ display:"flex", flexDirection:"column", gap:10, minHeight:320, padding:"14px 10px", justifyContent:"center" } },
+    ...steps.map((s,i)=>
+      e(M.div, { key:i, initial:{opacity:0,x:-10}, animate:{opacity:1,x:0}, transition:{delay:i*0.12,...ez},
+        style:{ display:"flex", alignItems:"center", gap:12, padding:"10px 16px", borderRadius:10, border:`1px solid ${s.c}44`, background:`${s.c}08` }
+      },
+        e("div", { style:{ width:30, height:30, borderRadius:"50%", border:`1.5px solid ${s.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 } },
+          e("i", { className:"lni "+s.icon, style:{ color:s.c, fontSize:14 } })
+        ),
+        e("div", { style:{ fontSize:12, fontWeight:600, color:s.c, fontFamily:"'SF Mono',monospace", flex:1 } }, s.label),
+        e("div", { style:{ fontSize:10, color:s.ok?T.text3:T.redL, fontWeight:700, fontFamily:"'SF Mono',monospace" } }, s.ok?"try this first":"last resort")
+      )
+    )
+  );
+};
+
+const Finale = () => {
+  const rows = [
+    { icon:"lni-layers-1",     label:"Replication", sub:"Copy data to many nodes — availability + read scale", c:T.blue },
+    { icon:"lni-network-2",    label:"Sharding",    sub:"Split data across nodes — write scale + huge storage", c:T.teal },
+    { icon:"lni-ruler",        label:"Range sharding",     sub:"Keys grouped by range — efficient scans, risk of hot shards", c:T.amber },
+    { icon:"lni-dashboard-4",  label:"Hash sharding",      sub:"hash(key) % N — even load, painful to rebalance", c:T.coral },
+    { icon:"lni-reload",       label:"Consistent hashing", sub:"Ring of nodes — only 1/N of keys move on reshard", c:T.purpleL },
+    { icon:"lni-warning",      label:"Cross-shard pain",   sub:"JOINs and transactions become scatter-gather in the app", c:T.red },
+    { icon:"lni-shield-2",     label:"Shard last",         sub:"Exhaust indexes, caching, vertical scale, replicas first", c:T.purple },
+  ];
+  return e("div", { style:{ padding:"8px 0" } },
+    rows.map((r,i) => e(M.div, { key:i, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.09,...ez},
+      style:{ display:"flex", alignItems:"flex-start", gap:12, padding:"11px 14px", marginBottom:8, borderRadius:10, border:`1px solid ${r.c}28`, background:`${r.c}08` }
+    },
+      e("div", { style:{ width:28, height:28, borderRadius:"50%", border:`1.5px solid ${r.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, color:r.c } },
+        e("i", { className:"lni "+r.icon, style:{ fontSize:13 } })
+      ),
+      e("div", null,
+        e("div", { style:{ fontSize:13, fontWeight:600, color:r.c, marginBottom:2 } }, r.label),
+        e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.5 } }, r.sub)
+      )
+    ))
+  );
+};
+
+const DetailPanel = ({ detailKey, onClose }) => {
+  const d = DETAILS[detailKey];
+  if (!d) return null;
+  return e("div", {
+    style:{ width:340, flexShrink:0, background:T.surface, borderRadius:14, border:`1.5px solid ${d.color}44`, overflow:"hidden", alignSelf:"flex-start", position:"sticky", top:56 }
+  },
+    e("div", { style:{ padding:"14px 18px 12px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:8 } },
+        e("div", { style:{ width:8, height:8, borderRadius:"50%", background:d.color } }),
+        e("span", { style:{ fontSize:14, fontWeight:600, color:T.text1 } }, d.title)
+      ),
+      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6, transition:"color 0.2s" }, onMouseEnter:ev=>ev.target.style.color=T.text1, onMouseLeave:ev=>ev.target.style.color=T.text3 }, e("i", { className:"lni lni-xmark" }))
+    ),
+    e("div", { style:{ padding:"16px 18px 20px", maxHeight:"calc(100vh - 140px)", overflowY:"auto" } },
+      d.sections.map((s, i) =>
+        e("div", { key:i, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
+          e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
+        )
+      )
+    )
+  );
+};
+
+/* ─── Scene view router ─── */
+const SceneView = ({ sc, onDetail }) => {
+  if (sc.finale) return e(Finale);
+  switch (sc.view) {
+    case "single":       return e(ViewSingle);
+    case "scaling":      return e(ViewScaling);
+    case "replication":  return e("div",{onClick:()=>onDetail("replication"),style:{cursor:"pointer"}}, e(ViewReplication,{replicaCount:sc.replicaCount,showWrites:sc.showWrites}));
+    case "lag":          return e("div",{onClick:()=>onDetail("replication"),style:{cursor:"pointer"}}, e(ViewLag));
+    case "multiprimary": return e("div",{onClick:()=>onDetail("replication"),style:{cursor:"pointer"}}, e(ViewMultiPrimary));
+    case "shardintro":   return e(ViewShardIntro);
+    case "range":        return e("div",{onClick:()=>onDetail("range"),style:{cursor:"pointer"}}, e(ViewRange));
+    case "hash":         return e("div",{onClick:()=>onDetail("hash"),style:{cursor:"pointer"}}, e(ViewHash));
+    case "rebalance":    return e("div",{onClick:()=>onDetail("hash"),style:{cursor:"pointer"}}, e(ViewRebalance));
+    case "consistent":   return e("div",{onClick:()=>onDetail("consistent"),style:{cursor:"pointer"}}, e(ViewConsistent));
+    case "crossshard":   return e("div",{onClick:()=>onDetail("queries"),style:{cursor:"pointer"}}, e(ViewCrossShard));
+    case "when":         return e("div",{onClick:()=>onDetail("code"),style:{cursor:"pointer"}}, e(ViewWhen));
+    default: return null;
+  }
+};
+
+/* ─── APP ─── */
+function App() {
+  const [si, setSi] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [detail, setDetail] = useState(null);
+  const timer = useRef(null);
+  const sc = SCENES[si];
+
+  useEffect(() => { setPlaying(true); }, []);
+
+  useEffect(() => {
+    if (!playing) return;
+    const d = si===0 ? 3000 : sc.finale ? 99999 : 3800;
+    timer.current = setTimeout(() => { si < SCENES.length-1 ? setSi(i=>i+1) : setPlaying(false); }, d);
+    return () => clearTimeout(timer.current);
+  }, [playing, si]);
+
+  const go = d => { clearTimeout(timer.current); setPlaying(false); setSi(i=>Math.max(0,Math.min(SCENES.length-1,i+d))); };
+  const jump = i => { clearTimeout(timer.current); setPlaying(false); setSi(i); };
+  const togglePlay = () => { if(si===SCENES.length-1){setSi(0);setPlaying(true);}else setPlaying(p=>!p); };
+  const toggleDetail = key => { setDetail(d => d===key ? null : key); clearTimeout(timer.current); setPlaying(false); };
+
+  return e("div", { style:{ display:"flex", gap:16, alignItems:"flex-start", justifyContent: detail ? "flex-start" : "center" } },
+  e("div", { style:{ width:760, flexShrink:0, background:T.bg, fontFamily:"system-ui,sans-serif", padding:20, borderRadius:16 } },
+
+    /* header */
+    e("div", { style:{ marginBottom:18 } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:10, marginBottom:11 } },
+        e(AP, { mode:"wait" },
+          e(M.div, { key:sc.act, initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, exit:{opacity:0}, transition:sp(400,28),
+            style:{ fontSize:9,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:T.purple,background:`${T.purple}14`,padding:"3px 10px",borderRadius:20,border:`1px solid ${T.purple}30`,flexShrink:0 }
+          }, sc.act)
+        ),
+        e("div", { style:{ flex:1, height:1, background:T.border, borderRadius:99, overflow:"hidden" } },
+          e(M.div, { animate:{width:`${si/(SCENES.length-1)*100}%`}, transition:{duration:0.5}, style:{height:"100%",background:T.purple,borderRadius:99} })
+        ),
+        e("span", { style:{ fontSize:10, color:T.text3 } }, `${si+1} / ${SCENES.length}`)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.title, initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, exit:{opacity:0,y:-8}, transition:ez,
+          style:{ fontSize:20,fontWeight:600,color:T.text1,marginBottom:4,letterSpacing:"-0.02em" }
+        }, sc.title)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
+          style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
+        }, sc.sub)
+      )
+    ),
+
+    e("div", { style:{ minHeight:460 } },
+      /* main visualization */
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.id, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25} },
+          e(SceneView, { sc, onDetail:toggleDetail }),
+          /* code panel */
+          !sc.finale && sc.code && sc.code.length > 0 && e("div", { style:{ marginTop:12 } },
+            e(CodePanel, { tokens:sc.code, onClick:()=>toggleDetail("code") })
+          )
+        )
+      )
+    ),
+
+    /* controls */
+    e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginTop:16 } },
+      e("button", { onClick:()=>go(-1), disabled:si===0,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===0?T.text3:T.text2,cursor:si===0?"not-allowed":"pointer",fontSize:11,transition:"color 0.2s" }
+      }, "← Back"),
+      e("button", { onClick:togglePlay,
+        style:{ padding:"6px 18px",borderRadius:8,border:`1px solid ${playing?T.coral:T.purple}44`,background:playing?`${T.coral}14`:`${T.purple}14`,color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all 0.2s" }
+      }, playing ? "⏸  Pause" : si===SCENES.length-1 ? "↺  Replay" : "▶  Play"),
+      e("button", { onClick:()=>go(1), disabled:si===SCENES.length-1,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
+      }, "Next →"),
+      e("div", { style:{ flex:1 } }),
+      e("div", { style:{ display:"flex", gap:4, alignItems:"center" } },
+        SCENES.map((_,i) =>
+          e("button", { key:i, onClick:()=>jump(i),
+            style:{ width:i===si?16:5,height:5,borderRadius:99,border:"none",padding:0,background:i===si?T.purple:i<si?`${T.purple}55`:T.border,cursor:"pointer",transition:"all 0.25s" }
+          })
+        )
+      )
+    )
+  ),
+  detail && e(DetailPanel, { detailKey:detail, onClose:()=>setDetail(null) })
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(e(App));
+</script>
+</body>
+</html>

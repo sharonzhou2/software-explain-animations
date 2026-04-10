@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Microservices vs Monolith</title>
+<link href="https://cdn.lineicons.com/5.0/lineicons.css" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111118;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px 16px 24px 196px;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  #root { width: 100%; max-width: 1120px; }
+  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: system-ui, sans-serif; }
+  .topnav a { text-decoration: none; color: #8888aa; font-size: 13px; transition: color 0.2s; }
+  .topnav a:hover { color: #e8e8f0; }
+  .topnav .name { font-weight: 600; color: #e8e8f0; font-size: 13px; }
+  .topnav .sep { color: #38384a; font-size: 12px; }
+  .topnav .current { color: #7c6fcd; font-size: 13px; font-weight: 500; }
+  .sidenav { position: fixed; top: 38px; left: 0; width: 180px; height: calc(100vh - 38px); background: #111118; border-right: 1px solid #2a2a38; padding: 14px 0; overflow-y: auto; z-index: 200; font-family: system-ui, sans-serif; }
+  .sidenav a { display: block; padding: 6px 16px; font-size: 11px; color: #8888aa; text-decoration: none; transition: color 0.2s, background 0.2s; border-left: 2px solid transparent; }
+  .sidenav a:hover { color: #e8e8f0; background: rgba(124,111,205,0.06); }
+  .sidenav a.active { color: #a99cf0; border-left-color: #7c6fcd; background: rgba(124,111,205,0.1); font-weight: 600; }
+  .sidenav .nav-section { padding: 8px 16px 4px; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #44445a; }
+  .sidenav .nav-section:first-child { padding-top: 4px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="../" class="name">Sharon Zhou</a>
+  <span class="sep">/</span>
+  <a href="../">Animations</a>
+  <span class="sep">/</span>
+  <span class="current">Microservices vs Monolith</span>
+</nav>
+<nav class="sidenav">
+  <div class="nav-section">JavaScript</div>
+  <a href="../event-loop/">Event Loop</a>
+  <a href="../this-keyword/">this Keyword</a>
+  <a href="../hoisting/">Hoisting</a>
+  <a href="../closures/">Closures</a>
+  <a href="../garbage-collection/">Garbage Collection</a>
+  <a href="../event-delegation/">Event Delegation</a>
+  <a href="../iterators-generators/">Iterators & Generators</a>
+  <a href="../xhr-vs-fetch/">XHR vs fetch()</a>
+  <a href="../error-propagation/">Error Propagation</a>
+  <a href="../web-workers/">Web Workers</a>
+  <a href="../prototypal-inheritance/">Prototypal Inheritance</a>
+  <div class="nav-section">Browser</div>
+  <a href="../critical-rendering-path/">Critical Rendering Path</a>
+  <a href="../reflow-vs-repaint/">Reflow vs Repaint</a>
+  <a href="../css-box-model/">CSS Box Model & Layout</a>
+  <a href="../web-security/">Web Security</a>
+  <a href="../request-animation-frame/">requestAnimationFrame</a>
+  <a href="../cors/">CORS</a>
+  <a href="../websocket-vs-sse/">WebSocket vs SSE</a>
+  <a href="../debounce-vs-throttle/">Debounce vs Throttle</a>
+  <div class="nav-section">Infrastructure</div>
+  <a href="../vms-vs-docker/">VMs vs Docker</a>
+  <a href="../opentelemetry/">OpenTelemetry</a>
+  <a href="../kubernetes/">Kubernetes</a>
+  <a href="../kafka/">Kafka</a>
+  <a href="../database-indexing/">Database Indexing</a>
+  <a href="../sql-vs-nosql/">SQL vs NoSQL</a>
+  <a href="../load-balancing/">Load Balancing</a>
+  <a href="../caching-strategies/">Caching Strategies</a>
+  <a href="../authentication/">Authentication</a>
+  <a href="../http-versions/">HTTP Versions</a>
+  <a href="../rate-limiting/">Rate Limiting</a>
+  <a href="../database-sharding/">Database Sharding</a>
+  <a href="../microservices-vs-monolith/" class="active">Microservices vs Monolith</a>
+</nav>
+<div id="root" style="margin-top: 36px;"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/framer-motion@11/dist/framer-motion.js"></script>
+<script>
+const { useState, useEffect, useRef } = React;
+const { motion, AnimatePresence } = window.Motion;
+const e = React.createElement;
+const M = motion;
+const AP = AnimatePresence;
+const sp = (s=380,d=28) => ({ type:"spring", stiffness:s, damping:d });
+const ez = { duration:0.32, ease:[0.22,1,0.36,1] };
+
+const T = {
+  bg:"#111118", surface:"#18181f", surface2:"#1e1e28",
+  border:"#2a2a38", border2:"#38384a",
+  text1:"#e8e8f0", text2:"#8888aa", text3:"#44445a",
+  purple:"#7c6fcd", purpleL:"#a99cf0",
+  teal:"#3db89a", tealL:"#6dd4b8",
+  coral:"#c4694a", coralL:"#e08a6a",
+  blue:"#4a8fd4", blueL:"#82b4e8",
+  amber:"#d4a84a", amberL:"#e8c86a",
+  green:"#4ac46a", greenL:"#6ae88a",
+  red:"#e05555", redL:"#ff7777",
+  mono:"#e87a2a", monoL:"#ffaa5a",
+  micro:"#2496ED", microL:"#56b8ff",
+  codeBase:"#141428",
+};
+
+const TS = {
+  fn:{color:"#82aaff"}, meth:{color:"#89ddff"}, str:{color:"#c3e88d"},
+  kw:{color:"#c792ea"}, num:{color:"#f78c6c"}, punc:{color:"#89ddff"},
+  plain:{color:"#a6accd"}, cmt:{color:"#546e7a",fontStyle:"italic"},
+};
+
+/* ─── SCENES ─── */
+const SCENES = [
+  {
+    id:0, act:"01",
+    title:"Microservices vs Monolith",
+    sub:"Two fundamentally different ways to structure a backend. One ships everything as a single unit; the other splits things into small independent services. Let's look at what each actually means in practice.",
+    code:[
+      [["cmt","// The question:"]],
+      [["cmt","// How do you organize a backend"]],
+      [["cmt","// as it grows beyond one team?"]],
+    ],
+    show:null,
+  },
+  {
+    id:1, act:"02",
+    title:"The monolith — one app, one deploy",
+    sub:"A monolith is a single codebase that contains every feature — users, orders, payments, notifications — compiled and deployed as one unit. One process, one database, one release.",
+    code:[
+      [["cmt","// shop/"]],
+      [["plain","  src/"]],
+      [["plain","    users/"]],
+      [["plain","    orders/"]],
+      [["plain","    payments/"]],
+      [["plain","    notifications/"]],
+      [["plain","  "],["fn","package.json"]],
+      [["plain","  "],["fn","Dockerfile"],["plain","    "],["cmt","// one image"]],
+    ],
+    show:"mono",
+  },
+  {
+    id:2, act:"03",
+    title:"Monolith pros — simplicity wins early",
+    sub:"For the first year of a product, a monolith is almost always the right choice. One repo to clone, one process to run, one deploy to ship. In-process calls are basically free.",
+    code:[
+      [["cmt","// Everything is a function call"]],
+      [["kw","const"],["plain"," user "],["punc","= "],["kw","await"],["plain"," "],["fn","users"],["punc","."],["meth","find"],["punc","("],["plain","id"],["punc",")"]],
+      [["kw","const"],["plain"," order "],["punc","= "],["kw","await"],["plain"," "],["fn","orders"],["punc","."],["meth","create"],["punc","("],["plain","user"],["punc",")"]],
+      [["kw","await"],["plain"," "],["fn","payments"],["punc","."],["meth","charge"],["punc","("],["plain","order"],["punc",")"]],
+      [["cmt","// No network, no serialization,"]],
+      [["cmt","// no distributed tracing needed"]],
+    ],
+    show:"monoPros",
+  },
+  {
+    id:3, act:"04",
+    title:"Monolith cons — it gets slow to change",
+    sub:"As the codebase grows past a few hundred thousand lines and a few dozen engineers, everything gets harder. A one-line fix ships the entire app. Scaling one hot feature means scaling everything.",
+    code:[
+      [["cmt","// The pain points:"]],
+      [["cmt","// 1. Deploy = rebuild + redeploy ALL"]],
+      [["cmt","// 2. One slow query can OOM the process"]],
+      [["cmt","// 3. Teams block each other in merges"]],
+      [["cmt","// 4. Can't scale just the hot path"]],
+      [["cmt","// 5. Stuck on one language / framework"]],
+    ],
+    show:"monoCons",
+  },
+  {
+    id:4, act:"05",
+    title:"Microservices — many small apps",
+    sub:"Split the monolith along business capabilities. Each service owns its code, its data, and its deploy pipeline. Services talk over the network — REST, gRPC, or events.",
+    code:[
+      [["cmt","// repos/"]],
+      [["plain","  user-service/      "],["cmt","// own DB"]],
+      [["plain","  order-service/     "],["cmt","// own DB"]],
+      [["plain","  payment-service/   "],["cmt","// own DB"]],
+      [["plain","  notify-service/    "],["cmt","// own DB"]],
+      [["cmt","// Each ships independently"]],
+    ],
+    show:"micro",
+  },
+  {
+    id:5, act:"06",
+    title:"Service boundaries — DDD",
+    sub:"The hard part isn't making services — it's drawing the lines. Domain-Driven Design says: find the bounded contexts. Things that change together stay together. Things that don't, split.",
+    code:[
+      [["cmt","// Bounded contexts (DDD)"]],
+      [["cmt","// Each owns its own model of"]],
+      [["cmt","// entities like \"user\" or \"order\""]],
+      [["cmt",""]],
+      [["cmt","// Payments cares about:  balance, tx"]],
+      [["cmt","// Shipping cares about:  address, weight"]],
+      [["cmt","// Same user — different views"]],
+    ],
+    show:"ddd",
+  },
+  {
+    id:6, act:"07",
+    title:"Communication — sync vs async",
+    sub:"Sync (REST/gRPC): one service calls another and waits. Simple, but couples their uptimes. Async (Kafka/SQS): one service emits an event, others react whenever they can. Decoupled, but eventually consistent.",
+    code:[
+      [["cmt","// Sync — REST or gRPC"]],
+      [["kw","const"],["plain"," u "],["punc","= "],["kw","await"],["plain"," "],["fn","fetch"],["punc","("],["str","'http://users/42'"],["punc",")"]],
+      [["cmt",""]],
+      [["cmt","// Async — publish an event"]],
+      [["fn","kafka"],["punc","."],["meth","publish"],["punc","("],["str","'order.created'"],["punc",", order)"]],
+      [["cmt","// Other services subscribe"]],
+    ],
+    show:"comm",
+  },
+  {
+    id:7, act:"08",
+    title:"API Gateway — one front door",
+    sub:"Clients don't want to know about 40 services. An API gateway is the single entry point — it routes requests, handles auth, rate limits, and stitches responses together.",
+    code:[
+      [["cmt","// Client → Gateway → Services"]],
+      [["fn","GET"],["plain"," /api/checkout"]],
+      [["plain","  → "],["fn","gateway"]],
+      [["plain","    → "],["fn","users"],["plain","    "],["cmt","// auth"]],
+      [["plain","    → "],["fn","orders"],["plain","   "],["cmt","// create"]],
+      [["plain","    → "],["fn","payments"],["plain"," "],["cmt","// charge"]],
+    ],
+    show:"gateway",
+  },
+  {
+    id:8, act:"09",
+    title:"Service discovery",
+    sub:"Services come and go — containers restart, pods reschedule, IPs change. A discovery layer (Consul, etcd, DNS in Kubernetes) lets services find each other by name, not address.",
+    code:[
+      [["cmt","// Instead of this:"]],
+      [["fn","fetch"],["punc","("],["str","'http://10.0.3.14:8080'"],["punc",")"]],
+      [["cmt",""]],
+      [["cmt","// You do this:"]],
+      [["fn","fetch"],["punc","("],["str","'http://order-service/v1'"],["punc",")"]],
+      [["cmt","// DNS / discovery resolves to"]],
+      [["cmt","// a healthy instance."]],
+    ],
+    show:"discovery",
+  },
+  {
+    id:9, act:"10",
+    title:"The hard parts",
+    sub:"Microservices trade in-process complexity for distributed-systems complexity. The network lies. Clocks drift. Transactions span services. Debugging a single request means tracing it across many hops.",
+    code:[
+      [["cmt","// What breaks in production:"]],
+      [["cmt","// • Partial failures (A up, B down)"]],
+      [["cmt","// • Retries create duplicate orders"]],
+      [["cmt","// • No cross-service transactions"]],
+      [["cmt","// • Logs scattered across 30 services"]],
+      [["cmt","// • Slow tail latency compounds"]],
+    ],
+    show:"challenges",
+  },
+  {
+    id:10, act:"11",
+    title:"Saga pattern — distributed transactions",
+    sub:"You can't BEGIN TRANSACTION across services. Instead, model the workflow as a sequence of local transactions, each with a compensating action to undo it if a later step fails.",
+    code:[
+      [["cmt","// Order saga"]],
+      [["num","1"],["punc",". "],["fn","reserve"],["plain"," inventory   "],["cmt","// ↺ release"]],
+      [["num","2"],["punc",". "],["fn","charge"],["plain"," card         "],["cmt","// ↺ refund"]],
+      [["num","3"],["punc",". "],["fn","ship"],["plain"," package        "],["cmt","// ↺ recall"]],
+      [["cmt",""]],
+      [["cmt","// If step 2 fails → run ↺ step 1"]],
+      [["cmt","// If step 3 fails → run ↺ 2, ↺ 1"]],
+    ],
+    show:"saga",
+  },
+  {
+    id:11, act:"12",
+    title:"Side-by-side comparison",
+    sub:"Neither is strictly better. They sit at opposite ends of several trade-offs. What you're really choosing is which set of problems you'd rather deal with.",
+    code:[
+      [["cmt","// Complexity shifts:"]],
+      [["cmt","// Monolith: code complexity"]],
+      [["cmt","// Micro:    infra complexity"]],
+    ],
+    show:"bars",
+  },
+  {
+    id:12, act:"13",
+    title:"When to use which",
+    sub:"Almost always, start with a monolith. Split to services only when you have real organizational or scaling pressure — multiple teams blocking each other, genuinely different scaling profiles, or load the monolith can't absorb.",
+    code:[
+      [["cmt","// Good default: modular monolith"]],
+      [["cmt","// One deploy, clean internal boundaries"]],
+      [["cmt",""]],
+      [["cmt","// Split a service when:"]],
+      [["cmt","//   • A team needs to own it end-to-end"]],
+      [["cmt","//   • It has a different scaling shape"]],
+      [["cmt","//   • It needs a different tech stack"]],
+    ],
+    show:"usecases",
+  },
+  {
+    id:13, act:"DONE",
+    title:"Microservices vs Monolith — summary",
+    sub:"Monoliths optimize for simplicity. Microservices optimize for independence. Start simple; split when the pain of not splitting exceeds the pain of distributed systems.",
+    code:[],
+    show:null,
+    finale:true,
+  },
+];
+
+/* ─── DETAIL CONTENT ─── */
+const DETAILS = {
+  monolith: {
+    title:"Monolith",
+    color:T.mono,
+    sections:[
+      {heading:"What it is",body:"A single deployable application that contains every feature of the product. All modules live in one repo, compile to one binary (or one container image), run as one process, and typically share a single database."},
+      {heading:"Strengths",body:"• Dead-simple local development — clone, run, done\n• In-process calls are fast and transactional\n• Easy to refactor across the whole codebase\n• One deploy pipeline to maintain\n• Strong consistency for free (one DB)"},
+      {heading:"Weaknesses",body:"• A single hot path forces you to scale the whole app\n• Any change ships the entire codebase\n• Teams step on each other in merges and releases\n• Whole process dies from one memory leak\n• Locked into one language and framework"},
+      {heading:"Modular monolith",body:"You can get most of the benefits of microservices by enforcing clean module boundaries inside a single deployable. Many successful products (Shopify, Basecamp, Stack Overflow) run this way at very large scale."},
+    ]
+  },
+  microservices: {
+    title:"Microservices",
+    color:T.micro,
+    sections:[
+      {heading:"What it is",body:"An architecture where the system is split into many small, independently deployable services. Each service owns a bounded piece of the business domain, its own code repo, its own database, and its own deploy pipeline."},
+      {heading:"Strengths",body:"• Teams ship on their own schedule\n• Scale each service independently\n• A crash in one service doesn't take down the rest\n• Pick the right language per workload\n• Easier to reason about one small service at a time"},
+      {heading:"Weaknesses",body:"• The network is slow, lossy, and lies\n• No cross-service transactions — need sagas\n• Distributed tracing, logging, and metrics required\n• CI/CD, service mesh, and platform work become full-time jobs\n• Eventual consistency leaks into product decisions"},
+      {heading:"Database per service",body:"A key rule: no two services share a database. If they did, a schema change would couple their deploys — and you'd have a distributed monolith, which is the worst of both worlds."},
+    ]
+  },
+  communication: {
+    title:"Service Communication",
+    color:T.teal,
+    sections:[
+      {heading:"Sync — REST / gRPC",body:"Service A makes an HTTP or gRPC call to Service B and waits for the reply. Easy to reason about, easy to test. But A is down whenever B is down, and latency compounds along the call chain."},
+      {heading:"Async — events",body:"Service A publishes a message to a broker (Kafka, SQS, NATS) and moves on. Other services consume whenever they're ready. Decoupled in time — A doesn't care if B is up — but the world is eventually consistent."},
+      {heading:"Choosing",body:"• Sync when the caller genuinely needs an immediate answer (\"is this card valid?\")\n• Async when you're broadcasting something that happened (\"order was placed\")\n• In practice, most mature systems use both"},
+      {heading:"gRPC vs REST",body:"gRPC uses HTTP/2 + protobuf — smaller payloads, strongly typed, bidirectional streaming. REST is simpler to debug and plays well with browsers. gRPC is common between services; REST is common at the edge."},
+    ]
+  },
+  gateway: {
+    title:"API Gateway",
+    color:T.amber,
+    sections:[
+      {heading:"Why it exists",body:"Clients — browsers, mobile apps, third parties — shouldn't have to know about every internal service. The gateway is the one public endpoint they talk to."},
+      {heading:"What it handles",body:"• Routing — /api/users/* → user-service\n• Authentication and token validation\n• Rate limiting and quotas\n• Request/response transformation\n• SSL termination\n• Sometimes, response composition (BFF pattern)"},
+      {heading:"Common choices",body:"Kong, Envoy, Traefik, AWS API Gateway, NGINX, Apigee. Or a custom BFF (backend-for-frontend) service written in your team's language."},
+      {heading:"Watch out",body:"The gateway can become a second monolith if every team pushes logic into it. Keep it dumb — routing, auth, rate limits — and leave business logic in the services."},
+    ]
+  },
+  discovery: {
+    title:"Service Discovery",
+    color:T.blueL,
+    sections:[
+      {heading:"The problem",body:"Service instances start, stop, crash, and get rescheduled constantly. Hard-coding IPs is hopeless. Something has to keep a live map of \"which healthy instances of user-service exist right now?\""},
+      {heading:"Client-side discovery",body:"The client queries a registry (Consul, Eureka, etcd), gets a list of healthy instances, and picks one. Simple but every client needs discovery logic."},
+      {heading:"Server-side discovery",body:"The client hits a stable name; a load balancer or service mesh forwards to a healthy instance. Kubernetes does this with ClusterIP services + kube-dns."},
+      {heading:"In Kubernetes",body:"You just hit http://user-service.default.svc.cluster.local. kube-proxy and CoreDNS handle the rest. This is why k8s made microservices a lot more practical."},
+    ]
+  },
+  challenges: {
+    title:"Distributed Challenges",
+    color:T.red,
+    sections:[
+      {heading:"Tracing a single request",body:"A checkout might hit 12 services. When something is slow, you need distributed tracing (OpenTelemetry, Jaeger, Zipkin) to see the full waterfall — otherwise you're guessing."},
+      {heading:"Data consistency",body:"There's no ACID transaction across services. Use sagas, outbox patterns, and event sourcing. Accept that your UI may briefly show stale data."},
+      {heading:"Partial failures",body:"B is down, A keeps retrying, the retry storm DOSes B harder. Use timeouts, exponential backoff, circuit breakers, and bulkheads to contain blast radius."},
+      {heading:"Operational cost",body:"You now need: a container platform, CI/CD per service, centralized logging, metrics, tracing, a service mesh, secrets management, and a team to run it. Don't underestimate this."},
+    ]
+  },
+  code: {
+    title:"Source Code",
+    color:T.purpleL,
+    sections:[
+      {heading:"Reading the examples",body:"Each scene shows a snippet relevant to that concept — file layouts, call sites, event publishing, or saga steps."},
+      {heading:"Monolith call",body:"// Everything is an in-process function call\nconst user = await users.find(id)\nconst order = await orders.create(user)\nawait payments.charge(order)"},
+      {heading:"Microservices call",body:"// Every call is a network hop\nconst user  = await fetch('http://users/' + id)\nconst order = await fetch('http://orders', { method:'POST', body: user })\nawait fetch('http://payments/charge', { method:'POST', body: order })"},
+      {heading:"Event example",body:"// Fire-and-forget publishing\nkafka.publish('order.created', order)\n// Any interested service subscribes:\n// shipping-service, notify-service, analytics-service"},
+    ]
+  },
+};
+
+/* ─── COMPONENTS ─── */
+const CodePanel = ({ tokens, onClick }) =>
+  e("div", { onClick, style:{ background:T.codeBase, borderRadius:12, overflow:"hidden", border:`1px solid ${T.border}`, cursor:onClick?"pointer":"default" } },
+    e("div", { style:{ padding:"10px 14px 8px", borderBottom:`1px solid ${T.border}`, display:"flex", gap:7 } },
+      ...["#ff5f57","#febc2e","#28c840"].map((c,i) =>
+        e("div", { key:i, style:{ width:11, height:11, borderRadius:"50%", background:c } })
+      )
+    ),
+    e("div", { style:{ padding:"14px 18px 16px", fontFamily:"'SF Mono','Fira Code','Consolas',monospace", fontSize:12, lineHeight:1.85 } },
+      tokens.map((line, li) =>
+        e("div", { key:li },
+          line.map(([cls, txt], ti) =>
+            e("span", { key:ti, style:{ ...TS[cls], whiteSpace:"pre" } }, txt)
+          )
+        )
+      )
+    )
+  );
+
+/* ─── MONOLITH BLOCK ─── */
+const MONO_MODULES = [
+  { id:"users",    label:"Users",    icon:"lni-users-1" },
+  { id:"orders",   label:"Orders",   icon:"lni-cart-5" },
+  { id:"payments", label:"Payments", icon:"lni-credit-cards" },
+  { id:"notify",   label:"Notify",   icon:"lni-envelope-1" },
+  { id:"catalog",  label:"Catalog",  icon:"lni-book-1" },
+  { id:"search",   label:"Search",   icon:"lni-search-2" },
+];
+
+const MonolithView = ({ onClick, emphasize }) =>
+  e(M.div, {
+    layout:true,
+    onClick,
+    style:{ flex:1, borderRadius:12, border:`1.5px solid ${T.border2}`, background:T.surface, overflow:"hidden", cursor:"pointer" }
+  },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", gap:6 } },
+      e("div", { style:{ width:8, height:8, borderRadius:"50%", background:T.mono } }),
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.mono } }, "Monolith")
+    ),
+    e("div", { style:{ padding:14, display:"flex", flexDirection:"column", gap:10, minHeight:280 } },
+      /* big container box with modules */
+      e("div", { style:{ border:`1.5px dashed ${T.mono}55`, borderRadius:12, padding:12, background:`${T.mono}08` } },
+        e("div", { style:{ fontSize:9, fontWeight:700, letterSpacing:"0.08em", color:T.monoL, marginBottom:8, textTransform:"uppercase" } }, "shop-app  ·  single process"),
+        e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6 } },
+          MONO_MODULES.map((m,i) =>
+            e(M.div, { key:m.id,
+              initial:{opacity:0, scale:0.85}, animate:{opacity:1, scale:1},
+              transition:{...sp(360,24), delay:i*0.06},
+              style:{ padding:"6px 10px", borderRadius:7, border:`1px solid ${T.mono}44`, background:`${T.mono}14`, display:"flex", alignItems:"center", gap:7 }
+            },
+              e("i", { className:"lni " + m.icon, style:{ color:T.monoL, fontSize:12 } }),
+              e("span", { style:{ fontSize:11, fontWeight:600, color:T.monoL, fontFamily:"'SF Mono',monospace" } }, m.label)
+            )
+          )
+        )
+      ),
+      /* single DB */
+      e(M.div, {
+        initial:{opacity:0,y:6}, animate:{opacity:1,y:0}, transition:{...ez, delay:0.3},
+        style:{ alignSelf:"center", padding:"7px 16px", borderRadius:10, border:`1px solid ${T.blue}55`, background:`${T.blue}14`, display:"flex", alignItems:"center", gap:7 }
+      },
+        e("i", { className:"lni lni-database-1", style:{ color:T.blueL, fontSize:13 } }),
+        e("span", { style:{ fontSize:11, fontWeight:600, color:T.blueL, fontFamily:"'SF Mono',monospace" } }, "one database")
+      )
+    )
+  );
+
+/* ─── MICROSERVICES VIEW ─── */
+const MICRO_SERVICES = [
+  { id:"users",    label:"users",    icon:"lni-users-1",     color:T.teal },
+  { id:"orders",   label:"orders",   icon:"lni-cart-5",      color:T.amber },
+  { id:"payments", label:"payments", icon:"lni-credit-cards",color:T.coral },
+  { id:"notify",   label:"notify",   icon:"lni-envelope-1",  color:T.purple },
+];
+
+const MicroserviceBox = ({ svc, delay=0, showDB=true, showArrows=false }) =>
+  e(M.div, {
+    initial:{opacity:0, scale:0.85}, animate:{opacity:1, scale:1},
+    transition:{...sp(360,24), delay },
+    style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }
+  },
+    e("div", {
+      style:{ padding:"7px 10px", borderRadius:8, border:`1.5px solid ${svc.color}66`, background:`${svc.color}14`, display:"flex", alignItems:"center", gap:6, minWidth:78, justifyContent:"center" }
+    },
+      e("i", { className:"lni "+svc.icon, style:{ color:svc.color, fontSize:11 } }),
+      e("span", { style:{ fontSize:10, fontWeight:700, color:svc.color, fontFamily:"'SF Mono',monospace" } }, svc.label)
+    ),
+    showDB && e("div", { style:{ width:1, height:8, background:`${svc.color}55` } }),
+    showDB && e("div", {
+      style:{ padding:"3px 7px", borderRadius:6, border:`1px solid ${T.blue}55`, background:`${T.blue}10`, display:"flex", alignItems:"center", gap:4 }
+    },
+      e("i", { className:"lni lni-database-1", style:{ color:T.blueL, fontSize:9 } }),
+      e("span", { style:{ fontSize:8, fontWeight:600, color:T.blueL, fontFamily:"'SF Mono',monospace" } }, "db")
+    )
+  );
+
+const MicroservicesView = ({ onClick, withArrows=true }) =>
+  e(M.div, {
+    layout:true,
+    onClick,
+    style:{ flex:1, borderRadius:12, border:`1.5px solid ${T.border2}`, background:T.surface, overflow:"hidden", cursor:"pointer" }
+  },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", gap:6 } },
+      e("div", { style:{ width:8, height:8, borderRadius:"50%", background:T.micro } }),
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.micro } }, "Microservices")
+    ),
+    e("div", { style:{ padding:14, minHeight:280, position:"relative" } },
+      /* services grid */
+      e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:18, rowGap:22 } },
+        MICRO_SERVICES.map((svc,i) =>
+          e(MicroserviceBox, { key:svc.id, svc, delay:i*0.1 })
+        )
+      ),
+      /* arrows indicator */
+      withArrows && e(M.div, {
+        initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.8,...ez},
+        style:{ marginTop:14, display:"flex", gap:4, justifyContent:"center", alignItems:"center", color:T.text3, fontSize:10 }
+      },
+        e("i", { className:"lni lni-arrows-horizontal", style:{ fontSize:12, color:T.micro } }),
+        e("span", null, "talk over the network")
+      )
+    )
+  );
+
+/* ─── DDD VIEW ─── */
+const DDDView = ({ onClick }) =>
+  e("div", { onClick, style:{ borderRadius:12, border:`1.5px solid ${T.border2}`, background:T.surface, overflow:"hidden", cursor:"pointer" } },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, "BOUNDED CONTEXTS")
+    ),
+    e("div", { style:{ padding:16, display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, minHeight:220 } },
+      [
+        { name:"Sales",     color:T.amber, fields:["cart","checkout","promo"] },
+        { name:"Payments",  color:T.coral, fields:["balance","tx","refund"] },
+        { name:"Shipping",  color:T.teal,  fields:["address","weight","tracking"] },
+      ].map((ctx,i) =>
+        e(M.div, { key:ctx.name,
+          initial:{opacity:0,y:8}, animate:{opacity:1,y:0},
+          transition:{delay:i*0.12,...ez},
+          style:{ padding:12, borderRadius:10, border:`1.5px dashed ${ctx.color}55`, background:`${ctx.color}08` }
+        },
+          e("div", { style:{ fontSize:11, fontWeight:700, color:ctx.color, marginBottom:8 } }, ctx.name),
+          ctx.fields.map(f =>
+            e("div", { key:f, style:{ fontSize:10, color:T.text2, fontFamily:"'SF Mono',monospace", padding:"2px 0" } }, "· "+f)
+          )
+        )
+      )
+    )
+  );
+
+/* ─── COMMUNICATION VIEW ─── */
+const CommView = ({ onClick }) =>
+  e("div", { onClick, style:{ borderRadius:12, border:`1.5px solid ${T.border2}`, background:T.surface, overflow:"hidden", cursor:"pointer" } },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, "COMMUNICATION STYLES")
+    ),
+    e("div", { style:{ padding:16, display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, minHeight:260 } },
+      /* sync */
+      e("div", { style:{ padding:14, borderRadius:10, border:`1px solid ${T.teal}44`, background:`${T.teal}08`, display:"flex", flexDirection:"column", gap:10 } },
+        e("div", { style:{ fontSize:12, fontWeight:700, color:T.tealL } }, "Synchronous"),
+        e("div", { style:{ fontSize:10, color:T.text2 } }, "REST / gRPC — caller waits"),
+        e("div", { style:{ display:"flex", alignItems:"center", gap:6, marginTop:6 } },
+          e("div", { style:{ padding:"4px 8px", borderRadius:6, background:`${T.teal}22`, fontSize:10, fontWeight:600, color:T.tealL, fontFamily:"'SF Mono',monospace" } }, "A"),
+          e(M.div, {
+            initial:{opacity:0,x:-6}, animate:{opacity:1,x:0}, transition:{delay:0.3,duration:0.5,repeat:Infinity,repeatType:"reverse",repeatDelay:0.4},
+            style:{ flex:1, height:2, background:`${T.tealL}88`, borderRadius:2 }
+          }),
+          e("div", { style:{ padding:"4px 8px", borderRadius:6, background:`${T.teal}22`, fontSize:10, fontWeight:600, color:T.tealL, fontFamily:"'SF Mono',monospace" } }, "B")
+        ),
+        e("div", { style:{ fontSize:9, color:T.text3, marginTop:4 } }, "A blocked until B replies")
+      ),
+      /* async */
+      e("div", { style:{ padding:14, borderRadius:10, border:`1px solid ${T.purple}44`, background:`${T.purple}08`, display:"flex", flexDirection:"column", gap:10 } },
+        e("div", { style:{ fontSize:12, fontWeight:700, color:T.purpleL } }, "Asynchronous"),
+        e("div", { style:{ fontSize:10, color:T.text2 } }, "Kafka / SQS — fire & forget"),
+        e("div", { style:{ display:"flex", alignItems:"center", gap:6, marginTop:6 } },
+          e("div", { style:{ padding:"4px 8px", borderRadius:6, background:`${T.purple}22`, fontSize:10, fontWeight:600, color:T.purpleL, fontFamily:"'SF Mono',monospace" } }, "A"),
+          e("div", { style:{ padding:"4px 8px", borderRadius:6, background:`${T.amber}22`, border:`1px solid ${T.amber}55`, fontSize:9, fontWeight:700, color:T.amberL, fontFamily:"'SF Mono',monospace" } }, "event bus"),
+          e("div", { style:{ display:"flex", flexDirection:"column", gap:3 } },
+            e("div", { style:{ padding:"2px 6px", borderRadius:5, background:`${T.purple}22`, fontSize:9, color:T.purpleL, fontFamily:"'SF Mono',monospace" } }, "B"),
+            e("div", { style:{ padding:"2px 6px", borderRadius:5, background:`${T.purple}22`, fontSize:9, color:T.purpleL, fontFamily:"'SF Mono',monospace" } }, "C")
+          )
+        ),
+        e("div", { style:{ fontSize:9, color:T.text3, marginTop:4 } }, "A doesn't wait — decoupled")
+      )
+    )
+  );
+
+/* ─── GATEWAY VIEW ─── */
+const GatewayView = ({ onClick }) =>
+  e("div", { onClick, style:{ borderRadius:12, border:`1.5px solid ${T.border2}`, background:T.surface, overflow:"hidden", cursor:"pointer" } },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, "API GATEWAY")
+    ),
+    e("div", { style:{ padding:16, display:"flex", flexDirection:"column", alignItems:"center", gap:10, minHeight:260 } },
+      e(M.div, { initial:{opacity:0,y:-6}, animate:{opacity:1,y:0}, transition:ez,
+        style:{ padding:"6px 14px", borderRadius:8, border:`1px solid ${T.text2}44`, background:`${T.text2}08`, display:"flex", alignItems:"center", gap:6 }
+      },
+        e("i", { className:"lni lni-globe", style:{ color:T.text2, fontSize:12 } }),
+        e("span", { style:{ fontSize:10, fontWeight:600, color:T.text2, fontFamily:"'SF Mono',monospace" } }, "clients")
+      ),
+      e("div", { style:{ width:1, height:14, background:T.border2 } }),
+      e(M.div, { initial:{opacity:0,scale:0.9}, animate:{opacity:1,scale:1}, transition:{...sp(400,28),delay:0.2},
+        style:{ padding:"8px 18px", borderRadius:10, border:`1.5px solid ${T.amber}66`, background:`${T.amber}14`, display:"flex", alignItems:"center", gap:7 }
+      },
+        e("i", { className:"lni lni-shield-1", style:{ color:T.amberL, fontSize:13 } }),
+        e("span", { style:{ fontSize:11, fontWeight:700, color:T.amberL, fontFamily:"'SF Mono',monospace" } }, "API gateway")
+      ),
+      e("div", { style:{ display:"flex", gap:6, fontSize:8, color:T.text3, marginTop:-4 } },
+        ["auth","routing","rate limit","tls"].map(t => e("span", { key:t }, t))
+      ),
+      e("div", { style:{ width:1, height:14, background:T.border2 } }),
+      e("div", { style:{ display:"flex", gap:10 } },
+        MICRO_SERVICES.map((svc,i) =>
+          e(M.div, { key:svc.id,
+            initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, transition:{...sp(360,24),delay:0.35+i*0.08},
+            style:{ padding:"5px 9px", borderRadius:7, border:`1px solid ${svc.color}55`, background:`${svc.color}14`, display:"flex", alignItems:"center", gap:5 }
+          },
+            e("i", { className:"lni "+svc.icon, style:{ color:svc.color, fontSize:10 } }),
+            e("span", { style:{ fontSize:9, fontWeight:600, color:svc.color, fontFamily:"'SF Mono',monospace" } }, svc.label)
+          )
+        )
+      )
+    )
+  );
+
+/* ─── DISCOVERY VIEW ─── */
+const DiscoveryView = ({ onClick }) =>
+  e("div", { onClick, style:{ borderRadius:12, border:`1.5px solid ${T.border2}`, background:T.surface, overflow:"hidden", cursor:"pointer" } },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, "SERVICE DISCOVERY")
+    ),
+    e("div", { style:{ padding:16, display:"flex", flexDirection:"column", gap:12, minHeight:240, alignItems:"center" } },
+      e(M.div, { initial:{opacity:0,scale:0.9}, animate:{opacity:1,scale:1}, transition:sp(360,24),
+        style:{ padding:"7px 16px", borderRadius:10, border:`1.5px solid ${T.blue}66`, background:`${T.blue}14`, display:"flex", alignItems:"center", gap:7 }
+      },
+        e("i", { className:"lni lni-map", style:{ color:T.blueL, fontSize:13 } }),
+        e("span", { style:{ fontSize:11, fontWeight:700, color:T.blueL, fontFamily:"'SF Mono',monospace" } }, "service registry")
+      ),
+      e("div", { style:{ fontSize:9, color:T.text3 } }, "consul / etcd / kube-dns"),
+      e("div", { style:{ width:"100%", display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginTop:6 } },
+        [
+          { label:"order-svc", instances:["10.0.1.3","10.0.1.7","10.0.1.9"] },
+          { label:"user-svc",  instances:["10.0.2.1","10.0.2.4"] },
+          { label:"pay-svc",   instances:["10.0.3.8","10.0.3.8"] },
+        ].map((s,i) =>
+          e(M.div, { key:s.label,
+            initial:{opacity:0,y:6}, animate:{opacity:1,y:0}, transition:{...ez, delay:0.2+i*0.1},
+            style:{ padding:10, borderRadius:8, border:`1px solid ${T.border2}`, background:T.surface2 }
+          },
+            e("div", { style:{ fontSize:10, fontWeight:700, color:T.text1, marginBottom:5, fontFamily:"'SF Mono',monospace" } }, s.label),
+            s.instances.map((ip,j) =>
+              e("div", { key:j, style:{ display:"flex", alignItems:"center", gap:5, padding:"2px 0" } },
+                e("div", { style:{ width:5, height:5, borderRadius:"50%", background:T.green } }),
+                e("span", { style:{ fontSize:9, color:T.text2, fontFamily:"'SF Mono',monospace" } }, ip)
+              )
+            )
+          )
+        )
+      )
+    )
+  );
+
+/* ─── CHALLENGES VIEW ─── */
+const ChallengesView = ({ onClick }) =>
+  e("div", { onClick, style:{ borderRadius:12, border:`1.5px solid ${T.border2}`, background:T.surface, overflow:"hidden", cursor:"pointer" } },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, "DISTRIBUTED PROBLEMS")
+    ),
+    e("div", { style:{ padding:14, display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, minHeight:260 } },
+      [
+        { icon:"lni-eye", title:"Tracing", body:"A single request hops through many services. You need distributed tracing to debug anything.", c:T.purple },
+        { icon:"lni-layers-1", title:"Consistency", body:"No cross-service transactions. Use sagas and outbox patterns for multi-step workflows.", c:T.amber },
+        { icon:"lni-warning", title:"Partial failure", body:"B is down but A keeps retrying — retry storms can take down everything.", c:T.red },
+        { icon:"lni-stats-up", title:"Tail latency", body:"p99 of one call stacks up. A chain of 10 services amplifies slow nodes.", c:T.coral },
+      ].map((c,i) =>
+        e(M.div, { key:c.title,
+          initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, transition:{...ez, delay:i*0.1},
+          style:{ padding:12, borderRadius:10, border:`1px solid ${c.c}33`, background:`${c.c}08` }
+        },
+          e("div", { style:{ display:"flex", alignItems:"center", gap:6, marginBottom:6 } },
+            e("i", { className:"lni "+c.icon, style:{ color:c.c, fontSize:13 } }),
+            e("span", { style:{ fontSize:12, fontWeight:700, color:c.c } }, c.title)
+          ),
+          e("div", { style:{ fontSize:10, color:T.text2, lineHeight:1.5 } }, c.body)
+        )
+      )
+    )
+  );
+
+/* ─── SAGA VIEW ─── */
+const SagaView = ({ onClick }) =>
+  e("div", { onClick, style:{ borderRadius:12, border:`1.5px solid ${T.border2}`, background:T.surface, overflow:"hidden", cursor:"pointer" } },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, "ORDER SAGA")
+    ),
+    e("div", { style:{ padding:18, display:"flex", flexDirection:"column", gap:10, minHeight:260 } },
+      [
+        { step:"1", name:"Reserve inventory", ok:"✓", comp:"release stock",    c:T.teal },
+        { step:"2", name:"Charge card",       ok:"✓", comp:"refund charge",    c:T.amber },
+        { step:"3", name:"Ship package",      ok:"✗", comp:"recall shipment",  c:T.red },
+      ].map((s,i) =>
+        e(M.div, { key:s.step,
+          initial:{opacity:0,x:-12}, animate:{opacity:1,x:0}, transition:{...ez, delay:i*0.15},
+          style:{ display:"flex", alignItems:"center", gap:10, padding:"8px 12px", borderRadius:9, border:`1px solid ${s.c}44`, background:`${s.c}08` }
+        },
+          e("div", { style:{ width:22, height:22, borderRadius:"50%", border:`1.5px solid ${s.c}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:700, color:s.c, flexShrink:0 } }, s.step),
+          e("div", { style:{ flex:1 } },
+            e("div", { style:{ fontSize:11, fontWeight:600, color:s.c } }, s.name),
+            e("div", { style:{ fontSize:9, color:T.text3, marginTop:2 } }, "↺ compensate: "+s.comp)
+          ),
+          e("div", { style:{ fontSize:13, fontWeight:700, color: s.ok==="✓" ? T.green : T.red } }, s.ok)
+        )
+      ),
+      e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.6,...ez},
+        style:{ marginTop:4, padding:"8px 12px", borderRadius:8, border:`1px dashed ${T.red}55`, background:`${T.red}08`, fontSize:10, color:T.redL }
+      }, "Step 3 failed → run compensations for steps 2, 1 in reverse")
+    )
+  );
+
+/* ─── COMPARISON BARS ─── */
+const BARS = [
+  { metric:"Initial complexity",  mono:20, micro:85, monoV:"Simple",  microV:"High" },
+  { metric:"Scalability",         mono:45, micro:95, monoV:"Limited", microV:"Excellent" },
+  { metric:"Deploy independence", mono:15, micro:95, monoV:"Coupled", microV:"Independent" },
+  { metric:"Debuggability",       mono:85, micro:40, monoV:"Easy",    microV:"Hard" },
+];
+
+const BarsView = ({ onClick }) =>
+  e("div", { onClick, style:{ borderRadius:12, border:`1.5px solid ${T.border2}`, background:T.surface, overflow:"hidden", cursor:"pointer" } },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, "COMPARISON")
+    ),
+    e("div", { style:{ padding:14, display:"flex", flexDirection:"column", gap:16, minHeight:260 } },
+      BARS.map((b,i) =>
+        e("div", { key:b.metric },
+          e("div", { style:{ fontSize:11, fontWeight:600, color:T.text1, marginBottom:7 } }, b.metric),
+          /* monolith row */
+          e("div", { style:{ marginBottom:5 } },
+            e("div", { style:{ display:"flex", justifyContent:"space-between", marginBottom:3 } },
+              e("div", { style:{ display:"flex", alignItems:"center", gap:6 } },
+                e("div", { style:{ width:7, height:7, borderRadius:"50%", background:T.mono } }),
+                e("span", { style:{ fontSize:10, fontWeight:600, color:T.monoL } }, "Monolith")
+              ),
+              e("span", { style:{ fontSize:10, fontWeight:700, color:T.monoL, fontFamily:"monospace" } }, b.monoV)
+            ),
+            e("div", { style:{ height:5, background:T.border, borderRadius:99, overflow:"hidden" } },
+              e(M.div, { initial:{width:0}, animate:{width:`${b.mono}%`}, transition:{duration:0.7,delay:i*0.1,ease:[0.22,1,0.36,1]}, style:{height:"100%",background:T.mono,borderRadius:99} })
+            )
+          ),
+          /* micro row */
+          e("div", null,
+            e("div", { style:{ display:"flex", justifyContent:"space-between", marginBottom:3 } },
+              e("div", { style:{ display:"flex", alignItems:"center", gap:6 } },
+                e("div", { style:{ width:7, height:7, borderRadius:"50%", background:T.micro } }),
+                e("span", { style:{ fontSize:10, fontWeight:600, color:T.microL } }, "Microservices")
+              ),
+              e("span", { style:{ fontSize:10, fontWeight:700, color:T.microL, fontFamily:"monospace" } }, b.microV)
+            ),
+            e("div", { style:{ height:5, background:T.border, borderRadius:99, overflow:"hidden" } },
+              e(M.div, { initial:{width:0}, animate:{width:`${b.micro}%`}, transition:{duration:0.7,delay:i*0.1+0.08,ease:[0.22,1,0.36,1]}, style:{height:"100%",background:T.micro,borderRadius:99} })
+            )
+          )
+        )
+      )
+    )
+  );
+
+/* ─── SIDE BY SIDE (pros/cons lists) ─── */
+const ProsConsView = ({ onClick, variant }) => {
+  const data = variant === "pros"
+    ? { title:"Monolith pros", color:T.mono, items:["Simple to develop — one repo, one run","Simple to test — one process","Simple to deploy — one artifact","In-process calls: fast & transactional","Refactor across boundaries easily"] }
+    : { title:"Monolith cons", color:T.red,  items:["One change = full redeploy","Can only scale the whole app","Teams block each other in merges","One bug can crash everything","Stuck on a single tech stack"] };
+  return e("div", { onClick, style:{ borderRadius:12, border:`1.5px solid ${data.color}44`, background:`${data.color}08`, overflow:"hidden", cursor:"pointer" } },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
+      e("span", { style:{ fontSize:11, fontWeight:700, color:data.color } }, data.title)
+    ),
+    e("div", { style:{ padding:16, minHeight:240 } },
+      data.items.map((t,i) =>
+        e(M.div, { key:i, initial:{opacity:0,x:-10}, animate:{opacity:1,x:0}, transition:{delay:i*0.1,...ez},
+          style:{ fontSize:12, color:T.text2, padding:"6px 0", display:"flex", gap:8, lineHeight:1.5 }
+        },
+          e("i", { className: variant==="pros" ? "lni lni-checkmark" : "lni lni-xmark", style:{ color:data.color, fontSize:12, flexShrink:0, marginTop:2 } }),
+          e("span", null, t)
+        )
+      )
+    )
+  );
+};
+
+/* ─── USE CASES VIEW ─── */
+const UseCasesView = () =>
+  e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 } },
+    e("div", { style:{ borderRadius:12, border:`1px solid ${T.mono}33`, background:`${T.mono}08`, padding:14 } },
+      e("div", { style:{ fontSize:13, fontWeight:600, color:T.monoL, marginBottom:8 } }, "Start with a monolith when…"),
+      ["You're building a new product","Your team is under ~10 engineers","Requirements change weekly","You need to iterate fast","You don't have a platform team yet"].map((t,i) =>
+        e(M.div, { key:i, initial:{opacity:0,x:-10}, animate:{opacity:1,x:0}, transition:{delay:i*0.08,...ez},
+          style:{ fontSize:11, color:T.text2, padding:"4px 0", display:"flex", gap:6, lineHeight:1.4 }
+        }, e("span", { style:{color:T.mono,flexShrink:0} }, "•"), t)
+      )
+    ),
+    e("div", { style:{ borderRadius:12, border:`1px solid ${T.micro}33`, background:`${T.micro}08`, padding:14 } },
+      e("div", { style:{ fontSize:13, fontWeight:600, color:T.microL, marginBottom:8 } }, "Split to microservices when…"),
+      ["Multiple teams block each other on deploys","One component has very different scaling needs","You genuinely need different tech per service","Modules have clear, stable boundaries","You already have SRE / platform capacity"].map((t,i) =>
+        e(M.div, { key:i, initial:{opacity:0,x:-10}, animate:{opacity:1,x:0}, transition:{delay:i*0.08,...ez},
+          style:{ fontSize:11, color:T.text2, padding:"4px 0", display:"flex", gap:6, lineHeight:1.4 }
+        }, e("span", { style:{color:T.micro,flexShrink:0} }, "•"), t)
+      )
+    )
+  );
+
+/* ─── FINALE ─── */
+const Finale = () => {
+  const rows = [
+    { n:"lni-package", label:"Monolith",  sub:"One codebase, one deploy — fast to build, hard to scale past a certain size", c:T.mono },
+    { n:"lni-grid-alt-1", label:"Microservices", sub:"Many small services — independent teams, independent scale, distributed pain", c:T.micro },
+    { n:"lni-link-2-angular-right", label:"Communication", sub:"Sync (REST/gRPC) when you need an answer; async (events) when you don't", c:T.teal },
+    { n:"lni-shield-1", label:"Gateway & discovery", sub:"One front door for clients; a registry so services can find each other", c:T.amber },
+    { n:"lni-warning", label:"The hard parts", sub:"Tracing, consistency, partial failure, tail latency, ops cost", c:T.red },
+    { n:"lni-rocket-5", label:"Start simple", sub:"A modular monolith gets you 90% of the way. Split only when you must.", c:T.purple },
+  ];
+  return e("div", { style:{ padding:"8px 0" } },
+    rows.map((r,i) => e(M.div, { key:i, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.1,...ez},
+      style:{ display:"flex", alignItems:"flex-start", gap:12, padding:"11px 14px", marginBottom:8, borderRadius:10, border:`1px solid ${r.c}28`, background:`${r.c}08` }
+    },
+      e("div", { style:{ width:28, height:28, borderRadius:"50%", border:`1.5px solid ${r.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:12, fontWeight:700, color:r.c } }, e("i", { className:"lni " + r.n })),
+      e("div", null,
+        e("div", { style:{ fontSize:13, fontWeight:600, color:r.c, marginBottom:2 } }, r.label),
+        e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.5 } }, r.sub)
+      )
+    ))
+  );
+};
+
+/* ─── DETAIL PANEL ─── */
+const DetailPanel = ({ detailKey, onClose }) => {
+  const d = DETAILS[detailKey];
+  if (!d) return null;
+  return e("div", {
+    style:{ width:340, flexShrink:0, background:T.surface, borderRadius:14, border:`1.5px solid ${d.color}44`, overflow:"hidden", alignSelf:"flex-start", position:"sticky", top:56 }
+  },
+    e("div", { style:{ padding:"14px 18px 12px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:8 } },
+        e("div", { style:{ width:8, height:8, borderRadius:"50%", background:d.color } }),
+        e("span", { style:{ fontSize:14, fontWeight:600, color:T.text1 } }, d.title)
+      ),
+      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6, transition:"color 0.2s" }, onMouseEnter:ev=>ev.target.style.color=T.text1, onMouseLeave:ev=>ev.target.style.color=T.text3 }, e("i", { className:"lni lni-xmark" }))
+    ),
+    e("div", { style:{ padding:"16px 18px 20px", maxHeight:"calc(100vh - 140px)", overflowY:"auto" } },
+      d.sections.map((s, i) =>
+        e("div", { key:i, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
+          e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
+        )
+      )
+    )
+  );
+};
+
+/* ─── APP ─── */
+function App() {
+  const [si, setSi] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [detail, setDetail] = useState(null);
+  const timer = useRef(null);
+  const sc = SCENES[si];
+
+  useEffect(() => { setPlaying(true); }, []);
+
+  useEffect(() => {
+    if (!playing) return;
+    const d = si===0 ? 3000 : sc.finale ? 99999 : 3600;
+    timer.current = setTimeout(() => { si < SCENES.length-1 ? setSi(i=>i+1) : setPlaying(false); }, d);
+    return () => clearTimeout(timer.current);
+  }, [playing, si]);
+
+  const go = d => { clearTimeout(timer.current); setPlaying(false); setSi(i=>Math.max(0,Math.min(SCENES.length-1,i+d))); };
+  const jump = i => { clearTimeout(timer.current); setPlaying(false); setSi(i); };
+  const togglePlay = () => { if(si===SCENES.length-1){setSi(0);setPlaying(true);}else setPlaying(p=>!p); };
+  const toggleDetail = key => { setDetail(key); clearTimeout(timer.current); setPlaying(false); };
+
+  const renderVisual = () => {
+    switch (sc.show) {
+      case "mono":
+        return e("div", { style:{ display:"flex", gap:10 } },
+          e(MonolithView, { onClick:()=>toggleDetail("monolith") })
+        );
+      case "monoPros":
+        return e("div", { style:{ display:"flex", gap:10 } },
+          e(MonolithView, { onClick:()=>toggleDetail("monolith") }),
+          e(ProsConsView, { variant:"pros", onClick:()=>toggleDetail("monolith") })
+        );
+      case "monoCons":
+        return e("div", { style:{ display:"flex", gap:10 } },
+          e(MonolithView, { onClick:()=>toggleDetail("monolith") }),
+          e(ProsConsView, { variant:"cons", onClick:()=>toggleDetail("monolith") })
+        );
+      case "micro":
+        return e("div", { style:{ display:"flex", gap:10 } },
+          e(MonolithView, { onClick:()=>toggleDetail("monolith") }),
+          e(MicroservicesView, { onClick:()=>toggleDetail("microservices") })
+        );
+      case "ddd":
+        return e(DDDView, { onClick:()=>toggleDetail("microservices") });
+      case "comm":
+        return e(CommView, { onClick:()=>toggleDetail("communication") });
+      case "gateway":
+        return e(GatewayView, { onClick:()=>toggleDetail("gateway") });
+      case "discovery":
+        return e(DiscoveryView, { onClick:()=>toggleDetail("discovery") });
+      case "challenges":
+        return e(ChallengesView, { onClick:()=>toggleDetail("challenges") });
+      case "saga":
+        return e(SagaView, { onClick:()=>toggleDetail("challenges") });
+      case "bars":
+        return e(BarsView, { onClick:()=>toggleDetail("microservices") });
+      case "usecases":
+        return e(UseCasesView);
+      default:
+        return null;
+    }
+  };
+
+  return e("div", { style:{ display:"flex", gap:16, alignItems:"flex-start", justifyContent: detail ? "flex-start" : "center" } },
+  e("div", { style:{ width:760, flexShrink:0, background:T.bg, fontFamily:"system-ui,sans-serif", padding:20, borderRadius:16 } },
+
+    /* header */
+    e("div", { style:{ marginBottom:18 } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:10, marginBottom:11 } },
+        e(AP, { mode:"wait" },
+          e(M.div, { key:sc.act, initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, exit:{opacity:0}, transition:sp(400,28),
+            style:{ fontSize:9,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:T.purple,background:`${T.purple}14`,padding:"3px 10px",borderRadius:20,border:`1px solid ${T.purple}30`,flexShrink:0 }
+          }, sc.act)
+        ),
+        e("div", { style:{ flex:1, height:1, background:T.border, borderRadius:99, overflow:"hidden" } },
+          e(M.div, { animate:{width:`${si/(SCENES.length-1)*100}%`}, transition:{duration:0.5}, style:{height:"100%",background:T.purple,borderRadius:99} })
+        ),
+        e("span", { style:{ fontSize:10, color:T.text3 } }, `${si+1} / ${SCENES.length}`)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.title, initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, exit:{opacity:0,y:-8}, transition:ez,
+          style:{ fontSize:20,fontWeight:600,color:T.text1,marginBottom:4,letterSpacing:"-0.02em" }
+        }, sc.title)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
+          style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
+        }, sc.sub)
+      )
+    ),
+
+    e("div", { style:{ minHeight:460 } },
+
+    /* finale */
+    sc.finale && e(Finale),
+
+    /* main */
+    !sc.finale && e("div", null,
+      /* visuals */
+      sc.show && e("div", { style:{ marginBottom:10 } }, renderVisual()),
+      /* code */
+      sc.code.length > 0 && e("div", { style:{ marginBottom:10 } },
+        e(CodePanel, { tokens:sc.code, onClick:()=>toggleDetail("code") })
+      )
+    ),
+
+    ), /* close minHeight wrapper */
+
+    /* controls */
+    e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginTop:16 } },
+      e("button", { onClick:()=>go(-1), disabled:si===0,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===0?T.text3:T.text2,cursor:si===0?"not-allowed":"pointer",fontSize:11,transition:"color 0.2s" }
+      }, "← Back"),
+      e("button", { onClick:togglePlay,
+        style:{ padding:"6px 18px",borderRadius:8,border:`1px solid ${playing?T.coral:T.purple}44`,background:playing?`${T.coral}14`:`${T.purple}14`,color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all 0.2s" }
+      }, playing ? "⏸  Pause" : si===SCENES.length-1 ? "↺  Replay" : "▶  Play"),
+      e("button", { onClick:()=>go(1), disabled:si===SCENES.length-1,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
+      }, "Next →"),
+      e("div", { style:{ flex:1 } }),
+      e("div", { style:{ display:"flex", gap:4, alignItems:"center" } },
+        SCENES.map((_,i) =>
+          e("button", { key:i, onClick:()=>jump(i),
+            style:{ width:i===si?16:5,height:5,borderRadius:99,border:"none",padding:0,background:i===si?T.purple:i<si?`${T.purple}55`:T.border,cursor:"pointer",transition:"all 0.25s" }
+          })
+        )
+      )
+    )
+  ),
+  detail && e(DetailPanel, { detailKey:detail, onClose:()=>setDetail(null) })
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(e(App));
+</script>
+</body>
+</html>
