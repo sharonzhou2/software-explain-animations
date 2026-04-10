@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rate Limiting</title>
+<link href="https://cdn.lineicons.com/5.0/lineicons.css" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111118;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px 16px 24px 196px;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  #root { width: 100%; max-width: 1120px; }
+  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: system-ui, sans-serif; }
+  .topnav a { text-decoration: none; color: #8888aa; font-size: 13px; transition: color 0.2s; }
+  .topnav a:hover { color: #e8e8f0; }
+  .topnav .name { font-weight: 600; color: #e8e8f0; font-size: 13px; }
+  .topnav .sep { color: #38384a; font-size: 12px; }
+  .topnav .current { color: #7c6fcd; font-size: 13px; font-weight: 500; }
+  .sidenav { position: fixed; top: 38px; left: 0; width: 180px; height: calc(100vh - 38px); background: #111118; border-right: 1px solid #2a2a38; padding: 14px 0; overflow-y: auto; z-index: 200; font-family: system-ui, sans-serif; }
+  .sidenav a { display: block; padding: 6px 16px; font-size: 11px; color: #8888aa; text-decoration: none; transition: color 0.2s, background 0.2s; border-left: 2px solid transparent; }
+  .sidenav a:hover { color: #e8e8f0; background: rgba(124,111,205,0.06); }
+  .sidenav a.active { color: #a99cf0; border-left-color: #7c6fcd; background: rgba(124,111,205,0.1); font-weight: 600; }
+  .sidenav .nav-section { padding: 8px 16px 4px; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #44445a; }
+  .sidenav .nav-section:first-child { padding-top: 4px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="../" class="name">Sharon Zhou</a>
+  <span class="sep">/</span>
+  <a href="../">Animations</a>
+  <span class="sep">/</span>
+  <span class="current">Rate Limiting</span>
+</nav>
+<nav class="sidenav">
+  <div class="nav-section">JavaScript</div>
+  <a href="../event-loop/">Event Loop</a>
+  <a href="../this-keyword/">this Keyword</a>
+  <a href="../hoisting/">Hoisting</a>
+  <a href="../closures/">Closures</a>
+  <a href="../garbage-collection/">Garbage Collection</a>
+  <a href="../event-delegation/">Event Delegation</a>
+  <a href="../iterators-generators/">Iterators & Generators</a>
+  <a href="../xhr-vs-fetch/">XHR vs fetch()</a>
+  <a href="../error-propagation/">Error Propagation</a>
+  <a href="../web-workers/">Web Workers</a>
+  <a href="../prototypal-inheritance/">Prototypal Inheritance</a>
+  <div class="nav-section">Browser</div>
+  <a href="../critical-rendering-path/">Critical Rendering Path</a>
+  <a href="../reflow-vs-repaint/">Reflow vs Repaint</a>
+  <a href="../css-box-model/">CSS Box Model & Layout</a>
+  <a href="../web-security/">Web Security</a>
+  <a href="../request-animation-frame/">requestAnimationFrame</a>
+  <a href="../cors/">CORS</a>
+  <a href="../websocket-vs-sse/">WebSocket vs SSE</a>
+  <a href="../debounce-vs-throttle/">Debounce vs Throttle</a>
+  <div class="nav-section">Infrastructure</div>
+  <a href="../vms-vs-docker/">VMs vs Docker</a>
+  <a href="../opentelemetry/">OpenTelemetry</a>
+  <a href="../kubernetes/">Kubernetes</a>
+  <a href="../kafka/">Kafka</a>
+  <a href="../database-indexing/">Database Indexing</a>
+  <a href="../sql-vs-nosql/">SQL vs NoSQL</a>
+  <a href="../load-balancing/">Load Balancing</a>
+  <a href="../caching-strategies/">Caching Strategies</a>
+  <a href="../http-versions/">HTTP Versions</a>
+  <a href="../authentication/">Authentication</a>
+  <a href="../rate-limiting/" class="active">Rate Limiting</a>
+  <a href="../database-sharding/">Database Sharding</a>
+  <a href="../microservices-vs-monolith/">Microservices vs Monolith</a>
+</nav>
+<div id="root" style="margin-top: 36px;"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/framer-motion@11/dist/framer-motion.js"></script>
+<script>
+const { useState, useEffect, useRef } = React;
+const { motion, AnimatePresence } = window.Motion;
+const e = React.createElement;
+const M = motion;
+const AP = AnimatePresence;
+const sp = (s=380,d=28) => ({ type:"spring", stiffness:s, damping:d });
+const ez = { duration:0.32, ease:[0.22,1,0.36,1] };
+
+const T = {
+  bg:"#111118", surface:"#18181f", surface2:"#1e1e28",
+  border:"#2a2a38", border2:"#38384a",
+  text1:"#e8e8f0", text2:"#8888aa", text3:"#44445a",
+  purple:"#7c6fcd", purpleL:"#a99cf0",
+  teal:"#3db89a", tealL:"#6dd4b8",
+  coral:"#c4694a", coralL:"#e08a6a",
+  blue:"#4a8fd4", blueL:"#82b4e8",
+  amber:"#d4a84a", amberL:"#e8c86a",
+  green:"#4ac46a", greenL:"#6ae88a",
+  red:"#e05555", redL:"#ff7777",
+  redis:"#dc382d", redisL:"#ff6b5e",
+  codeBase:"#141428",
+};
+
+const TS = {
+  fn:{color:"#82aaff"}, meth:{color:"#89ddff"}, str:{color:"#c3e88d"},
+  kw:{color:"#c792ea"}, num:{color:"#f78c6c"}, punc:{color:"#89ddff"},
+  plain:{color:"#a6accd"}, cmt:{color:"#546e7a",fontStyle:"italic"},
+};
+
+/* ─── SCENES ─── */
+const SCENES = [
+  {
+    id:0, act:"01",
+    title:"Why rate limiting?",
+    sub:"APIs, login endpoints, and backend services can be overwhelmed by too many requests — intentional abuse, runaway clients, or viral traffic. Rate limiting is the doorman that decides who gets in, who waits, and who gets turned away.",
+    code:[
+      [["cmt","// Without rate limiting:"]],
+      [["cmt","//   10,000 req/sec → server melts"]],
+      [["cmt","//   brute-force login → account hack"]],
+      [["cmt","//   runaway client → cloud bill blows up"]],
+    ],
+    viz:"intro",
+  },
+  {
+    id:1, act:"02",
+    title:"Fixed window counter",
+    sub:"The simplest algorithm: count requests in fixed time buckets (say, 10/min). When the counter exceeds the limit, reject. When the window ends, reset the counter to zero. Cheap, obvious, easy to implement.",
+    code:[
+      [["kw","if"],["plain"," (counter"],["punc","["],["fn","window"],["punc","]"],["plain"," >= "],["num","10"],["punc",") "],["kw","reject"],["punc","()"]],
+      [["kw","else"],["plain"," counter"],["punc","["],["fn","window"],["punc","]"],["plain","++"]],
+      [["cmt","// Reset every 60s"]],
+    ],
+    viz:"fixed", vizData:{ limit:10, count:7 },
+    detailHint:"fixed",
+  },
+  {
+    id:2, act:"03",
+    title:"The boundary problem",
+    sub:"Fixed windows have a nasty edge case: a client can fire 10 requests at the end of one window and 10 more at the start of the next — 20 requests in a few seconds, all legal. That's 2x the intended rate.",
+    code:[
+      [["cmt","// Window 1 (00:00–01:00)"]],
+      [["cmt","//   10 reqs at 00:59.9  ✓"]],
+      [["cmt","// Window 2 (01:00–02:00)"]],
+      [["cmt","//   10 reqs at 01:00.1  ✓"]],
+      [["cmt","// → 20 reqs in ~0.2s !!"]],
+    ],
+    viz:"boundary",
+    detailHint:"fixed",
+  },
+  {
+    id:3, act:"04",
+    title:"Sliding window log",
+    sub:"Store a timestamp for every request. When a new one arrives, drop timestamps older than the window, then count what's left. Perfectly accurate — but memory scales linearly with request volume.",
+    code:[
+      [["fn","log"],["punc",".push(now)"]],
+      [["fn","log"],["plain"," = log."],["meth","filter"],["punc","(t => now - t < "],["num","60000"],["punc",")"]],
+      [["kw","if"],["plain"," (log.length > "],["num","10"],["punc",") "],["kw","reject"],["punc","()"]],
+    ],
+    viz:"slidingLog",
+    detailHint:"sliding",
+  },
+  {
+    id:4, act:"05",
+    title:"Sliding window counter",
+    sub:"A clever hybrid: keep counters for the current and previous fixed window, then weight the previous window by how much of it still falls inside the sliding window. Near-perfect accuracy at O(1) memory.",
+    code:[
+      [["plain","estimate = prev * ("],["num","1 - elapsed/window"],["plain",") + curr"]],
+      [["cmt","// e.g. 30s into current window:"]],
+      [["cmt","//   prev=8  curr=4"]],
+      [["cmt","//   estimate = 8*0.5 + 4 = 8"]],
+    ],
+    viz:"slidingCounter",
+    detailHint:"sliding",
+  },
+  {
+    id:5, act:"06",
+    title:"Token bucket",
+    sub:"Imagine a bucket that holds N tokens. Every request consumes one token. Tokens refill at a steady rate. If the bucket has tokens — allow. If it's empty — reject. Bursts are allowed up to the bucket's capacity.",
+    code:[
+      [["kw","if"],["plain"," (bucket.tokens >= "],["num","1"],["punc",") {"]],
+      [["plain","  bucket.tokens--"]],
+      [["plain","  "],["kw","allow"],["punc","()"]],
+      [["punc","}"],["kw"," else"],["plain"," "],["kw","reject"],["punc","()"]],
+      [["cmt","// Refill: +1 token every 6s"]],
+    ],
+    viz:"tokenBucket", vizData:{ tokens:6, capacity:10 },
+    detailHint:"token",
+  },
+  {
+    id:6, act:"07",
+    title:"Token bucket in motion",
+    sub:"Watch the bucket fill steadily over time while requests drain it. A quiet period lets tokens accumulate up to capacity — enabling a clean burst when traffic spikes.",
+    code:[
+      [["cmt","// capacity = 10"]],
+      [["cmt","// refill   = 1 token / 600ms"]],
+      [["cmt","//"]],
+      [["cmt","// burst of 6 reqs → 6 tokens used"]],
+      [["cmt","// then quiet → bucket refills"]],
+    ],
+    viz:"tokenBucketAnim",
+    detailHint:"token",
+  },
+  {
+    id:7, act:"08",
+    title:"Leaky bucket",
+    sub:"Instead of tokens, think of a bucket with a hole in the bottom. Requests pour in at the top into a queue; the bucket \"leaks\" requests out to the server at a fixed rate. Overflow the bucket — you're rejected.",
+    code:[
+      [["kw","if"],["plain"," (queue.length >= capacity) "],["kw","reject"],["punc","()"]],
+      [["kw","else"],["plain"," queue."],["meth","push"],["punc","(req)"]],
+      [["cmt","// Drain: process 1 req every 500ms"]],
+    ],
+    viz:"leakyBucket", vizData:{ capacity:6, queued:3 },
+    detailHint:"leaky",
+  },
+  {
+    id:8, act:"09",
+    title:"Leaky bucket vs token bucket",
+    sub:"Token bucket allows bursts — unused tokens accumulate. Leaky bucket smooths traffic — requests always exit at a constant rate, no matter how bursty the input. Different shapes for different needs.",
+    code:[
+      [["cmt","// Token bucket: bursty allowed"]],
+      [["cmt","//   out: 0 0 0 6 0 0 0 1 ..."]],
+      [["cmt",""]],
+      [["cmt","// Leaky bucket: smooth output"]],
+      [["cmt","//   out: 1 1 1 1 1 1 1 1 ..."]],
+    ],
+    viz:"leakyVsToken",
+    detailHint:"leaky",
+  },
+  {
+    id:9, act:"10",
+    title:"Distributed rate limiting",
+    sub:"A single process is easy. A fleet of 20 API servers is not — each must see the same counter. The usual answer: a shared store like Redis with atomic INCR + EXPIRE, so every node queries one source of truth.",
+    code:[
+      [["plain","key = "],["str","`rl:${userId}:${minute}`"]],
+      [["plain","count = "],["kw","await"],["plain"," redis."],["meth","incr"],["punc","(key)"]],
+      [["kw","if"],["plain"," (count === "],["num","1"],["punc",") redis."],["meth","expire"],["punc","(key, "],["num","60"],["punc",")"]],
+      [["kw","if"],["plain"," (count > "],["num","100"],["punc",") "],["kw","reject"],["punc","()"]],
+    ],
+    viz:"distributed",
+    detailHint:"distributed",
+  },
+  {
+    id:10, act:"11",
+    title:"Tell the client what's happening",
+    sub:"Well-behaved APIs return rate limit info in response headers — how many requests are allowed, how many remain, and when the counter resets. Clients can self-throttle instead of hammering blindly.",
+    code:[
+      [["cmt","// Response headers"]],
+      [["plain","X-RateLimit-Limit"],["punc",": "],["num","100"]],
+      [["plain","X-RateLimit-Remaining"],["punc",": "],["num","42"]],
+      [["plain","X-RateLimit-Reset"],["punc",": "],["num","1712592000"]],
+    ],
+    viz:"headers",
+    detailHint:"code",
+  },
+  {
+    id:11, act:"12",
+    title:"429 Too Many Requests",
+    sub:"When the limit is exceeded, respond with HTTP 429 and a Retry-After header telling the client how long to wait. Polite clients back off; aggressive clients get nothing.",
+    code:[
+      [["plain","HTTP/1.1 "],["num","429"],["plain"," Too Many Requests"]],
+      [["plain","Retry-After"],["punc",": "],["num","30"]],
+      [["plain","X-RateLimit-Remaining"],["punc",": "],["num","0"]],
+      [["cmt",""]],
+      [["punc","{ "],["str","\"error\""],["punc",": "],["str","\"rate_limit_exceeded\""],["punc"," }"]],
+    ],
+    viz:"rejected",
+    detailHint:"code",
+  },
+  {
+    id:12, act:"DONE",
+    title:"Rate limiting — summary",
+    sub:"Fixed window is cheap. Sliding window is accurate. Token bucket allows bursts. Leaky bucket smooths flow. In production: share counters via Redis, return clear headers, and always send 429 with Retry-After.",
+    code:[], finale:true,
+  },
+];
+
+/* ─── DETAILS ─── */
+const DETAILS = {
+  fixed: {
+    title:"Fixed Window Counter",
+    color:T.blue,
+    sections:[
+      {heading:"How it works",body:"Time is chopped into fixed windows (e.g. 1-minute buckets). A counter tracks how many requests happened in the current window. When the window ends, the counter resets to zero."},
+      {heading:"Strengths",body:"• Trivial to implement — one integer per key\n• Constant memory\n• Counter stored easily in Redis with INCR + EXPIRE\n• Intuitive to reason about"},
+      {heading:"Weakness: the boundary problem",body:"A client can burst at the very end of one window and again at the start of the next, effectively getting 2x the intended limit over a short span. Fine for coarse throttling, bad for strict guarantees."},
+      {heading:"Use it when",body:"You need a simple, cheap limiter and minor burst allowances are OK — e.g. \"100 API calls/min per user\" where a 2x burst at the boundary is acceptable."},
+    ]
+  },
+  sliding: {
+    title:"Sliding Window",
+    color:T.teal,
+    sections:[
+      {heading:"Sliding window log",body:"Store the exact timestamp of every request in a sorted set. On each new request: drop entries older than the window, then count. Perfectly accurate but O(N) memory per key — expensive under high traffic."},
+      {heading:"Sliding window counter",body:"A smart approximation. Keep only two counters: current window and previous window. Weight the previous window by the fraction still inside the sliding view:\n\nestimate = prev * (1 - elapsed/window) + curr"},
+      {heading:"Trade-off",body:"• Log: exact, memory-heavy (scales with QPS)\n• Counter: ~0.003% error in Cloudflare's study, O(1) memory\n• Counter is the production sweet spot"},
+      {heading:"Redis implementation",body:"Log → ZADD + ZREMRANGEBYSCORE + ZCARD\nCounter → two INCR keys, one per window, plus math"},
+    ]
+  },
+  token: {
+    title:"Token Bucket",
+    color:T.amber,
+    sections:[
+      {heading:"The model",body:"A bucket with capacity N starts full. Every request takes one token. Tokens refill at a steady rate (e.g. 1/sec). If the bucket is empty, reject the request.\n\nThe bucket never overflows — tokens are capped at capacity."},
+      {heading:"Why bursts work",body:"Because tokens accumulate during quiet periods, clients can burst up to the bucket size at any time. After the burst, the effective sustained rate is the refill rate. This matches real user behavior."},
+      {heading:"Implementation",body:"Store two numbers: { tokens, lastRefill }\nOn each request:\n  1. tokens += (now - lastRefill) * refillRate\n  2. tokens = min(tokens, capacity)\n  3. if tokens >= 1 → tokens--, allow\n  4. else → reject"},
+      {heading:"Used by",body:"AWS API Gateway, Stripe, GitHub API — anywhere you want a sustained rate with sensible burst handling."},
+    ]
+  },
+  leaky: {
+    title:"Leaky Bucket",
+    color:T.coral,
+    sections:[
+      {heading:"The model",body:"Picture a bucket with a hole in the bottom. Incoming requests pour in at the top into a FIFO queue. Requests drip out of the hole at a fixed rate — always. If the queue is full when a new request arrives, it overflows and is rejected."},
+      {heading:"Output is always smooth",body:"Unlike token bucket, leaky bucket does not allow output bursts. The drain rate is constant — perfect for protecting a downstream service that hates bursty traffic (a database, a third-party API with strict QPS caps)."},
+      {heading:"Trade-off vs token bucket",body:"• Leaky: smooths traffic, adds latency (queuing)\n• Token: allows bursts, zero queuing latency\n\nChoose leaky when the bottleneck cannot absorb bursts; choose token when clients legitimately need to burst."},
+      {heading:"Implementation",body:"A queue + a worker that dequeues on an interval. In distributed systems, approximated by a counter that decrements on a schedule."},
+    ]
+  },
+  distributed: {
+    title:"Distributed Rate Limiting",
+    color:T.redis,
+    sections:[
+      {heading:"The problem",body:"One server = one counter, easy. But production has N API servers behind a load balancer. If each tracks its own counter, a user with limit 100 could actually get 100*N requests through."},
+      {heading:"The solution: shared store",body:"Put the counter in a single source of truth — typically Redis — that all servers query. Redis INCR is atomic, and with EXPIRE you get a fixed window limiter in 2 commands."},
+      {heading:"Performance concerns",body:"• Every request → one round-trip to Redis\n• Redis becomes a bottleneck and SPOF\n• Mitigations: local pre-check cache, Lua scripts for atomic multi-op, sharding by key"},
+      {heading:"Other approaches",body:"• Gossip counters (eventually consistent)\n• Token buckets pre-issued to each server\n• Sidecar proxies like Envoy with a global rate limit service"},
+    ]
+  },
+  code: {
+    title:"HTTP Semantics",
+    color:T.purpleL,
+    sections:[
+      {heading:"Standard response headers",body:"X-RateLimit-Limit — total allowed\nX-RateLimit-Remaining — how many left\nX-RateLimit-Reset — unix ts when counter resets\n\nThe IETF draft 'RateLimit' header uses: RateLimit-Limit, RateLimit-Remaining, RateLimit-Reset."},
+      {heading:"The 429 response",body:"When the limit is exceeded, return:\n\nHTTP/1.1 429 Too Many Requests\nRetry-After: 30\n\nRetry-After can be a delta-seconds number or an HTTP-date. Well-behaved clients will back off."},
+      {heading:"Client best practices",body:"• Respect Retry-After\n• Exponential backoff with jitter on retries\n• Track remaining count, slow down proactively\n• Never hammer after a 429 — you'll get IP-banned next"},
+    ]
+  },
+};
+
+/* ─── COMPONENTS ─── */
+const CodePanel = ({ tokens, onClick }) =>
+  e("div", { onClick, style:{ background:T.codeBase, borderRadius:12, overflow:"hidden", border:`1px solid ${T.border}`, cursor:onClick?"pointer":"default" } },
+    e("div", { style:{ padding:"10px 14px 8px", borderBottom:`1px solid ${T.border}`, display:"flex", gap:7 } },
+      ...["#ff5f57","#febc2e","#28c840"].map((c,i) =>
+        e("div", { key:i, style:{ width:11, height:11, borderRadius:"50%", background:c } })
+      )
+    ),
+    e("div", { style:{ padding:"14px 18px 16px", fontFamily:"'SF Mono','Fira Code','Consolas',monospace", fontSize:12, lineHeight:1.85 } },
+      tokens.map((line, li) =>
+        e("div", { key:li },
+          line.map(([cls, txt], ti) =>
+            e("span", { key:ti, style:{ ...TS[cls], whiteSpace:"pre" } }, txt)
+          )
+        )
+      )
+    )
+  );
+
+const Panel = ({ label, children, style={}, onClick, accent=T.border2 }) =>
+  e("div", {
+    onClick,
+    style:{ borderRadius:12, border:`1.5px solid ${accent}`, background:T.surface, overflow:"hidden", cursor:onClick?"pointer":"default", ...style }
+  },
+    label && e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", gap:6 } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, label)
+    ),
+    e("div", { style:{ padding:12 } }, children)
+  );
+
+/* ─── VIZ COMPONENTS ─── */
+
+/* Intro: flood of dots into a server */
+const IntroViz = () => {
+  const [tick, setTick] = useState(0);
+  useEffect(() => { const id = setInterval(()=>setTick(t=>t+1), 1400); return ()=>clearInterval(id); }, []);
+  const dots = Array.from({length:14},(_,i)=>i);
+  return e("div", { style:{ minHeight:260, padding:20, display:"flex", alignItems:"center", justifyContent:"space-between", gap:24, background:T.surface, borderRadius:12, border:`1.5px solid ${T.border2}`, position:"relative", overflow:"hidden" } },
+    e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:6, zIndex:2 } },
+      e("i", { className:"lni lni-users-1", style:{ fontSize:36, color:T.text2 } }),
+      e("div", { style:{ fontSize:11, color:T.text2, fontWeight:600 } }, "Clients"),
+    ),
+    e("div", { style:{ position:"absolute", left:100, right:180, top:0, bottom:0, pointerEvents:"none" } },
+      dots.map(i => e(M.div, {
+        key:`${tick}-${i}`,
+        initial:{ x:0, y:60 + (i%5)*28, opacity:0, scale:0.6 },
+        animate:{ x:"100%", y:60 + (i%5)*28, opacity:[0,1,1,0], scale:1 },
+        transition:{ duration:1.8, delay:i*0.08, ease:"linear" },
+        style:{ position:"absolute", width:10, height:10, borderRadius:"50%", background:T.red, boxShadow:`0 0 8px ${T.red}88` }
+      }))
+    ),
+    e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:6, zIndex:2 } },
+      e(M.div, {
+        animate:{ x:[0,-2,2,-2,2,0], rotate:[0,-1,1,-1,1,0] },
+        transition:{ duration:0.6, repeat:Infinity, repeatDelay:0.8 },
+        style:{ width:72, height:88, borderRadius:8, border:`2px solid ${T.red}`, background:`${T.red}14`, display:"flex", alignItems:"center", justifyContent:"center" }
+      },
+        e("i", { className:"lni lni-database-1", style:{ fontSize:32, color:T.red } })
+      ),
+      e("div", { style:{ fontSize:11, color:T.redL, fontWeight:600 } }, "Server (overwhelmed)"),
+    )
+  );
+};
+
+/* Fixed window counter */
+const FixedWindowViz = ({ limit=10 }) => {
+  const [count, setCount] = useState(0);
+  const [resetFlash, setResetFlash] = useState(false);
+  useEffect(() => {
+    const id = setInterval(() => {
+      setCount(c => {
+        if (c >= limit + 2) { setResetFlash(true); setTimeout(()=>setResetFlash(false), 400); return 0; }
+        return c + 1;
+      });
+    }, 500);
+    return () => clearInterval(id);
+  }, []);
+  const slots = Array.from({length:limit},(_,i)=>i);
+  return e("div", { style:{ minHeight:260, padding:20, background:T.surface, borderRadius:12, border:`1.5px solid ${T.border2}` } },
+    e("div", { style:{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 } },
+      e("div", { style:{ fontSize:11, fontWeight:600, color:T.text2, letterSpacing:"0.06em" } }, "WINDOW (1 MIN)"),
+      e("div", { style:{ fontSize:11, fontFamily:"monospace", color: count>limit ? T.red : T.greenL, fontWeight:700 } },
+        `${Math.min(count, limit+2)} / ${limit}`)
+    ),
+    e("div", { style:{ display:"grid", gridTemplateColumns:`repeat(${limit}, 1fr)`, gap:6, marginBottom:16 } },
+      slots.map(i => e(M.div, {
+        key:i,
+        animate:{
+          background: i < count && count <= limit ? T.green : i < count && count > limit ? T.red : T.border,
+          scale: i === count - 1 ? [1,1.15,1] : 1,
+        },
+        transition:{ duration:0.3 },
+        style:{ height:36, borderRadius:6, border:`1px solid ${T.border2}` }
+      }))
+    ),
+    e(M.div, {
+      animate:{ opacity: resetFlash ? 1 : 0.5, background: resetFlash ? `${T.amber}22` : "transparent" },
+      style:{ padding:"8px 12px", borderRadius:8, border:`1px solid ${T.border2}`, fontSize:11, color:T.text2, textAlign:"center" }
+    }, count > limit ? e("span", { style:{ color:T.red, fontWeight:600 } }, "REJECTED — over limit") : resetFlash ? e("span", { style:{ color:T.amber, fontWeight:600 } }, "⟳ window reset") : "allowed"),
+    e("div", { style:{ marginTop:12, fontSize:10, color:T.text3, textAlign:"center" } }, "counter resets when the window ends")
+  );
+};
+
+/* Boundary problem: two adjacent windows, show 20 reqs in middle 2 seconds */
+const BoundaryViz = () => {
+  const [phase, setPhase] = useState(0);
+  useEffect(() => {
+    const id = setInterval(()=>setPhase(p => (p+1) % 4), 1200);
+    return ()=>clearInterval(id);
+  }, []);
+  /* phase 0: empty. phase 1: 10 in window1 end. phase 2: 10 in window2 start. phase 3: show problem */
+  const w1Count = phase >= 1 ? 10 : 0;
+  const w2Count = phase >= 2 ? 10 : 0;
+  const slots = Array.from({length:10},(_,i)=>i);
+  return e("div", { style:{ minHeight:260, padding:20, background:T.surface, borderRadius:12, border:`1.5px solid ${T.border2}` } },
+    e("div", { style:{ display:"flex", gap:10, marginBottom:14 } },
+      e("div", { style:{ flex:1 } },
+        e("div", { style:{ fontSize:10, color:T.text3, marginBottom:4 } }, "WINDOW 1 (0:00–1:00)"),
+        e("div", { style:{ display:"flex", gap:3 } },
+          slots.map(i => e(M.div, {
+            key:i,
+            animate:{ background: i < w1Count ? T.green : T.border },
+            transition:{ delay: i*0.04 },
+            style:{ flex:1, height:28, borderRadius:4, border:`1px solid ${T.border2}` }
+          }))
+        ),
+        e("div", { style:{ fontSize:10, color:T.text3, marginTop:4, textAlign:"right" } }, "10 reqs at 0:59.9")
+      ),
+      e("div", { style:{ flex:1 } },
+        e("div", { style:{ fontSize:10, color:T.text3, marginBottom:4 } }, "WINDOW 2 (1:00–2:00)"),
+        e("div", { style:{ display:"flex", gap:3 } },
+          slots.map(i => e(M.div, {
+            key:i,
+            animate:{ background: i < w2Count ? T.green : T.border },
+            transition:{ delay: i*0.04 },
+            style:{ flex:1, height:28, borderRadius:4, border:`1px solid ${T.border2}` }
+          }))
+        ),
+        e("div", { style:{ fontSize:10, color:T.text3, marginTop:4 } }, "10 reqs at 1:00.1")
+      )
+    ),
+    /* timeline arrow showing the burst */
+    e("div", { style:{ position:"relative", height:44, marginTop:6 } },
+      e("div", { style:{ position:"absolute", left:"40%", right:"40%", top:14, height:2, background:T.red, borderRadius:2 } }),
+      e(M.div, {
+        animate:{ opacity: phase >= 3 ? 1 : 0 },
+        style:{ position:"absolute", left:"35%", right:"35%", top:20, textAlign:"center", fontSize:11, color:T.redL, fontWeight:700 }
+      }, "20 reqs in ~200ms !!"),
+    ),
+    e("div", { style:{ marginTop:8, padding:"8px 12px", borderRadius:8, background:`${T.red}14`, border:`1px solid ${T.red}33`, fontSize:11, color:T.redL, textAlign:"center" } },
+      "Each window counted 10 (legal) — but together they hit 2x the real rate")
+  );
+};
+
+/* Sliding window log: dots on a timeline */
+const SlidingLogViz = () => {
+  const [events, setEvents] = useState([]);
+  const [tnow, setTnow] = useState(0);
+  useEffect(() => {
+    const start = Date.now();
+    const id = setInterval(() => {
+      const now = (Date.now() - start) / 1000;
+      setTnow(now);
+      if (Math.random() < 0.55) {
+        setEvents(ev => [...ev.filter(e2 => now - e2 < 6), now].slice(-14));
+      } else {
+        setEvents(ev => ev.filter(e2 => now - e2 < 6));
+      }
+    }, 420);
+    return () => clearInterval(id);
+  }, []);
+  const window = 6; /* seconds visible */
+  return e("div", { style:{ minHeight:260, padding:20, background:T.surface, borderRadius:12, border:`1.5px solid ${T.border2}` } },
+    e("div", { style:{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 } },
+      e("div", { style:{ fontSize:11, fontWeight:600, color:T.text2, letterSpacing:"0.06em" } }, "REQUEST LOG"),
+      e("div", { style:{ fontSize:11, fontFamily:"monospace", color: events.length > 10 ? T.red : T.tealL, fontWeight:700 } },
+        `log.length = ${events.length}`)
+    ),
+    /* sliding window rail */
+    e("div", { style:{ position:"relative", height:70, background:T.bg, borderRadius:8, border:`1px solid ${T.border2}`, overflow:"hidden" } },
+      /* window shaded area */
+      e("div", { style:{ position:"absolute", left:0, right:0, top:0, bottom:0, background:`${T.teal}12`, borderLeft:`2px dashed ${T.teal}66`, borderRight:`2px dashed ${T.teal}66` } }),
+      /* timestamps */
+      events.map((t,i) => {
+        const age = tnow - t;
+        const pct = Math.max(0, Math.min(100, (1 - age/window) * 100));
+        return e(M.div, {
+          key:i,
+          initial:{ scale:0, opacity:0 },
+          animate:{ scale:1, opacity: age < window ? 1 : 0.3, left:`${pct}%` },
+          transition:sp(300, 20),
+          style:{ position:"absolute", top:"50%", width:12, height:12, borderRadius:"50%", background:T.teal, boxShadow:`0 0 8px ${T.teal}aa`, transform:"translate(-50%, -50%)" }
+        });
+      }),
+      /* now marker */
+      e("div", { style:{ position:"absolute", right:0, top:0, bottom:0, width:2, background:T.purpleL } }),
+      e("div", { style:{ position:"absolute", right:4, top:4, fontSize:9, color:T.purpleL, fontFamily:"monospace" } }, "now"),
+      e("div", { style:{ position:"absolute", left:4, top:4, fontSize:9, color:T.text3, fontFamily:"monospace" } }, "−60s"),
+    ),
+    e("div", { style:{ marginTop:14, display:"flex", gap:8, alignItems:"center", fontSize:11, color:T.text2 } },
+      e("div", { style:{ width:10, height:10, borderRadius:"50%", background:T.teal } }),
+      "timestamp — kept while inside window, dropped when it falls off the left edge"
+    )
+  );
+};
+
+/* Sliding window counter: two bars, prev and curr, with weight indicator */
+const SlidingCounterViz = () => {
+  const [elapsed, setElapsed] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setElapsed(e2 => (e2 + 0.05) % 1), 60);
+    return () => clearInterval(id);
+  }, []);
+  const prev = 8, curr = Math.round(elapsed * 4);
+  const weight = 1 - elapsed;
+  const estimate = prev * weight + curr;
+  return e("div", { style:{ minHeight:260, padding:20, background:T.surface, borderRadius:12, border:`1.5px solid ${T.border2}` } },
+    e("div", { style:{ fontSize:11, fontWeight:600, color:T.text2, letterSpacing:"0.06em", marginBottom:14 } }, "PREVIOUS WINDOW + CURRENT WINDOW"),
+    /* Two windows side by side with sliding viewport */
+    e("div", { style:{ position:"relative", height:80, display:"flex", gap:4 } },
+      /* prev window */
+      e("div", { style:{ flex:1, background:T.bg, borderRadius:6, border:`1px solid ${T.border2}`, position:"relative", overflow:"hidden" } },
+        e(M.div, {
+          animate:{ width: `${weight*100}%`, right:0, left:"auto" },
+          style:{ position:"absolute", top:0, bottom:0, background:`${T.teal}22`, borderLeft:`2px dashed ${T.teal}66` }
+        }),
+        e("div", { style:{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, fontWeight:700, color:T.text2, fontFamily:"monospace" } }, prev),
+        e("div", { style:{ position:"absolute", bottom:3, left:6, fontSize:9, color:T.text3 } }, "prev")
+      ),
+      /* curr window */
+      e("div", { style:{ flex:1, background:T.bg, borderRadius:6, border:`1px solid ${T.border2}`, position:"relative", overflow:"hidden" } },
+        e(M.div, {
+          animate:{ width: `${elapsed*100}%` },
+          style:{ position:"absolute", left:0, top:0, bottom:0, background:`${T.teal}22`, borderRight:`2px dashed ${T.teal}66` }
+        }),
+        e("div", { style:{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, fontWeight:700, color:T.teal, fontFamily:"monospace" } }, curr),
+        e("div", { style:{ position:"absolute", bottom:3, left:6, fontSize:9, color:T.text3 } }, "curr")
+      )
+    ),
+    e("div", { style:{ marginTop:14, padding:"10px 14px", borderRadius:8, background:T.bg, border:`1px solid ${T.border2}`, fontFamily:"monospace", fontSize:12, color:T.text2 } },
+      e("div", null, `estimate = prev * (1 − ${elapsed.toFixed(2)}) + curr`),
+      e("div", { style:{ marginTop:4, color:T.tealL } }, `= ${prev} * ${weight.toFixed(2)} + ${curr} = `,
+        e("span", { style:{ fontWeight:700 } }, estimate.toFixed(2)))
+    ),
+    e("div", { style:{ marginTop:10, fontSize:10, color:T.text3, textAlign:"center" } },
+      "as the window slides right, the previous window's weight shrinks to zero")
+  );
+};
+
+/* Token bucket — static with tokens */
+const TokenBucketViz = ({ capacity=10, tokens=6 }) => {
+  return e("div", { style:{ minHeight:260, padding:20, background:T.surface, borderRadius:12, border:`1.5px solid ${T.border2}`, display:"flex", alignItems:"center", justifyContent:"space-around", gap:20 } },
+    /* refill drip */
+    e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:6 } },
+      e("i", { className:"lni lni-cloud", style:{ fontSize:28, color:T.amber } }),
+      [0,1,2].map(i => e(M.div, {
+        key:i,
+        animate:{ y:[0,40], opacity:[1,0] },
+        transition:{ duration:1.4, delay:i*0.4, repeat:Infinity, ease:"linear" },
+        style:{ width:8, height:8, borderRadius:"50%", background:T.amber, boxShadow:`0 0 6px ${T.amber}aa` }
+      })),
+      e("div", { style:{ fontSize:10, color:T.text3, marginTop:4 } }, "refill")
+    ),
+    /* bucket */
+    e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:8 } },
+      e("div", { style:{ position:"relative", width:120, height:150, border:`3px solid ${T.amber}`, borderTop:"none", borderBottomLeftRadius:12, borderBottomRightRadius:12, background:T.bg, overflow:"hidden" } },
+        e("div", { style:{ position:"absolute", inset:0, padding:8, display:"grid", gridTemplateColumns:"repeat(2, 1fr)", gap:6, alignContent:"end" } },
+          Array.from({length:capacity},(_,i)=>i).reverse().map(i => e(M.div, {
+            key:i,
+            initial:{ scale:0, opacity:0 },
+            animate:{ scale: i < tokens ? 1 : 0, opacity: i < tokens ? 1 : 0 },
+            transition:sp(300, 18),
+            style:{ aspectRatio:"1", borderRadius:"50%", background:T.amber, boxShadow:`0 0 8px ${T.amber}88`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:700, color:"#2a1a00" }
+          }, "T"))
+        )
+      ),
+      e("div", { style:{ fontSize:11, color:T.amberL, fontWeight:600, fontFamily:"monospace" } }, `${tokens} / ${capacity} tokens`)
+    ),
+    /* consume */
+    e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:6 } },
+      e("i", { className:"lni lni-arrow-right", style:{ fontSize:18, color:T.text2 } }),
+      e("i", { className:"lni lni-server-2", style:{ fontSize:28, color:T.greenL } }),
+      e("div", { style:{ fontSize:10, color:T.text3, marginTop:4 } }, "consume")
+    )
+  );
+};
+
+/* Token bucket animated — tokens flow in/out over time */
+const TokenBucketAnimViz = () => {
+  const cap = 10;
+  const [tokens, setTokens] = useState(10);
+  const [lastReq, setLastReq] = useState(null);
+  useEffect(() => {
+    let t = 10;
+    const refill = setInterval(() => {
+      t = Math.min(cap, t + 1);
+      setTokens(t);
+    }, 700);
+    const consume = setInterval(() => {
+      /* bursty pattern: fire a burst every few ticks */
+      if (Math.random() < 0.55) {
+        if (t > 0) {
+          t = t - 1;
+          setTokens(t);
+          setLastReq({ ok:true, id:Date.now() });
+        } else {
+          setLastReq({ ok:false, id:Date.now() });
+        }
+      }
+    }, 400);
+    return () => { clearInterval(refill); clearInterval(consume); };
+  }, []);
+  return e("div", { style:{ minHeight:260, padding:20, background:T.surface, borderRadius:12, border:`1.5px solid ${T.border2}`, display:"flex", alignItems:"center", justifyContent:"space-around", gap:16 } },
+    e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 } },
+      e("i", { className:"lni lni-cloud", style:{ fontSize:26, color:T.amber } }),
+      e(M.div, {
+        animate:{ y:[0,30], opacity:[1,0] },
+        transition:{ duration:0.7, repeat:Infinity, ease:"linear" },
+        style:{ width:8, height:8, borderRadius:"50%", background:T.amber }
+      }),
+      e("div", { style:{ fontSize:10, color:T.text3, marginTop:2 } }, "+1 / 700ms")
+    ),
+    e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:8 } },
+      e("div", { style:{ position:"relative", width:120, height:150, border:`3px solid ${T.amber}`, borderTop:"none", borderBottomLeftRadius:12, borderBottomRightRadius:12, background:T.bg, overflow:"hidden" } },
+        e(M.div, {
+          animate:{ height:`${(tokens/cap)*100}%` },
+          transition:{ duration:0.4, ease:"easeOut" },
+          style:{ position:"absolute", left:0, right:0, bottom:0, background:`linear-gradient(180deg, ${T.amber}aa, ${T.amber}66)`, borderTop:`2px solid ${T.amberL}` }
+        }),
+        e("div", { style:{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, fontWeight:700, color:T.text1, fontFamily:"monospace", textShadow:"0 1px 4px rgba(0,0,0,0.8)" } }, tokens)
+      ),
+      e("div", { style:{ fontSize:11, color:T.amberL, fontWeight:600, fontFamily:"monospace" } }, `${tokens} / ${cap}`)
+    ),
+    e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:8, minWidth:100 } },
+      e("div", { style:{ fontSize:10, color:T.text3 } }, "requests"),
+      e(AP, { mode:"popLayout" },
+        lastReq && e(M.div, {
+          key:lastReq.id,
+          initial:{ scale:0, x:-20, opacity:0 },
+          animate:{ scale:1, x:0, opacity:1 },
+          exit:{ scale:0, x:20, opacity:0 },
+          transition:sp(400, 22),
+          style:{
+            padding:"6px 12px", borderRadius:8,
+            background: lastReq.ok ? `${T.green}22` : `${T.red}22`,
+            border:`1px solid ${lastReq.ok ? T.green : T.red}66`,
+            color: lastReq.ok ? T.greenL : T.redL,
+            fontSize:11, fontWeight:700, fontFamily:"monospace"
+          }
+        }, lastReq.ok ? "✓ 200" : "✗ 429")
+      )
+    )
+  );
+};
+
+/* Leaky bucket — queue draining at constant rate */
+const LeakyBucketViz = ({ capacity=6, queued=3 }) => {
+  return e("div", { style:{ minHeight:260, padding:20, background:T.surface, borderRadius:12, border:`1.5px solid ${T.border2}`, display:"flex", alignItems:"center", justifyContent:"space-around", gap:20 } },
+    /* incoming */
+    e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:6 } },
+      [0,1,2].map(i => e(M.div, {
+        key:i,
+        animate:{ y:[-10,30], opacity:[0,1,1,0] },
+        transition:{ duration:1.2, delay:i*0.25, repeat:Infinity, ease:"linear" },
+        style:{ width:10, height:10, borderRadius:"50%", background:T.coral, boxShadow:`0 0 6px ${T.coral}88` }
+      })),
+      e("div", { style:{ fontSize:10, color:T.text3, marginTop:4 } }, "bursty in")
+    ),
+    /* bucket with queue */
+    e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 } },
+      e("div", { style:{ position:"relative", width:100, height:150, border:`3px solid ${T.coral}`, borderTop:"none", background:T.bg, overflow:"visible" } },
+        e("div", { style:{ position:"absolute", inset:4, display:"flex", flexDirection:"column-reverse", gap:4 } },
+          Array.from({length:capacity},(_,i)=>i).map(i => e(M.div, {
+            key:i,
+            animate:{ background: i < queued ? T.coral : "transparent", borderColor: i < queued ? T.coral : T.border2 },
+            style:{ height:16, borderRadius:4, border:"1px solid" }
+          }))
+        ),
+        /* hole */
+        e("div", { style:{ position:"absolute", bottom:-3, left:"50%", transform:"translateX(-50%)", width:12, height:6, background:T.bg, borderLeft:`3px solid ${T.coral}`, borderRight:`3px solid ${T.coral}` } })
+      ),
+      /* dripping out */
+      [0,1,2].map(i => e(M.div, {
+        key:i,
+        animate:{ y:[0,20], opacity:[1,0] },
+        transition:{ duration:1.5, delay:i*0.5, repeat:Infinity, ease:"linear" },
+        style:{ width:8, height:8, borderRadius:"50%", background:T.coral, marginTop:-20 }
+      })),
+      e("div", { style:{ fontSize:10, color:T.text3, marginTop:2 } }, "steady out")
+    ),
+    /* server */
+    e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:6 } },
+      e("i", { className:"lni lni-server-2", style:{ fontSize:28, color:T.greenL } }),
+      e("div", { style:{ fontSize:10, color:T.text3, marginTop:2 } }, "server"),
+      e("div", { style:{ fontSize:9, color:T.greenL, fontFamily:"monospace" } }, "1 req / 500ms")
+    )
+  );
+};
+
+/* Leaky vs Token output patterns */
+const LeakyVsTokenViz = () => {
+  const [tick, setTick] = useState(0);
+  useEffect(() => { const id = setInterval(()=>setTick(t=>t+1), 500); return ()=>clearInterval(id); }, []);
+  /* input pattern (bursty): 0 0 1 1 1 1 1 0 0 0 1 0 0 0 */
+  const input = [0,0,1,1,1,1,1,0,0,0,1,0,0,0];
+  const tokenOut = [0,0,1,1,1,1,1,0,0,0,1,0,0,0]; /* mirrors input */
+  const leakyOut = [0,0,0,1,0,1,0,1,0,1,0,1,0,1]; /* spread out */
+  const len = 14;
+  const Row = ({ label, data, color }) => e("div", { style:{ marginBottom:10 } },
+    e("div", { style:{ fontSize:10, color:T.text3, marginBottom:4, fontFamily:"monospace" } }, label),
+    e("div", { style:{ display:"flex", gap:3 } },
+      data.map((v,i) => e(M.div, {
+        key:i,
+        animate:{
+          background: v ? color : T.border,
+          scale: i === (tick % len) && v ? 1.2 : 1,
+        },
+        transition:{ duration:0.2 },
+        style:{ flex:1, height:22, borderRadius:4, border:`1px solid ${T.border2}` }
+      }))
+    )
+  );
+  return e("div", { style:{ minHeight:260, padding:20, background:T.surface, borderRadius:12, border:`1.5px solid ${T.border2}` } },
+    e("div", { style:{ fontSize:11, fontWeight:600, color:T.text2, letterSpacing:"0.06em", marginBottom:12 } }, "SAME INPUT — DIFFERENT OUTPUT"),
+    e(Row, { label:"input  (bursty)",   data:input,    color:T.purple }),
+    e(Row, { label:"token bucket out",  data:tokenOut, color:T.amber }),
+    e(Row, { label:"leaky bucket out",  data:leakyOut, color:T.coral }),
+    e("div", { style:{ marginTop:12, padding:"8px 12px", borderRadius:8, background:T.bg, border:`1px solid ${T.border2}`, fontSize:11, color:T.text2, lineHeight:1.5 } },
+      e("div", null, e("span", { style:{ color:T.amberL, fontWeight:600 } }, "Token "), "— output mirrors input; bursts pass through until tokens run out"),
+      e("div", null, e("span", { style:{ color:T.coralL, fontWeight:600 } }, "Leaky "), "— output is strictly smoothed to the drain rate, regardless of input shape"),
+    )
+  );
+};
+
+/* Distributed: 3 servers → redis */
+const DistributedViz = () => {
+  const [pulse, setPulse] = useState(0);
+  useEffect(() => { const id = setInterval(()=>setPulse(p=>p+1), 1000); return ()=>clearInterval(id); }, []);
+  const servers = [0,1,2];
+  return e("div", { style:{ minHeight:260, padding:20, background:T.surface, borderRadius:12, border:`1.5px solid ${T.border2}` } },
+    e("div", { style:{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:20 } },
+      /* server column */
+      e("div", { style:{ display:"flex", flexDirection:"column", gap:12 } },
+        servers.map(i => e("div", {
+          key:i,
+          style:{ padding:"10px 14px", borderRadius:10, border:`1.5px solid ${T.blue}44`, background:`${T.blue}10`, display:"flex", alignItems:"center", gap:8 }
+        },
+          e("i", { className:"lni lni-server-2", style:{ fontSize:18, color:T.blueL } }),
+          e("div", null,
+            e("div", { style:{ fontSize:11, fontWeight:600, color:T.blueL, fontFamily:"monospace" } }, `api-${i+1}`),
+            e("div", { style:{ fontSize:9, color:T.text3 } }, "stateless")
+          )
+        ))
+      ),
+      /* arrows */
+      e("div", { style:{ position:"relative", flex:1, height:180 } },
+        servers.map(i => {
+          const y = 30 + i * 60;
+          const active = (pulse % 3) === i;
+          return e(M.div, { key:i, style:{ position:"absolute", left:0, right:0, top:y, height:2 } },
+            e(M.div, {
+              animate:{ x:["0%","95%"], opacity:[0,1,1,0] },
+              transition:{ duration:0.9, repeat:Infinity, delay:i*0.33, ease:"linear" },
+              style:{ width:10, height:10, borderRadius:"50%", background:T.purpleL, marginTop:-4, boxShadow:`0 0 6px ${T.purple}` }
+            }),
+            e("div", { style:{ position:"absolute", left:0, right:0, top:-1, height:1, background:`${T.border2}`, borderBottom:`1px dashed ${T.border2}` } })
+          );
+        }),
+        e("div", { style:{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%, -50%)", fontSize:9, color:T.text3, fontFamily:"monospace" } }, "INCR")
+      ),
+      /* redis */
+      e("div", { style:{ padding:"14px 18px", borderRadius:12, border:`2px solid ${T.redis}`, background:`${T.redis}14`, display:"flex", flexDirection:"column", alignItems:"center", gap:6 } },
+        e("i", { className:"lni lni-database-1", style:{ fontSize:32, color:T.redisL } }),
+        e("div", { style:{ fontSize:12, fontWeight:700, color:T.redisL, fontFamily:"monospace" } }, "Redis"),
+        e("div", { style:{ fontSize:10, color:T.text3, fontFamily:"monospace" } }, `rl:u42:${Math.floor(pulse/4)}`),
+        e(M.div, {
+          key:pulse,
+          initial:{ scale:1.3, color:T.amber },
+          animate:{ scale:1, color:T.redisL },
+          transition:{ duration:0.4 },
+          style:{ fontSize:16, fontWeight:700, fontFamily:"monospace" }
+        }, pulse % 100)
+      )
+    ),
+    e("div", { style:{ marginTop:16, fontSize:10, color:T.text3, textAlign:"center" } },
+      "one atomic counter, shared across all servers")
+  );
+};
+
+/* Headers response card */
+const HeadersViz = () => {
+  const [remaining, setRemaining] = useState(100);
+  useEffect(() => {
+    const id = setInterval(() => setRemaining(r => r > 1 ? r - 3 : 100), 700);
+    return () => clearInterval(id);
+  }, []);
+  return e("div", { style:{ minHeight:260, padding:20, background:T.surface, borderRadius:12, border:`1.5px solid ${T.border2}`, display:"flex", alignItems:"center", justifyContent:"center" } },
+    e("div", { style:{ width:"100%", maxWidth:420, background:T.bg, border:`1.5px solid ${T.border2}`, borderRadius:10, overflow:"hidden" } },
+      e("div", { style:{ padding:"10px 14px", borderBottom:`1px solid ${T.border}`, display:"flex", justifyContent:"space-between", alignItems:"center" } },
+        e("span", { style:{ fontSize:11, fontWeight:600, color:T.text2, fontFamily:"monospace" } }, "HTTP/1.1"),
+        e("span", { style:{ fontSize:11, fontWeight:700, color:T.greenL, fontFamily:"monospace" } }, "200 OK")
+      ),
+      e("div", { style:{ padding:"14px 18px", fontFamily:"'SF Mono',monospace", fontSize:12, lineHeight:2 } },
+        e("div", null, e("span", { style:{ color:T.purpleL } }, "X-RateLimit-Limit"), e("span", { style:{ color:T.text2 } }, ": "), e("span", { style:{ color:T.amberL } }, "100")),
+        e("div", null, e("span", { style:{ color:T.purpleL } }, "X-RateLimit-Remaining"), e("span", { style:{ color:T.text2 } }, ": "),
+          e(M.span, { key:remaining, initial:{opacity:0.4, scale:1.2}, animate:{opacity:1, scale:1}, style:{ color: remaining < 10 ? T.redL : T.amberL, fontWeight:700 } }, remaining)),
+        e("div", null, e("span", { style:{ color:T.purpleL } }, "X-RateLimit-Reset"), e("span", { style:{ color:T.text2 } }, ": "), e("span", { style:{ color:T.amberL } }, "1712592000")),
+        e("div", { style:{ marginTop:8, height:6, background:T.border, borderRadius:99, overflow:"hidden" } },
+          e(M.div, { animate:{ width:`${remaining}%` }, transition:{ duration:0.4 }, style:{ height:"100%", background: remaining < 20 ? T.red : remaining < 50 ? T.amber : T.green, borderRadius:99 } })
+        )
+      )
+    )
+  );
+};
+
+/* 429 rejection viz */
+const RejectedViz = () => {
+  const reqs = [0,1,2,3,4,5,6,7,8,9];
+  const [tick, setTick] = useState(0);
+  useEffect(() => { const id = setInterval(()=>setTick(t=>(t+1)%12), 500); return ()=>clearInterval(id); }, []);
+  return e("div", { style:{ minHeight:260, padding:20, background:T.surface, borderRadius:12, border:`1.5px solid ${T.border2}` } },
+    e("div", { style:{ fontSize:11, fontWeight:600, color:T.text2, letterSpacing:"0.06em", marginBottom:14 } }, "REQUEST TIMELINE"),
+    e("div", { style:{ display:"flex", gap:4, marginBottom:18 } },
+      reqs.map(i => {
+        const ok = i < 6;
+        const active = i === tick;
+        return e(M.div, {
+          key:i,
+          animate:{
+            background: ok ? T.green : T.red,
+            scale: active ? 1.15 : 1,
+            boxShadow: active ? `0 0 10px ${ok ? T.green : T.red}` : "none",
+          },
+          transition:{ duration:0.2 },
+          style:{ flex:1, height:44, borderRadius:6, border:`1px solid ${ok ? T.green : T.red}77`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:700, color:"#0a0a12" }
+        }, ok ? "200" : "429");
+      })
+    ),
+    e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 } },
+      e("div", { style:{ padding:"10px 12px", borderRadius:8, background:`${T.green}10`, border:`1px solid ${T.green}44` } },
+        e("div", { style:{ fontSize:10, color:T.greenL, fontWeight:700, marginBottom:4 } }, "200 OK  (allowed)"),
+        e("div", { style:{ fontSize:10, color:T.text2 } }, "X-RateLimit-Remaining: n"),
+      ),
+      e("div", { style:{ padding:"10px 12px", borderRadius:8, background:`${T.red}10`, border:`1px solid ${T.red}44` } },
+        e("div", { style:{ fontSize:10, color:T.redL, fontWeight:700, marginBottom:4 } }, "429 Too Many Requests"),
+        e("div", { style:{ fontSize:10, color:T.text2 } }, "Retry-After: 30"),
+      )
+    ),
+    e("div", { style:{ marginTop:12, fontSize:10, color:T.text3, textAlign:"center" } },
+      "client should back off and retry after the specified delay")
+  );
+};
+
+/* Finale */
+const Finale = () => {
+  const rows = [
+    { n:"lni-timer", label:"Fixed window", sub:"Simple counter per time bucket — cheap, but suffers from boundary bursts", c:T.blue },
+    { n:"lni-layers-1", label:"Sliding window", sub:"Log (exact, memory-heavy) or counter (approximate, O(1) memory)", c:T.teal },
+    { n:"lni-cloud", label:"Token bucket", sub:"Tokens refill at steady rate; allows bursts up to bucket capacity", c:T.amber },
+    { n:"lni-drop-1", label:"Leaky bucket", sub:"FIFO queue draining at fixed rate — smooths any bursty input", c:T.coral },
+    { n:"lni-database-1", label:"Distributed", sub:"Redis INCR + EXPIRE gives shared, atomic counters across a fleet", c:T.redis },
+    { n:"lni-warning", label:"429 + Retry-After", sub:"Return X-RateLimit-* headers; on reject, send 429 with Retry-After", c:T.purple },
+  ];
+  return e("div", { style:{ padding:"8px 0" } },
+    rows.map((r,i) => e(M.div, { key:i, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.1,...ez},
+      style:{ display:"flex", alignItems:"flex-start", gap:12, padding:"11px 14px", marginBottom:8, borderRadius:10, border:`1px solid ${r.c}28`, background:`${r.c}08` }
+    },
+      e("div", { style:{ width:28, height:28, borderRadius:"50%", border:`1.5px solid ${r.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, color:r.c } },
+        e("i", { className:"lni " + r.n, style:{ fontSize:13 } })
+      ),
+      e("div", null,
+        e("div", { style:{ fontSize:13, fontWeight:600, color:r.c, marginBottom:2 } }, r.label),
+        e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.5 } }, r.sub)
+      )
+    ))
+  );
+};
+
+/* Router picks viz */
+const VizRouter = ({ sc, onClick }) => {
+  const props = { onClick };
+  switch (sc.viz) {
+    case "intro": return e(IntroViz);
+    case "fixed": return e(FixedWindowViz, { limit: sc.vizData?.limit || 10 });
+    case "boundary": return e(BoundaryViz);
+    case "slidingLog": return e(SlidingLogViz);
+    case "slidingCounter": return e(SlidingCounterViz);
+    case "tokenBucket": return e(TokenBucketViz, { capacity: sc.vizData?.capacity || 10, tokens: sc.vizData?.tokens || 6 });
+    case "tokenBucketAnim": return e(TokenBucketAnimViz);
+    case "leakyBucket": return e(LeakyBucketViz, { capacity: sc.vizData?.capacity || 6, queued: sc.vizData?.queued || 3 });
+    case "leakyVsToken": return e(LeakyVsTokenViz);
+    case "distributed": return e(DistributedViz);
+    case "headers": return e(HeadersViz);
+    case "rejected": return e(RejectedViz);
+    default: return null;
+  }
+};
+
+const DetailPanel = ({ detailKey, onClose }) => {
+  const d = DETAILS[detailKey];
+  if (!d) return null;
+  return e("div", {
+    style:{ width:340, flexShrink:0, background:T.surface, borderRadius:14, border:`1.5px solid ${d.color}44`, overflow:"hidden", alignSelf:"flex-start", position:"sticky", top:56 }
+  },
+    e("div", { style:{ padding:"14px 18px 12px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:8 } },
+        e("div", { style:{ width:8, height:8, borderRadius:"50%", background:d.color } }),
+        e("span", { style:{ fontSize:14, fontWeight:600, color:T.text1 } }, d.title)
+      ),
+      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6, transition:"color 0.2s" }, onMouseEnter:ev=>ev.target.style.color=T.text1, onMouseLeave:ev=>ev.target.style.color=T.text3 }, e("i", { className:"lni lni-xmark" }))
+    ),
+    e("div", { style:{ padding:"16px 18px 20px", maxHeight:"calc(100vh - 140px)", overflowY:"auto" } },
+      d.sections.map((s, i) =>
+        e("div", { key:i, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
+          e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
+        )
+      )
+    )
+  );
+};
+
+/* ─── APP ─── */
+function App() {
+  const [si, setSi] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [detail, setDetail] = useState(null);
+  const timer = useRef(null);
+  const sc = SCENES[si];
+
+  useEffect(() => { setPlaying(true); }, []);
+
+  useEffect(() => {
+    if (!playing) return;
+    const d = si === 0 ? 3400 : sc.finale ? 99999 : 4200;
+    timer.current = setTimeout(() => { si < SCENES.length-1 ? setSi(i=>i+1) : setPlaying(false); }, d);
+    return () => clearTimeout(timer.current);
+  }, [playing, si]);
+
+  const go = d => { clearTimeout(timer.current); setPlaying(false); setSi(i=>Math.max(0,Math.min(SCENES.length-1,i+d))); };
+  const jump = i => { clearTimeout(timer.current); setPlaying(false); setSi(i); };
+  const togglePlay = () => { if(si===SCENES.length-1){setSi(0);setPlaying(true);}else setPlaying(p=>!p); };
+  const toggleDetail = key => { setDetail(d => d===key ? null : key); clearTimeout(timer.current); setPlaying(false); };
+
+  return e("div", { style:{ display:"flex", gap:16, alignItems:"flex-start", justifyContent: detail ? "flex-start" : "center" } },
+  e("div", { style:{ width:760, flexShrink:0, background:T.bg, fontFamily:"system-ui,sans-serif", padding:20, borderRadius:16 } },
+
+    /* header */
+    e("div", { style:{ marginBottom:18 } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:10, marginBottom:11 } },
+        e(AP, { mode:"wait" },
+          e(M.div, { key:sc.act, initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, exit:{opacity:0}, transition:sp(400,28),
+            style:{ fontSize:9,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:T.purple,background:`${T.purple}14`,padding:"3px 10px",borderRadius:20,border:`1px solid ${T.purple}30`,flexShrink:0 }
+          }, sc.act)
+        ),
+        e("div", { style:{ flex:1, height:1, background:T.border, borderRadius:99, overflow:"hidden" } },
+          e(M.div, { animate:{width:`${si/(SCENES.length-1)*100}%`}, transition:{duration:0.5}, style:{height:"100%",background:T.purple,borderRadius:99} })
+        ),
+        e("span", { style:{ fontSize:10, color:T.text3 } }, `${si+1} / ${SCENES.length}`)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.title, initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, exit:{opacity:0,y:-8}, transition:ez,
+          style:{ fontSize:20,fontWeight:600,color:T.text1,marginBottom:4,letterSpacing:"-0.02em" }
+        }, sc.title)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
+          style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
+        }, sc.sub)
+      )
+    ),
+
+    e("div", { style:{ minHeight:460 } },
+
+      /* finale */
+      sc.finale && e(Finale),
+
+      /* main */
+      !sc.finale && e("div", null,
+
+        /* viz */
+        sc.viz && e("div", { style:{ marginBottom:10, cursor: sc.detailHint ? "pointer" : "default" }, onClick: sc.detailHint ? ()=>toggleDetail(sc.detailHint) : null },
+          e(VizRouter, { sc })
+        ),
+
+        /* code */
+        sc.code && sc.code.length > 0 && e("div", { style:{ marginBottom:10 } },
+          e(CodePanel, { tokens:sc.code, onClick: sc.detailHint ? ()=>toggleDetail(sc.detailHint) : null })
+        )
+      ),
+
+    ), /* close minHeight wrapper */
+
+    /* controls */
+    e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginTop:16 } },
+      e("button", { onClick:()=>go(-1), disabled:si===0,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===0?T.text3:T.text2,cursor:si===0?"not-allowed":"pointer",fontSize:11,transition:"color 0.2s" }
+      }, "← Back"),
+      e("button", { onClick:togglePlay,
+        style:{ padding:"6px 18px",borderRadius:8,border:`1px solid ${playing?T.coral:T.purple}44`,background:playing?`${T.coral}14`:`${T.purple}14`,color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all 0.2s" }
+      }, playing ? "⏸  Pause" : si===SCENES.length-1 ? "↺  Replay" : "▶  Play"),
+      e("button", { onClick:()=>go(1), disabled:si===SCENES.length-1,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
+      }, "Next →"),
+      e("div", { style:{ flex:1 } }),
+      e("div", { style:{ display:"flex", gap:4, alignItems:"center" } },
+        SCENES.map((_,i) =>
+          e("button", { key:i, onClick:()=>jump(i),
+            style:{ width:i===si?16:5,height:5,borderRadius:99,border:"none",padding:0,background:i===si?T.purple:i<si?`${T.purple}55`:T.border,cursor:"pointer",transition:"all 0.25s" }
+          })
+        )
+      )
+    )
+  ),
+  detail && e(DetailPanel, { detailKey:detail, onClose:()=>setDetail(null) })
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(e(App));
+</script>
+</body>
+</html>
