@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Critical Rendering Path</title>
+<link href="https://cdn.lineicons.com/5.0/lineicons.css" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111118;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px 16px 24px 196px;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  #root { width: 100%; max-width: 1120px; }
+  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: system-ui, sans-serif; }
+  .topnav a { text-decoration: none; color: #8888aa; font-size: 13px; transition: color 0.2s; }
+  .topnav a:hover { color: #e8e8f0; }
+  .topnav .name { font-weight: 600; color: #e8e8f0; font-size: 13px; }
+  .topnav .sep { color: #38384a; font-size: 12px; }
+  .topnav .current { color: #7c6fcd; font-size: 13px; font-weight: 500; }
+  .sidenav { position: fixed; top: 38px; left: 0; width: 180px; height: calc(100vh - 38px); background: #111118; border-right: 1px solid #2a2a38; padding: 14px 0; overflow-y: auto; z-index: 200; font-family: system-ui, sans-serif; }
+  .sidenav a { display: block; padding: 6px 16px; font-size: 11px; color: #8888aa; text-decoration: none; transition: color 0.2s, background 0.2s; border-left: 2px solid transparent; }
+  .sidenav a:hover { color: #e8e8f0; background: rgba(124,111,205,0.06); }
+  .sidenav a.active { color: #a99cf0; border-left-color: #7c6fcd; background: rgba(124,111,205,0.1); font-weight: 600; }
+  .sidenav .nav-section { padding: 8px 16px 4px; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #44445a; }
+  .sidenav .nav-section:first-child { padding-top: 4px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="../" class="name">Sharon Zhou</a>
+  <span class="sep">/</span>
+  <a href="../">Animations</a>
+  <span class="sep">/</span>
+  <span class="current">Critical Rendering Path</span>
+</nav>
+<nav class="sidenav">
+  <div class="nav-section">JavaScript</div>
+  <a href="../event-loop/">Event Loop</a>
+  <a href="../this-keyword/">this Keyword</a>
+  <a href="../hoisting/">Hoisting</a>
+  <a href="../closures/">Closures</a>
+  <a href="../garbage-collection/">Garbage Collection</a>
+  <a href="../event-delegation/">Event Delegation</a>
+  <a href="../iterators-generators/">Iterators & Generators</a>
+  <a href="../xhr-vs-fetch/">XHR vs fetch()</a>
+  <a href="../error-propagation/">Error Propagation</a>
+  <a href="../web-workers/">Web Workers</a>
+  <a href="../prototypal-inheritance/">Prototypal Inheritance</a>
+  <a href="../critical-rendering-path/" class="active">Critical Rendering Path</a>
+  <a href="../reflow-vs-repaint/">Reflow vs Repaint</a>
+  <a href="../request-animation-frame/">requestAnimationFrame</a>
+  <a href="../css-box-model/">CSS Box Model & Layout</a>
+  <a href="../cors/">CORS</a>
+  <a href="../websocket-vs-sse/">WebSocket vs SSE</a>
+  <a href="../web-security/">Web Security</a>
+  <div class="nav-section">Infrastructure</div>
+  <a href="../vms-vs-docker/">VMs vs Docker</a>
+  <a href="../opentelemetry/">OpenTelemetry</a>
+</nav>
+<div id="root" style="margin-top: 36px;"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/framer-motion@11/dist/framer-motion.js"></script>
+<script>
+const { useState, useEffect, useRef } = React;
+const { motion, AnimatePresence } = window.Motion;
+const e = React.createElement;
+const M = motion;
+const AP = AnimatePresence;
+const sp = (s=380,d=28) => ({ type:"spring", stiffness:s, damping:d });
+const ez = { duration:0.32, ease:[0.22,1,0.36,1] };
+
+const T = {
+  bg:"#111118", surface:"#18181f", surface2:"#1e1e28",
+  border:"#2a2a38", border2:"#38384a",
+  text1:"#e8e8f0", text2:"#8888aa", text3:"#44445a",
+  purple:"#7c6fcd", purpleL:"#a99cf0",
+  teal:"#3db89a", tealL:"#6dd4b8",
+  coral:"#c4694a", coralL:"#e08a6a",
+  blue:"#4a8fd4", blueL:"#82b4e8",
+  amber:"#d4a84a", amberL:"#e8c86a",
+  green:"#4ac46a", greenL:"#6ae88a",
+  red:"#e05555", redL:"#ff7777",
+  html:"#e06040", htmlL:"#ff8866",
+  css:"#4a8fd4", cssL:"#82b4e8",
+  js:"#d4a84a", jsL:"#e8c86a",
+  render:"#3db89a", renderL:"#6dd4b8",
+  layout:"#c46ad4", layoutL:"#e08ae8",
+  paint:"#4ac46a", paintL:"#6ae88a",
+  comp:"#7c6fcd", compL:"#a99cf0",
+  codeBase:"#141428",
+};
+
+const TS = {
+  fn:{color:"#82aaff"}, meth:{color:"#89ddff"}, str:{color:"#c3e88d"},
+  kw:{color:"#c792ea"}, num:{color:"#f78c6c"}, punc:{color:"#89ddff"},
+  plain:{color:"#a6accd"}, cmt:{color:"#546e7a",fontStyle:"italic"},
+  tag:{color:"#f07178"}, attr:{color:"#ffcb6b"}, val:{color:"#c3e88d"},
+};
+
+/* ─── PIPELINE NODE ─── */
+const PipeNode = ({ label, color, active, delay=0, small=false }) =>
+  e(M.div, {
+    initial:{opacity:0,scale:0.8}, animate:{opacity:active?1:0.35,scale:active?1:0.92},
+    transition:{delay,...ez},
+    style:{
+      padding:small?"6px 10px":"10px 16px", borderRadius:10,
+      border:`1.5px solid ${active?color:T.border}`,
+      background:active?`${color}18`:T.surface,
+      textAlign:"center", minWidth:small?60:80,
+    }
+  },
+    e("span", { style:{ fontSize:small?10:12, fontWeight:600, color:active?color:T.text3, fontFamily:"'SF Mono',monospace" } }, label)
+  );
+
+/* ─── ARROW ─── */
+const Arrow = ({ active, delay=0, vertical=false }) =>
+  e(M.div, {
+    initial:{opacity:0}, animate:{opacity:active?0.7:0.2}, transition:{delay,...ez},
+    style:{ display:"flex", alignItems:vertical?"flex-start":"center", justifyContent:"center",
+      padding:vertical?"2px 0":"0 2px", color:active?T.text2:T.text3, fontSize:vertical?14:16,
+      transform:vertical?"rotate(90deg)":"none"
+    }
+  }, "\u2192");
+
+/* ─── FLOW DIAGRAM ─── */
+const FlowDiagram = ({ stages, activeUpTo=-1 }) => {
+  return e("div", { style:{ display:"flex", flexWrap:"wrap", alignItems:"center", justifyContent:"center", gap:4, padding:"12px 8px" } },
+    stages.flatMap((s, i) => {
+      const items = [e(PipeNode, { key:s.label, label:s.label, color:s.color, active:i<=activeUpTo, delay:i*0.08, small:stages.length>5 })];
+      if (i < stages.length - 1) items.push(e(Arrow, { key:`a${i}`, active:i<activeUpTo, delay:i*0.08 }));
+      return items;
+    })
+  );
+};
+
+/* ─── TREE VISUALIZATION ─── */
+const TreeNode = ({ label, color, children=[], depth=0, delay=0 }) =>
+  e(M.div, {
+    initial:{opacity:0,x:-12}, animate:{opacity:1,x:0}, transition:{delay:delay+depth*0.06,...ez},
+    style:{ marginLeft:depth*20, marginBottom:4 }
+  },
+    e("div", { style:{ display:"flex", alignItems:"center", gap:6, padding:"4px 10px", borderRadius:6, border:`1px solid ${color}33`, background:`${color}0c`, width:"fit-content" } },
+      e("span", { style:{ fontSize:11, fontWeight:600, color, fontFamily:"'SF Mono',monospace" } }, label)
+    ),
+    children.map((c, ci) => e(TreeNode, { key:ci, ...c, depth:depth+1, delay:delay+ci*0.05 }))
+  );
+
+/* ─── BLOCKING DIAGRAM ─── */
+const BlockingBar = ({ label, color, start, width, blocked, delay=0 }) =>
+  e(M.div, {
+    initial:{opacity:0,scaleX:0}, animate:{opacity:1,scaleX:1}, transition:{delay,...ez},
+    style:{ position:"relative", marginLeft:`${start}%`, width:`${width}%`, height:24, borderRadius:6,
+      background:blocked?`repeating-linear-gradient(45deg,${color}22,${color}22 4px,${color}0a 4px,${color}0a 8px)`:`${color}28`,
+      border:`1px solid ${color}55`, transformOrigin:"left", display:"flex", alignItems:"center", paddingLeft:8, marginBottom:6 }
+  },
+    e("span", { style:{ fontSize:9, fontWeight:600, color, whiteSpace:"nowrap" } }, label),
+    blocked && e("span", { style:{ fontSize:8, color:T.red, marginLeft:6, fontWeight:700 } }, "BLOCKED")
+  );
+
+const FULL_PIPELINE = [
+  { label:"HTML", color:T.html },
+  { label:"DOM", color:T.html },
+  { label:"CSS", color:T.css },
+  { label:"CSSOM", color:T.css },
+  { label:"Render Tree", color:T.render },
+  { label:"Layout", color:T.layout },
+  { label:"Paint", color:T.paint },
+  { label:"Composite", color:T.comp },
+];
+
+const SCENES = [
+  {
+    id:0, act:"01",
+    title:"The Critical Rendering Path",
+    sub:"You type a URL and hit Enter. Within milliseconds the browser transforms raw bytes into pixels on screen. This is the Critical Rendering Path \u2014 the sequence of steps between receiving HTML and rendering the first frame.",
+    code:[
+      [["cmt","// The journey of a web page"]],
+      [["cmt","// URL \u2192 Network \u2192 Bytes \u2192 Characters"]],
+      [["cmt","// \u2192 Tokens \u2192 Nodes \u2192 Object Models"]],
+      [["cmt","// \u2192 Render Tree \u2192 Layout \u2192 Paint"]],
+      [["cmt","// \u2192 Composite \u2192 Pixels on screen"]],
+    ],
+    viz:"flow", flowStages:FULL_PIPELINE, activeUpTo:-1,
+  },
+  {
+    id:1, act:"02",
+    title:"HTML parsing \u2192 DOM tree",
+    sub:"The browser reads the HTML byte stream and converts it into tokens (<html>, <body>, <div>, text...), then builds the Document Object Model \u2014 a tree structure representing every element and its relationships.",
+    code:[
+      [["tag","<html>"]],
+      [["tag","  <head>"]],
+      [["tag","    <title>"],["plain","My Page"],["tag","</title>"]],
+      [["tag","  </head>"]],
+      [["tag","  <body>"]],
+      [["tag","    <h1>"],["plain","Hello"],["tag","</h1>"]],
+      [["tag","    <p>"],["plain","World"],["tag","</p>"]],
+      [["tag","  </body>"]],
+      [["tag","</html>"]],
+    ],
+    viz:"tree",
+    tree:{ label:"document", color:T.html, children:[
+      { label:"html", color:T.html, children:[
+        { label:"head", color:T.html, children:[
+          { label:"title", color:T.html, children:[{ label:"\"My Page\"", color:T.text2 }] }
+        ]},
+        { label:"body", color:T.html, children:[
+          { label:"h1", color:T.html, children:[{ label:"\"Hello\"", color:T.text2 }] },
+          { label:"p", color:T.html, children:[{ label:"\"World\"", color:T.text2 }] },
+        ]}
+      ]}
+    ]},
+  },
+  {
+    id:2, act:"03",
+    title:"CSS parsing \u2192 CSSOM tree",
+    sub:"CSS is parsed into the CSS Object Model \u2014 another tree. Each node stores the computed styles that apply to it. The CSSOM mirrors the DOM structure but carries style information instead of content.",
+    code:[
+      [["fn","body"],["plain"," { "],["attr","font-size"],["punc",": "],["num","16px"],["punc","; }"]],
+      [["fn","h1"],["plain"," { "],["attr","color"],["punc",": "],["val","blue"],["punc","; "],["attr","font-size"],["punc",": "],["num","2em"],["punc","; }"]],
+      [["fn","p"],["plain","  { "],["attr","color"],["punc",": "],["val","gray"],["punc","; }"]],
+      [["fn",".hidden"],["plain"," { "],["attr","display"],["punc",": "],["val","none"],["punc","; }"]],
+    ],
+    viz:"tree",
+    tree:{ label:"CSSOM", color:T.css, children:[
+      { label:"body", color:T.css, children:[
+        { label:"font-size: 16px", color:T.cssL },
+        { label:"h1", color:T.css, children:[
+          { label:"color: blue", color:T.cssL },
+          { label:"font-size: 2em", color:T.cssL },
+        ]},
+        { label:"p", color:T.css, children:[
+          { label:"color: gray", color:T.cssL },
+        ]},
+        { label:".hidden", color:T.css, children:[
+          { label:"display: none", color:T.red },
+        ]},
+      ]}
+    ]},
+  },
+  {
+    id:3, act:"04",
+    title:"Render Tree = DOM + CSSOM",
+    sub:"The browser combines the DOM and CSSOM into a Render Tree. Only visible nodes appear \u2014 <head>, display:none elements, and scripts are excluded. Each render node knows what to display and how to style it.",
+    code:[
+      [["cmt","// Render tree includes only visible content"]],
+      [["cmt","// \u2717 <head>       \u2014 not visual"]],
+      [["cmt","// \u2717 display:none \u2014 hidden"]],
+      [["cmt","// \u2717 <script>     \u2014 not visual"]],
+      [["cmt","// \u2713 <body>       \u2014 visible"]],
+      [["cmt","// \u2713 <h1>         \u2014 visible"]],
+      [["cmt","// \u2713 <p>          \u2014 visible"]],
+    ],
+    viz:"renderTree",
+  },
+  {
+    id:4, act:"05",
+    title:"Layout \u2014 calculating geometry",
+    sub:"The browser walks the Render Tree to calculate the exact position and size of every element. This is called Layout (or Reflow). It computes widths, heights, margins, padding \u2014 turning relative CSS units into absolute pixel coordinates.",
+    code:[
+      [["cmt","// Layout computes geometry"]],
+      [["fn","body"],["plain","   { "],["attr","x"],["punc",":"],["num","0"],["plain",", "],["attr","y"],["punc",":"],["num","0"],["plain",", "],["attr","w"],["punc",":"],["num","1200"],["plain",", "],["attr","h"],["punc",":"],["num","800"],["plain"," }"]],
+      [["fn","h1"],["plain","     { "],["attr","x"],["punc",":"],["num","8"],["plain",", "],["attr","y"],["punc",":"],["num","8"],["plain",", "],["attr","w"],["punc",":"],["num","1184"],["plain",", "],["attr","h"],["punc",":"],["num","38"],["plain"," }"]],
+      [["fn","p"],["plain","      { "],["attr","x"],["punc",":"],["num","8"],["plain",", "],["attr","y"],["punc",":"],["num","54"],["plain",", "],["attr","w"],["punc",":"],["num","1184"],["plain",", "],["attr","h"],["punc",":"],["num","20"],["plain"," }"]],
+    ],
+    viz:"layout",
+  },
+  {
+    id:5, act:"06",
+    title:"Paint \u2014 filling in pixels",
+    sub:"Once layout is complete, the browser paints every visible node. It draws text, colors, images, borders, and shadows into layers. The paint step converts the layout boxes into actual pixel data.",
+    code:[
+      [["cmt","// Paint operations (simplified)"]],
+      [["fn","drawRect"],["punc","("],["num","0"],["punc",","],["num","0"],["punc",","],["num","1200"],["punc",","],["num","800"],["punc",","],["str","'white'"],["punc",")"]],
+      [["fn","drawText"],["punc","("],["str","'Hello'"],["punc",","],["num","8"],["punc",","],["num","38"],["punc",","],["str","'blue'"],["punc",")"]],
+      [["fn","drawText"],["punc","("],["str","'World'"],["punc",","],["num","8"],["punc",","],["num","66"],["punc",","],["str","'gray'"],["punc",")"]],
+    ],
+    viz:"paint",
+  },
+  {
+    id:6, act:"07",
+    title:"Composite \u2014 GPU layers merged",
+    sub:"The browser separates painted content into compositing layers (for transforms, opacity, will-change elements). The GPU composites these layers in the correct order into the final image you see on screen.",
+    code:[
+      [["cmt","// Compositing layers"]],
+      [["cmt","// Layer 1: Background + text"]],
+      [["cmt","// Layer 2: Fixed header (transform)"]],
+      [["cmt","// Layer 3: Animated overlay"]],
+      [["cmt","// GPU merges layers \u2192 final frame"]],
+    ],
+    viz:"composite",
+  },
+  {
+    id:7, act:"08",
+    title:"Render-blocking resources",
+    sub:"CSS blocks rendering \u2014 the browser won\u2019t paint until all CSS is parsed into the CSSOM. JavaScript blocks HTML parsing \u2014 when the parser hits a <script>, it stops building the DOM until the script downloads and executes.",
+    code:[
+      [["tag","<head>"]],
+      [["plain","  "],["cmt","<!-- Render-blocking CSS -->"]],
+      [["plain","  "],["tag","<link "],["attr","rel"],["punc","="],["str","\"stylesheet\""],["tag"," "],["attr","href"],["punc","="],["str","\"style.css\""],["tag",">"]],
+      [["plain",""]],
+      [["plain","  "],["cmt","<!-- Parser-blocking JS -->"]],
+      [["plain","  "],["tag","<script "],["attr","src"],["punc","="],["str","\"app.js\""],["tag",">"],["tag","</script>"]],
+      [["tag","</head>"]],
+    ],
+    viz:"blocking",
+  },
+  {
+    id:8, act:"09",
+    title:"async vs defer for scripts",
+    sub:"async downloads the script in parallel and executes it as soon as it\u2019s ready (blocking parsing briefly). defer downloads in parallel but waits to execute until the DOM is fully parsed. Both avoid blocking the initial parse.",
+    code:[
+      [["cmt","// Default: blocks parsing completely"]],
+      [["tag","<script "],["attr","src"],["punc","="],["str","\"app.js\""],["tag",">"],["tag","</script>"]],
+      [["cmt",""]],
+      [["cmt","// async: download parallel, execute ASAP"]],
+      [["tag","<script "],["kw","async"],["tag"," "],["attr","src"],["punc","="],["str","\"analytics.js\""],["tag",">"],["tag","</script>"]],
+      [["cmt",""]],
+      [["cmt","// defer: download parallel, execute after DOM"]],
+      [["tag","<script "],["kw","defer"],["tag"," "],["attr","src"],["punc","="],["str","\"app.js\""],["tag",">"],["tag","</script>"]],
+    ],
+    viz:"asyncDefer",
+  },
+  {
+    id:9, act:"10",
+    title:"CRP optimization strategies",
+    sub:"Minimize critical resources (inline small CSS, defer non-critical JS). Reduce critical path length (fewer round trips). Minimize critical bytes (compress, minify). Every resource on the critical path delays First Paint.",
+    code:[
+      [["cmt","// 1. Inline critical CSS"]],
+      [["tag","<style>"],["fn","h1"],["punc","{"],["attr","color"],["punc",":"],["val","blue"],["punc","}"],["tag","</style>"]],
+      [["cmt",""]],
+      [["cmt","// 2. Defer non-critical CSS"]],
+      [["tag","<link "],["attr","rel"],["punc","="],["str","\"preload\""],["tag"," "],["attr","as"],["punc","="],["str","\"style\""],["tag",">"]],
+      [["cmt",""]],
+      [["cmt","// 3. Minify + compress everything"]],
+      [["cmt","// 4. Use HTTP/2 for parallel loading"]],
+    ],
+    viz:"optimization",
+  },
+  {
+    id:10, act:"11",
+    title:"FCP and LCP \u2014 key metrics",
+    sub:"First Contentful Paint (FCP) is when the browser renders the first bit of content. Largest Contentful Paint (LCP) is when the main content finishes rendering. Both are Core Web Vitals that measure real user experience.",
+    code:[
+      [["cmt","// Performance Observer API"]],
+      [["kw","new"],["plain"," "],["fn","PerformanceObserver"],["punc","("],["punc","("],["plain","list"],["punc",")"],["plain"," "],["kw","=>"],["plain"," {"]],
+      [["plain","  list"],["punc","."],["meth","getEntries"],["punc","()."],["meth","forEach"],["punc","("],["plain","e"],["plain"," "],["kw","=>"]],
+      [["plain","    "],["fn","console"],["punc","."],["meth","log"],["punc","("],["plain","e"],["punc","."],["fn","name"],["punc",", "],["plain","e"],["punc","."],["fn","startTime"],["punc",")"]],
+      [["plain","  "],["punc",")"]],
+      [["punc","})."],["meth","observe"],["punc","({"],["attr","type"],["punc",":"],["str","'paint'"],["punc","})"]],
+    ],
+    viz:"metrics",
+  },
+  {
+    id:11, act:"12",
+    title:"Resource hints \u2014 preload, prefetch, preconnect",
+    sub:"preload tells the browser to fetch a resource immediately (it\u2019s needed now). prefetch hints that a resource will be needed on a future page. preconnect establishes early connections to important origins.",
+    code:[
+      [["cmt","// Preload: needed for current page"]],
+      [["tag","<link "],["attr","rel"],["punc","="],["str","\"preload\""],["tag"," "],["attr","href"],["punc","="],["str","\"font.woff2\""],["tag"," "],["attr","as"],["punc","="],["str","\"font\""],["tag",">"]],
+      [["cmt",""]],
+      [["cmt","// Prefetch: needed for next page"]],
+      [["tag","<link "],["attr","rel"],["punc","="],["str","\"prefetch\""],["tag"," "],["attr","href"],["punc","="],["str","\"next.js\""],["tag",">"]],
+      [["cmt",""]],
+      [["cmt","// Preconnect: early DNS + TLS"]],
+      [["tag","<link "],["attr","rel"],["punc","="],["str","\"preconnect\""],["tag"," "],["attr","href"],["punc","="],["str","\"https://api.example.com\""],["tag",">"]],
+    ],
+    viz:"hints",
+  },
+  {
+    id:12, act:"13",
+    title:"The full pipeline",
+    sub:"Here\u2019s the complete Critical Rendering Path in one view: HTML bytes become the DOM, CSS bytes become the CSSOM, they merge into the Render Tree, Layout calculates geometry, Paint fills pixels, and Composite sends layers to the GPU.",
+    code:[
+      [["cmt","// The complete CRP pipeline"]],
+      [["cmt","// HTML \u2192 DOM"]],
+      [["cmt","//               \u2192 Render Tree \u2192 Layout \u2192 Paint \u2192 Composite"]],
+      [["cmt","// CSS  \u2192 CSSOM"]],
+      [["cmt","//"]],
+      [["cmt","// Optimizing this path = faster First Paint"]],
+    ],
+    viz:"fullPipeline",
+  },
+  {
+    id:13, act:"\u2713",
+    title:"Critical Rendering Path \u2014 summary",
+    sub:"The browser\u2019s rendering pipeline transforms raw HTML, CSS, and JS into pixels. Understanding each step lets you optimize what matters: reduce blocking resources, minimize critical bytes, and deliver pixels to users faster.",
+    code:[], finale:true,
+  },
+];
+
+/* ─── DETAIL CONTENT ─── */
+const DETAILS = {
+  dom: {
+    title:"DOM Tree",
+    color:T.html,
+    sections:[
+      {heading:"What is the DOM?",body:"The Document Object Model is a tree representation of the HTML document. Each HTML element becomes a node. The browser reads HTML bytes, converts them to characters, identifies tokens (<tags>), converts tokens to nodes, and links nodes into the tree."},
+      {heading:"Incremental parsing",body:"The DOM is built incrementally \u2014 the browser doesn\u2019t wait for the entire HTML file. As bytes arrive, they are parsed into the tree. This is why you see partial page renders."},
+      {heading:"Parser blocking",body:"When the parser encounters a <script> tag without async/defer, it must stop building the DOM, download the script, execute it, then resume parsing. Scripts can modify the DOM via document.write()."},
+    ]
+  },
+  cssom: {
+    title:"CSSOM Tree",
+    color:T.css,
+    sections:[
+      {heading:"What is the CSSOM?",body:"The CSS Object Model mirrors the DOM but stores computed styles. Each node represents a CSS rule, with specificity and cascade rules already resolved."},
+      {heading:"Render-blocking",body:"CSS is render-blocking by default. The browser won\u2019t start building the Render Tree until the CSSOM is complete. Unlike the DOM, CSS can\u2019t be built incrementally \u2014 later rules can override earlier ones (the cascade)."},
+      {heading:"Optimization",body:"Inline critical CSS directly in <style> tags so it arrives with the HTML. Use media queries on <link> tags to mark non-critical CSS (e.g., print styles). Minify CSS to reduce bytes."},
+    ]
+  },
+  pipeline: {
+    title:"The Pipeline",
+    color:T.render,
+    sections:[
+      {heading:"Critical path",body:"The critical rendering path is the minimum set of work the browser must do before it can render the first pixel. It includes:\n\u2022 Parsing HTML into DOM\n\u2022 Parsing CSS into CSSOM\n\u2022 Building the Render Tree\n\u2022 Running Layout\n\u2022 Painting pixels"},
+      {heading:"Why it matters",body:"Every millisecond on the critical path delays the user seeing content. Pages that optimize the CRP feel fast. Pages that don\u2019t feel sluggish even with the same total load time."},
+      {heading:"Measuring",body:"Use Chrome DevTools \u2192 Performance tab to see the CRP visually. The Lighthouse audit identifies critical-path issues. The Navigation Timing API gives programmatic access."},
+    ]
+  },
+  code: {
+    title:"Source Code",
+    color:T.purpleL,
+    sections:[
+      {heading:"Reading the examples",body:"Each scene shows HTML, CSS, or JavaScript relevant to that step of the rendering pipeline. Tags, attributes, and values are syntax-highlighted."},
+      {heading:"Key concepts",body:"Render-blocking: CSS blocks paint, JS blocks parsing.\nasync/defer: Control when scripts execute.\nResource hints: preload, prefetch, preconnect.\nCore Web Vitals: FCP, LCP, CLS."},
+    ]
+  },
+};
+
+/* ─── COMPONENTS ─── */
+const CodePanel = ({ tokens, onClick }) =>
+  e("div", { onClick, style:{ background:T.codeBase, borderRadius:12, overflow:"hidden", border:`1px solid ${T.border}`, cursor:onClick?"pointer":"default" } },
+    e("div", { style:{ padding:"10px 14px 8px", borderBottom:`1px solid ${T.border}`, display:"flex", gap:7 } },
+      ...["#ff5f57","#febc2e","#28c840"].map((c,i) =>
+        e("div", { key:i, style:{ width:11, height:11, borderRadius:"50%", background:c } })
+      )
+    ),
+    e("div", { style:{ padding:"14px 18px 16px", fontFamily:"'SF Mono','Fira Code','Consolas',monospace", fontSize:12, lineHeight:1.85 } },
+      tokens.map((line, li) =>
+        e("div", { key:li },
+          line.map(([cls, txt], ti) =>
+            e("span", { key:ti, style:{ ...TS[cls], whiteSpace:"pre" } }, txt)
+          )
+        )
+      )
+    )
+  );
+
+/* ─── RENDER TREE VIZ ─── */
+const RenderTreeViz = () => {
+  const domNodes = [
+    { label:"document", color:T.html },
+    { label:"html", color:T.html, indent:1 },
+    { label:"head", color:T.text3, indent:2, excluded:true },
+    { label:"body", color:T.html, indent:2 },
+    { label:"h1", color:T.html, indent:3 },
+    { label:"p", color:T.html, indent:3 },
+    { label:".hidden", color:T.text3, indent:3, excluded:true },
+  ];
+  const cssomNodes = [
+    { label:"CSSOM", color:T.css },
+    { label:"body", color:T.css, indent:1 },
+    { label:"h1: blue, 2em", color:T.cssL, indent:2 },
+    { label:"p: gray", color:T.cssL, indent:2 },
+    { label:".hidden: none", color:T.red, indent:2, excluded:true },
+  ];
+  const renderNodes = [
+    { label:"Render Tree", color:T.render },
+    { label:"body", color:T.render, indent:1 },
+    { label:"h1 \u2014 blue, 32px", color:T.renderL, indent:2 },
+    { label:"p \u2014 gray, 16px", color:T.renderL, indent:2 },
+  ];
+
+  return e("div", { style:{ display:"flex", gap:8, alignItems:"flex-start" } },
+    /* DOM */
+    e("div", { style:{ flex:1, borderRadius:10, border:`1px solid ${T.html}33`, background:`${T.html}08`, padding:10 } },
+      e("div", { style:{ fontSize:10, fontWeight:700, color:T.htmlL, marginBottom:8, textTransform:"uppercase", letterSpacing:"0.06em" } }, "DOM"),
+      domNodes.map((n,i) => e(M.div, { key:i, initial:{opacity:0,x:-8}, animate:{opacity:n.excluded?0.35:1,x:0}, transition:{delay:i*0.04,...ez},
+        style:{ marginLeft:(n.indent||0)*12, fontSize:10, fontWeight:600, color:n.excluded?T.text3:n.color, fontFamily:"monospace", padding:"2px 0",
+          textDecoration:n.excluded?"line-through":"none" }
+      }, n.label))
+    ),
+    /* + */
+    e("div", { style:{ display:"flex", alignItems:"center", color:T.text3, fontSize:18, paddingTop:40 } }, "+"),
+    /* CSSOM */
+    e("div", { style:{ flex:1, borderRadius:10, border:`1px solid ${T.css}33`, background:`${T.css}08`, padding:10 } },
+      e("div", { style:{ fontSize:10, fontWeight:700, color:T.cssL, marginBottom:8, textTransform:"uppercase", letterSpacing:"0.06em" } }, "CSSOM"),
+      cssomNodes.map((n,i) => e(M.div, { key:i, initial:{opacity:0,x:-8}, animate:{opacity:n.excluded?0.35:1,x:0}, transition:{delay:i*0.04+0.15,...ez},
+        style:{ marginLeft:(n.indent||0)*12, fontSize:10, fontWeight:600, color:n.excluded?T.text3:n.color, fontFamily:"monospace", padding:"2px 0",
+          textDecoration:n.excluded?"line-through":"none" }
+      }, n.label))
+    ),
+    /* = */
+    e("div", { style:{ display:"flex", alignItems:"center", color:T.text3, fontSize:18, paddingTop:40 } }, "="),
+    /* Render Tree */
+    e("div", { style:{ flex:1, borderRadius:10, border:`1px solid ${T.render}33`, background:`${T.render}08`, padding:10 } },
+      e("div", { style:{ fontSize:10, fontWeight:700, color:T.renderL, marginBottom:8, textTransform:"uppercase", letterSpacing:"0.06em" } }, "RENDER"),
+      renderNodes.map((n,i) => e(M.div, { key:i, initial:{opacity:0,x:-8}, animate:{opacity:1,x:0}, transition:{delay:i*0.04+0.3,...ez},
+        style:{ marginLeft:(n.indent||0)*12, fontSize:10, fontWeight:600, color:n.color, fontFamily:"monospace", padding:"2px 0" }
+      }, n.label))
+    )
+  );
+};
+
+/* ─── LAYOUT VIZ ─── */
+const LayoutViz = () => {
+  const boxes = [
+    { label:"body", x:0, y:0, w:100, h:100, color:T.layout },
+    { label:"h1 \u2014 \"Hello\"", x:2, y:2, w:96, h:28, color:T.html },
+    { label:"p \u2014 \"World\"", x:2, y:34, w:96, h:18, color:T.css },
+  ];
+  return e("div", { style:{ position:"relative", height:200, borderRadius:10, border:`1px solid ${T.layout}33`, background:`${T.layout}06`, overflow:"hidden" } },
+    boxes.map((b,i) => e(M.div, {
+      key:i, initial:{opacity:0,scale:0.9}, animate:{opacity:1,scale:1}, transition:{delay:i*0.12,...ez},
+      style:{ position:"absolute", left:`${b.x}%`, top:`${b.y}%`, width:`${b.w}%`, height:`${b.h}%`,
+        border:`1.5px dashed ${b.color}66`, borderRadius:6, display:"flex", alignItems:"center", justifyContent:"center" }
+    },
+      e("span", { style:{ fontSize:11, fontWeight:600, color:b.color, fontFamily:"monospace", background:`${T.bg}cc`, padding:"2px 8px", borderRadius:4 } }, b.label)
+    )),
+    /* dimension arrows */
+    e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.4,...ez},
+      style:{ position:"absolute", bottom:4, right:8, fontSize:9, color:T.layoutL, fontFamily:"monospace" }
+    }, "1200 \u00d7 800 viewport")
+  );
+};
+
+/* ─── PAINT VIZ ─── */
+const PaintViz = () => {
+  const steps = [
+    { label:"1. Fill background: white", color:T.text2, delay:0 },
+    { label:"2. Draw text \"Hello\" at (8,38) in blue", color:T.blue, delay:0.15 },
+    { label:"3. Draw text \"World\" at (8,66) in gray", color:T.text2, delay:0.3 },
+    { label:"4. Draw borders, shadows...", color:T.paint, delay:0.45 },
+  ];
+  return e("div", { style:{ display:"flex", gap:10 } },
+    e("div", { style:{ flex:1 } },
+      e("div", { style:{ fontSize:10, fontWeight:700, color:T.paintL, marginBottom:8, textTransform:"uppercase", letterSpacing:"0.06em" } }, "Paint Order"),
+      steps.map((s,i) => e(M.div, { key:i, initial:{opacity:0,x:-10}, animate:{opacity:1,x:0}, transition:{delay:s.delay,...ez},
+        style:{ fontSize:11, color:s.color, fontFamily:"monospace", padding:"5px 10px", marginBottom:4, borderRadius:6, border:`1px solid ${s.color}22`, background:`${s.color}08` }
+      }, s.label))
+    ),
+    e("div", { style:{ flex:1, borderRadius:10, border:`1px solid ${T.paint}33`, background:"#1a1a2a", padding:16, display:"flex", flexDirection:"column", gap:6, justifyContent:"center" } },
+      e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0,...ez}, style:{ background:"#ffffff0a", borderRadius:6, padding:12 } },
+        e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.2,...ez}, style:{ fontSize:20, fontWeight:700, color:T.blueL, marginBottom:4 } }, "Hello"),
+        e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.35,...ez}, style:{ fontSize:14, color:T.text2 } }, "World"),
+      )
+    )
+  );
+};
+
+/* ─── COMPOSITE VIZ ─── */
+const CompositeViz = () => {
+  const layers = [
+    { label:"Layer 3: Animated overlay", color:T.comp, offset:40 },
+    { label:"Layer 2: Fixed header (transform)", color:T.amber, offset:20 },
+    { label:"Layer 1: Main content", color:T.render, offset:0 },
+  ];
+  return e("div", { style:{ display:"flex", gap:16, alignItems:"center" } },
+    e("div", { style:{ flex:1, position:"relative", height:200 } },
+      layers.map((l,i) => e(M.div, {
+        key:i, initial:{opacity:0,y:20,x:0}, animate:{opacity:0.9,y:0,x:l.offset}, transition:{delay:i*0.15,...ez},
+        style:{ position:"absolute", left:0, bottom:i*55, width:"80%", height:50, borderRadius:8,
+          border:`1.5px solid ${l.color}66`, background:`${l.color}15`, display:"flex", alignItems:"center", paddingLeft:12,
+          boxShadow:`0 4px 12px ${l.color}10` }
+      },
+        e("span", { style:{ fontSize:10, fontWeight:600, color:l.color, fontFamily:"monospace" } }, l.label)
+      ))
+    ),
+    e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 } },
+      e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.5,...ez}, style:{ fontSize:24, color:T.text3 } }, "\u2192"),
+      e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.6,...ez},
+        style:{ padding:"10px 16px", borderRadius:10, border:`1px solid ${T.comp}55`, background:`${T.comp}14`, textAlign:"center" }
+      },
+        e("div", { style:{ fontSize:10, fontWeight:700, color:T.compL, marginBottom:2 } }, "GPU"),
+        e("div", { style:{ fontSize:9, color:T.text2 } }, "Composite")
+      )
+    ),
+    e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 } },
+      e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.7,...ez}, style:{ fontSize:24, color:T.text3 } }, "\u2192"),
+      e(M.div, { initial:{opacity:0,scale:0.9}, animate:{opacity:1,scale:1}, transition:{delay:0.8,...ez},
+        style:{ width:80, height:60, borderRadius:8, border:`1.5px solid ${T.paintL}55`, background:`linear-gradient(135deg, ${T.paint}15, ${T.comp}15)`, display:"flex", alignItems:"center", justifyContent:"center" }
+      },
+        e("span", { style:{ fontSize:20 } }, "\ud83d\udcbb")
+      )
+    )
+  );
+};
+
+/* ─── BLOCKING VIZ ─── */
+const BlockingViz = () =>
+  e("div", { style:{ borderRadius:10, border:`1px solid ${T.border2}`, background:T.surface, padding:14 } },
+    e("div", { style:{ fontSize:10, fontWeight:700, color:T.text2, marginBottom:10, textTransform:"uppercase", letterSpacing:"0.06em" } }, "Timeline"),
+    e("div", { style:{ marginBottom:6, fontSize:9, color:T.text3, fontFamily:"monospace" } }, "HTML Parsing"),
+    e(BlockingBar, { label:"Parse HTML", color:T.html, start:0, width:25, delay:0 }),
+    e(BlockingBar, { label:"Blocked by JS", color:T.html, start:25, width:20, blocked:true, delay:0.1 }),
+    e(BlockingBar, { label:"Resume parsing", color:T.html, start:45, width:30, delay:0.2 }),
+    e("div", { style:{ marginTop:10, marginBottom:6, fontSize:9, color:T.text3, fontFamily:"monospace" } }, "CSS Loading"),
+    e(BlockingBar, { label:"Download + parse CSS", color:T.css, start:5, width:35, delay:0.15 }),
+    e("div", { style:{ marginTop:10, marginBottom:6, fontSize:9, color:T.text3, fontFamily:"monospace" } }, "JS Execution"),
+    e(BlockingBar, { label:"Download JS", color:T.js, start:25, width:12, delay:0.2 }),
+    e(BlockingBar, { label:"Execute JS", color:T.js, start:37, width:8, delay:0.25 }),
+    e("div", { style:{ marginTop:10, marginBottom:6, fontSize:9, color:T.text3, fontFamily:"monospace" } }, "Rendering"),
+    e(BlockingBar, { label:"Blocked until CSSOM ready", color:T.render, start:0, width:40, blocked:true, delay:0.3 }),
+    e(BlockingBar, { label:"Render", color:T.render, start:40, width:20, delay:0.35 }),
+  );
+
+/* ─── ASYNC/DEFER VIZ ─── */
+const AsyncDeferViz = () => {
+  const modes = [
+    { label:"Default <script>", bars:[
+      { label:"Parse", color:T.html, start:0, width:20 },
+      { label:"Download", color:T.js, start:20, width:15 },
+      { label:"Execute", color:T.amber, start:35, width:10 },
+      { label:"Parse", color:T.html, start:45, width:30 },
+    ]},
+    { label:"<script async>", bars:[
+      { label:"Parse", color:T.html, start:0, width:40 },
+      { label:"Download (parallel)", color:T.js, start:5, width:20 },
+      { label:"Exec", color:T.amber, start:25, width:8 },
+      { label:"Parse", color:T.html, start:33, width:42 },
+    ]},
+    { label:"<script defer>", bars:[
+      { label:"Parse (uninterrupted)", color:T.html, start:0, width:65 },
+      { label:"Download (parallel)", color:T.js, start:5, width:20 },
+      { label:"Execute", color:T.amber, start:65, width:15 },
+    ]},
+  ];
+  return e("div", { style:{ display:"flex", flexDirection:"column", gap:14 } },
+    modes.map((m,mi) => e("div", { key:mi, style:{ borderRadius:10, border:`1px solid ${T.border2}`, background:T.surface, padding:12 } },
+      e("div", { style:{ fontSize:10, fontWeight:700, color:T.text2, marginBottom:8, fontFamily:"monospace" } }, m.label),
+      m.bars.map((b,bi) => e(BlockingBar, { key:bi, ...b, delay:mi*0.1+bi*0.05 }))
+    ))
+  );
+};
+
+/* ─── OPTIMIZATION VIZ ─── */
+const OptimizationViz = () => {
+  const tips = [
+    { icon:"\u26a1", label:"Inline critical CSS", desc:"Eliminate round trip for above-the-fold styles", color:T.css },
+    { icon:"\u23f1\ufe0f", label:"Defer non-critical JS", desc:"Use defer/async to avoid parser blocking", color:T.js },
+    { icon:"\ud83d\udce6", label:"Minify + compress", desc:"Gzip/Brotli reduces bytes by 60-80%", color:T.render },
+    { icon:"\ud83c\udf10", label:"HTTP/2 multiplexing", desc:"Parallel resource loading over one connection", color:T.teal },
+    { icon:"\ud83d\uddbc\ufe0f", label:"Optimize images", desc:"Use WebP/AVIF, lazy-load below-the-fold images", color:T.coral },
+    { icon:"\ud83d\udd17", label:"Preconnect origins", desc:"Start DNS + TLS early for third-party domains", color:T.purple },
+  ];
+  return e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 } },
+    tips.map((t,i) => e(M.div, { key:i, initial:{opacity:0,y:10}, animate:{opacity:1,y:0}, transition:{delay:i*0.07,...ez},
+      style:{ padding:"10px 12px", borderRadius:10, border:`1px solid ${t.color}28`, background:`${t.color}08`, display:"flex", gap:10, alignItems:"flex-start" }
+    },
+      e("span", { style:{ fontSize:16, flexShrink:0 } }, t.icon),
+      e("div", null,
+        e("div", { style:{ fontSize:11, fontWeight:600, color:t.color, marginBottom:2 } }, t.label),
+        e("div", { style:{ fontSize:10, color:T.text2, lineHeight:1.4 } }, t.desc)
+      )
+    ))
+  );
+};
+
+/* ─── METRICS VIZ ─── */
+const MetricsViz = () => {
+  const timeline = [
+    { label:"Navigation Start", pos:0, color:T.text3 },
+    { label:"FCP", pos:30, color:T.render, desc:"First Contentful Paint \u2014 first text/image visible", good:"< 1.8s" },
+    { label:"LCP", pos:65, color:T.blue, desc:"Largest Contentful Paint \u2014 main content visible", good:"< 2.5s" },
+    { label:"Load", pos:90, color:T.text3 },
+  ];
+  return e("div", { style:{ borderRadius:10, border:`1px solid ${T.border2}`, background:T.surface, padding:16 } },
+    /* timeline bar */
+    e("div", { style:{ position:"relative", height:40, background:T.border, borderRadius:20, marginBottom:20, overflow:"hidden" } },
+      e(M.div, { initial:{width:0}, animate:{width:"100%"}, transition:{duration:1.2,ease:[0.22,1,0.36,1]}, style:{height:"100%",background:`linear-gradient(90deg, ${T.render}22, ${T.blue}22, ${T.text3}11)`,borderRadius:20} }),
+      timeline.map((t,i) => e(M.div, { key:i, initial:{opacity:0,y:10}, animate:{opacity:1,y:0}, transition:{delay:0.3+i*0.15,...ez},
+        style:{ position:"absolute", left:`${t.pos}%`, top:"50%", transform:"translate(-50%,-50%)", width:12, height:12, borderRadius:"50%", background:t.color, border:`2px solid ${T.surface}` }
+      }))
+    ),
+    /* labels */
+    e("div", { style:{ display:"flex", gap:12 } },
+      timeline.filter(t=>t.desc).map((t,i) => e(M.div, { key:i, initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.6+i*0.2,...ez},
+        style:{ flex:1, padding:10, borderRadius:8, border:`1px solid ${t.color}33`, background:`${t.color}08` }
+      },
+        e("div", { style:{ fontSize:13, fontWeight:700, color:t.color, marginBottom:4 } }, t.label),
+        e("div", { style:{ fontSize:10, color:T.text2, lineHeight:1.5, marginBottom:4 } }, t.desc),
+        e("div", { style:{ fontSize:10, fontWeight:600, color:T.greenL } }, "\u2713 Good: " + t.good)
+      ))
+    )
+  );
+};
+
+/* ─── HINTS VIZ ─── */
+const HintsViz = () => {
+  const hints = [
+    { name:"preload", color:T.blue, desc:"Fetch NOW \u2014 critical resource for this page", priority:"High", example:"Fonts, hero image, critical CSS" },
+    { name:"prefetch", color:T.teal, desc:"Fetch LATER \u2014 resource for a future navigation", priority:"Low (idle)", example:"Next page JS bundle, upcoming route" },
+    { name:"preconnect", color:T.purple, desc:"Connect NOW \u2014 establish early TCP/TLS", priority:"High", example:"API origin, CDN, third-party scripts" },
+  ];
+  return e("div", { style:{ display:"flex", flexDirection:"column", gap:10 } },
+    hints.map((h,i) => e(M.div, { key:i, initial:{opacity:0,x:-15}, animate:{opacity:1,x:0}, transition:{delay:i*0.1,...ez},
+      style:{ padding:14, borderRadius:10, border:`1px solid ${h.color}33`, background:`${h.color}08`, display:"flex", gap:14, alignItems:"flex-start" }
+    },
+      e("div", { style:{ padding:"6px 12px", borderRadius:8, background:`${h.color}22`, border:`1px solid ${h.color}44`, flexShrink:0 } },
+        e("span", { style:{ fontSize:12, fontWeight:700, color:h.color, fontFamily:"monospace" } }, h.name)
+      ),
+      e("div", { style:{ flex:1 } },
+        e("div", { style:{ fontSize:11, fontWeight:600, color:h.color, marginBottom:3 } }, h.desc),
+        e("div", { style:{ fontSize:10, color:T.text2, lineHeight:1.5 } }, "Priority: " + h.priority + " \u2022 " + h.example)
+      )
+    ))
+  );
+};
+
+/* ─── FULL PIPELINE VIZ ─── */
+const FullPipelineViz = () => {
+  const top = [
+    { label:"HTML Bytes", color:T.html },
+    { label:"DOM", color:T.html },
+  ];
+  const bottom = [
+    { label:"CSS Bytes", color:T.css },
+    { label:"CSSOM", color:T.css },
+  ];
+  const shared = [
+    { label:"Render Tree", color:T.render },
+    { label:"Layout", color:T.layout },
+    { label:"Paint", color:T.paint },
+    { label:"Composite", color:T.comp },
+    { label:"Pixels!", color:T.greenL },
+  ];
+  return e("div", { style:{ display:"flex", flexDirection:"column", gap:6, alignItems:"center" } },
+    /* Top row: HTML path */
+    e("div", { style:{ display:"flex", alignItems:"center", gap:4 } },
+      top.flatMap((s,i) => {
+        const items = [e(PipeNode, { key:s.label, label:s.label, color:s.color, active:true, delay:i*0.08 })];
+        if (i < top.length - 1) items.push(e(Arrow, { key:`at${i}`, active:true, delay:i*0.08 }));
+        return items;
+      }),
+      e(M.div, { initial:{opacity:0}, animate:{opacity:0.5}, transition:{delay:0.2,...ez}, style:{ fontSize:16, color:T.text3, padding:"0 4px", transform:"rotate(30deg)" } }, "\u2198")
+    ),
+    /* Merge point + shared path */
+    e("div", { style:{ display:"flex", alignItems:"center", gap:4 } },
+      shared.flatMap((s,i) => {
+        const items = [e(PipeNode, { key:s.label, label:s.label, color:s.color, active:true, delay:0.3+i*0.1 })];
+        if (i < shared.length - 1) items.push(e(Arrow, { key:`as${i}`, active:true, delay:0.3+i*0.1 }));
+        return items;
+      })
+    ),
+    /* Bottom row: CSS path */
+    e("div", { style:{ display:"flex", alignItems:"center", gap:4 } },
+      bottom.flatMap((s,i) => {
+        const items = [e(PipeNode, { key:s.label, label:s.label, color:s.color, active:true, delay:i*0.08+0.1 })];
+        if (i < bottom.length - 1) items.push(e(Arrow, { key:`ab${i}`, active:true, delay:i*0.08+0.1 }));
+        return items;
+      }),
+      e(M.div, { initial:{opacity:0}, animate:{opacity:0.5}, transition:{delay:0.25,...ez}, style:{ fontSize:16, color:T.text3, padding:"0 4px", transform:"rotate(-30deg)" } }, "\u2197")
+    ),
+  );
+};
+
+/* ─── FINALE ─── */
+const Finale = () => {
+  const rows = [
+    { icon:"\ud83d\udcc4", label:"HTML \u2192 DOM", sub:"The browser parses HTML bytes into the Document Object Model tree", c:T.html },
+    { icon:"\ud83c\udfa8", label:"CSS \u2192 CSSOM", sub:"CSS is parsed into the CSS Object Model \u2014 render-blocking by default", c:T.css },
+    { icon:"\ud83c\udf33", label:"Render Tree", sub:"DOM + CSSOM merge into a tree of only visible, styled nodes", c:T.render },
+    { icon:"\ud83d\udccf", label:"Layout", sub:"The browser calculates exact pixel positions and sizes for every element", c:T.layout },
+    { icon:"\ud83d\udd8c\ufe0f", label:"Paint", sub:"Visible nodes are drawn as pixels into layers \u2014 text, colors, images, borders", c:T.paint },
+    { icon:"\ud83e\udde9", label:"Composite", sub:"GPU merges layers into the final frame displayed on screen", c:T.comp },
+    { icon:"\u26a1", label:"Optimize the CRP", sub:"Minimize blocking resources, reduce bytes, use async/defer \u2014 faster first paint", c:T.amber },
+  ];
+  return e("div", { style:{ padding:"8px 0" } },
+    rows.map((r,i) => e(M.div, { key:i, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.1,...ez},
+      style:{ display:"flex", alignItems:"flex-start", gap:12, padding:"11px 14px", marginBottom:8, borderRadius:10, border:`1px solid ${r.c}28`, background:`${r.c}08` }
+    },
+      e("div", { style:{ width:28, height:28, borderRadius:"50%", border:`1.5px solid ${r.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:14 } }, r.icon),
+      e("div", null,
+        e("div", { style:{ fontSize:13, fontWeight:600, color:r.c, marginBottom:2 } }, r.label),
+        e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.5 } }, r.sub)
+      )
+    ))
+  );
+};
+
+/* ─── DETAIL PANEL ─── */
+const DetailPanel = ({ detailKey, onClose }) => {
+  const d = DETAILS[detailKey];
+  if (!d) return null;
+  return e("div", {
+    style:{ width:340, flexShrink:0, background:T.surface, borderRadius:14, border:`1.5px solid ${d.color}44`, overflow:"hidden", alignSelf:"flex-start", position:"sticky", top:56 }
+  },
+    e("div", { style:{ padding:"14px 18px 12px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:8 } },
+        e("div", { style:{ width:8, height:8, borderRadius:"50%", background:d.color } }),
+        e("span", { style:{ fontSize:14, fontWeight:600, color:T.text1 } }, d.title)
+      ),
+      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6, transition:"color 0.2s" }, onMouseEnter:ev=>ev.target.style.color=T.text1, onMouseLeave:ev=>ev.target.style.color=T.text3 }, "\u2715")
+    ),
+    e("div", { style:{ padding:"16px 18px 20px", maxHeight:"calc(100vh - 140px)", overflowY:"auto" } },
+      d.sections.map((s, i) =>
+        e("div", { key:i, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
+          e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
+        )
+      )
+    )
+  );
+};
+
+/* ─── APP ─── */
+function App() {
+  const [si, setSi] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [detail, setDetail] = useState(null);
+  const timer = useRef(null);
+  const sc = SCENES[si];
+
+  useEffect(() => { setPlaying(true); }, []);
+
+  useEffect(() => {
+    if (!playing) return;
+    const d = si===0 ? 3500 : sc.finale ? 99999 : 4000;
+    timer.current = setTimeout(() => { si < SCENES.length-1 ? setSi(i=>i+1) : setPlaying(false); }, d);
+    return () => clearTimeout(timer.current);
+  }, [playing, si]);
+
+  const go = d => { clearTimeout(timer.current); setPlaying(false); setSi(i=>Math.max(0,Math.min(SCENES.length-1,i+d))); };
+  const jump = i => { clearTimeout(timer.current); setPlaying(false); setSi(i); };
+  const togglePlay = () => { if(si===SCENES.length-1){setSi(0);setPlaying(true);}else setPlaying(p=>!p); };
+  const toggleDetail = key => { setDetail(d => d===key ? null : key); clearTimeout(timer.current); setPlaying(false); };
+
+  /* pick visualization */
+  const renderViz = () => {
+    if (sc.finale) return e(Finale);
+    switch(sc.viz) {
+      case "flow": return e(FlowDiagram, { stages:sc.flowStages, activeUpTo:sc.activeUpTo });
+      case "tree": return e("div", { onClick:()=>toggleDetail(sc.id<=1?"dom":"cssom"), style:{cursor:"pointer"} }, e(TreeNode, sc.tree));
+      case "renderTree": return e("div", { onClick:()=>toggleDetail("pipeline"), style:{cursor:"pointer"} }, e(RenderTreeViz));
+      case "layout": return e("div", { onClick:()=>toggleDetail("pipeline"), style:{cursor:"pointer"} }, e(LayoutViz));
+      case "paint": return e("div", { onClick:()=>toggleDetail("pipeline"), style:{cursor:"pointer"} }, e(PaintViz));
+      case "composite": return e("div", { onClick:()=>toggleDetail("pipeline"), style:{cursor:"pointer"} }, e(CompositeViz));
+      case "blocking": return e("div", { onClick:()=>toggleDetail("pipeline"), style:{cursor:"pointer"} }, e(BlockingViz));
+      case "asyncDefer": return e(AsyncDeferViz);
+      case "optimization": return e(OptimizationViz);
+      case "metrics": return e(MetricsViz);
+      case "hints": return e(HintsViz);
+      case "fullPipeline": return e("div", { onClick:()=>toggleDetail("pipeline"), style:{cursor:"pointer"} }, e(FullPipelineViz));
+      default: return null;
+    }
+  };
+
+  return e("div", { style:{ display:"flex", gap:16, alignItems:"flex-start", justifyContent: detail ? "flex-start" : "center" } },
+  e("div", { style:{ width:760, flexShrink:0, background:T.bg, fontFamily:"system-ui,sans-serif", padding:20, borderRadius:16 } },
+
+    /* header */
+    e("div", { style:{ marginBottom:18 } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:10, marginBottom:11 } },
+        e(AP, { mode:"wait" },
+          e(M.div, { key:sc.act, initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, exit:{opacity:0}, transition:sp(400,28),
+            style:{ fontSize:9,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:T.purple,background:`${T.purple}14`,padding:"3px 10px",borderRadius:20,border:`1px solid ${T.purple}30`,flexShrink:0 }
+          }, sc.act)
+        ),
+        e("div", { style:{ flex:1, height:1, background:T.border, borderRadius:99, overflow:"hidden" } },
+          e(M.div, { animate:{width:`${si/(SCENES.length-1)*100}%`}, transition:{duration:0.5}, style:{height:"100%",background:T.purple,borderRadius:99} })
+        ),
+        e("span", { style:{ fontSize:10, color:T.text3 } }, `${si+1} / ${SCENES.length}`)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.title, initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, exit:{opacity:0,y:-8}, transition:ez,
+          style:{ fontSize:20,fontWeight:600,color:T.text1,marginBottom:4,letterSpacing:"-0.02em" }
+        }, sc.title)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
+          style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
+        }, sc.sub)
+      )
+    ),
+
+    e("div", { style:{ minHeight:460 } },
+
+    /* visualization */
+    !sc.finale && e("div", { style:{ marginBottom:10 } }, e(AP, { mode:"wait" },
+      e(M.div, { key:sc.viz+si, initial:{opacity:0,y:12}, animate:{opacity:1,y:0}, exit:{opacity:0,y:-12}, transition:ez },
+        renderViz()
+      )
+    )),
+
+    /* code */
+    !sc.finale && sc.code && sc.code.length > 0 && e("div", { style:{ marginBottom:10 } },
+      e(CodePanel, { tokens:sc.code, onClick:()=>toggleDetail("code") })
+    ),
+
+    /* finale */
+    sc.finale && e(Finale),
+
+    ), /* close minHeight wrapper */
+
+    /* controls */
+    e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginTop:16 } },
+      e("button", { onClick:()=>go(-1), disabled:si===0,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===0?T.text3:T.text2,cursor:si===0?"not-allowed":"pointer",fontSize:11,transition:"color 0.2s" }
+      }, "\u2190 Back"),
+      e("button", { onClick:togglePlay,
+        style:{ padding:"6px 18px",borderRadius:8,border:`1px solid ${playing?T.coral:T.purple}44`,background:playing?`${T.coral}14`:`${T.purple}14`,color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all 0.2s" }
+      }, playing ? "\u23f8  Pause" : si===SCENES.length-1 ? "\u21ba  Replay" : "\u25b6  Play"),
+      e("button", { onClick:()=>go(1), disabled:si===SCENES.length-1,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
+      }, "Next \u2192"),
+      e("div", { style:{ flex:1 } }),
+      e("div", { style:{ display:"flex", gap:4, alignItems:"center" } },
+        SCENES.map((_,i) =>
+          e("button", { key:i, onClick:()=>jump(i),
+            style:{ width:i===si?16:5,height:5,borderRadius:99,border:"none",padding:0,background:i===si?T.purple:i<si?`${T.purple}55`:T.border,cursor:"pointer",transition:"all 0.25s" }
+          })
+        )
+      )
+    )
+  ),
+  detail && e(DetailPanel, { detailKey:detail, onClose:()=>setDetail(null) })
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(e(App));
+</script>
+</body>
+</html>

@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reflow vs Repaint</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111118;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px 16px 24px 196px;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  #root { width: 100%; max-width: 1120px; }
+  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: system-ui, sans-serif; }
+  .topnav a { text-decoration: none; color: #8888aa; font-size: 13px; transition: color 0.2s; }
+  .topnav a:hover { color: #e8e8f0; }
+  .topnav .name { font-weight: 600; color: #e8e8f0; font-size: 13px; }
+  .topnav .sep { color: #38384a; font-size: 12px; }
+  .topnav .current { color: #7c6fcd; font-size: 13px; font-weight: 500; }
+  .sidenav { position: fixed; top: 38px; left: 0; width: 180px; height: calc(100vh - 38px); background: #111118; border-right: 1px solid #2a2a38; padding: 14px 0; overflow-y: auto; z-index: 200; font-family: system-ui, sans-serif; }
+  .sidenav a { display: block; padding: 6px 16px; font-size: 11px; color: #8888aa; text-decoration: none; transition: color 0.2s, background 0.2s; border-left: 2px solid transparent; }
+  .sidenav a:hover { color: #e8e8f0; background: rgba(124,111,205,0.06); }
+  .sidenav a.active { color: #a99cf0; border-left-color: #7c6fcd; background: rgba(124,111,205,0.1); font-weight: 600; }
+  .sidenav .nav-section { padding: 8px 16px 4px; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #44445a; }
+  .sidenav .nav-section:first-child { padding-top: 4px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="../" class="name">Sharon Zhou</a>
+  <span class="sep">/</span>
+  <a href="../">Animations</a>
+  <span class="sep">/</span>
+  <span class="current">Reflow vs Repaint</span>
+</nav>
+<nav class="sidenav">
+  <div class="nav-section">JavaScript</div>
+  <a href="../event-loop/">Event Loop</a>
+  <a href="../this-keyword/">this Keyword</a>
+  <a href="../hoisting/">Hoisting</a>
+  <a href="../garbage-collection/">Garbage Collection</a>
+  <a href="../event-delegation/">Event Delegation</a>
+  <a href="../iterators-generators/">Iterators & Generators</a>
+  <a href="../xhr-vs-fetch/">XHR vs fetch()</a>
+  <a href="../error-propagation/">Error Propagation</a>
+  <a href="../web-workers/">Web Workers</a>
+  <div class="nav-section">Browser</div>
+  <a href="../reflow-vs-repaint/" class="active">Reflow vs Repaint</a>
+  <div class="nav-section">Infrastructure</div>
+  <a href="../vms-vs-docker/">VMs vs Docker</a>
+  <a href="../opentelemetry/">OpenTelemetry</a>
+</nav>
+<div id="root" style="margin-top: 36px;"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/framer-motion@11/dist/framer-motion.js"></script>
+<script>
+const { useState, useEffect, useRef } = React;
+const { motion, AnimatePresence, useMotionValue, animate } = window.Motion;
+const e = React.createElement;
+const M = motion;
+const AP = AnimatePresence;
+const sp = (s=380,d=28) => ({ type:"spring", stiffness:s, damping:d });
+const ez = { duration:0.32, ease:[0.22,1,0.36,1] };
+
+const T = {
+  bg:"#111118", surface:"#18181f", surface2:"#1e1e28",
+  border:"#2a2a38", border2:"#38384a",
+  text1:"#e8e8f0", text2:"#8888aa", text3:"#44445a",
+  purple:"#7c6fcd", purpleL:"#a99cf0",
+  teal:"#3db89a", tealL:"#6dd4b8",
+  coral:"#c4694a", coralL:"#e08a6a",
+  blue:"#4a8fd4", blueL:"#82b4e8",
+  amber:"#d4a84a", amberL:"#e8c86a",
+  pink:"#c45a8a", pinkL:"#e87aaa",
+  green:"#4aaa6a", greenL:"#72cc8a",
+  red:"#d44a4a", redL:"#e87a7a",
+  codeBase:"#141428",
+};
+
+const TS = {
+  fn:    { color:"#82aaff" },
+  meth:  { color:"#89ddff" },
+  str:   { color:"#c3e88d" },
+  kw:    { color:"#c792ea" },
+  num:   { color:"#f78c6c" },
+  punc:  { color:"#89ddff" },
+  plain: { color:"#a6accd" },
+  prop:  { color:"#ff5370", fontWeight:"bold" },
+  cmt:   { color:"#546e7a", fontStyle:"italic" },
+  css:   { color:"#ffcb6b" },
+  val:   { color:"#c3e88d" },
+  tag:   { color:"#f07178" },
+};
+
+/* ─── SCENES ─── */
+const SCENES = [
+  {
+    id:0, act:"01",
+    title:"The rendering pipeline",
+    sub:"Browsers render pages through a pipeline: DOM + CSSOM -> Layout -> Paint -> Composite. Changes at different stages have very different performance costs.",
+    code:[
+      [["cmt","// Browser rendering pipeline"]],
+      [["cmt","// DOM + CSSOM"]],
+      [["cmt","//   -> Layout  (reflow)"]],
+      [["cmt","//   -> Paint   (repaint)"]],
+      [["cmt","//   -> Composite (GPU)"]],
+    ],
+    viz:"pipeline",
+    cost:null,
+  },
+  {
+    id:1, act:"02",
+    title:"What triggers repaint",
+    sub:"Visual-only changes skip Layout and go straight to Paint. These are cheaper because they don't change geometry or affect other elements.",
+    code:[
+      [["cmt","// Repaint-only properties"]],
+      [["plain","el"],["punc",".style."],["css","color"],["plain"," = "],["str","'red'"]],
+      [["plain","el"],["punc",".style."],["css","visibility"],["plain"," = "],["str","'hidden'"]],
+      [["plain","el"],["punc",".style."],["css","boxShadow"],["plain"," = "],["str","'0 2px 8px #000'"]],
+      [["plain","el"],["punc",".style."],["css","background"],["plain"," = "],["str","'blue'"]],
+    ],
+    viz:"repaint",
+    cost:{ label:"Repaint", level:2, color:T.amber },
+  },
+  {
+    id:2, act:"03",
+    title:"What triggers reflow",
+    sub:"Geometry changes trigger Layout recalculation (reflow). Since layout affects neighbors and descendants, reflow is always followed by repaint.",
+    code:[
+      [["cmt","// Reflow-triggering properties"]],
+      [["plain","el"],["punc",".style."],["css","width"],["plain"," = "],["str","'200px'"]],
+      [["plain","el"],["punc",".style."],["css","height"],["plain"," = "],["str","'100px'"]],
+      [["plain","el"],["punc",".style."],["css","padding"],["plain"," = "],["str","'20px'"]],
+      [["plain","el"],["punc",".style."],["css","fontSize"],["plain"," = "],["str","'18px'"]],
+    ],
+    viz:"reflow",
+    cost:{ label:"Reflow + Repaint", level:4, color:T.coral },
+  },
+  {
+    id:3, act:"04",
+    title:"Reflow is expensive",
+    sub:"Reflow recalculates layout for the affected element, its children, and sometimes siblings and ancestors. The cost grows with DOM complexity.",
+    code:[
+      [["cmt","// Changing one element..."]],
+      [["plain","parent"],["punc",".style."],["css","width"],["plain"," = "],["str","'50%'"]],
+      [["cmt",""]],
+      [["cmt","// ...forces recalculation of"]],
+      [["cmt","// all children, siblings,"]],
+      [["cmt","// and potentially ancestors"]],
+    ],
+    viz:"subtree",
+    cost:{ label:"Subtree recalc", level:5, color:T.red },
+  },
+  {
+    id:4, act:"05",
+    title:"Forced synchronous reflow",
+    sub:"Reading layout properties (offsetHeight, getBoundingClientRect) forces the browser to calculate layout immediately, even mid-script.",
+    code:[
+      [["cmt","// Forces sync layout calculation"]],
+      [["kw","const"],["plain"," h = el"],["punc","."],["prop","offsetHeight"]],
+      [["kw","const"],["plain"," r = el"],["punc","."],["meth","getBoundingClientRect"],["punc","()"]],
+      [["kw","const"],["plain"," w = el"],["punc","."],["prop","offsetWidth"]],
+      [["kw","const"],["plain"," t = el"],["punc","."],["prop","scrollTop"]],
+    ],
+    viz:"syncLayout",
+    cost:{ label:"Forced sync layout", level:4, color:T.coral },
+  },
+  {
+    id:5, act:"06",
+    title:"Layout thrashing",
+    sub:"Interleaving reads and writes forces the browser to reflow on every read. This is the most common performance killer in DOM manipulation.",
+    code:[
+      [["cmt","// Layout thrashing - DON'T do this!"]],
+      [["kw","for"],["punc"," ("],["kw","const"],["plain"," el "],["kw","of"],["plain"," els"],["punc",") {"]],
+      [["plain","  "],["kw","const"],["plain"," h = el"],["punc","."],["prop","offsetHeight"],["plain","  "],["cmt","// read -> reflow"]],
+      [["plain","  el"],["punc",".style."],["css","height"],["plain"," = h*2+"],["str","'px'"],["plain"," "],["cmt","// write"]],
+      [["punc","}"],["plain"," "],["cmt","// repeats N times!"]],
+    ],
+    viz:"thrashing",
+    cost:{ label:"N reflows!", level:5, color:T.red },
+  },
+  {
+    id:6, act:"07",
+    title:"Batching DOM writes",
+    sub:"Read all values first, then write all changes. Use requestAnimationFrame or DocumentFragment to batch DOM mutations into a single reflow.",
+    code:[
+      [["cmt","// Batch reads, then writes"]],
+      [["kw","const"],["plain"," heights = els"],["punc","."],["meth","map"],["punc","("],["plain","el"],["punc"," => "],["plain","el"],["punc","."],["prop","offsetHeight"],["punc",")"]],
+      [["cmt",""]],
+      [["fn","requestAnimationFrame"],["punc","(() => {"]],
+      [["plain","  els"],["punc","."],["meth","forEach"],["punc","((el,i) => {"]],
+      [["plain","    el"],["punc",".style."],["css","height"],["plain"," = heights[i]*2+"],["str","'px'"]],
+      [["plain","  "],["punc","})"]],
+      [["punc","})"]],
+    ],
+    viz:"batching",
+    cost:{ label:"1 reflow", level:1, color:T.green },
+  },
+  {
+    id:7, act:"08",
+    title:"CSS containment",
+    sub:"The contain property tells the browser that an element's internals are independent. This limits reflow scope and can dramatically improve performance.",
+    code:[
+      [["cmt","/* Isolate reflow scope */"]],
+      [["punc","."],["css","widget"],["plain"," {"]],
+      [["plain","  "],["css","contain"],["punc",": "],["val","layout style paint"],["punc",";"]],
+      [["punc","}"]],
+      [["cmt",""]],
+      [["cmt","/* content-visibility for off-screen */"]],
+      [["punc","."],["css","card"],["plain"," {"]],
+      [["plain","  "],["css","content-visibility"],["punc",": "],["val","auto"],["punc",";"]],
+      [["punc","}"]],
+    ],
+    viz:"containment",
+    cost:{ label:"Scoped reflow", level:2, color:T.amber },
+  },
+  {
+    id:8, act:"09",
+    title:"will-change and GPU layers",
+    sub:"will-change promotes an element to its own compositor layer. The GPU handles it independently, avoiding main-thread layout and paint entirely.",
+    code:[
+      [["cmt","/* Promote to GPU layer */"]],
+      [["punc","."],["css","animated"],["plain"," {"]],
+      [["plain","  "],["css","will-change"],["punc",": "],["val","transform, opacity"],["punc",";"]],
+      [["punc","}"]],
+      [["cmt",""]],
+      [["cmt","/* Remove when done */"]],
+      [["plain","el"],["punc",".style."],["css","willChange"],["plain"," = "],["str","'auto'"]],
+    ],
+    viz:"gpuLayers",
+    cost:{ label:"Compositor only", level:0, color:T.teal },
+  },
+  {
+    id:9, act:"10",
+    title:"transform/opacity vs top/left",
+    sub:"transform and opacity are compositor-only properties. They skip Layout and Paint entirely. top/left trigger reflow every frame -- terrible for animations.",
+    code:[
+      [["cmt","// SLOW: triggers reflow every frame"]],
+      [["plain","el"],["punc",".style."],["css","left"],["plain"," = x + "],["str","'px'"]],
+      [["plain","el"],["punc",".style."],["css","top"],["plain","  = y + "],["str","'px'"]],
+      [["cmt",""]],
+      [["cmt","// FAST: compositor-only, no reflow"]],
+      [["plain","el"],["punc",".style."],["css","transform"],["plain"," ="]],
+      [["plain","  "],["str","`translate(${x}px, ${y}px)`"]],
+    ],
+    viz:"comparison",
+    cost:null,
+  },
+  {
+    id:10, act:"11",
+    title:"Virtual DOM and frameworks",
+    sub:"Frameworks like React batch DOM updates automatically. The Virtual DOM diffs changes, then applies them in a single pass -- avoiding layout thrashing by design.",
+    code:[
+      [["cmt","// React batches updates automatically"]],
+      [["kw","function"],["plain"," "],["fn","Component"],["punc","() {"]],
+      [["plain","  "],["kw","const"],["plain"," [items, setItems] = "],["fn","useState"],["punc","([])"]],
+      [["plain","  "],["cmt","// All state changes batched"]],
+      [["plain","  "],["cmt","// into one DOM update"]],
+      [["plain","  "],["kw","return"],["plain"," "],["tag","<List"],["plain"," items={items} "],["tag","/>"]],
+      [["punc","}"]],
+    ],
+    viz:"vdom",
+    cost:{ label:"Batched by framework", level:1, color:T.green },
+  },
+  {
+    id:11, act:"12",
+    title:"Measuring with DevTools",
+    sub:"The Performance panel in Chrome DevTools shows exactly when Layout, Paint, and Composite happen. Purple = layout, green = paint, yellow = composite.",
+    code:[
+      [["cmt","// Chrome DevTools Performance panel"]],
+      [["cmt","// 1. Open DevTools -> Performance"]],
+      [["cmt","// 2. Click Record"]],
+      [["cmt","// 3. Interact with page"]],
+      [["cmt","// 4. Stop -> analyze flame chart"]],
+      [["cmt","//"]],
+      [["cmt","// Purple bars = Layout (reflow)"]],
+      [["cmt","// Green bars  = Paint (repaint)"]],
+    ],
+    viz:"devtools",
+    cost:null,
+  },
+  {
+    id:12, act:"\u2713",
+    title:"Reflow vs Repaint summary",
+    sub:"Minimize reflows by batching DOM changes, using compositor-only properties, and leveraging CSS containment. Measure with DevTools.",
+    code:[
+      [["cmt","// Performance hierarchy:"]],
+      [["num","1."],["plain"," Composite-only "],["cmt","// transform, opacity"]],
+      [["num","2."],["plain"," Repaint-only   "],["cmt","// color, shadow"]],
+      [["num","3."],["plain"," Reflow         "],["cmt","// width, height"]],
+      [["cmt","// Avoid layout thrashing"]],
+      [["cmt","// Batch reads then writes"]],
+    ],
+    viz:"finale",
+    cost:null,
+    finale:true,
+  },
+];
+
+/* ─── DETAIL CONTENT ─── */
+const DETAILS = {
+  code: {
+    title:"Code Examples",
+    color:T.purpleL,
+    sections:[
+      {heading:"What to watch for",body:"Each scene shows different CSS properties and DOM operations. Notice which stage of the rendering pipeline they trigger -- this directly determines performance cost."},
+      {heading:"Key patterns",body:"• Geometry changes (width, height, margin) -> reflow\n• Visual changes (color, shadow) -> repaint\n• transform / opacity -> composite only\n• Reading layout props -> forced sync layout\n• Read-write interleaving -> layout thrashing"},
+    ]
+  },
+  pipeline: {
+    title:"Rendering Pipeline",
+    color:T.blueL,
+    sections:[
+      {heading:"DOM + CSSOM",body:"The browser parses HTML into the DOM tree and CSS into the CSSOM. These are combined into a render tree that represents what actually gets displayed."},
+      {heading:"Layout (Reflow)",body:"The browser calculates the exact position and size of every element in the render tree. This is geometry computation -- where things go and how big they are."},
+      {heading:"Paint (Repaint)",body:"The browser fills in pixels -- colors, borders, shadows, text. Each element gets painted into layers (bitmaps in memory)."},
+      {heading:"Composite",body:"The GPU takes painted layers and composites them together into the final image on screen. Transform and opacity changes happen here -- no layout or paint needed."},
+    ]
+  },
+  cost: {
+    title:"Performance Cost",
+    color:T.coralL,
+    sections:[
+      {heading:"Cost hierarchy",body:"Composite < Repaint < Reflow\n\nComposite: GPU handles it, virtually free\nRepaint: Main thread, moderate cost\nReflow: Main thread, expensive -- cascades to children and can affect ancestors"},
+      {heading:"When it matters",body:"During animations (60fps = 16ms per frame), during scroll handlers, when manipulating large DOM trees, or when building data-heavy UIs with frequent updates."},
+      {heading:"Measuring cost",body:"Use Chrome DevTools Performance tab to record and analyze. Look for long Layout and Paint tasks. The Rendering tab can highlight paint regions and layer borders."},
+    ]
+  },
+};
+
+/* ─── COMPONENTS ─── */
+const CodePanel = ({ tokens }) =>
+  e("div", { style:{ background:T.codeBase, borderRadius:12, overflow:"hidden", border:`1px solid ${T.border}` } },
+    e("div", { style:{ padding:"10px 14px 8px", borderBottom:`1px solid ${T.border}`, display:"flex", gap:7 } },
+      ...["#ff5f57","#febc2e","#28c840"].map((c,i) =>
+        e("div", { key:i, style:{ width:11, height:11, borderRadius:"50%", background:c } })
+      )
+    ),
+    e("div", { style:{ padding:"18px 22px 22px", fontFamily:"'SF Mono','Fira Code','Consolas',monospace", fontSize:12, lineHeight:1.95 } },
+      tokens.map((line, li) =>
+        e("div", { key:li, style:{ paddingLeft:0, borderRadius:3, display:"block" } },
+          line.map(([cls, txt], ti) =>
+            e("span", { key:ti, style:{ ...TS[cls], whiteSpace:"pre" } }, txt)
+          )
+        )
+      )
+    )
+  );
+
+const Panel = ({ label, children, style={}, focused=false, onClick }) =>
+  e(M.div, {
+    onClick,
+    animate:{
+      borderColor: focused ? T.purple : T.border2,
+      boxShadow: focused ? `0 0 16px ${T.purple}30, inset 0 0 12px ${T.purple}08` : "0 0 0px transparent"
+    },
+    transition:{ duration:0.4 },
+    style:{ borderRadius:12, border:"1.5px solid", background:T.surface, overflow:"hidden", cursor:onClick?"pointer":"default", ...style }
+  },
+    label && e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, label)
+    ),
+    e("div", { style:{ padding:12 } }, children)
+  );
+
+/* ─── PIPELINE VISUALIZATION ─── */
+const PipelineViz = ({ highlight, onClick }) => {
+  const stages = [
+    { key:"dom", label:"DOM + CSSOM", color:T.blue, short:"Parse" },
+    { key:"layout", label:"Layout", color:T.coral, short:"Reflow" },
+    { key:"paint", label:"Paint", color:T.amber, short:"Repaint" },
+    { key:"composite", label:"Composite", color:T.teal, short:"GPU" },
+  ];
+  return e(M.div, {
+    onClick,
+    style:{ borderRadius:12, border:`1.5px solid ${T.border2}`, background:T.surface, overflow:"hidden", cursor:"pointer" }
+  },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, "Rendering Pipeline")
+    ),
+    e("div", { style:{ padding:16, display:"flex", alignItems:"center", gap:6 } },
+      stages.map((s,i) =>
+        e(React.Fragment, { key:s.key },
+          e(M.div, {
+            animate:{
+              opacity: !highlight || highlight.includes(s.key) ? 1 : 0.25,
+              scale: highlight && highlight.includes(s.key) ? 1.05 : 1,
+              borderColor: highlight && highlight.includes(s.key) ? s.color : `${s.color}44`,
+            },
+            transition:{ duration:0.4 },
+            style:{ flex:1, padding:"10px 8px", borderRadius:8, border:`1.5px solid`, background:`${s.color}12`, textAlign:"center" }
+          },
+            e("div", { style:{ fontSize:11, fontWeight:700, color:s.color, marginBottom:2 } }, s.label),
+            e("div", { style:{ fontSize:9, color:T.text3 } }, s.short),
+          ),
+          i < stages.length-1 && e("div", { style:{ fontSize:14, color: !highlight || (highlight.includes(stages[i].key) && highlight.includes(stages[i+1].key)) ? T.text2 : T.text3 } }, "\u2192")
+        )
+      )
+    )
+  );
+};
+
+/* ─── COST BAR ─── */
+const CostBar = ({ cost, onClick }) => {
+  if (!cost) return null;
+  const maxBars = 5;
+  return e(M.div, {
+    onClick,
+    style:{ borderRadius:12, border:`1.5px solid ${T.border2}`, background:T.surface, overflow:"hidden", cursor:"pointer" }
+  },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, "Performance Cost")
+    ),
+    e("div", { style:{ padding:14 } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:10, marginBottom:8 } },
+        e("div", { style:{ fontSize:13, fontWeight:600, color:cost.color } }, cost.label),
+      ),
+      e("div", { style:{ display:"flex", gap:4, alignItems:"flex-end" } },
+        Array.from({length:maxBars}).map((_,i) =>
+          e(M.div, {
+            key:i,
+            initial:{ scaleY:0 },
+            animate:{ scaleY: i <= cost.level ? 1 : 0.15, opacity: i <= cost.level ? 1 : 0.2 },
+            transition:{ delay:i*0.06, ...sp(400,26) },
+            style:{
+              width:28, height:8+i*7, borderRadius:4, transformOrigin:"bottom",
+              background: i <= cost.level ? cost.color : T.border,
+            }
+          })
+        )
+      ),
+      e("div", { style:{ display:"flex", justifyContent:"space-between", marginTop:6 } },
+        e("span", { style:{ fontSize:9, color:T.teal } }, "Cheap"),
+        e("span", { style:{ fontSize:9, color:T.red } }, "Expensive"),
+      )
+    )
+  );
+};
+
+/* ─── PROPERTY TABLE ─── */
+const PropertyTable = ({ type }) => {
+  const data = {
+    repaint: [
+      { prop:"color", trigger:"Repaint", c:T.amber },
+      { prop:"visibility", trigger:"Repaint", c:T.amber },
+      { prop:"box-shadow", trigger:"Repaint", c:T.amber },
+      { prop:"background", trigger:"Repaint", c:T.amber },
+      { prop:"outline", trigger:"Repaint", c:T.amber },
+    ],
+    reflow: [
+      { prop:"width / height", trigger:"Reflow", c:T.coral },
+      { prop:"padding / margin", trigger:"Reflow", c:T.coral },
+      { prop:"font-size", trigger:"Reflow", c:T.coral },
+      { prop:"position", trigger:"Reflow", c:T.coral },
+      { prop:"display", trigger:"Reflow", c:T.coral },
+    ],
+  };
+  const items = data[type] || [];
+  return e("div", { style:{ display:"flex", flexDirection:"column", gap:4 } },
+    items.map((item,i) =>
+      e(M.div, {
+        key:item.prop,
+        initial:{opacity:0,x:-12},
+        animate:{opacity:1,x:0},
+        transition:{delay:i*0.08,...ez},
+        style:{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"5px 10px", borderRadius:6, background:`${item.c}0a`, border:`1px solid ${item.c}22` }
+      },
+        e("span", { style:{ fontFamily:"monospace", fontSize:11, color:T.text1 } }, item.prop),
+        e("span", { style:{ fontSize:9, fontWeight:600, color:item.c, padding:"2px 8px", borderRadius:4, background:`${item.c}18` } }, item.trigger),
+      )
+    )
+  );
+};
+
+/* ─── SUBTREE VIZ ─── */
+const SubtreeViz = () => {
+  const nodes = [
+    { id:"root", label:"body", x:110, y:8, c:T.text3 },
+    { id:"parent", label:"parent", x:110, y:48, c:T.coral, glow:true },
+    { id:"c1", label:"child", x:40, y:88, c:T.coral, glow:true },
+    { id:"c2", label:"child", x:110, y:88, c:T.coral, glow:true },
+    { id:"c3", label:"child", x:180, y:88, c:T.coral, glow:true },
+    { id:"g1", label:"...", x:20, y:122, c:T.coral, glow:true },
+    { id:"g2", label:"...", x:60, y:122, c:T.coral, glow:true },
+    { id:"sib", label:"sibling", x:220, y:48, c:T.amber, glow:false },
+  ];
+  const edges = [["root","parent"],["root","sib"],["parent","c1"],["parent","c2"],["parent","c3"],["c1","g1"],["c1","g2"]];
+  return e("svg", { width:260, height:140, style:{ display:"block", margin:"0 auto" } },
+    edges.map(([f,t],i) => {
+      const from = nodes.find(n=>n.id===f);
+      const to = nodes.find(n=>n.id===t);
+      return e("line", { key:i, x1:from.x+20, y1:from.y+14, x2:to.x+20, y2:to.y, stroke:T.border2, strokeWidth:1 });
+    }),
+    nodes.map((n,i) =>
+      e(M.g, { key:n.id, initial:{opacity:0}, animate:{opacity:1}, transition:{delay:i*0.08} },
+        n.glow && e(M.rect, {
+          x:n.x, y:n.y, width:40, height:22, rx:6,
+          fill:`${n.c}22`, stroke:n.c, strokeWidth:1,
+          animate:{ opacity:[0.5,1,0.5] },
+          transition:{ duration:1.5, repeat:Infinity },
+        }),
+        !n.glow && e("rect", { x:n.x, y:n.y, width:40, height:22, rx:6, fill:`${n.c}12`, stroke:`${n.c}44`, strokeWidth:1 }),
+        e("text", { x:n.x+20, y:n.y+14, textAnchor:"middle", fill:n.c, fontSize:9, fontFamily:"monospace" }, n.label)
+      )
+    )
+  );
+};
+
+/* ─── THRASHING VIZ ─── */
+const ThrashingViz = ({ isBatched }) => {
+  const ops = isBatched
+    ? [
+        { label:"Read all", c:T.blue, type:"R" },
+        { label:"Write all", c:T.green, type:"W" },
+      ]
+    : [
+        { label:"Read", c:T.blue, type:"R" },
+        { label:"Write", c:T.coral, type:"W" },
+        { label:"Read", c:T.blue, type:"R" },
+        { label:"Write", c:T.coral, type:"W" },
+        { label:"Read", c:T.blue, type:"R" },
+        { label:"Write", c:T.coral, type:"W" },
+      ];
+  return e("div", { style:{ display:"flex", flexDirection:"column", gap:3 } },
+    ops.map((op,i) =>
+      e(M.div, {
+        key:`${isBatched}-${i}`,
+        initial:{opacity:0,x:-8},
+        animate:{opacity:1,x:0},
+        transition:{delay:i*0.1,...ez},
+        style:{ display:"flex", alignItems:"center", gap:8, padding:"4px 8px", borderRadius:6, background:`${op.c}0a`, border:`1px solid ${op.c}22` }
+      },
+        e("div", { style:{ width:18, height:18, borderRadius:4, background:`${op.c}22`, border:`1px solid ${op.c}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:9, fontWeight:700, color:op.c } }, op.type),
+        e("span", { style:{ fontSize:10, color:op.c } }, op.label),
+        !isBatched && op.type==="R" && e("span", { style:{ fontSize:9, color:T.red, marginLeft:"auto" } }, "\u26a0 reflow"),
+      )
+    ),
+    e("div", { style:{ marginTop:6, fontSize:10, fontWeight:600, color:isBatched?T.green:T.red, textAlign:"center" } },
+      isBatched ? "\u2713 1 reflow total" : "\u2717 "+Math.floor(ops.length/2)+" reflows!"
+    )
+  );
+};
+
+/* ─── COMPARISON VIZ ─── */
+const ComparisonViz = () => {
+  const rows = [
+    { prop:"top / left", stages:["layout","paint","composite"], c:T.coral, cost:"Slow" },
+    { prop:"background", stages:["paint","composite"], c:T.amber, cost:"Medium" },
+    { prop:"transform", stages:["composite"], c:T.teal, cost:"Fast" },
+    { prop:"opacity", stages:["composite"], c:T.teal, cost:"Fast" },
+  ];
+  const cols = ["Layout","Paint","Composite"];
+  return e("div", null,
+    e("div", { style:{ display:"grid", gridTemplateColumns:"100px 1fr 1fr 1fr 60px", gap:2, marginBottom:4 } },
+      e("div"),
+      ...cols.map(c => e("div", { key:c, style:{ fontSize:9, fontWeight:600, color:T.text3, textAlign:"center", padding:4 } }, c)),
+      e("div", { style:{ fontSize:9, fontWeight:600, color:T.text3, textAlign:"center", padding:4 } }, "Cost"),
+    ),
+    rows.map((r,i) =>
+      e(M.div, {
+        key:r.prop,
+        initial:{opacity:0,y:8},
+        animate:{opacity:1,y:0},
+        transition:{delay:i*0.1,...ez},
+        style:{ display:"grid", gridTemplateColumns:"100px 1fr 1fr 1fr 60px", gap:2, marginBottom:3 }
+      },
+        e("div", { style:{ fontFamily:"monospace", fontSize:10, color:T.text1, padding:"6px 4px", display:"flex", alignItems:"center" } }, r.prop),
+        ...["layout","paint","composite"].map(stage =>
+          e("div", { key:stage, style:{ padding:6, display:"flex", justifyContent:"center" } },
+            e(M.div, {
+              animate:{ scale: r.stages.includes(stage) ? [1,1.15,1] : 1, opacity: r.stages.includes(stage) ? 1 : 0.15 },
+              transition:{ duration:1.5, repeat:r.stages.includes(stage)?Infinity:0 },
+              style:{ width:20, height:20, borderRadius:5, background: r.stages.includes(stage) ? `${r.c}33` : T.border, border:`1px solid ${r.stages.includes(stage)?r.c:T.border2}` }
+            })
+          )
+        ),
+        e("div", { style:{ fontSize:10, fontWeight:600, color:r.c, display:"flex", alignItems:"center", justifyContent:"center" } }, r.cost),
+      )
+    )
+  );
+};
+
+/* ─── LAYER VIZ ─── */
+const LayerViz = () => {
+  const layers = [
+    { label:"Layer 3: animated element", y:0, c:T.teal, gpu:true },
+    { label:"Layer 2: fixed header", y:32, c:T.amber, gpu:true },
+    { label:"Layer 1: main content", y:64, c:T.blue, gpu:false },
+  ];
+  return e("div", { style:{ display:"flex", flexDirection:"column", gap:6 } },
+    layers.map((l,i) =>
+      e(M.div, {
+        key:i,
+        initial:{ opacity:0, x: l.gpu?20:-20 },
+        animate:{ opacity:1, x:0 },
+        transition:{ delay:i*0.12,...ez },
+        style:{ display:"flex", alignItems:"center", gap:10, padding:"8px 12px", borderRadius:8, border:`1px solid ${l.c}33`, background:`${l.c}0a` }
+      },
+        e(M.div, {
+          animate:l.gpu ? { y:[-1,1,-1] } : {},
+          transition:{ duration:2, repeat:Infinity },
+          style:{ width:36, height:24, borderRadius:4, background:`${l.c}22`, border:`1px solid ${l.c}55`, display:"flex", alignItems:"center", justifyContent:"center" }
+        },
+          e("span", { style:{ fontSize:8, color:l.c, fontWeight:700 } }, l.gpu?"GPU":"CPU")
+        ),
+        e("span", { style:{ fontSize:10, color:l.c } }, l.label),
+      )
+    )
+  );
+};
+
+/* ─── CONTAINMENT VIZ ─── */
+const ContainmentViz = () => {
+  return e("div", { style:{ display:"flex", gap:14 } },
+    [
+      { title:"Without contain", items:["widget","header","content","footer"], affected:[0,1,2,3], c:T.coral },
+      { title:"With contain", items:["widget","header","content","footer"], affected:[0], c:T.teal },
+    ].map((group,gi) =>
+      e("div", { key:gi, style:{ flex:1 } },
+        e("div", { style:{ fontSize:10, fontWeight:600, color:T.text2, marginBottom:6, textAlign:"center" } }, group.title),
+        group.items.map((item,i) =>
+          e(M.div, {
+            key:item+i,
+            animate: group.affected.includes(i)
+              ? { borderColor:[`${group.c}44`,group.c,`${group.c}44`], boxShadow:[`0 0 0px ${group.c}00`,`0 0 8px ${group.c}44`,`0 0 0px ${group.c}00`] }
+              : {},
+            transition:{ duration:1.5, repeat:Infinity },
+            style:{ padding:"6px 10px", marginBottom:4, borderRadius:6, border:`1px solid ${group.affected.includes(i)?`${group.c}44`:T.border}`, background:`${group.affected.includes(i)?group.c:T.text3}08`, fontSize:10, fontFamily:"monospace", color:group.affected.includes(i)?group.c:T.text3, textAlign:"center" }
+          }, item)
+        )
+      )
+    )
+  );
+};
+
+/* ─── VDOM VIZ ─── */
+const VDOMViz = () => {
+  return e("div", { style:{ display:"flex", gap:16, alignItems:"flex-start" } },
+    [
+      { title:"Virtual DOM", items:["setState x3"], c:T.purple, sub:"Batched" },
+      { title:"Diff", items:["compare"], c:T.amber, sub:"Minimal" },
+      { title:"Real DOM", items:["1 update"], c:T.teal, sub:"1 reflow" },
+    ].map((col,ci) =>
+      e(React.Fragment, { key:ci },
+        e("div", { style:{ flex:1, textAlign:"center" } },
+          e("div", { style:{ fontSize:10, fontWeight:600, color:col.c, marginBottom:6 } }, col.title),
+          e(M.div, {
+            initial:{scale:0.9,opacity:0},
+            animate:{scale:1,opacity:1},
+            transition:{delay:ci*0.15,...ez},
+            style:{ padding:"10px 8px", borderRadius:8, border:`1px solid ${col.c}44`, background:`${col.c}0a` }
+          },
+            col.items.map((item,i) =>
+              e("div", { key:i, style:{ fontSize:11, color:col.c, fontFamily:"monospace" } }, item)
+            ),
+            e("div", { style:{ fontSize:9, color:T.text3, marginTop:4 } }, col.sub)
+          )
+        ),
+        ci < 2 && e("div", { style:{ paddingTop:28, fontSize:16, color:T.text3 } }, "\u2192")
+      )
+    )
+  );
+};
+
+/* ─── DEVTOOLS VIZ ─── */
+const DevToolsViz = () => {
+  const bars = [
+    { label:"Parse HTML", w:20, c:T.blue, cat:"parse" },
+    { label:"Recalc Styles", w:15, c:T.purple, cat:"style" },
+    { label:"Layout", w:40, c:"#9b59b6", cat:"layout" },
+    { label:"Paint", w:25, c:"#27ae60", cat:"paint" },
+    { label:"Composite", w:10, c:"#f39c12", cat:"composite" },
+    { label:"Layout", w:55, c:"#9b59b6", cat:"layout" },
+    { label:"Paint", w:18, c:"#27ae60", cat:"paint" },
+    { label:"Composite", w:8, c:"#f39c12", cat:"composite" },
+  ];
+  return e("div", { style:{ background:"#1a1a2a", borderRadius:8, padding:12, border:`1px solid ${T.border}` } },
+    e("div", { style:{ fontSize:9, color:T.text3, marginBottom:8, fontFamily:"monospace" } }, "Performance \u25b8 Main Thread"),
+    e("div", { style:{ display:"flex", flexDirection:"column", gap:3 } },
+      bars.map((bar,i) =>
+        e(M.div, {
+          key:i,
+          initial:{scaleX:0},
+          animate:{scaleX:1},
+          transition:{delay:i*0.06,duration:0.3},
+          style:{ height:16, width:`${bar.w}%`, borderRadius:3, background:bar.c, display:"flex", alignItems:"center", paddingLeft:4, transformOrigin:"left" }
+        },
+          e("span", { style:{ fontSize:8, color:"#fff", fontFamily:"monospace", fontWeight:600, whiteSpace:"nowrap" } }, bar.label)
+        )
+      )
+    ),
+    e("div", { style:{ display:"flex", gap:12, marginTop:8 } },
+      [{ label:"Layout", c:"#9b59b6" },{ label:"Paint", c:"#27ae60" },{ label:"Composite", c:"#f39c12" }].map(l =>
+        e("div", { key:l.label, style:{ display:"flex", alignItems:"center", gap:4 } },
+          e("div", { style:{ width:8, height:8, borderRadius:2, background:l.c } }),
+          e("span", { style:{ fontSize:9, color:T.text2 } }, l.label)
+        )
+      )
+    )
+  );
+};
+
+/* ─── SYNC LAYOUT VIZ ─── */
+const SyncLayoutViz = () => {
+  const props = [
+    { name:"offsetHeight", cat:"dimension" },
+    { name:"offsetWidth", cat:"dimension" },
+    { name:"offsetTop", cat:"position" },
+    { name:"scrollTop", cat:"scroll" },
+    { name:"clientWidth", cat:"dimension" },
+    { name:"getBoundingClientRect()", cat:"rect" },
+    { name:"getComputedStyle()", cat:"style" },
+    { name:"innerText", cat:"text" },
+  ];
+  return e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:4 } },
+    props.map((p,i) =>
+      e(M.div, {
+        key:p.name,
+        initial:{opacity:0,scale:0.9},
+        animate:{opacity:1,scale:1},
+        transition:{delay:i*0.05,...ez},
+        style:{ padding:"5px 8px", borderRadius:6, background:`${T.coral}0a`, border:`1px solid ${T.coral}22`, fontFamily:"monospace", fontSize:9, color:T.coralL, textAlign:"center" }
+      }, p.name)
+    )
+  );
+};
+
+/* ─── SCENE VISUALIZATION ─── */
+const SceneViz = ({ scene }) => {
+  const v = scene.viz;
+  if (v === "pipeline") return e(PipelineViz, { highlight:["dom","layout","paint","composite"] });
+  if (v === "repaint") return e("div", null,
+    e(PipelineViz, { highlight:["paint","composite"] }),
+    e("div", { style:{ height:10 } }),
+    e(PropertyTable, { type:"repaint" })
+  );
+  if (v === "reflow") return e("div", null,
+    e(PipelineViz, { highlight:["layout","paint","composite"] }),
+    e("div", { style:{ height:10 } }),
+    e(PropertyTable, { type:"reflow" })
+  );
+  if (v === "subtree") return e("div", null,
+    e(SubtreeViz),
+    e("div", { style:{ marginTop:10, fontSize:10, color:T.text2, textAlign:"center", lineHeight:1.6 } },
+      "Changing ", e("span", { style:{ color:T.coral, fontWeight:600 } }, "parent"),
+      " forces recalculation of ", e("span", { style:{ color:T.coral, fontWeight:600 } }, "all children"),
+      " and may affect ", e("span", { style:{ color:T.amber, fontWeight:600 } }, "siblings")
+    )
+  );
+  if (v === "syncLayout") return e("div", null,
+    e("div", { style:{ fontSize:11, color:T.text2, marginBottom:10, lineHeight:1.6 } }, "These properties force the browser to flush pending layout changes and recalculate synchronously:"),
+    e(SyncLayoutViz),
+  );
+  if (v === "thrashing") return e(ThrashingViz, { isBatched:false });
+  if (v === "batching") return e(ThrashingViz, { isBatched:true });
+  if (v === "containment") return e(ContainmentViz);
+  if (v === "gpuLayers") return e(LayerViz);
+  if (v === "comparison") return e(ComparisonViz);
+  if (v === "vdom") return e(VDOMViz);
+  if (v === "devtools") return e(DevToolsViz);
+  return null;
+};
+
+/* ─── FINALE ─── */
+const Finale = () => {
+  const rows = [
+    { n:1, label:"Use compositor-only properties", sub:"transform and opacity skip layout & paint entirely (GPU)", c:T.teal },
+    { n:2, label:"Batch DOM reads, then writes", sub:"Avoid interleaving reads/writes to prevent layout thrashing", c:T.green },
+    { n:3, label:"Use CSS containment", sub:"contain: layout style paint isolates reflow to a subtree", c:T.blue },
+    { n:4, label:"Avoid forced sync layout", sub:"Don't read offsetHeight/getBoundingClientRect mid-write", c:T.amber },
+    { n:5, label:"Prefer repaint over reflow", sub:"color/shadow/visibility are much cheaper than geometry changes", c:T.coral },
+    { n:"\u26a0", label:"Measure with DevTools", sub:"Performance panel shows exactly where layout/paint bottlenecks are", c:T.purple },
+  ];
+  return e("div", { style:{ padding:"8px 0" } },
+    rows.map((r,i) => e(M.div, { key:i, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.12,...ez},
+      style:{ display:"flex", alignItems:"flex-start", gap:12, padding:"11px 14px", marginBottom:8, borderRadius:10, border:`1px solid ${r.c}28`, background:`${r.c}08` }
+    },
+      e("div", { style:{ width:26, height:26, borderRadius:"50%", border:`1.5px solid ${r.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:12, fontWeight:700, color:r.c } }, r.n),
+      e("div", null,
+        e("div", { style:{ fontSize:13, fontWeight:600, color:r.c, marginBottom:2 } }, r.label),
+        e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.5 } }, r.sub)
+      )
+    ))
+  );
+};
+
+const DetailPanel = ({ detailKey, onClose }) => {
+  const d = DETAILS[detailKey];
+  if (!d) return null;
+  return e("div", {
+    style:{ width:340, flexShrink:0, background:T.surface, borderRadius:14, border:`1.5px solid ${d.color}44`, overflow:"hidden", alignSelf:"flex-start", position:"sticky", top:56 }
+  },
+    e("div", { style:{ padding:"14px 18px 12px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:8 } },
+        e("div", { style:{ width:8, height:8, borderRadius:"50%", background:d.color } }),
+        e("span", { style:{ fontSize:14, fontWeight:600, color:T.text1 } }, d.title)
+      ),
+      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6, transition:"color 0.2s" }, onMouseEnter:ev=>ev.target.style.color=T.text1, onMouseLeave:ev=>ev.target.style.color=T.text3 }, "\u2715")
+    ),
+    e("div", { style:{ padding:"16px 18px 20px", maxHeight:"calc(100vh - 140px)", overflowY:"auto" } },
+      d.sections.map((s, i) =>
+        e("div", { key:i, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
+          e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
+        )
+      )
+    )
+  );
+};
+
+/* ─── APP ─── */
+function App() {
+  const [si, setSi] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [detail, setDetail] = useState(null);
+  const timer = useRef(null);
+  const sc = SCENES[si];
+
+  useEffect(() => { setPlaying(true); }, []);
+
+  useEffect(() => {
+    if (!playing) return;
+    const d = si===0 ? 3500 : sc.finale ? 99999 : 3800;
+    timer.current = setTimeout(() => { si < SCENES.length-1 ? setSi(i=>i+1) : setPlaying(false); }, d);
+    return () => clearTimeout(timer.current);
+  }, [playing, si]);
+
+  const go = d => { clearTimeout(timer.current); setPlaying(false); setSi(i=>Math.max(0,Math.min(SCENES.length-1,i+d))); };
+  const jump = i => { clearTimeout(timer.current); setPlaying(false); setSi(i); };
+  const togglePlay = () => { if(si===SCENES.length-1){setSi(0);setPlaying(true);}else setPlaying(p=>!p); };
+  const toggleDetail = key => { setDetail(d => d===key ? null : key); clearTimeout(timer.current); setPlaying(false); };
+
+  return e("div", { style:{ display:"flex", gap:16, alignItems:"flex-start", justifyContent: detail ? "flex-start" : "center" } },
+  e("div", { style:{ width:760, flexShrink:0, background:T.bg, fontFamily:"system-ui,sans-serif", padding:20, borderRadius:16 } },
+
+    /* header */
+    e("div", { style:{ marginBottom:18 } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:10, marginBottom:11 } },
+        e(AP, { mode:"wait" },
+          e(M.div, { key:sc.act, initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, exit:{opacity:0}, transition:sp(400,28),
+            style:{ fontSize:9,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:T.purple,background:`${T.purple}14`,padding:"3px 10px",borderRadius:20,border:`1px solid ${T.purple}30`,flexShrink:0 }
+          }, sc.act)
+        ),
+        e("div", { style:{ flex:1, height:1, background:T.border, borderRadius:99, overflow:"hidden" } },
+          e(M.div, { animate:{width:`${si/(SCENES.length-1)*100}%`}, transition:{duration:0.5}, style:{height:"100%",background:T.purple,borderRadius:99} })
+        ),
+        e("span", { style:{ fontSize:10, color:T.text3 } }, `${si+1} / ${SCENES.length}`)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.title, initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, exit:{opacity:0,y:-8}, transition:ez,
+          style:{ fontSize:20,fontWeight:600,color:T.text1,marginBottom:4,letterSpacing:"-0.02em" }
+        }, sc.title)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
+          style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
+        }, sc.sub)
+      )
+    ),
+
+    e("div", { style:{ minHeight:460 } },
+    /* finale */
+    sc.finale && e(Finale),
+
+    /* main grid */
+    !sc.finale && e("div", null,
+
+      /* row 1: code */
+      e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:10 } },
+        e("div", { onClick:()=>toggleDetail("code"), style:{cursor:"pointer"} },
+          e(CodePanel, { tokens: sc.code })
+        ),
+        e("div", { onClick:()=>toggleDetail("pipeline"), style:{cursor:"pointer"} },
+          e(SceneViz, { scene:sc })
+        )
+      ),
+
+      /* row 2: cost bar */
+      sc.cost && e("div", { style:{ marginBottom:10 } },
+        e(CostBar, { cost:sc.cost, onClick:()=>toggleDetail("cost") })
+      ),
+    ),
+    ), /* close minHeight wrapper */
+
+    /* controls */
+    e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginTop:16 } },
+      e("button", { onClick:()=>go(-1), disabled:si===0,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===0?T.text3:T.text2,cursor:si===0?"not-allowed":"pointer",fontSize:11,transition:"color 0.2s" }
+      }, "\u2190 Back"),
+      e("button", { onClick:togglePlay,
+        style:{ padding:"6px 18px",borderRadius:8,border:`1px solid ${playing?T.coral:T.purple}44`,background:playing?`${T.coral}14`:`${T.purple}14`,color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all 0.2s" }
+      }, playing ? "\u23f8  Pause" : si===SCENES.length-1 ? "\u21ba  Replay" : "\u25b6  Play"),
+      e("button", { onClick:()=>go(1), disabled:si===SCENES.length-1,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
+      }, "Next \u2192"),
+      e("div", { style:{ flex:1 } }),
+      e("div", { style:{ display:"flex", gap:4, alignItems:"center" } },
+        SCENES.map((_,i) =>
+          e("button", { key:i, onClick:()=>jump(i),
+            style:{ width:i===si?16:5,height:5,borderRadius:99,border:"none",padding:0,background:i===si?T.purple:i<si?`${T.purple}55`:T.border,cursor:"pointer",transition:"all 0.25s" }
+          })
+        )
+      )
+    )
+  ),
+  detail && e(DetailPanel, { detailKey:detail, onClose:()=>setDetail(null) })
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(e(App));
+</script>
+</body>
+</html>
