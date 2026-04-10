@@ -496,17 +496,72 @@ const SceneViz = ({ scene }) => {
   }
 
   if (v==="blocking") {
-    return e("div", { style:{ padding:"12px 0" } },
-      e(ThreadLane, { label:"Main Thread", color:T.coral, items:[
-        {t:"heavyWork()", c:T.coral},
-      ]}),
-      e(M.div, { initial:{opacity:0}, animate:{opacity:[0,1,0.5,1]}, transition:{delay:0.3, duration:1.5, repeat:Infinity},
-        style:{ display:"flex", gap:8, padding:"10px 12px", marginTop:8, borderRadius:8, border:`1px solid ${T.coral}33`, background:`${T.coral}08` }
-      },
-        e("span", { style:{ fontSize:20, color:T.coralL } }, e("i", { className:"lni lni-bolt-3" })),
+    /* Real timeline visualization: thread as a horizontal line, with a
+       long blocking block hogging it. Show user events queuing up but
+       unable to run while heavyWork() blocks. */
+    const W = 640, H = 200, trackY = 100;
+    const blockStart = 110, blockEnd = 540;
+    const pending = [
+      { x:160, label:"click" },
+      { x:230, label:"click" },
+      { x:300, label:"frame" },
+      { x:380, label:"scroll" },
+      { x:460, label:"frame" },
+    ];
+    return e("div", { style:{ padding:"6px 0" } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginBottom:8 } },
+        e("div", { style:{ width:8, height:8, borderRadius:"50%", background:T.coral } }),
+        e("span", { style:{ fontSize:10, fontWeight:600, color:T.coral, letterSpacing:"0.05em", textTransform:"uppercase" } }, "Main Thread (single line of execution)")
+      ),
+      e("svg", { width:"100%", viewBox:`0 0 ${W} ${H}`, style:{ display:"block" } },
+        /* Thread baseline */
+        e("line", { x1:30, y1:trackY, x2:W-30, y2:trackY, stroke:T.border2, strokeWidth:1.5 }),
+        e("text", { x:30, y:trackY+22, fontSize:9, fill:T.text3, fontFamily:"monospace" }, "0 ms"),
+        e("text", { x:W-50, y:trackY+22, fontSize:9, fill:T.text3, fontFamily:"monospace" }, "time \u2192"),
+        ...[0,1,2,3,4,5,6,7,8].map(i =>
+          e("line", { key:"tick"+i, x1:30+i*72, y1:trackY-3, x2:30+i*72, y2:trackY+3, stroke:T.text3, strokeWidth:1 })
+        ),
+
+        /* Pending events queued above the line — can't run */
+        ...pending.map((p,i) =>
+          e(M.g, { key:"p"+i, initial:{opacity:0,y:-8}, animate:{opacity:0.6,y:0}, transition:{delay:0.6+i*0.15,duration:0.3} },
+            e("circle", { cx:p.x, cy:trackY-26, r:9, fill:`${T.coral}20`, stroke:`${T.coral}66`, strokeWidth:1.5, strokeDasharray:"2 2" }),
+            e("text", { x:p.x, y:trackY-23, textAnchor:"middle", fontSize:10, fill:T.coralL, fontFamily:"monospace", fontWeight:700 }, "!"),
+            e("text", { x:p.x, y:trackY-40, textAnchor:"middle", fontSize:8, fill:`${T.coral}aa`, fontFamily:"monospace" }, p.label)
+          )
+        ),
+
+        /* The big blocking block sitting on the thread */
+        e(M.rect, {
+          x:blockStart, y:trackY-18, width:blockEnd-blockStart, height:36, rx:6,
+          fill:`${T.coral}25`, stroke:T.coral, strokeWidth:2,
+          initial:{ opacity:0, width:0 },
+          animate:{ opacity:1, width:blockEnd-blockStart },
+          transition:{ duration:0.7, ease:[0.22,1,0.36,1] }
+        }),
+        e(M.text, {
+          x:(blockStart+blockEnd)/2, y:trackY+5, textAnchor:"middle",
+          fontSize:13, fill:T.coralL, fontFamily:"monospace", fontWeight:700,
+          initial:{ opacity:0 }, animate:{ opacity:1 }, transition:{ delay:0.5 }
+        }, "heavyWork()  \u2014  blocking the thread"),
+
+        /* Pulsing label below */
+        e(M.text, {
+          x:(blockStart+blockEnd)/2, y:trackY+45, textAnchor:"middle",
+          fontSize:10, fill:T.coral, fontFamily:"monospace", fontWeight:600,
+          animate:{ opacity:[0.4,1,0.4] }, transition:{ duration:1.4, repeat:Infinity }
+        }, "nothing else can run while this is on the thread"),
+
+        /* Bracket showing blocked range */
+        e("line", { x1:blockStart, y1:trackY+22, x2:blockEnd, y2:trackY+22, stroke:T.coral, strokeWidth:1.5 }),
+        e("line", { x1:blockStart, y1:trackY+18, x2:blockStart, y2:trackY+22, stroke:T.coral, strokeWidth:1.5 }),
+        e("line", { x1:blockEnd,   y1:trackY+18, x2:blockEnd,   y2:trackY+22, stroke:T.coral, strokeWidth:1.5 })
+      ),
+      e("div", { style:{ display:"flex", gap:8, padding:"8px 12px", marginTop:6, borderRadius:8, border:`1px solid ${T.coral}33`, background:`${T.coral}08` } },
+        e("span", { style:{ fontSize:18, color:T.coralL } }, e("i", { className:"lni lni-bolt-3" })),
         e("div", null,
-          e("div", { style:{ fontSize:12, fontWeight:600, color:T.coralL } }, "UI Frozen!"),
-          e("div", { style:{ fontSize:11, color:T.text2 } }, "Clicks unresponsive, animations stuck, scroll jank")
+          e("div", { style:{ fontSize:12, fontWeight:600, color:T.coralL } }, "UI Frozen"),
+          e("div", { style:{ fontSize:11, color:T.text2 } }, "Clicks, scrolls, and frames pile up — nothing runs until heavyWork() returns.")
         )
       )
     );
