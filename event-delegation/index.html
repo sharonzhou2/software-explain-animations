@@ -542,15 +542,26 @@ const DOMTreeViz = ({ tree, onClick }) => {
           });
         }),
 
-        /* animated dots traveling along arrows */
+        /* animated dots traveling along arrows (edge-to-edge, never over node text) */
         bubbleArrows.map(function(pair, i) {
           var from = getNode(pair[0]);
           var to = getNode(pair[1]);
           if (!from || !to) return null;
+          var dx = to.x - from.x;
+          var dy = to.y - from.y;
+          var len = Math.sqrt(dx*dx + dy*dy) || 1;
+          /* scale exit distance so dot clears the rect on both axes */
+          var tx = Math.abs(dx) > 0.001 ? (nodeW/2 + 2) / Math.abs(dx) : Infinity;
+          var ty = Math.abs(dy) > 0.001 ? (nodeH/2 + 2) / Math.abs(dy) : Infinity;
+          var tExit = Math.min(tx, ty);
+          var sx = from.x + dx * tExit;
+          var sy = from.y + dy * tExit;
+          var ex = to.x - dx * tExit;
+          var ey = to.y - dy * tExit;
           return e(M.circle, {
             key:"dot-"+i, r:4, fill:T.amber,
-            initial:{ cx:from.x, cy:from.y },
-            animate:{ cx:[from.x,to.x], cy:[from.y,to.y] },
+            initial:{ cx:sx, cy:sy },
+            animate:{ cx:[sx,ex], cy:[sy,ey] },
             transition:{ duration:0.8, delay:i*0.4, repeat:Infinity, repeatDelay:bubbleArrows.length*0.4, ease:"easeInOut" },
           });
         }),
