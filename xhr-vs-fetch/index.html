@@ -693,34 +693,12 @@ function App() {
     /* finale */
     sc.finale && e(Finale),
 
-    /* main grid */
-    !sc.finale && e("div", null,
-
-      /* row 1: code + compare viz */
-      e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:10 } },
-        e("div", { onClick:function(){toggleDetail(sc.detail_key);}, style:{cursor:"pointer"} },
-          e(CodePanel, { tokens: sc.code })
-        ),
-        e(CompareViz, { compare:sc.compare, focused:false, onClick:function(){toggleDetail(sc.detail_key);} })
+    /* main grid — code + comparison only */
+    !sc.finale && e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 } },
+      e("div", { onClick:function(){toggleDetail(sc.detail_key);}, style:{cursor:"pointer"} },
+        e(CodePanel, { tokens: sc.code })
       ),
-
-      /* row 2: feature + console */
-      e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 } },
-        e(FeaturePanel, { scene:sc, focused:false, onClick:function(){toggleDetail(sc.detail_key);} }),
-        e(Panel, { label:"Console output", onClick:function(){toggleDetail(sc.detail_key);} },
-          e("div", { style:{ fontFamily:"'SF Mono','Fira Code',monospace", minHeight:40 } },
-            sc.out.length===0
-              ? e("div", { style:{ fontSize:11,color:T.text3 } }, "\u2014")
-              : e(AP, null, sc.out.map(function(item) {
-                  return e(M.div, { key:item.id, initial:{opacity:0,x:-10}, animate:{opacity:1,x:0}, transition:ez,
-                    style:{ fontSize:12,color:item.c,padding:"2px 0",borderBottom:"1px solid "+T.border }
-                  },
-                    e("span", { style:{ color:T.text3,marginRight:7,fontSize:10 } }, "\u203a"), item.t
-                  );
-                }))
-          )
-        )
-      )
+      e(CompareViz, { compare:sc.compare, focused:false, onClick:function(){toggleDetail(sc.detail_key);} })
     ),
     ), /* close minHeight wrapper */
 
