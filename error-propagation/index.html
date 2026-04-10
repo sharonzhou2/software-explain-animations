@@ -633,7 +633,7 @@ const FinallyVis = () =>
       return e(M.div, { key:i, initial:{opacity:0,x:-10}, animate:{opacity:1,x:0}, transition:{delay:i*0.2,...ez},
         style:{ display:"flex", alignItems:"center", gap:10, padding:"5px 10px", borderRadius:8, background:T.surface2, border:"1px solid "+T.border }
       },
-        e("span", { style:{ fontSize:14 } }, e("i", { className:"lni " + s.icon })),
+        e("span", { style:{ fontSize:14, color:s.color } }, e("i", { className:"lni " + s.icon })),
         e("span", { style:{ fontSize:11, color:s.color, fontWeight:500 } }, (i+1)+". "+s.label)
       );
     })
@@ -679,7 +679,7 @@ const BestPracticesVis = () =>
       return e(M.div, { key:i, initial:{opacity:0,x:-8}, animate:{opacity:1,x:0}, transition:{delay:i*0.12,...ez},
         style:{ display:"flex", alignItems:"center", gap:8, padding:"5px 10px", borderRadius:6, background:T.surface2, border:"1px solid "+T.border }
       },
-        e("span", { style:{ fontSize:13 } }, e("i", { className:"lni " + s.icon })),
+        e("span", { style:{ fontSize:13, color:T.text2 } }, e("i", { className:"lni " + s.icon })),
         e("span", { style:{ fontSize:11, color:T.text2 } }, s.label)
       );
     })
@@ -750,7 +750,7 @@ function VisPanel({ sc, toggleDetail }) {
     return e(Panel, { label:"Error Propagation" },
       e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:12, padding:"20px 10px" } },
         e(M.div, { animate:{y:[0,-6,0]}, transition:{duration:2,repeat:Infinity},
-          style:{ fontSize:32 } }, e("i", { className:"lni lni-bolt-3" })),
+          style:{ fontSize:32, color:T.redL } }, e("i", { className:"lni lni-bolt-3" })),
         e("div", { style:{ fontSize:12, color:T.text2, textAlign:"center", lineHeight:1.7 } },
           "When a function throws an error, JavaScript searches up the call stack for a catch block. This journey is called ",
           e("span", { style:{ color:T.redL, fontWeight:600 } }, "error propagation"),
