@@ -429,7 +429,7 @@ const BoxModelViz = ({ highlight, onClick }) => {
           transition:{ duration:0.5 },
           style:{ position:"absolute", inset:0, borderRadius:8, border:`2px dashed ${BM.margin.fill}`, background:BM.margin.bg, display:"flex", alignItems:"center", justifyContent:"center" }
         },
-          e("span", { style:{ position:"absolute", top:3, left:8, fontSize:9, fontWeight:600, color:BM.margin.fill, opacity:active("margin")?1:0.3 } }, "margin")
+          e("span", { style:{ position:"absolute", top:4, left:10, fontSize:9, fontWeight:600, color:BM.margin.fill, opacity:active("margin")?1:0.3 } }, "margin")
         ),
         /* border layer */
         e(M.div, {
@@ -437,7 +437,7 @@ const BoxModelViz = ({ highlight, onClick }) => {
           transition:{ duration:0.5, delay:0.05 },
           style:{ position:"absolute", top:sizes.margin, left:sizes.margin, right:sizes.margin, bottom:sizes.margin, borderRadius:6, border:`3px solid ${BM.border.fill}`, background:BM.border.bg }
         },
-          e("span", { style:{ position:"absolute", top:2, left:6, fontSize:9, fontWeight:600, color:BM.border.fill, opacity:active("border")?1:0.3 } }, "border")
+          e("span", { style:{ position:"absolute", top:3, right:8, fontSize:9, fontWeight:600, color:BM.border.fill, opacity:active("border")?1:0.3 } }, "border")
         ),
         /* padding layer */
         e(M.div, {
@@ -445,7 +445,7 @@ const BoxModelViz = ({ highlight, onClick }) => {
           transition:{ duration:0.5, delay:0.1 },
           style:{ position:"absolute", top:sizes.margin+sizes.border, left:sizes.margin+sizes.border, right:sizes.margin+sizes.border, bottom:sizes.margin+sizes.border, borderRadius:4, border:`2px solid ${BM.padding.fill}`, background:BM.padding.bg }
         },
-          e("span", { style:{ position:"absolute", top:2, left:6, fontSize:9, fontWeight:600, color:BM.padding.fill, opacity:active("padding")?1:0.3 } }, "padding")
+          e("span", { style:{ position:"absolute", bottom:3, left:6, fontSize:9, fontWeight:600, color:BM.padding.fill, opacity:active("padding")?1:0.3 } }, "padding")
         ),
         /* content layer */
         e(M.div, {
