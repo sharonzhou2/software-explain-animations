@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>VMs vs Docker</title>
+<link href="https://cdn.lineicons.com/5.0/lineicons.css" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -636,17 +637,17 @@ const UseCases = () =>
 const Finale = () => {
   const rows = [
     { n:"VM", label:"Virtualize hardware", sub:"Full OS per instance — strong isolation, heavy overhead", c:T.vm },
-    { n:"🐳", label:"Virtualize the OS", sub:"Shared kernel, app + libs only — lightweight, fast, portable", c:T.docker },
-    { n:"⚡", label:"Startup", sub:"VMs: 30-60s (boot OS) vs Docker: < 1s (start process)", c:T.amber },
-    { n:"🛡", label:"Isolation", sub:"VMs: hardware boundary vs Docker: namespace/cgroup boundary", c:T.blue },
-    { n:"📦", label:"Portability", sub:"Docker images are standardized (OCI), VMs are hypervisor-specific", c:T.teal },
-    { n:"🤝", label:"Use both", sub:"Production often runs containers inside VMs — best of both worlds", c:T.purple },
+    { n:"lni-ship-1", label:"Virtualize the OS", sub:"Shared kernel, app + libs only — lightweight, fast, portable", c:T.docker },
+    { n:"lni-bolt-2", label:"Startup", sub:"VMs: 30-60s (boot OS) vs Docker: < 1s (start process)", c:T.amber },
+    { n:"lni-shield-2", label:"Isolation", sub:"VMs: hardware boundary vs Docker: namespace/cgroup boundary", c:T.blue },
+    { n:"lni-box-closed", label:"Portability", sub:"Docker images are standardized (OCI), VMs are hypervisor-specific", c:T.teal },
+    { n:"lni-link-2-angular-right", label:"Use both", sub:"Production often runs containers inside VMs — best of both worlds", c:T.purple },
   ];
   return e("div", { style:{ padding:"8px 0" } },
     rows.map((r,i) => e(M.div, { key:i, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.1,...ez},
       style:{ display:"flex", alignItems:"flex-start", gap:12, padding:"11px 14px", marginBottom:8, borderRadius:10, border:`1px solid ${r.c}28`, background:`${r.c}08` }
     },
-      e("div", { style:{ width:28, height:28, borderRadius:"50%", border:`1.5px solid ${r.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:12, fontWeight:700, color:r.c } }, r.n),
+      e("div", { style:{ width:28, height:28, borderRadius:"50%", border:`1.5px solid ${r.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:12, fontWeight:700, color:r.c } }, r.n.startsWith("lni-") ? e("i", { className:"lni " + r.n }) : r.n),
       e("div", null,
         e("div", { style:{ fontSize:13, fontWeight:600, color:r.c, marginBottom:2 } }, r.label),
         e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.5 } }, r.sub)

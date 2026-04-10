@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Web Workers</title>
+<link href="https://cdn.lineicons.com/5.0/lineicons.css" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -451,7 +452,7 @@ const SceneViz = ({ scene }) => {
       e(M.div, { initial:{opacity:0}, animate:{opacity:[0,1,0.5,1]}, transition:{delay:0.3, duration:1.5, repeat:Infinity},
         style:{ display:"flex", gap:8, padding:"10px 12px", marginTop:8, borderRadius:8, border:`1px solid ${T.coral}33`, background:`${T.coral}08` }
       },
-        e("span", { style:{ fontSize:20 } }, "\u26a0\ufe0f"),
+        e("span", { style:{ fontSize:20 } }, e("i", { className:"lni lni-bolt-3" })),
         e("div", null,
           e("div", { style:{ fontSize:12, fontWeight:600, color:T.coralL } }, "UI Frozen!"),
           e("div", { style:{ fontSize:11, color:T.text2 } }, "Clicks unresponsive, animations stuck, scroll jank")
@@ -613,16 +614,16 @@ const SceneViz = ({ scene }) => {
 
   if (v==="types") {
     const types = [
-      {label:"Dedicated Worker", desc:"1 page \u2194 1 worker", color:T.blue, icon:"\ud83d\udc64"},
-      {label:"Shared Worker", desc:"N pages \u2194 1 worker", color:T.amber, icon:"\ud83d\udc65"},
-      {label:"Service Worker", desc:"Network proxy + cache", color:T.teal, icon:"\ud83c\udf10"},
+      {label:"Dedicated Worker", desc:"1 page \u2194 1 worker", color:T.blue, icon:"lni-user-4"},
+      {label:"Shared Worker", desc:"N pages \u2194 1 worker", color:T.amber, icon:"lni-share-2"},
+      {label:"Service Worker", desc:"Network proxy + cache", color:T.teal, icon:"lni-cloud-iot-2"},
     ];
     return e("div", { style:{ padding:"12px 0", display:"flex", flexDirection:"column", gap:8 } },
       types.map((t,i) =>
         e(M.div, { key:t.label, initial:{opacity:0,x:-15}, animate:{opacity:1,x:0}, transition:{delay:i*0.15,...ez},
           style:{ display:"flex", alignItems:"center", gap:12, padding:"10px 14px", borderRadius:10, border:`1px solid ${t.color}33`, background:`${t.color}08` }
         },
-          e("div", { style:{ fontSize:22 } }, t.icon),
+          e("div", { style:{ fontSize:22 } }, e("i", { className:"lni " + t.icon })),
           e("div", null,
             e("div", { style:{ fontSize:13, fontWeight:600, color:t.color, marginBottom:2 } }, t.label),
             e("div", { style:{ fontSize:11, color:T.text2 } }, t.desc)
@@ -662,19 +663,19 @@ const SceneViz = ({ scene }) => {
 
   if (v==="usecases") {
     const cases = [
-      {t:"Image processing",icon:"\ud83d\uddbc\ufe0f",c:T.blue},
-      {t:"CSV/JSON parsing",icon:"\ud83d\udcc4",c:T.teal},
-      {t:"Encryption",icon:"\ud83d\udd10",c:T.amber},
-      {t:"Search indexing",icon:"\ud83d\udd0d",c:T.purple},
-      {t:"Physics sims",icon:"\u2699\ufe0f",c:T.pink},
-      {t:"Prefetching",icon:"\ud83d\udce6",c:T.coral},
+      {t:"Image processing",icon:"lni-gallery",c:T.blue},
+      {t:"CSV/JSON parsing",icon:"lni-file-multiple",c:T.teal},
+      {t:"Encryption",icon:"lni-locked-1",c:T.amber},
+      {t:"Search indexing",icon:"lni-search-1",c:T.purple},
+      {t:"Physics sims",icon:"lni-gear-1",c:T.pink},
+      {t:"Prefetching",icon:"lni-box-closed",c:T.coral},
     ];
     return e("div", { style:{ padding:"12px 0", display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 } },
       cases.map((c,i) =>
         e(M.div, { key:c.t, initial:{opacity:0,scale:0.85}, animate:{opacity:1,scale:1}, transition:{delay:i*0.1,...ez},
           style:{ display:"flex", alignItems:"center", gap:10, padding:"10px 12px", borderRadius:8, border:`1px solid ${c.c}33`, background:`${c.c}08` }
         },
-          e("span", { style:{ fontSize:18 } }, c.icon),
+          e("span", { style:{ fontSize:18 } }, e("i", { className:"lni " + c.icon })),
           e("div", { style:{ fontSize:12, fontWeight:500, color:c.c } }, c.t)
         )
       )
