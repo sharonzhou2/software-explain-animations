@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CORS</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111118;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px 16px 24px 196px;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  #root { width: 100%; max-width: 1120px; }
+  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: system-ui, sans-serif; }
+  .topnav a { text-decoration: none; color: #8888aa; font-size: 13px; transition: color 0.2s; }
+  .topnav a:hover { color: #e8e8f0; }
+  .topnav .name { font-weight: 600; color: #e8e8f0; font-size: 13px; }
+  .topnav .sep { color: #38384a; font-size: 12px; }
+  .topnav .current { color: #7c6fcd; font-size: 13px; font-weight: 500; }
+  .sidenav { position: fixed; top: 38px; left: 0; width: 180px; height: calc(100vh - 38px); background: #111118; border-right: 1px solid #2a2a38; padding: 14px 0; overflow-y: auto; z-index: 200; font-family: system-ui, sans-serif; }
+  .sidenav a { display: block; padding: 6px 16px; font-size: 11px; color: #8888aa; text-decoration: none; transition: color 0.2s, background 0.2s; border-left: 2px solid transparent; }
+  .sidenav a:hover { color: #e8e8f0; background: rgba(124,111,205,0.06); }
+  .sidenav a.active { color: #a99cf0; border-left-color: #7c6fcd; background: rgba(124,111,205,0.1); font-weight: 600; }
+  .sidenav .nav-section { padding: 8px 16px 4px; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #44445a; }
+  .sidenav .nav-section:first-child { padding-top: 4px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="../" class="name">Sharon Zhou</a>
+  <span class="sep">/</span>
+  <a href="../">Animations</a>
+  <span class="sep">/</span>
+  <span class="current">CORS</span>
+</nav>
+<nav class="sidenav">
+  <div class="nav-section">JavaScript</div>
+  <a href="../event-loop/">Event Loop</a>
+  <a href="../this-keyword/">this Keyword</a>
+  <a href="../hoisting/">Hoisting</a>
+  <a href="../garbage-collection/">Garbage Collection</a>
+  <a href="../event-delegation/">Event Delegation</a>
+  <a href="../iterators-generators/">Iterators & Generators</a>
+  <a href="../xhr-vs-fetch/">XHR vs fetch()</a>
+  <a href="../error-propagation/">Error Propagation</a>
+  <a href="../web-workers/">Web Workers</a>
+  <div class="nav-section">Networking</div>
+  <a href="../cors/" class="active">CORS</a>
+  <div class="nav-section">Infrastructure</div>
+  <a href="../vms-vs-docker/">VMs vs Docker</a>
+  <a href="../opentelemetry/">OpenTelemetry</a>
+</nav>
+<div id="root" style="margin-top: 36px;"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/framer-motion@11/dist/framer-motion.js"></script>
+<script>
+const { useState, useEffect, useRef } = React;
+const { motion, AnimatePresence } = window.Motion;
+const e = React.createElement;
+const M = motion;
+const AP = AnimatePresence;
+const sp = (s=380,d=28) => ({ type:"spring", stiffness:s, damping:d });
+const ez = { duration:0.32, ease:[0.22,1,0.36,1] };
+
+const T = {
+  bg:"#111118", surface:"#18181f", surface2:"#1e1e28",
+  border:"#2a2a38", border2:"#38384a",
+  text1:"#e8e8f0", text2:"#8888aa", text3:"#44445a",
+  purple:"#7c6fcd", purpleL:"#a99cf0",
+  teal:"#3db89a", tealL:"#6dd4b8",
+  coral:"#c4694a", coralL:"#e08a6a",
+  blue:"#4a8fd4", blueL:"#82b4e8",
+  amber:"#d4a84a", amberL:"#e8c86a",
+  pink:"#c45a8a", pinkL:"#e87aaa",
+  green:"#4aaa6a", greenL:"#6acc8a",
+  red:"#d45050", redL:"#e87a7a",
+  codeBase:"#141428",
+};
+
+/* ─── SCENES ─── */
+const SCENES = [
+  {
+    id:0, act:"01",
+    title:"The Same-Origin Policy",
+    sub:"Browsers enforce a security rule: scripts on one origin cannot freely read resources from a different origin. This protects users from malicious sites stealing data.",
+    flow:{ type:"blocked", from:{ label:"evil.com", color:T.coral }, to:{ label:"bank.com/api", color:T.teal }, method:"GET", blocked:true, headers:[] },
+    detail:"sameOrigin",
+  },
+  {
+    id:1, act:"02",
+    title:'What is an "origin"?',
+    sub:"An origin is defined by three parts: scheme (http/https), host (domain name), and port. If any one differs, the origins are different.",
+    flow:{ type:"origin", parts:[
+      { label:"https://", desc:"Scheme", color:T.purple },
+      { label:"api.example.com", desc:"Host", color:T.blue },
+      { label:":443", desc:"Port", color:T.amber },
+    ]},
+    detail:"origin",
+  },
+  {
+    id:2, act:"03",
+    title:"Why the browser blocks cross-origin requests",
+    sub:"Without restrictions, any page could fetch your bank data, read your emails, or exfiltrate cookies. The browser acts as a gatekeeper, blocking responses from different origins by default.",
+    flow:{ type:"blocked", from:{ label:"malicious.com", color:T.coral }, to:{ label:"your-bank.com", color:T.teal }, method:"fetch('/account')", blocked:true,
+      headers:[{ k:"Cookie", v:"session=abc123", color:T.red }] },
+    detail:"whyBlock",
+  },
+  {
+    id:3, act:"04",
+    title:"Simple requests",
+    sub:"Some requests are 'simple' and skip the preflight check. GET, HEAD, or POST with only safe headers (Accept, Content-Type with form values) go directly to the server.",
+    flow:{ type:"simple", from:{ label:"app.com", color:T.blue }, to:{ label:"api.com", color:T.teal }, method:"GET",
+      reqHeaders:[{ k:"Origin", v:"https://app.com", color:T.blue }],
+      resHeaders:[{ k:"Access-Control-Allow-Origin", v:"https://app.com", color:T.green }],
+    },
+    detail:"simple",
+  },
+  {
+    id:4, act:"05",
+    title:"Preflight requests",
+    sub:'For "unsafe" methods (PUT, DELETE, PATCH) or custom headers (Authorization, Content-Type: application/json), the browser first sends an OPTIONS request to ask permission.',
+    flow:{ type:"preflight-intro", from:{ label:"app.com", color:T.blue }, to:{ label:"api.com", color:T.teal }, method:"PUT",
+      unsafeReasons:["Method: PUT", "Header: Authorization", "Content-Type: application/json"],
+    },
+    detail:"preflight",
+  },
+  {
+    id:5, act:"06",
+    title:"Preflight step by step",
+    sub:"Step 1: Browser sends OPTIONS with the intended method and headers. Step 2: Server responds with what it allows. Step 3: If allowed, the actual request proceeds.",
+    flow:{ type:"preflight-steps", from:{ label:"app.com", color:T.blue }, to:{ label:"api.com", color:T.teal },
+      optionsReq:[
+        { k:"Origin", v:"https://app.com", color:T.blue },
+        { k:"Access-Control-Request-Method", v:"PUT", color:T.amber },
+        { k:"Access-Control-Request-Headers", v:"Authorization", color:T.pink },
+      ],
+      optionsRes:[
+        { k:"Access-Control-Allow-Origin", v:"https://app.com", color:T.green },
+        { k:"Access-Control-Allow-Methods", v:"GET, PUT, DELETE", color:T.green },
+        { k:"Access-Control-Allow-Headers", v:"Authorization", color:T.green },
+      ],
+    },
+    detail:"preflightSteps",
+  },
+  {
+    id:6, act:"07",
+    title:"Access-Control-Allow-Origin",
+    sub:"This is the key response header. The server tells the browser which origins are allowed. It can be a specific origin or * (wildcard for any origin, but not with credentials).",
+    flow:{ type:"header-focus", header:"Access-Control-Allow-Origin",
+      examples:[
+        { v:"https://app.com", desc:"Only this origin", color:T.green },
+        { v:"*", desc:"Any origin (no credentials)", color:T.amber },
+        { v:"(missing)", desc:"Request blocked!", color:T.red },
+      ],
+    },
+    detail:"acao",
+  },
+  {
+    id:7, act:"08",
+    title:"Credentials across origins",
+    sub:"By default, cross-origin requests don't send cookies. To include credentials, both sides must opt in: fetch uses credentials:'include', and the server must set Access-Control-Allow-Credentials: true.",
+    flow:{ type:"credentials", from:{ label:"app.com", color:T.blue }, to:{ label:"api.com", color:T.teal },
+      clientSide:"fetch(url, { credentials: 'include' })",
+      serverHeaders:[
+        { k:"Access-Control-Allow-Credentials", v:"true", color:T.green },
+        { k:"Access-Control-Allow-Origin", v:"https://app.com", color:T.green },
+      ],
+      note:"* is NOT allowed with credentials",
+    },
+    detail:"credentials",
+  },
+  {
+    id:8, act:"09",
+    title:"Allow-Headers & Allow-Methods",
+    sub:"The server uses Access-Control-Allow-Headers and Access-Control-Allow-Methods to declare exactly which custom headers and HTTP methods are permitted for cross-origin requests.",
+    flow:{ type:"allow-list",
+      methods:["GET","POST","PUT","DELETE","PATCH"],
+      headers:["Authorization","Content-Type","X-Custom-Header"],
+      allowed:{ methods:["GET","POST","PUT"], headers:["Authorization","Content-Type"] },
+    },
+    detail:"allowList",
+  },
+  {
+    id:9, act:"10",
+    title:"Preflight caching",
+    sub:"Preflight requests add latency. Access-Control-Max-Age tells the browser how many seconds to cache the preflight response, avoiding repeated OPTIONS requests for the same endpoint.",
+    flow:{ type:"caching",
+      timeline:[
+        { label:"1st request", preflight:true, time:"OPTIONS + PUT" },
+        { label:"2nd request (within max-age)", preflight:false, time:"PUT only" },
+        { label:"After max-age expires", preflight:true, time:"OPTIONS + PUT" },
+      ],
+      maxAge:"86400",
+    },
+    detail:"caching",
+  },
+  {
+    id:10, act:"11",
+    title:"Common CORS errors",
+    sub:"CORS errors are always enforced by the browser, never the server. The server may respond fine, but if headers are missing, the browser blocks JavaScript from reading the response.",
+    flow:{ type:"errors",
+      errors:[
+        { msg:"No 'Access-Control-Allow-Origin' header", fix:"Add the header on the server response", color:T.red },
+        { msg:"Credentials flag but Allow-Origin is '*'", fix:"Set a specific origin, not wildcard", color:T.coral },
+        { msg:"Method not in Allow-Methods", fix:"Add the method to the server's allowed list", color:T.amber },
+        { msg:"Header not in Allow-Headers", fix:"Add the header to Access-Control-Allow-Headers", color:T.pink },
+      ],
+    },
+    detail:"errors",
+  },
+  {
+    id:11, act:"12",
+    title:"CORS vs server-side proxy",
+    sub:"CORS only applies to browsers. A server-side proxy makes the request from your backend, bypassing CORS entirely. The browser sees a same-origin request to your own server.",
+    flow:{ type:"proxy",
+      direct:{ from:"Browser", mid:null, to:"api.com", blocked:true },
+      proxy:{ from:"Browser", mid:"Your server", to:"api.com", blocked:false },
+    },
+    detail:"proxy",
+  },
+  {
+    id:12, act:"\u2713",
+    title:"CORS summary",
+    sub:"Cross-Origin Resource Sharing is a browser security mechanism. The server opts in via headers, telling the browser which origins, methods, and headers are allowed.",
+    flow:{ type:"finale" },
+    detail:"summary",
+    finale:true,
+  },
+];
+
+/* ─── DETAIL CONTENT ─── */
+const DETAILS = {
+  sameOrigin: {
+    title:"Same-Origin Policy",
+    color:T.purpleL,
+    sections:[
+      {heading:"What it protects",body:"The same-origin policy prevents a malicious website from reading sensitive data from another site. Without it, any page could make authenticated requests to your bank and read the response."},
+      {heading:"What it doesn't block",body:"The policy only restricts reading responses. Embedding images, scripts, and stylesheets from other origins is still allowed. Forms can submit cross-origin too. It's specifically JavaScript's ability to read the response that's restricted."},
+    ]
+  },
+  origin: {
+    title:"Origin Definition",
+    color:T.blueL,
+    sections:[
+      {heading:"The three parts",body:"An origin is: scheme + host + port.\n\nhttps://example.com:443 and http://example.com:80 are different origins (different scheme).\n\nhttps://api.example.com and https://example.com are different origins (different host)."},
+      {heading:"Same origin examples",body:"These are the same origin:\n\u2022 https://example.com/page1\n\u2022 https://example.com/page2\n\u2022 https://example.com:443/api\n\n(Port 443 is the default for https)"},
+    ]
+  },
+  whyBlock: {
+    title:"Why Block?",
+    color:T.coralL,
+    sections:[
+      {heading:"The threat model",body:"If evil.com could fetch('https://bank.com/api/balance'), and the browser attached your bank cookies, the attacker could read your balance. The same-origin policy ensures only bank.com's own scripts can read bank.com responses."},
+      {heading:"Browser enforcement",body:"The request often still reaches the server. The server responds normally. But the browser intercepts the response and refuses to let JavaScript read it. CORS errors happen at the browser, not the server."},
+    ]
+  },
+  simple: {
+    title:"Simple Requests",
+    color:T.tealL,
+    sections:[
+      {heading:"What makes a request 'simple'",body:"A simple request meets ALL of these:\n\u2022 Method is GET, HEAD, or POST\n\u2022 Only safe headers: Accept, Accept-Language, Content-Language, Content-Type\n\u2022 Content-Type is only: application/x-www-form-urlencoded, multipart/form-data, or text/plain"},
+      {heading:"No preflight needed",body:"Simple requests go directly to the server. The browser still checks the Access-Control-Allow-Origin header in the response, but it doesn't send a preliminary OPTIONS request first."},
+    ]
+  },
+  preflight: {
+    title:"Preflight Requests",
+    color:T.amberL,
+    sections:[
+      {heading:"When preflight happens",body:"The browser sends a preflight OPTIONS request when:\n\u2022 Method is PUT, DELETE, PATCH, etc.\n\u2022 Custom headers like Authorization\n\u2022 Content-Type is application/json\n\u2022 Any non-simple header is included"},
+      {heading:"Why preflight exists",body:"Preflight protects servers that existed before CORS. Old servers never expected cross-origin DELETE or PUT requests. The preflight lets the server explicitly opt in to these methods before the browser sends the actual request."},
+    ]
+  },
+  preflightSteps: {
+    title:"Preflight Flow",
+    color:T.greenL,
+    sections:[
+      {heading:"Step 1: OPTIONS request",body:"Browser automatically sends:\nOPTIONS /resource\nOrigin: https://app.com\nAccess-Control-Request-Method: PUT\nAccess-Control-Request-Headers: Authorization"},
+      {heading:"Step 2: Server response",body:"Server responds with:\nAccess-Control-Allow-Origin: https://app.com\nAccess-Control-Allow-Methods: GET, PUT\nAccess-Control-Allow-Headers: Authorization\n(204 No Content)"},
+      {heading:"Step 3: Actual request",body:"If the preflight succeeds, the browser sends the actual PUT request with the real body and headers. If the preflight fails, the actual request is never sent."},
+    ]
+  },
+  acao: {
+    title:"Allow-Origin Header",
+    color:T.greenL,
+    sections:[
+      {heading:"Specific origin",body:"Access-Control-Allow-Origin: https://app.com\n\nThe safest approach. Only this exact origin can read the response. The server should dynamically set this based on the request's Origin header."},
+      {heading:"Wildcard",body:"Access-Control-Allow-Origin: *\n\nAny origin can read the response. Cannot be used with credentials. Good for public APIs (CDNs, open data)."},
+      {heading:"Dynamic origin",body:"Many servers read the Origin header from the request, check it against an allowlist, and echo it back. This lets multiple origins access the resource while maintaining security."},
+    ]
+  },
+  credentials: {
+    title:"Credentials",
+    color:T.pinkL,
+    sections:[
+      {heading:"What credentials include",body:"Credentials means:\n\u2022 Cookies\n\u2022 Authorization headers\n\u2022 TLS client certificates\n\nBy default, cross-origin fetch() does NOT send these."},
+      {heading:"Both sides must opt in",body:"Client: fetch(url, { credentials: 'include' })\n\nServer must respond with:\nAccess-Control-Allow-Credentials: true\nAccess-Control-Allow-Origin: https://app.com\n\nWildcard (*) is NOT allowed with credentials."},
+    ]
+  },
+  allowList: {
+    title:"Allow-Headers & Methods",
+    color:T.amberL,
+    sections:[
+      {heading:"Allow-Methods",body:"Access-Control-Allow-Methods: GET, POST, PUT, DELETE\n\nTells the browser which HTTP methods the server accepts for cross-origin requests. Only needed in preflight responses."},
+      {heading:"Allow-Headers",body:"Access-Control-Allow-Headers: Authorization, Content-Type, X-Custom\n\nTells the browser which request headers the server accepts. Simple headers (Accept, Content-Language) are always allowed."},
+    ]
+  },
+  caching: {
+    title:"Preflight Cache",
+    color:T.blueL,
+    sections:[
+      {heading:"Access-Control-Max-Age",body:"Access-Control-Max-Age: 86400\n\nTells the browser to cache the preflight response for 86400 seconds (24 hours). During this time, the same cross-origin request skips the preflight OPTIONS call."},
+      {heading:"Browser limits",body:"Browsers cap max-age:\n\u2022 Chrome: 7200s (2 hours)\n\u2022 Firefox: 86400s (24 hours)\n\nEven if the server sets a higher value, browsers enforce their own maximum."},
+    ]
+  },
+  errors: {
+    title:"CORS Errors",
+    color:T.redL,
+    sections:[
+      {heading:"Where errors happen",body:"CORS errors are always browser-side. The server often responds normally (200 OK), but the browser blocks JavaScript from reading the response because the CORS headers are missing or incorrect."},
+      {heading:"Debugging tips",body:"\u2022 Check the Network tab for the actual response\n\u2022 Look for the OPTIONS preflight request\n\u2022 Verify the server sends correct Access-Control-* headers\n\u2022 Check if credentials require a specific origin (not *)\n\u2022 Ensure preflight responds with 2xx status"},
+    ]
+  },
+  proxy: {
+    title:"Server-Side Proxy",
+    color:T.tealL,
+    sections:[
+      {heading:"How it works",body:"Your frontend calls your own backend (same origin). Your backend then calls the external API (server-to-server). CORS only applies in browsers, so the backend request has no CORS restrictions."},
+      {heading:"When to use",body:"Use a proxy when:\n\u2022 You can't control the external API's CORS headers\n\u2022 You need to hide API keys from the browser\n\u2022 You want to add caching or rate limiting\n\u2022 The API doesn't support CORS at all"},
+    ]
+  },
+  summary: {
+    title:"Key Takeaways",
+    color:T.purpleL,
+    sections:[
+      {heading:"Core concept",body:"CORS is a browser security mechanism. The server opts in to cross-origin access by sending specific response headers. Without these headers, the browser blocks the response."},
+      {heading:"Essential headers",body:"\u2022 Access-Control-Allow-Origin — which origins\n\u2022 Access-Control-Allow-Methods — which methods\n\u2022 Access-Control-Allow-Headers — which headers\n\u2022 Access-Control-Allow-Credentials — cookies/auth\n\u2022 Access-Control-Max-Age — preflight cache time"},
+    ]
+  },
+};
+
+/* ─── COMPONENTS ─── */
+
+/* Browser/Server icons */
+const BrowserIcon = ({ size=32, color=T.blue }) =>
+  e("div", { style:{ width:size, height:size, borderRadius:6, border:`1.5px solid ${color}`, display:"flex", flexDirection:"column", overflow:"hidden" } },
+    e("div", { style:{ height:size*0.3, borderBottom:`1px solid ${color}`, display:"flex", alignItems:"center", gap:2, padding:"0 3px" } },
+      ...[0,1,2].map(i => e("div", { key:i, style:{ width:3, height:3, borderRadius:"50%", background:color, opacity:0.6 } }))
+    ),
+    e("div", { style:{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", fontSize:size*0.3, color } }, "\u25A0")
+  );
+
+const ServerIcon = ({ size=32, color=T.teal }) =>
+  e("div", { style:{ width:size, height:size, borderRadius:6, border:`1.5px solid ${color}`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:2 } },
+    ...[0,1,2].map(i => e("div", { key:i, style:{ width:size*0.5, height:2, borderRadius:1, background:color, opacity:0.4+i*0.2 } }))
+  );
+
+/* Arrow between browser and server */
+const FlowArrow = ({ color=T.text3, label, direction="right", blocked=false, delay=0 }) =>
+  e(M.div, {
+    initial:{ opacity:0 },
+    animate:{ opacity:1 },
+    transition:{ delay, duration:0.3 },
+    style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:4, minWidth:80 }
+  },
+    label && e("div", { style:{ fontSize:9, color:color, fontFamily:"monospace", fontWeight:600, textAlign:"center", maxWidth:120 } }, label),
+    e("div", { style:{ display:"flex", alignItems:"center", gap:2 } },
+      e(M.div, {
+        animate: blocked ? { scaleX:[1,1.05,1] } : { x:[0,4,0] },
+        transition:{ duration:1.2, repeat:Infinity },
+        style:{ height:2, width:60, background:blocked ? T.red : color, borderRadius:1 }
+      }),
+      blocked
+        ? e("div", { style:{ fontSize:14, color:T.red } }, "\u2715")
+        : e("div", { style:{ fontSize:10, color, transform:direction==="left"?"rotate(180deg)":"none" } }, "\u25B6")
+    )
+  );
+
+/* Header badge */
+const HeaderBadge = ({ k, v, color=T.green, delay=0 }) =>
+  e(M.div, {
+    initial:{ opacity:0, y:6 },
+    animate:{ opacity:1, y:0 },
+    transition:{ delay, ...ez },
+    style:{ display:"flex", gap:0, borderRadius:6, overflow:"hidden", fontSize:10, fontFamily:"monospace", border:`1px solid ${color}33` }
+  },
+    e("span", { style:{ padding:"3px 6px", background:`${color}18`, color, fontWeight:600 } }, k+":"),
+    e("span", { style:{ padding:"3px 6px", background:`${color}08`, color:`${color}cc` } }, v)
+  );
+
+/* Viz for blocked request */
+const BlockedViz = ({ flow }) =>
+  e("div", { style:{ display:"flex", alignItems:"center", justifyContent:"center", gap:16, padding:"20px 0" } },
+    e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:6 } },
+      e(BrowserIcon, { size:40, color:flow.from.color }),
+      e("div", { style:{ fontSize:11, color:flow.from.color, fontFamily:"monospace", fontWeight:600 } }, flow.from.label)
+    ),
+    e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:8 } },
+      e(FlowArrow, { color:T.text3, label:flow.method, direction:"right" }),
+      flow.headers && flow.headers.map((h,i) =>
+        e(HeaderBadge, { key:i, k:h.k, v:h.v, color:h.color, delay:0.3+i*0.15 })
+      ),
+      e(FlowArrow, { color:T.red, label:"BLOCKED", direction:"left", blocked:true, delay:0.5 }),
+    ),
+    e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:6 } },
+      e(ServerIcon, { size:40, color:flow.to.color }),
+      e("div", { style:{ fontSize:11, color:flow.to.color, fontFamily:"monospace", fontWeight:600 } }, flow.to.label)
+    )
+  );
+
+/* Viz for origin parts */
+const OriginViz = ({ flow }) =>
+  e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:20, padding:"16px 0" } },
+    e("div", { style:{ display:"flex", alignItems:"center", gap:0, padding:"10px 18px", borderRadius:10, background:T.surface2, border:`1px solid ${T.border}` } },
+      flow.parts.map((p,i) =>
+        e(M.div, {
+          key:i,
+          initial:{ opacity:0, y:10 },
+          animate:{ opacity:1, y:0 },
+          transition:{ delay:0.2+i*0.25, ...ez },
+          style:{ display:"flex", flexDirection:"column", alignItems:"center" }
+        },
+          e("span", { style:{ fontFamily:"monospace", fontSize:16, fontWeight:700, color:p.color } }, p.label),
+        )
+      )
+    ),
+    e("div", { style:{ display:"flex", gap:20 } },
+      flow.parts.map((p,i) =>
+        e(M.div, {
+          key:i,
+          initial:{ opacity:0 },
+          animate:{ opacity:1 },
+          transition:{ delay:0.6+i*0.2 },
+          style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }
+        },
+          e("div", { style:{ width:8, height:8, borderRadius:"50%", background:p.color } }),
+          e("div", { style:{ fontSize:11, fontWeight:600, color:p.color } }, p.desc),
+          e("div", { style:{ fontSize:14, fontFamily:"monospace", color:`${p.color}aa` } }, p.label),
+        )
+      )
+    )
+  );
+
+/* Simple request viz */
+const SimpleViz = ({ flow }) =>
+  e("div", { style:{ display:"flex", alignItems:"flex-start", justifyContent:"center", gap:12, padding:"14px 0" } },
+    e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:6 } },
+      e(BrowserIcon, { size:40, color:flow.from.color }),
+      e("div", { style:{ fontSize:11, color:flow.from.color, fontFamily:"monospace", fontWeight:600 } }, flow.from.label)
+    ),
+    e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:8, minWidth:200 } },
+      e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.2},
+        style:{ fontSize:10, color:T.text2, fontWeight:600, marginBottom:2 } }, flow.method + " request"),
+      e(FlowArrow, { color:T.blue, label:"Request", direction:"right", delay:0.3 }),
+      flow.reqHeaders && flow.reqHeaders.map((h,i) =>
+        e(HeaderBadge, { key:"req"+i, k:h.k, v:h.v, color:h.color, delay:0.5+i*0.15 })
+      ),
+      e(FlowArrow, { color:T.green, label:"Response (200 OK)", direction:"left", delay:0.8 }),
+      flow.resHeaders && flow.resHeaders.map((h,i) =>
+        e(HeaderBadge, { key:"res"+i, k:h.k, v:h.v, color:h.color, delay:1.0+i*0.15 })
+      ),
+      e(M.div, {
+        initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, transition:{delay:1.4,...ez},
+        style:{ fontSize:10, color:T.green, fontWeight:700, padding:"4px 12px", borderRadius:6, background:`${T.green}14`, border:`1px solid ${T.green}33`, marginTop:4 }
+      }, "\u2713 Browser allows response")
+    ),
+    e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:6 } },
+      e(ServerIcon, { size:40, color:flow.to.color }),
+      e("div", { style:{ fontSize:11, color:flow.to.color, fontFamily:"monospace", fontWeight:600 } }, flow.to.label)
+    )
+  );
+
+/* Preflight intro */
+const PreflightIntroViz = ({ flow }) =>
+  e("div", { style:{ display:"flex", alignItems:"flex-start", justifyContent:"center", gap:12, padding:"10px 0" } },
+    e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:6 } },
+      e(BrowserIcon, { size:40, color:flow.from.color }),
+      e("div", { style:{ fontSize:11, color:flow.from.color, fontFamily:"monospace", fontWeight:600 } }, flow.from.label)
+    ),
+    e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:6, minWidth:200 } },
+      e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.15},
+        style:{ padding:"6px 12px", borderRadius:8, background:`${T.coral}12`, border:`1px solid ${T.coral}33`, fontSize:10, color:T.coralL, fontWeight:600 }
+      }, "\u26A0 Not a simple request!"),
+      e("div", { style:{ display:"flex", flexDirection:"column", gap:4, marginTop:4 } },
+        flow.unsafeReasons.map((r,i) =>
+          e(M.div, {
+            key:i, initial:{opacity:0,x:-10}, animate:{opacity:1,x:0}, transition:{delay:0.4+i*0.18,...ez},
+            style:{ fontSize:10, fontFamily:"monospace", color:T.amber, padding:"3px 8px", borderRadius:4, background:`${T.amber}10`, border:`1px solid ${T.amber}22` }
+          }, r)
+        )
+      ),
+      e(M.div, {
+        initial:{opacity:0}, animate:{opacity:1}, transition:{delay:1.0},
+        style:{ marginTop:8, fontSize:10, color:T.purple, fontWeight:600 }
+      }, "\u2192 Browser must send preflight OPTIONS first")
+    ),
+    e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:6 } },
+      e(ServerIcon, { size:40, color:flow.to.color }),
+      e("div", { style:{ fontSize:11, color:flow.to.color, fontFamily:"monospace", fontWeight:600 } }, flow.to.label)
+    )
+  );
+
+/* Preflight step-by-step */
+const PreflightStepsViz = ({ flow }) => {
+  const [step, setStep] = useState(0);
+  useEffect(() => {
+    const t1 = setTimeout(() => setStep(1), 800);
+    const t2 = setTimeout(() => setStep(2), 2000);
+    const t3 = setTimeout(() => setStep(3), 3200);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+  }, [flow]);
+
+  return e("div", { style:{ display:"flex", flexDirection:"column", gap:10, padding:"6px 0" } },
+    /* Step labels */
+    e("div", { style:{ display:"flex", gap:8, justifyContent:"center", marginBottom:4 } },
+      ["1 Preflight", "2 Response", "3 Actual request"].map((s,i) =>
+        e(M.div, {
+          key:i,
+          animate:{ opacity: step > i ? 1 : 0.3, scale: step === i+1 ? 1.05 : 1 },
+          style:{ fontSize:10, fontWeight:600, color: step > i ? T.green : T.text3, padding:"3px 10px", borderRadius:6, background: step === i+1 ? `${T.green}14` : "transparent", border:`1px solid ${step > i ? T.green+"33" : T.border}` }
+        }, s)
+      )
+    ),
+    /* Flow diagram */
+    e("div", { style:{ display:"flex", alignItems:"flex-start", justifyContent:"center", gap:16 } },
+      e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 } },
+        e(BrowserIcon, { size:36, color:flow.from.color }),
+        e("div", { style:{ fontSize:10, color:flow.from.color, fontFamily:"monospace" } }, flow.from.label)
+      ),
+      e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:6, minWidth:220 } },
+        /* OPTIONS request */
+        step >= 1 && e(M.div, {
+          initial:{opacity:0}, animate:{opacity:1},
+          style:{ display:"flex", flexDirection:"column", gap:3, alignItems:"center" }
+        },
+          e("div", { style:{ fontSize:9, fontWeight:700, color:T.amber, letterSpacing:"0.08em" } }, "OPTIONS \u2192"),
+          flow.optionsReq.map((h,i) =>
+            e(HeaderBadge, { key:"oq"+i, k:h.k, v:h.v, color:h.color, delay:i*0.12 })
+          )
+        ),
+        /* OPTIONS response */
+        step >= 2 && e(M.div, {
+          initial:{opacity:0}, animate:{opacity:1},
+          style:{ display:"flex", flexDirection:"column", gap:3, alignItems:"center", marginTop:6 }
+        },
+          e("div", { style:{ fontSize:9, fontWeight:700, color:T.green, letterSpacing:"0.08em" } }, "\u2190 204 No Content"),
+          flow.optionsRes.map((h,i) =>
+            e(HeaderBadge, { key:"or"+i, k:h.k, v:h.v, color:h.color, delay:i*0.12 })
+          )
+        ),
+        /* Actual request */
+        step >= 3 && e(M.div, {
+          initial:{opacity:0, scale:0.9}, animate:{opacity:1, scale:1},
+          style:{ marginTop:8, padding:"6px 14px", borderRadius:8, background:`${T.green}12`, border:`1px solid ${T.green}33`, fontSize:11, color:T.green, fontWeight:600 }
+        }, "\u2713 PUT request proceeds")
+      ),
+      e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 } },
+        e(ServerIcon, { size:36, color:flow.to.color }),
+        e("div", { style:{ fontSize:10, color:flow.to.color, fontFamily:"monospace" } }, flow.to.label)
+      )
+    )
+  );
+};
+
+/* Header focus viz */
+const HeaderFocusViz = ({ flow }) =>
+  e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:14, padding:"16px 0" } },
+    e(M.div, {
+      animate:{ scale:[1,1.03,1] },
+      transition:{ duration:2, repeat:Infinity },
+      style:{ fontFamily:"monospace", fontSize:14, fontWeight:700, color:T.green, padding:"10px 20px", borderRadius:10, background:`${T.green}10`, border:`1.5px solid ${T.green}33` }
+    }, flow.header),
+    e("div", { style:{ display:"flex", flexDirection:"column", gap:10, width:"100%" } },
+      flow.examples.map((ex,i) =>
+        e(M.div, {
+          key:i,
+          initial:{ opacity:0, x:-16 },
+          animate:{ opacity:1, x:0 },
+          transition:{ delay:0.3+i*0.2, ...ez },
+          style:{ display:"flex", alignItems:"center", gap:10, padding:"8px 12px", borderRadius:8, border:`1px solid ${ex.color}28`, background:`${ex.color}08` }
+        },
+          e("div", { style:{ fontFamily:"monospace", fontSize:12, fontWeight:600, color:ex.color, minWidth:160 } }, ex.v),
+          e("div", { style:{ fontSize:11, color:T.text2 } }, ex.desc)
+        )
+      )
+    )
+  );
+
+/* Credentials viz */
+const CredentialsViz = ({ flow }) =>
+  e("div", { style:{ display:"flex", alignItems:"flex-start", justifyContent:"center", gap:12, padding:"10px 0" } },
+    e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:6 } },
+      e(BrowserIcon, { size:38, color:flow.from.color }),
+      e("div", { style:{ fontSize:10, color:flow.from.color, fontFamily:"monospace" } }, flow.from.label),
+      e(M.div, {
+        initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.3},
+        style:{ fontSize:9, fontFamily:"monospace", color:T.amber, padding:"4px 8px", borderRadius:4, background:`${T.amber}10`, border:`1px solid ${T.amber}22`, marginTop:4, textAlign:"center", maxWidth:130 }
+      }, flow.clientSide)
+    ),
+    e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:8, minWidth:140 } },
+      e(FlowArrow, { color:T.blue, label:"+ cookies", direction:"right", delay:0.4 }),
+      e(FlowArrow, { color:T.green, label:"Response", direction:"left", delay:0.8 }),
+      flow.serverHeaders.map((h,i) =>
+        e(HeaderBadge, { key:i, k:h.k, v:h.v, color:h.color, delay:1.0+i*0.15 })
+      ),
+      e(M.div, {
+        initial:{opacity:0}, animate:{opacity:1}, transition:{delay:1.5},
+        style:{ fontSize:9, color:T.coral, fontWeight:600, padding:"3px 8px", borderRadius:4, background:`${T.coral}12`, border:`1px solid ${T.coral}33`, marginTop:4 }
+      }, flow.note)
+    ),
+    e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:6 } },
+      e(ServerIcon, { size:38, color:flow.to.color }),
+      e("div", { style:{ fontSize:10, color:flow.to.color, fontFamily:"monospace" } }, flow.to.label)
+    )
+  );
+
+/* Allow list viz */
+const AllowListViz = ({ flow }) =>
+  e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, padding:"12px 0" } },
+    /* Methods */
+    e("div", { style:{ padding:"10px 12px", borderRadius:10, background:T.surface2, border:`1px solid ${T.border}` } },
+      e("div", { style:{ fontSize:10, fontWeight:700, color:T.amber, letterSpacing:"0.06em", marginBottom:8 } }, "Allow-Methods"),
+      flow.methods.map((m,i) => {
+        const allowed = flow.allowed.methods.includes(m);
+        return e(M.div, {
+          key:m,
+          initial:{ opacity:0, x:-8 },
+          animate:{ opacity:1, x:0 },
+          transition:{ delay:0.2+i*0.1, ...ez },
+          style:{ display:"flex", alignItems:"center", gap:8, padding:"4px 8px", marginBottom:4, borderRadius:4, background: allowed ? `${T.green}10` : `${T.red}08`, border:`1px solid ${allowed ? T.green : T.red}22` }
+        },
+          e("div", { style:{ fontSize:12, color: allowed ? T.green : T.red } }, allowed ? "\u2713" : "\u2715"),
+          e("div", { style:{ fontFamily:"monospace", fontSize:11, color: allowed ? T.greenL : T.redL } }, m)
+        );
+      })
+    ),
+    /* Headers */
+    e("div", { style:{ padding:"10px 12px", borderRadius:10, background:T.surface2, border:`1px solid ${T.border}` } },
+      e("div", { style:{ fontSize:10, fontWeight:700, color:T.pink, letterSpacing:"0.06em", marginBottom:8 } }, "Allow-Headers"),
+      flow.headers.map((h,i) => {
+        const allowed = flow.allowed.headers.includes(h);
+        return e(M.div, {
+          key:h,
+          initial:{ opacity:0, x:-8 },
+          animate:{ opacity:1, x:0 },
+          transition:{ delay:0.5+i*0.1, ...ez },
+          style:{ display:"flex", alignItems:"center", gap:8, padding:"4px 8px", marginBottom:4, borderRadius:4, background: allowed ? `${T.green}10` : `${T.red}08`, border:`1px solid ${allowed ? T.green : T.red}22` }
+        },
+          e("div", { style:{ fontSize:12, color: allowed ? T.green : T.red } }, allowed ? "\u2713" : "\u2715"),
+          e("div", { style:{ fontFamily:"monospace", fontSize:11, color: allowed ? T.greenL : T.redL } }, h)
+        );
+      })
+    )
+  );
+
+/* Caching viz */
+const CachingViz = ({ flow }) =>
+  e("div", { style:{ display:"flex", flexDirection:"column", gap:10, padding:"12px 0" } },
+    e("div", { style:{ textAlign:"center", fontFamily:"monospace", fontSize:12, color:T.blue, fontWeight:600, padding:"6px 14px", borderRadius:8, background:`${T.blue}10`, border:`1px solid ${T.blue}22`, alignSelf:"center" } },
+      "Access-Control-Max-Age: " + flow.maxAge
+    ),
+    flow.timeline.map((t,i) =>
+      e(M.div, {
+        key:i,
+        initial:{ opacity:0, y:10 },
+        animate:{ opacity:1, y:0 },
+        transition:{ delay:0.4+i*0.35, ...ez },
+        style:{ display:"flex", alignItems:"center", gap:12, padding:"10px 14px", borderRadius:8, background:T.surface2, border:`1px solid ${T.border}` }
+      },
+        e("div", { style:{ fontSize:11, fontWeight:600, color:T.text1, minWidth:120 } }, t.label),
+        t.preflight
+          ? e("div", { style:{ display:"flex", gap:4 } },
+              e("span", { style:{ fontSize:10, fontFamily:"monospace", color:T.amber, padding:"2px 6px", borderRadius:4, background:`${T.amber}12`, border:`1px solid ${T.amber}22` } }, "OPTIONS"),
+              e("span", { style:{ fontSize:10, color:T.text3 } }, "+"),
+              e("span", { style:{ fontSize:10, fontFamily:"monospace", color:T.blue, padding:"2px 6px", borderRadius:4, background:`${T.blue}12`, border:`1px solid ${T.blue}22` } }, "PUT")
+            )
+          : e("div", { style:{ display:"flex", alignItems:"center", gap:6 } },
+              e("span", { style:{ fontSize:10, fontFamily:"monospace", color:T.green, padding:"2px 6px", borderRadius:4, background:`${T.green}12`, border:`1px solid ${T.green}22` } }, "PUT only"),
+              e("span", { style:{ fontSize:10, color:T.green } }, "\u2713 cached")
+            ),
+        e("div", { style:{ flex:1 } }),
+        e("div", { style:{ fontSize:10, fontFamily:"monospace", color:T.text3 } }, t.time)
+      )
+    )
+  );
+
+/* Errors viz */
+const ErrorsViz = ({ flow }) =>
+  e("div", { style:{ display:"flex", flexDirection:"column", gap:8, padding:"8px 0" } },
+    flow.errors.map((err,i) =>
+      e(M.div, {
+        key:i,
+        initial:{ opacity:0, x:-12 },
+        animate:{ opacity:1, x:0 },
+        transition:{ delay:0.2+i*0.18, ...ez },
+        style:{ padding:"8px 12px", borderRadius:8, border:`1px solid ${err.color}28`, background:`${err.color}08` }
+      },
+        e("div", { style:{ fontSize:11, fontFamily:"monospace", color:err.color, fontWeight:600, marginBottom:4 } }, "\u2715 " + err.msg),
+        e("div", { style:{ fontSize:10, color:T.text2, paddingLeft:14 } }, "\u2192 " + err.fix)
+      )
+    )
+  );
+
+/* Proxy viz */
+const ProxyViz = ({ flow }) =>
+  e("div", { style:{ display:"flex", flexDirection:"column", gap:20, padding:"12px 0" } },
+    /* Direct (blocked) */
+    e("div", null,
+      e("div", { style:{ fontSize:10, fontWeight:700, color:T.red, letterSpacing:"0.06em", marginBottom:8 } }, "DIRECT (blocked by CORS)"),
+      e("div", { style:{ display:"flex", alignItems:"center", justifyContent:"center", gap:16 } },
+        e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 } },
+          e(BrowserIcon, { size:32, color:T.blue }),
+          e("div", { style:{ fontSize:9, color:T.blue, fontFamily:"monospace" } }, flow.direct.from)
+        ),
+        e(FlowArrow, { color:T.red, label:"fetch()", direction:"right", blocked:true }),
+        e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 } },
+          e(ServerIcon, { size:32, color:T.coral }),
+          e("div", { style:{ fontSize:9, color:T.coral, fontFamily:"monospace" } }, flow.direct.to)
+        )
+      )
+    ),
+    /* Proxy (works) */
+    e("div", null,
+      e("div", { style:{ fontSize:10, fontWeight:700, color:T.green, letterSpacing:"0.06em", marginBottom:8 } }, "VIA PROXY (no CORS)"),
+      e(M.div, {
+        initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.4},
+        style:{ display:"flex", alignItems:"center", justifyContent:"center", gap:12 }
+      },
+        e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 } },
+          e(BrowserIcon, { size:32, color:T.blue }),
+          e("div", { style:{ fontSize:9, color:T.blue, fontFamily:"monospace" } }, flow.proxy.from)
+        ),
+        e(FlowArrow, { color:T.green, label:"same origin", direction:"right", delay:0.5 }),
+        e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 } },
+          e(ServerIcon, { size:32, color:T.purple }),
+          e("div", { style:{ fontSize:9, color:T.purple, fontFamily:"monospace" } }, flow.proxy.mid)
+        ),
+        e(FlowArrow, { color:T.teal, label:"server-to-server", direction:"right", delay:0.8 }),
+        e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 } },
+          e(ServerIcon, { size:32, color:T.teal }),
+          e("div", { style:{ fontSize:9, color:T.teal, fontFamily:"monospace" } }, flow.proxy.to)
+        )
+      )
+    )
+  );
+
+/* Scene visualization dispatcher */
+const SceneViz = ({ flow }) => {
+  if (!flow) return null;
+  switch(flow.type) {
+    case "blocked": return e(BlockedViz, { flow });
+    case "origin": return e(OriginViz, { flow });
+    case "simple": return e(SimpleViz, { flow });
+    case "preflight-intro": return e(PreflightIntroViz, { flow });
+    case "preflight-steps": return e(PreflightStepsViz, { flow });
+    case "header-focus": return e(HeaderFocusViz, { flow });
+    case "credentials": return e(CredentialsViz, { flow });
+    case "allow-list": return e(AllowListViz, { flow });
+    case "caching": return e(CachingViz, { flow });
+    case "errors": return e(ErrorsViz, { flow });
+    case "proxy": return e(ProxyViz, { flow });
+    default: return null;
+  }
+};
+
+/* Finale */
+const Finale = () => {
+  const rows = [
+    { n:1, label:"Same-Origin Policy", sub:"Browser blocks cross-origin reads by default to protect users", c:T.coral },
+    { n:2, label:"Simple Requests", sub:"GET/POST with safe headers skip preflight, go directly to server", c:T.blue },
+    { n:3, label:"Preflight (OPTIONS)", sub:"Unsafe methods/headers trigger an OPTIONS check before the real request", c:T.amber },
+    { n:4, label:"Access-Control-Allow-Origin", sub:"Server response header that tells the browser which origins are allowed", c:T.green },
+    { n:5, label:"Credentials", sub:"Cookies/auth across origins require Allow-Credentials: true (no wildcard)", c:T.pink },
+    { n:6, label:"Preflight Caching", sub:"Max-Age header avoids repeated OPTIONS requests for the same endpoint", c:T.blue },
+    { n:7, label:"Server Proxy", sub:"Backend-to-backend requests bypass CORS entirely \u2014 it's browser-only", c:T.teal },
+  ];
+  return e("div", { style:{ padding:"8px 0" } },
+    rows.map((r,i) => e(M.div, { key:i, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.1,...ez},
+      style:{ display:"flex", alignItems:"flex-start", gap:12, padding:"9px 14px", marginBottom:6, borderRadius:10, border:`1px solid ${r.c}28`, background:`${r.c}08` }
+    },
+      e("div", { style:{ width:24, height:24, borderRadius:"50%", border:`1.5px solid ${r.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:11, fontWeight:700, color:r.c } }, r.n),
+      e("div", null,
+        e("div", { style:{ fontSize:12, fontWeight:600, color:r.c, marginBottom:2 } }, r.label),
+        e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.5 } }, r.sub)
+      )
+    ))
+  );
+};
+
+const Panel = ({ label, children, style={}, focused=false, onClick }) =>
+  e(M.div, {
+    onClick,
+    animate:{
+      borderColor: focused ? T.purple : T.border2,
+      boxShadow: focused ? `0 0 16px ${T.purple}30, inset 0 0 12px ${T.purple}08` : "0 0 0px transparent"
+    },
+    transition:{ duration:0.4 },
+    style:{ borderRadius:12, border:"1.5px solid", background:T.surface, overflow:"hidden", cursor:onClick?"pointer":"default", ...style }
+  },
+    label && e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, label)
+    ),
+    e("div", { style:{ padding:12 } }, children)
+  );
+
+const DetailPanel = ({ detailKey, onClose }) => {
+  const d = DETAILS[detailKey];
+  if (!d) return null;
+  return e("div", {
+    style:{ width:340, flexShrink:0, background:T.surface, borderRadius:14, border:`1.5px solid ${d.color}44`, overflow:"hidden", alignSelf:"flex-start", position:"sticky", top:56 }
+  },
+    e("div", { style:{ padding:"14px 18px 12px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:8 } },
+        e("div", { style:{ width:8, height:8, borderRadius:"50%", background:d.color } }),
+        e("span", { style:{ fontSize:14, fontWeight:600, color:T.text1 } }, d.title)
+      ),
+      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6, transition:"color 0.2s" }, onMouseEnter:ev=>ev.target.style.color=T.text1, onMouseLeave:ev=>ev.target.style.color=T.text3 }, "\u2715")
+    ),
+    e("div", { style:{ padding:"16px 18px 20px", maxHeight:"calc(100vh - 140px)", overflowY:"auto" } },
+      d.sections.map((s, i) =>
+        e("div", { key:i, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
+          e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
+        )
+      )
+    )
+  );
+};
+
+/* ─── APP ─── */
+function App() {
+  const [si, setSi] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [detail, setDetail] = useState(null);
+  const timer = useRef(null);
+  const sc = SCENES[si];
+
+  useEffect(() => { setPlaying(true); }, []);
+
+  useEffect(() => {
+    if (!playing) return;
+    const d = si===0 ? 3500 : sc.finale ? 99999 : 4000;
+    timer.current = setTimeout(() => { si < SCENES.length-1 ? setSi(i=>i+1) : setPlaying(false); }, d);
+    return () => clearTimeout(timer.current);
+  }, [playing, si]);
+
+  const go = d => { clearTimeout(timer.current); setPlaying(false); setSi(i=>Math.max(0,Math.min(SCENES.length-1,i+d))); };
+  const jump = i => { clearTimeout(timer.current); setPlaying(false); setSi(i); };
+  const togglePlay = () => { if(si===SCENES.length-1){setSi(0);setPlaying(true);}else setPlaying(p=>!p); };
+  const toggleDetail = key => { setDetail(d => d===key ? null : key); clearTimeout(timer.current); setPlaying(false); };
+
+  return e("div", { style:{ display:"flex", gap:16, alignItems:"flex-start", justifyContent: detail ? "flex-start" : "center" } },
+  e("div", { style:{ width:760, flexShrink:0, background:T.bg, fontFamily:"system-ui,sans-serif", padding:20, borderRadius:16 } },
+
+    /* header */
+    e("div", { style:{ marginBottom:18 } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:10, marginBottom:11 } },
+        e(AP, { mode:"wait" },
+          e(M.div, { key:sc.act, initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, exit:{opacity:0}, transition:sp(400,28),
+            style:{ fontSize:9,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:T.purple,background:`${T.purple}14`,padding:"3px 10px",borderRadius:20,border:`1px solid ${T.purple}30`,flexShrink:0 }
+          }, sc.act)
+        ),
+        e("div", { style:{ flex:1, height:1, background:T.border, borderRadius:99, overflow:"hidden" } },
+          e(M.div, { animate:{width:`${si/(SCENES.length-1)*100}%`}, transition:{duration:0.5}, style:{height:"100%",background:T.purple,borderRadius:99} })
+        ),
+        e("span", { style:{ fontSize:10, color:T.text3 } }, `${si+1} / ${SCENES.length}`)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.title, initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, exit:{opacity:0,y:-8}, transition:ez,
+          style:{ fontSize:20,fontWeight:600,color:T.text1,marginBottom:4,letterSpacing:"-0.02em" }
+        }, sc.title)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
+          style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
+        }, sc.sub)
+      )
+    ),
+
+    e("div", { style:{ minHeight:460 } },
+    /* finale */
+    sc.finale && e(Finale),
+
+    /* main viz */
+    !sc.finale && e(Panel, { label:"Browser \u2194 Server", onClick:()=>toggleDetail(sc.detail), style:{ cursor:"pointer" } },
+      e(AP, { mode:"wait" },
+        e(M.div, {
+          key:sc.id,
+          initial:{ opacity:0, y:10 },
+          animate:{ opacity:1, y:0 },
+          exit:{ opacity:0, y:-10 },
+          transition:ez,
+        },
+          e(SceneViz, { flow:sc.flow })
+        )
+      )
+    ),
+    ), /* close minHeight wrapper */
+
+    /* controls */
+    e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginTop:16 } },
+      e("button", { onClick:()=>go(-1), disabled:si===0,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===0?T.text3:T.text2,cursor:si===0?"not-allowed":"pointer",fontSize:11,transition:"color 0.2s" }
+      }, "\u2190 Back"),
+      e("button", { onClick:togglePlay,
+        style:{ padding:"6px 18px",borderRadius:8,border:`1px solid ${playing?T.coral:T.purple}44`,background:playing?`${T.coral}14`:`${T.purple}14`,color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all 0.2s" }
+      }, playing ? "\u23F8  Pause" : si===SCENES.length-1 ? "\u21BA  Replay" : "\u25B6  Play"),
+      e("button", { onClick:()=>go(1), disabled:si===SCENES.length-1,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
+      }, "Next \u2192"),
+      e("div", { style:{ flex:1 } }),
+      e("div", { style:{ display:"flex", gap:4, alignItems:"center" } },
+        SCENES.map((_,i) =>
+          e("button", { key:i, onClick:()=>jump(i),
+            style:{ width:i===si?16:5,height:5,borderRadius:99,border:"none",padding:0,background:i===si?T.purple:i<si?`${T.purple}55`:T.border,cursor:"pointer",transition:"all 0.25s" }
+          })
+        )
+      )
+    )
+  ),
+  detail && e(DetailPanel, { detailKey:detail, onClose:()=>setDetail(null) })
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(e(App));
+</script>
+</body>
+</html>

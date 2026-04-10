@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WebSocket vs SSE</title>
+<link href="https://cdn.lineicons.com/5.0/lineicons.css" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111118;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px 16px 24px 196px;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  #root { width: 100%; max-width: 1120px; }
+  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: system-ui, sans-serif; }
+  .topnav a { text-decoration: none; color: #8888aa; font-size: 13px; transition: color 0.2s; }
+  .topnav a:hover { color: #e8e8f0; }
+  .topnav .name { font-weight: 600; color: #e8e8f0; font-size: 13px; }
+  .topnav .sep { color: #38384a; font-size: 12px; }
+  .topnav .current { color: #7c6fcd; font-size: 13px; font-weight: 500; }
+  .sidenav { position: fixed; top: 38px; left: 0; width: 180px; height: calc(100vh - 38px); background: #111118; border-right: 1px solid #2a2a38; padding: 14px 0; overflow-y: auto; z-index: 200; font-family: system-ui, sans-serif; }
+  .sidenav a { display: block; padding: 6px 16px; font-size: 11px; color: #8888aa; text-decoration: none; transition: color 0.2s, background 0.2s; border-left: 2px solid transparent; }
+  .sidenav a:hover { color: #e8e8f0; background: rgba(124,111,205,0.06); }
+  .sidenav a.active { color: #a99cf0; border-left-color: #7c6fcd; background: rgba(124,111,205,0.1); font-weight: 600; }
+  .sidenav .nav-section { padding: 8px 16px 4px; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #44445a; }
+  .sidenav .nav-section:first-child { padding-top: 4px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="../" class="name">Sharon Zhou</a>
+  <span class="sep">/</span>
+  <a href="../">Animations</a>
+  <span class="sep">/</span>
+  <span class="current">WebSocket vs SSE</span>
+</nav>
+<nav class="sidenav">
+  <div class="nav-section">JavaScript</div>
+  <a href="../event-loop/">Event Loop</a>
+  <a href="../this-keyword/">this Keyword</a>
+  <a href="../hoisting/">Hoisting</a>
+  <a href="../garbage-collection/">Garbage Collection</a>
+  <a href="../event-delegation/">Event Delegation</a>
+  <a href="../iterators-generators/">Iterators & Generators</a>
+  <a href="../xhr-vs-fetch/">XHR vs fetch()</a>
+  <a href="../error-propagation/">Error Propagation</a>
+  <a href="../web-workers/">Web Workers</a>
+  <div class="nav-section">Infrastructure</div>
+  <a href="../vms-vs-docker/">VMs vs Docker</a>
+  <a href="../opentelemetry/">OpenTelemetry</a>
+  <div class="nav-section">Networking</div>
+  <a href="../websocket-vs-sse/" class="active">WebSocket vs SSE</a>
+</nav>
+<div id="root" style="margin-top: 36px;"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/framer-motion@11/dist/framer-motion.js"></script>
+<script>
+const { useState, useEffect, useRef } = React;
+const { motion, AnimatePresence } = window.Motion;
+const e = React.createElement;
+const M = motion;
+const AP = AnimatePresence;
+const sp = (s=380,d=28) => ({ type:"spring", stiffness:s, damping:d });
+const ez = { duration:0.32, ease:[0.22,1,0.36,1] };
+
+const T = {
+  bg:"#111118", surface:"#18181f", surface2:"#1e1e28",
+  border:"#2a2a38", border2:"#38384a",
+  text1:"#e8e8f0", text2:"#8888aa", text3:"#44445a",
+  purple:"#7c6fcd", purpleL:"#a99cf0",
+  teal:"#3db89a", tealL:"#6dd4b8",
+  coral:"#c4694a", coralL:"#e08a6a",
+  blue:"#4a8fd4", blueL:"#82b4e8",
+  amber:"#d4a84a", amberL:"#e8c86a",
+  green:"#4ac46a", greenL:"#6ae88a",
+  red:"#e05555", redL:"#ff7777",
+  ws:"#e8a84a", wsL:"#ffd06a",
+  sse:"#4a94e8", sseL:"#7ab8ff",
+  codeBase:"#141428",
+};
+
+const TS = {
+  fn:{color:"#82aaff"}, meth:{color:"#89ddff"}, str:{color:"#c3e88d"},
+  kw:{color:"#c792ea"}, num:{color:"#f78c6c"}, punc:{color:"#89ddff"},
+  plain:{color:"#a6accd"}, cmt:{color:"#546e7a",fontStyle:"italic"},
+};
+
+/* ─── SCENES ─── */
+const SCENES = [
+  {
+    id:0, act:"01",
+    title:"Real-time communication on the web",
+    sub:"HTTP was designed as request-response: the client asks, the server answers. But modern apps need real-time data flow -- chat, live feeds, collaborative editing. Let's explore how the web evolved to handle this.",
+    code:[
+      [["cmt","// The challenge:"]],
+      [["cmt","// HTTP is request-response only"]],
+      [["cmt","// But apps need real-time updates"]],
+      [["cmt","// How do we push data to clients?"]],
+    ],
+    viz:"intro", compare:null,
+  },
+  {
+    id:1, act:"02",
+    title:"HTTP polling -- the naive approach",
+    sub:"The simplest strategy: the client repeatedly asks 'anything new?' at a fixed interval. Simple to implement, but wasteful -- most responses are empty, and there's always latency between the event and the next poll.",
+    code:[
+      [["kw","setInterval"],["punc","(() => {"]],
+      [["plain","  "],["fn","fetch"],["punc","("],["str","'/api/messages'"],["punc",")"]],
+      [["plain","    "],["punc","."],["meth","then"],["punc","("],["fn","r"],["plain"," => "],["fn","r"],["punc","."],["meth","json"],["punc","())"]],
+      [["plain","    "],["punc","."],["meth","then"],["punc","("],["fn","render"],["punc",");"]],
+      [["punc","}, "],["num","3000"],["punc",");"],["plain"," "],["cmt","// every 3 seconds"]],
+    ],
+    viz:"polling", compare:null,
+  },
+  {
+    id:2, act:"03",
+    title:"Long polling -- hold the connection",
+    sub:"An improvement: the server holds the request open until new data is available, then responds immediately. The client reconnects right away. Less wasted requests, but still one connection per message cycle.",
+    code:[
+      [["kw","async function"],["plain"," "],["fn","longPoll"],["punc","() {"]],
+      [["plain","  "],["kw","const"],["plain"," res = "],["kw","await"],["plain"," "],["fn","fetch"],["punc","("],["str","'/poll'"],["punc",");"]],
+      [["plain","  "],["kw","const"],["plain"," data = "],["kw","await"],["plain"," res"],["punc","."],["meth","json"],["punc","();"]],
+      [["plain","  "],["fn","render"],["punc","("],["fn","data"],["punc",");"]],
+      [["plain","  "],["fn","longPoll"],["punc","();"],["plain"," "],["cmt","// immediately reconnect"]],
+      [["punc","}"]],
+    ],
+    viz:"longpoll", compare:null,
+  },
+  {
+    id:3, act:"04",
+    title:"WebSocket -- full-duplex persistent connection",
+    sub:"WebSocket is a completely different protocol. After an initial HTTP handshake, the connection upgrades to a persistent, full-duplex TCP channel. Both client and server can send messages at any time, with minimal overhead per frame.",
+    code:[
+      [["kw","const"],["plain"," ws = "],["kw","new"],["plain"," "],["fn","WebSocket"],["punc","("],["str","'ws://server/chat'"],["punc",");"]],
+      [["cmt",""]],
+      [["fn","ws"],["punc","."],["fn","onopen"],["plain"," = "],["punc","() => {"]],
+      [["plain","  ws"],["punc","."],["meth","send"],["punc","("],["str","'Hello!'"],["punc",");"],["plain","  "],["cmt","// client → server"]],
+      [["punc","};"]],
+      [["fn","ws"],["punc","."],["fn","onmessage"],["plain"," = "],["punc","("],["fn","e"],["punc",") => {"]],
+      [["plain","  "],["fn","render"],["punc","("],["fn","e"],["punc","."],["fn","data"],["punc",");"],["plain"," "],["cmt","// server → client"]],
+      [["punc","};"]],
+    ],
+    viz:"websocket", compare:null,
+  },
+  {
+    id:4, act:"05",
+    title:"WebSocket handshake -- HTTP upgrade",
+    sub:"The connection begins as a normal HTTP request with an 'Upgrade: websocket' header. The server responds with 101 Switching Protocols, and the connection switches from HTTP to the WebSocket binary framing protocol.",
+    code:[
+      [["cmt","// Client sends HTTP upgrade request:"]],
+      [["fn","GET"],["plain"," /chat HTTP/1.1"]],
+      [["fn","Upgrade"],["punc",": "],["str","websocket"]],
+      [["fn","Connection"],["punc",": "],["str","Upgrade"]],
+      [["fn","Sec-WebSocket-Key"],["punc",": "],["str","dGhlIH..."]],
+      [["cmt",""]],
+      [["cmt","// Server responds:"]],
+      [["fn","HTTP/1.1"],["plain"," "],["num","101"],["plain"," Switching Protocols"]],
+      [["fn","Upgrade"],["punc",": "],["str","websocket"]],
+    ],
+    viz:"handshake", compare:null,
+  },
+  {
+    id:5, act:"06",
+    title:"WebSocket messaging -- frames and binary",
+    sub:"After the upgrade, data flows as lightweight frames (as small as 2 bytes of overhead). WebSocket supports text and binary data, ping/pong heartbeats, and close frames. Messages can be fragmented across multiple frames.",
+    code:[
+      [["cmt","// Text message"]],
+      [["fn","ws"],["punc","."],["meth","send"],["punc","("],["str","'text data'"],["punc",");"]],
+      [["cmt",""]],
+      [["cmt","// Binary message"]],
+      [["fn","ws"],["punc","."],["meth","send"],["punc","("],["kw","new"],["plain"," "],["fn","ArrayBuffer"],["punc","("],["num","1024"],["punc","));"]],
+      [["cmt",""]],
+      [["cmt","// Frame overhead: 2-14 bytes"]],
+      [["cmt","// vs HTTP headers: ~700 bytes"]],
+    ],
+    viz:"frames", compare:null,
+  },
+  {
+    id:6, act:"07",
+    title:"SSE -- server pushes over HTTP",
+    sub:"Server-Sent Events use a simple, elegant approach: the server holds open a regular HTTP connection and streams text events down to the client. The browser's EventSource API handles reconnection automatically. One-way only: server to client.",
+    code:[
+      [["kw","const"],["plain"," src = "],["kw","new"],["plain"," "],["fn","EventSource"],["punc","("],["str","'/events'"],["punc",");"]],
+      [["cmt",""]],
+      [["fn","src"],["punc","."],["fn","onmessage"],["plain"," = "],["punc","("],["fn","e"],["punc",") => {"]],
+      [["plain","  "],["fn","render"],["punc","("],["fn","e"],["punc","."],["fn","data"],["punc",");"]],
+      [["punc","};"]],
+      [["cmt",""]],
+      [["cmt","// Server → Client only"]],
+      [["cmt","// Auto-reconnects on disconnect"]],
+    ],
+    viz:"sse", compare:null,
+  },
+  {
+    id:7, act:"08",
+    title:"SSE format -- text/event-stream",
+    sub:"The server responds with Content-Type: text/event-stream and sends plain-text events. Each event can have an event type, data payload, unique ID (for resume), and a retry interval. Simple, human-readable, and debuggable.",
+    code:[
+      [["cmt","// HTTP response header:"]],
+      [["fn","Content-Type"],["punc",": "],["str","text/event-stream"]],
+      [["cmt",""]],
+      [["cmt","// Event format:"]],
+      [["fn","event"],["punc",": "],["str","chat"]],
+      [["fn","data"],["punc",": "],["str",'{"user":"A","msg":"Hi"}']],
+      [["fn","id"],["punc",": "],["num","42"]],
+      [["fn","retry"],["punc",": "],["num","5000"]],
+      [["cmt",""]],
+    ],
+    viz:"sseformat", compare:null,
+  },
+  {
+    id:8, act:"09",
+    title:"Side-by-side comparison",
+    sub:"WebSocket and SSE solve different problems with different trade-offs. WebSocket gives you full-duplex binary communication. SSE gives you simple, auto-reconnecting server push over standard HTTP.",
+    code:[
+      [["cmt","//              WebSocket       SSE"]],
+      [["cmt","// Direction:   Bidirectional   Server→Client"]],
+      [["cmt","// Protocol:    ws://           HTTP"]],
+      [["cmt","// Data:        Text+Binary     Text only"]],
+      [["cmt","// Reconnect:   Manual          Automatic"]],
+      [["cmt","// HTTP/2:      No benefit      Multiplexed"]],
+    ],
+    viz:null,
+    compare:[
+      { metric:"Direction", ws:{value:"Bidirectional",label:"Client and server send freely",pct:95}, sse:{value:"Server → Client",label:"Server push only, client uses HTTP for uploads",pct:50} },
+      { metric:"Protocol Complexity", ws:{value:"Custom protocol",label:"Binary framing, upgrade handshake",pct:80}, sse:{value:"Plain HTTP",label:"Standard text/event-stream over HTTP",pct:25} },
+      { metric:"Auto-Reconnect", ws:{value:"Manual",label:"Must implement reconnection logic yourself",pct:30}, sse:{value:"Built-in",label:"EventSource reconnects automatically with last-event-id",pct:95} },
+    ],
+  },
+  {
+    id:9, act:"10",
+    title:"Connection lifecycle",
+    sub:"WebSocket connections must be manually managed: open, message, error, close. If the connection drops, you write the reconnection logic. SSE's EventSource handles reconnection transparently, resuming from the last event ID.",
+    code:[
+      [["cmt","// WebSocket lifecycle (manual)"]],
+      [["fn","ws"],["punc","."],["fn","onopen"],["plain","    = "],["fn","handleOpen"],["punc",";"]],
+      [["fn","ws"],["punc","."],["fn","onmessage"],["plain"," = "],["fn","handleMsg"],["punc",";"]],
+      [["fn","ws"],["punc","."],["fn","onclose"],["plain","   = "],["fn","reconnect"],["punc",";"],["plain"," "],["cmt","// you write this"]],
+      [["cmt",""]],
+      [["cmt","// SSE lifecycle (automatic)"]],
+      [["kw","const"],["plain"," src = "],["kw","new"],["plain"," "],["fn","EventSource"],["punc","("],["str","'/events'"],["punc",");"]],
+      [["cmt","// Reconnects automatically on drop"]],
+    ],
+    viz:"lifecycle", compare:null,
+  },
+  {
+    id:10, act:"11",
+    title:"Use cases",
+    sub:"WebSocket shines when you need bidirectional, low-latency communication: chat apps, multiplayer games, collaborative editing. SSE is ideal for one-way server push: live feeds, notifications, dashboards, and real-time monitoring.",
+    code:[
+      [["cmt","// WebSocket: bidirectional needed"]],
+      [["cmt","//   Chat, gaming, collab editing"]],
+      [["cmt","//   Financial trading terminals"]],
+      [["cmt",""]],
+      [["cmt","// SSE: server-push is enough"]],
+      [["cmt","//   Notifications, live feeds"]],
+      [["cmt","//   Dashboards, CI/CD status"]],
+      [["cmt","//   LLM token streaming"]],
+    ],
+    viz:null, compare:null, usecases:true,
+  },
+  {
+    id:11, act:"12",
+    title:"When to use which -- decision tree",
+    sub:"Start with the simplest solution. If you only need server-to-client push, SSE is simpler and works over standard HTTP infrastructure. If you need bidirectional communication or binary data, choose WebSocket.",
+    code:[
+      [["cmt","// Decision flow:"]],
+      [["cmt","// Need bidirectional?  → WebSocket"]],
+      [["cmt","// Need binary data?    → WebSocket"]],
+      [["cmt","// Server push only?    → SSE"]],
+      [["cmt","// Need auto-reconnect? → SSE"]],
+      [["cmt","// Behind HTTP/2 proxy? → SSE"]],
+    ],
+    viz:"decision", compare:null,
+  },
+  {
+    id:12, act:"\u2713",
+    title:"WebSocket vs SSE -- summary",
+    sub:"WebSocket provides full-duplex binary communication over a persistent TCP connection. SSE provides simple, auto-reconnecting server push over standard HTTP. Choose based on your data flow direction and infrastructure needs.",
+    code:[], viz:null, compare:null,
+    finale:true,
+  },
+];
+
+/* ─── DETAIL CONTENT ─── */
+const DETAILS = {
+  ws: {
+    title:"WebSocket",
+    color:T.ws,
+    sections:[
+      {heading:"What is WebSocket?",body:"WebSocket (RFC 6455) is a protocol that provides full-duplex communication over a single, long-lived TCP connection. After an HTTP upgrade handshake, both client and server can send messages independently at any time."},
+      {heading:"How it works",body:"1. Client sends HTTP request with Upgrade: websocket\n2. Server responds with 101 Switching Protocols\n3. Connection upgrades to WebSocket binary framing\n4. Both sides send/receive frames independently\n5. Either side can close the connection"},
+      {heading:"Frame format",body:"WebSocket frames are lightweight:\n\u2022 Opcode (4 bits): text, binary, ping, pong, close\n\u2022 Payload length: 7, 16, or 64 bits\n\u2022 Masking key: 32 bits (client-to-server only)\n\u2022 Minimum overhead: 2 bytes per frame"},
+      {heading:"Strengths",body:"\u2022 True bidirectional communication\n\u2022 Very low per-message overhead (2-14 bytes)\n\u2022 Supports text and binary data\n\u2022 No HTTP header overhead after handshake\n\u2022 Sub-millisecond latency"},
+    ]
+  },
+  sse: {
+    title:"Server-Sent Events",
+    color:T.sse,
+    sections:[
+      {heading:"What is SSE?",body:"Server-Sent Events (SSE) is a standard (HTML5) for servers to push real-time updates to clients over a single HTTP connection. The browser's EventSource API handles connection management and automatic reconnection."},
+      {heading:"How it works",body:"1. Client opens EventSource connection (GET request)\n2. Server responds with Content-Type: text/event-stream\n3. Server sends text events separated by blank lines\n4. If connection drops, browser auto-reconnects\n5. Last-Event-ID header enables resume from last event"},
+      {heading:"Event format",body:"event: notification\ndata: {\"title\": \"New message\"}\nid: 42\nretry: 5000\n\nFields:\n\u2022 event: named event type\n\u2022 data: payload (multi-line supported)\n\u2022 id: event identifier for resume\n\u2022 retry: reconnection interval (ms)"},
+      {heading:"Strengths",body:"\u2022 Works over standard HTTP (firewalls, proxies)\n\u2022 Automatic reconnection built in\n\u2022 Event ID enables resumable streams\n\u2022 Multiplexed over HTTP/2\n\u2022 Simple text format, easy to debug\n\u2022 No special server infrastructure needed"},
+    ]
+  },
+  code: {
+    title:"Source Code",
+    color:T.purpleL,
+    sections:[
+      {heading:"Reading the examples",body:"Each scene shows client-side code or protocol details relevant to the concept being explained. The code panel highlights JavaScript APIs, HTTP headers, and protocol formats."},
+      {heading:"WebSocket API",body:"const ws = new WebSocket('ws://host/path');\nws.onopen = () => ws.send('hello');\nws.onmessage = (e) => console.log(e.data);\nws.onclose = () => console.log('closed');\nws.onerror = (e) => console.error(e);"},
+      {heading:"EventSource API",body:"const src = new EventSource('/events');\nsrc.onmessage = (e) => console.log(e.data);\nsrc.addEventListener('custom', handler);\nsrc.onerror = (e) => console.log('reconnecting...');\nsrc.close();"},
+    ]
+  },
+  compare: {
+    title:"Comparison",
+    color:T.purple,
+    sections:[
+      {heading:"Quick reference",body:"                  WebSocket       SSE\nDirection:       Bidirectional   Server\u2192Client\nProtocol:        ws:// (TCP)     HTTP\nData format:     Text + Binary   Text only\nReconnect:       Manual          Automatic\nHTTP/2:          No benefit      Multiplexed\nBrowser:         All modern      All modern*\nOverhead:        2-14 bytes      ~50 bytes\n\n*IE does not support SSE (polyfill available)"},
+      {heading:"Together",body:"Many apps use both:\n\u2022 SSE for server push (notifications, feeds)\n\u2022 Regular HTTP POST for client-to-server\n\u2022 WebSocket only when true bidirectional is needed\n\nSSE + HTTP POST often replaces WebSocket with simpler infrastructure."},
+    ]
+  },
+};
+
+/* ─── COMPONENTS ─── */
+const CodePanel = ({ tokens, onClick }) =>
+  e("div", { onClick, style:{ background:T.codeBase, borderRadius:12, overflow:"hidden", border:`1px solid ${T.border}`, cursor:onClick?"pointer":"default" } },
+    e("div", { style:{ padding:"10px 14px 8px", borderBottom:`1px solid ${T.border}`, display:"flex", gap:7 } },
+      ...["#ff5f57","#febc2e","#28c840"].map((c,i) =>
+        e("div", { key:i, style:{ width:11, height:11, borderRadius:"50%", background:c } })
+      )
+    ),
+    e("div", { style:{ padding:"14px 18px 16px", fontFamily:"'SF Mono','Fira Code','Consolas',monospace", fontSize:12, lineHeight:1.85 } },
+      tokens.map((line, li) =>
+        e("div", { key:li },
+          line.map(([cls, txt], ti) =>
+            e("span", { key:ti, style:{ ...TS[cls], whiteSpace:"pre" } }, txt)
+          )
+        )
+      )
+    )
+  );
+
+const Panel = ({ label, children, style={}, focused=false, onClick }) =>
+  e(M.div, {
+    onClick,
+    animate:{
+      borderColor: focused ? T.purple : T.border2,
+      boxShadow: focused ? `0 0 16px ${T.purple}30, inset 0 0 12px ${T.purple}08` : "0 0 0px transparent"
+    },
+    transition:{ duration:0.4 },
+    style:{ borderRadius:12, border:"1.5px solid", background:T.surface, overflow:"hidden", cursor:onClick?"pointer":"default", ...style }
+  },
+    label && e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, label)
+    ),
+    e("div", { style:{ padding:12 } }, children)
+  );
+
+/* ─── MESSAGE FLOW VISUALIZATION ─── */
+const MessageFlow = ({ type, messages, label }) => {
+  /* type: "polling"|"longpoll"|"websocket"|"sse"|"handshake"|"frames"|"sseformat"|"lifecycle"|"decision"|"intro" */
+  const clientW = 100, serverW = 100, laneW = 420, gap = laneW - clientW - serverW;
+
+  const ClientBox = () => e("div", { style:{ width:clientW, textAlign:"center" } },
+    e("div", { style:{ padding:"8px 0", borderRadius:8, border:`1px solid ${T.teal}44`, background:`${T.teal}14` } },
+      e("span", { style:{ fontSize:11, fontWeight:600, color:T.tealL } }, "Client")
+    )
+  );
+  const ServerBox = () => e("div", { style:{ width:serverW, textAlign:"center" } },
+    e("div", { style:{ padding:"8px 0", borderRadius:8, border:`1px solid ${T.purple}44`, background:`${T.purple}14` } },
+      e("span", { style:{ fontSize:11, fontWeight:600, color:T.purpleL } }, "Server")
+    )
+  );
+
+  const Arrow = ({ dir, text, color, delay=0, dashed=false }) => {
+    const isRight = dir === "right";
+    return e(M.div, {
+      initial:{opacity:0,x:isRight?-20:20}, animate:{opacity:1,x:0}, transition:{delay,...ez},
+      style:{ display:"flex", alignItems:"center", gap:6, margin:"6px 0", paddingLeft:clientW+8, paddingRight:serverW+8 }
+    },
+      !isRight && e("span", { style:{ fontSize:9, color:T.text3, flexShrink:0, width:10, textAlign:"right" } }, "\u2190"),
+      e("div", { style:{ flex:1, position:"relative", height:20, display:"flex", alignItems:"center" } },
+        e("div", { style:{ position:"absolute", left:0, right:0, top:"50%", height:0, borderTop:`1.5px ${dashed?"dashed":"solid"} ${color}66` } }),
+        e("div", { style:{ position:"relative", margin:"0 auto", background:T.surface, padding:"2px 8px", borderRadius:6, border:`1px solid ${color}44`, fontSize:9, color, whiteSpace:"nowrap" } }, text)
+      ),
+      isRight && e("span", { style:{ fontSize:9, color:T.text3, flexShrink:0, width:10 } }, "\u2192")
+    );
+  };
+
+  if (type === "intro") {
+    return e("div", { style:{ borderRadius:12, border:`1.5px solid ${T.border2}`, background:T.surface, padding:16 } },
+      e("div", { style:{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:16 } }, e(ClientBox), e(ServerBox)),
+      e("div", { style:{ textAlign:"center", padding:"20px 0" } },
+        e(M.div, { initial:{opacity:0,scale:0.9}, animate:{opacity:1,scale:1}, transition:{delay:0.2,...ez} },
+          e("div", { style:{ fontSize:13, color:T.text2, marginBottom:8 } }, "HTTP: Request \u2192 Response"),
+          e("div", { style:{ fontSize:11, color:T.text3 } }, "But what about real-time updates?")
+        ),
+        e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.8,...ez}, style:{ marginTop:16, display:"flex", justifyContent:"center", gap:16 } },
+          ["Polling","Long Polling","WebSocket","SSE"].map((t,i) =>
+            e(M.div, { key:t, initial:{opacity:0,y:10}, animate:{opacity:1,y:0}, transition:{delay:1+i*0.15,...ez},
+              style:{ padding:"6px 14px", borderRadius:8, border:`1px solid ${T.purple}33`, background:`${T.purple}08`, fontSize:10, color:T.purpleL }
+            }, t)
+          )
+        )
+      )
+    );
+  }
+
+  if (type === "polling") {
+    return e("div", { style:{ borderRadius:12, border:`1.5px solid ${T.border2}`, background:T.surface, padding:16 } },
+      e("div", { style:{ display:"flex", justifyContent:"space-between", marginBottom:8 } }, e(ClientBox), e(ServerBox)),
+      Arrow({ dir:"right", text:"GET /messages", color:T.tealL, delay:0.1 }),
+      Arrow({ dir:"left", text:"200 OK (empty)", color:T.text3, delay:0.3, dashed:true }),
+      Arrow({ dir:"right", text:"GET /messages", color:T.tealL, delay:0.6 }),
+      Arrow({ dir:"left", text:"200 OK (empty)", color:T.text3, delay:0.8, dashed:true }),
+      Arrow({ dir:"right", text:"GET /messages", color:T.tealL, delay:1.1 }),
+      Arrow({ dir:"left", text:'200 OK {"msg":"Hi"}', color:T.greenL, delay:1.3 }),
+      e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:1.6,...ez},
+        style:{ textAlign:"center", marginTop:8, fontSize:10, color:T.coralL }
+      }, "Most requests return empty -- wasted bandwidth")
+    );
+  }
+
+  if (type === "longpoll") {
+    return e("div", { style:{ borderRadius:12, border:`1.5px solid ${T.border2}`, background:T.surface, padding:16 } },
+      e("div", { style:{ display:"flex", justifyContent:"space-between", marginBottom:8 } }, e(ClientBox), e(ServerBox)),
+      Arrow({ dir:"right", text:"GET /poll", color:T.tealL, delay:0.1 }),
+      e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.4,...ez},
+        style:{ textAlign:"center", fontSize:9, color:T.amberL, margin:"4px 0" }
+      }, "\u23f3 Server holds connection open... waiting for data..."),
+      Arrow({ dir:"left", text:'200 OK {"msg":"Hi"}', color:T.greenL, delay:0.9 }),
+      Arrow({ dir:"right", text:"GET /poll (reconnect)", color:T.tealL, delay:1.2 }),
+      e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:1.5,...ez},
+        style:{ textAlign:"center", fontSize:9, color:T.amberL, margin:"4px 0" }
+      }, "\u23f3 Holding again..."),
+      Arrow({ dir:"left", text:'200 OK {"msg":"New data"}', color:T.greenL, delay:1.8 }),
+      e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:2.1,...ez},
+        style:{ textAlign:"center", marginTop:8, fontSize:10, color:T.tealL }
+      }, "Less waste, but still one connection per message cycle")
+    );
+  }
+
+  if (type === "websocket") {
+    return e("div", { onClick:()=>messages&&messages(), style:{ borderRadius:12, border:`1.5px solid ${T.ws}33`, background:T.surface, padding:16, cursor:"pointer" } },
+      e("div", { style:{ display:"flex", justifyContent:"space-between", marginBottom:8 } }, e(ClientBox), e(ServerBox)),
+      Arrow({ dir:"right", text:"ws.send('Hello')", color:T.wsL, delay:0.2 }),
+      Arrow({ dir:"left", text:"msg: 'Welcome!'", color:T.wsL, delay:0.5 }),
+      Arrow({ dir:"right", text:"ws.send('typing...')", color:T.wsL, delay:0.8 }),
+      Arrow({ dir:"left", text:"msg: 'Got it'", color:T.wsL, delay:1.1 }),
+      Arrow({ dir:"left", text:"msg: 'Broadcast: user joined'", color:T.wsL, delay:1.4 }),
+      e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:1.7,...ez},
+        style:{ textAlign:"center", marginTop:10, padding:"6px 12px", borderRadius:8, border:`1px solid ${T.ws}33`, background:`${T.ws}08`, fontSize:10, color:T.wsL }
+      }, "\u2194 Full-duplex: both sides send anytime over one persistent connection")
+    );
+  }
+
+  if (type === "handshake") {
+    return e("div", { style:{ borderRadius:12, border:`1.5px solid ${T.ws}33`, background:T.surface, padding:16 } },
+      e("div", { style:{ display:"flex", justifyContent:"space-between", marginBottom:8 } }, e(ClientBox), e(ServerBox)),
+      e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.1,...ez},
+        style:{ textAlign:"center", fontSize:10, color:T.blueL, margin:"6px 0", fontWeight:600 }
+      }, "Phase 1: HTTP Upgrade Request"),
+      Arrow({ dir:"right", text:"GET / HTTP/1.1 + Upgrade: websocket", color:T.blueL, delay:0.3 }),
+      e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.6,...ez},
+        style:{ textAlign:"center", fontSize:10, color:T.greenL, margin:"6px 0", fontWeight:600 }
+      }, "Phase 2: Server Accepts"),
+      Arrow({ dir:"left", text:"101 Switching Protocols", color:T.greenL, delay:0.8 }),
+      e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:1.1,...ez},
+        style:{ textAlign:"center", fontSize:10, color:T.wsL, margin:"8px 0", fontWeight:600 }
+      }, "Phase 3: WebSocket Binary Framing"),
+      e(M.div, { initial:{opacity:0,scale:0.95}, animate:{opacity:1,scale:1}, transition:{delay:1.3,...ez},
+        style:{ margin:"8px auto", maxWidth:280, padding:"10px 16px", borderRadius:10, border:`1px solid ${T.ws}44`, background:`${T.ws}0a`, textAlign:"center" }
+      },
+        e("div", { style:{ fontSize:11, color:T.wsL, fontWeight:600, marginBottom:4 } }, "Connection Upgraded"),
+        e("div", { style:{ fontSize:10, color:T.text2 } }, "HTTP \u2192 ws:// \u2014 persistent TCP channel")
+      )
+    );
+  }
+
+  if (type === "frames") {
+    return e("div", { style:{ borderRadius:12, border:`1.5px solid ${T.ws}33`, background:T.surface, padding:16 } },
+      e("div", { style:{ fontSize:11, color:T.text2, marginBottom:12, textAlign:"center" } }, "WebSocket Frame Structure"),
+      e("div", { style:{ display:"flex", gap:3, marginBottom:16 } },
+        [{label:"FIN",w:"8%",c:T.green},{label:"Opcode",w:"12%",c:T.blue},{label:"Mask",w:"8%",c:T.amber},{label:"Length",w:"18%",c:T.coral},{label:"Masking Key (optional)",w:"22%",c:T.amber},{label:"Payload Data",w:"32%",c:T.ws}].map((b,i) =>
+          e(M.div, { key:i, initial:{opacity:0,y:10}, animate:{opacity:1,y:0}, transition:{delay:i*0.1,...ez},
+            style:{ width:b.w, padding:"8px 4px", borderRadius:6, border:`1px solid ${b.c}44`, background:`${b.c}14`, textAlign:"center" }
+          },
+            e("div", { style:{ fontSize:8, fontWeight:600, color:b.c, fontFamily:"monospace" } }, b.label)
+          )
+        )
+      ),
+      e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8 } },
+        [{icon:"Aa",label:"Text frames",c:T.teal},{icon:"01",label:"Binary frames",c:T.blue},{icon:"\u2764",label:"Ping/Pong",c:T.coral}].map((t,i) =>
+          e(M.div, { key:i, initial:{opacity:0,scale:0.9}, animate:{opacity:1,scale:1}, transition:{delay:0.6+i*0.12,...ez},
+            style:{ padding:"10px 8px", borderRadius:8, border:`1px solid ${t.c}33`, background:`${t.c}08`, textAlign:"center" }
+          },
+            e("div", { style:{ fontSize:14, marginBottom:4, color:t.c } }, t.icon),
+            e("div", { style:{ fontSize:10, color:t.c, fontWeight:600 } }, t.label)
+          )
+        )
+      ),
+      e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:1,...ez},
+        style:{ marginTop:12, textAlign:"center", fontSize:10, color:T.text3 }
+      }, "2-14 bytes overhead per frame vs ~700 bytes per HTTP request")
+    );
+  }
+
+  if (type === "sse") {
+    return e("div", { style:{ borderRadius:12, border:`1.5px solid ${T.sse}33`, background:T.surface, padding:16 } },
+      e("div", { style:{ display:"flex", justifyContent:"space-between", marginBottom:8 } }, e(ClientBox), e(ServerBox)),
+      Arrow({ dir:"right", text:"GET /events (EventSource)", color:T.tealL, delay:0.1 }),
+      e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.4,...ez},
+        style:{ textAlign:"center", fontSize:9, color:T.sseL, margin:"4px 0" }
+      }, "Connection held open \u2014 server streams events"),
+      Arrow({ dir:"left", text:"data: {msg:'Hello'}", color:T.sseL, delay:0.6 }),
+      Arrow({ dir:"left", text:"data: {msg:'Update 1'}", color:T.sseL, delay:0.9 }),
+      Arrow({ dir:"left", text:"data: {msg:'Update 2'}", color:T.sseL, delay:1.2 }),
+      Arrow({ dir:"left", text:"data: {msg:'Update 3'}", color:T.sseL, delay:1.5 }),
+      e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:1.8,...ez},
+        style:{ textAlign:"center", marginTop:10, padding:"6px 12px", borderRadius:8, border:`1px solid ${T.sse}33`, background:`${T.sse}08`, fontSize:10, color:T.sseL }
+      }, "\u2193 Server \u2192 Client only \u2014 simple, automatic reconnection")
+    );
+  }
+
+  if (type === "sseformat") {
+    return e("div", { style:{ borderRadius:12, border:`1.5px solid ${T.sse}33`, background:T.surface, padding:16 } },
+      e("div", { style:{ fontSize:11, color:T.text2, marginBottom:12, textAlign:"center" } }, "text/event-stream Format"),
+      e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 } },
+        [
+          {field:"event:",desc:"Named event type",example:'event: chat',c:T.teal},
+          {field:"data:",desc:"Payload (JSON or text)",example:'data: {"msg":"Hi"}',c:T.green},
+          {field:"id:",desc:"Unique event ID (for resume)",example:'id: 42',c:T.amber},
+          {field:"retry:",desc:"Reconnection interval (ms)",example:'retry: 5000',c:T.coral},
+        ].map((f,i) =>
+          e(M.div, { key:i, initial:{opacity:0,x:-10}, animate:{opacity:1,x:0}, transition:{delay:i*0.12,...ez},
+            style:{ padding:"10px 12px", borderRadius:8, border:`1px solid ${f.c}33`, background:`${f.c}08` }
+          },
+            e("div", { style:{ fontSize:12, fontWeight:700, color:f.c, fontFamily:"monospace", marginBottom:3 } }, f.field),
+            e("div", { style:{ fontSize:10, color:T.text2, marginBottom:4 } }, f.desc),
+            e("div", { style:{ fontSize:9, color:T.text3, fontFamily:"monospace" } }, f.example)
+          )
+        )
+      ),
+      e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.6,...ez},
+        style:{ marginTop:12, padding:"10px 14px", borderRadius:8, background:T.codeBase, border:`1px solid ${T.border}`, fontFamily:"monospace", fontSize:10, lineHeight:1.8, color:T.text2 }
+      },
+        e("div", { style:{color:T.tealL} }, "event: chat"),
+        e("div", { style:{color:T.greenL} }, 'data: {"user":"A","msg":"Hi"}'),
+        e("div", { style:{color:T.amberL} }, "id: 42"),
+        e("div", { style:{color:T.coralL} }, "retry: 5000"),
+        e("div", { style:{color:T.text3} }, ""),
+        e("div", { style:{color:T.text3,fontStyle:"italic"} }, "\u2190 blank line separates events")
+      )
+    );
+  }
+
+  if (type === "lifecycle") {
+    return e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 } },
+      /* WebSocket lifecycle */
+      e("div", { style:{ borderRadius:12, border:`1px solid ${T.ws}33`, background:`${T.ws}08`, padding:14 } },
+        e("div", { style:{ fontSize:12, fontWeight:600, color:T.wsL, marginBottom:10 } }, "WebSocket Lifecycle"),
+        [{step:"open",desc:"Connection established",c:T.green},{step:"message",desc:"Data exchanged (bidirectional)",c:T.ws},{step:"error",desc:"Handle connection errors",c:T.red},{step:"close",desc:"Connection terminated",c:T.text3},{step:"reconnect?",desc:"You implement this yourself",c:T.coral}].map((s,i) =>
+          e(M.div, { key:i, initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, transition:{delay:i*0.1,...ez},
+            style:{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }
+          },
+            e("div", { style:{ width:6, height:6, borderRadius:"50%", background:s.c, flexShrink:0 } }),
+            e("div", null,
+              e("div", { style:{ fontSize:10, fontWeight:600, color:s.c, fontFamily:"monospace" } }, "on"+s.step),
+              e("div", { style:{ fontSize:9, color:T.text3 } }, s.desc)
+            )
+          )
+        )
+      ),
+      /* SSE lifecycle */
+      e("div", { style:{ borderRadius:12, border:`1px solid ${T.sse}33`, background:`${T.sse}08`, padding:14 } },
+        e("div", { style:{ fontSize:12, fontWeight:600, color:T.sseL, marginBottom:10 } }, "SSE Lifecycle"),
+        [{step:"open",desc:"Connection established",c:T.green},{step:"message",desc:"Receive server events",c:T.sse},{step:"error",desc:"Connection dropped",c:T.red},{step:"reconnect",desc:"Automatic (browser handles it)",c:T.greenL},{step:"resume",desc:"Last-Event-ID sent on reconnect",c:T.teal}].map((s,i) =>
+          e(M.div, { key:i, initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, transition:{delay:i*0.1,...ez},
+            style:{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }
+          },
+            e("div", { style:{ width:6, height:6, borderRadius:"50%", background:s.c, flexShrink:0 } }),
+            e("div", null,
+              e("div", { style:{ fontSize:10, fontWeight:600, color:s.c, fontFamily:"monospace" } }, s.step),
+              e("div", { style:{ fontSize:9, color:T.text3 } }, s.desc)
+            )
+          )
+        )
+      )
+    );
+  }
+
+  if (type === "decision") {
+    const nodes = [
+      { q:"Need bidirectional communication?", y:"WebSocket", n:null, c:T.ws },
+      { q:"Need binary data transfer?", y:"WebSocket", n:null, c:T.ws },
+      { q:"Server-to-client push enough?", y:"SSE", n:null, c:T.sse },
+      { q:"Need auto-reconnect?", y:"SSE", n:null, c:T.sse },
+      { q:"Behind strict HTTP proxies?", y:"SSE", n:"WebSocket", c:T.purple },
+    ];
+    return e("div", { style:{ borderRadius:12, border:`1.5px solid ${T.border2}`, background:T.surface, padding:16 } },
+      e("div", { style:{ fontSize:11, color:T.text2, marginBottom:12, textAlign:"center" } }, "Decision Tree"),
+      nodes.map((n,i) =>
+        e(M.div, { key:i, initial:{opacity:0,x:-15}, animate:{opacity:1,x:0}, transition:{delay:i*0.15,...ez},
+          style:{ display:"flex", alignItems:"center", gap:8, marginBottom:8, padding:"8px 12px", borderRadius:8, border:`1px solid ${T.border}`, background:T.surface2 }
+        },
+          e("div", { style:{ fontSize:11, color:T.text1, flex:1 } }, n.q),
+          e("div", { style:{ display:"flex", gap:6 } },
+            e("div", { style:{ padding:"3px 10px", borderRadius:6, fontSize:9, fontWeight:600, border:`1px solid ${n.c}44`, background:`${n.c}14`, color:n.c } }, "Yes \u2192 " + n.y),
+            n.n && e("div", { style:{ padding:"3px 10px", borderRadius:6, fontSize:9, fontWeight:600, border:`1px solid ${T.text3}44`, background:`${T.text3}14`, color:T.text2 } }, "No \u2192 " + n.n)
+          )
+        )
+      )
+    );
+  }
+
+  return null;
+};
+
+/* Comparison bars */
+const ComparePanel = ({ compare, onClick }) => {
+  if (!compare) return null;
+  return e("div", { style:{ display:"flex", flexDirection:"column", gap:10 } },
+    compare.map((c,ci) =>
+      e("div", { key:ci, onClick, style:{ borderRadius:12, border:`1.5px solid ${T.border2}`, background:T.surface, overflow:"hidden", cursor:"pointer" } },
+        e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
+          e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, c.metric)
+        ),
+        e("div", { style:{ padding:14, display:"flex", flexDirection:"column", gap:14 } },
+          /* WS bar */
+          e("div", null,
+            e("div", { style:{ display:"flex", justifyContent:"space-between", marginBottom:5 } },
+              e("div", { style:{ display:"flex", alignItems:"center", gap:6 } },
+                e("div", { style:{ width:8, height:8, borderRadius:"50%", background:T.ws } }),
+                e("span", { style:{ fontSize:11, fontWeight:600, color:T.wsL } }, "WebSocket"),
+              ),
+              e("span", { style:{ fontSize:12, fontWeight:700, color:T.wsL, fontFamily:"monospace" } }, c.ws.value)
+            ),
+            e("div", { style:{ height:6, background:T.border, borderRadius:99, overflow:"hidden" } },
+              e(M.div, { initial:{width:0}, animate:{width:`${c.ws.pct}%`}, transition:{duration:0.8,ease:[0.22,1,0.36,1]}, style:{height:"100%",background:T.ws,borderRadius:99} })
+            ),
+            e("div", { style:{ fontSize:10, color:T.text3, marginTop:3 } }, c.ws.label)
+          ),
+          /* SSE bar */
+          e("div", null,
+            e("div", { style:{ display:"flex", justifyContent:"space-between", marginBottom:5 } },
+              e("div", { style:{ display:"flex", alignItems:"center", gap:6 } },
+                e("div", { style:{ width:8, height:8, borderRadius:"50%", background:T.sse } }),
+                e("span", { style:{ fontSize:11, fontWeight:600, color:T.sseL } }, "SSE"),
+              ),
+              e("span", { style:{ fontSize:12, fontWeight:700, color:T.sseL, fontFamily:"monospace" } }, c.sse.value)
+            ),
+            e("div", { style:{ height:6, background:T.border, borderRadius:99, overflow:"hidden" } },
+              e(M.div, { initial:{width:0}, animate:{width:`${c.sse.pct}%`}, transition:{duration:0.8,delay:0.15,ease:[0.22,1,0.36,1]}, style:{height:"100%",background:T.sse,borderRadius:99} })
+            ),
+            e("div", { style:{ fontSize:10, color:T.text3, marginTop:3 } }, c.sse.label)
+          )
+        )
+      )
+    )
+  );
+};
+
+/* Use case cards */
+const UseCases = () =>
+  e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 } },
+    e("div", { style:{ borderRadius:12, border:`1px solid ${T.ws}33`, background:`${T.ws}08`, padding:14 } },
+      e("div", { style:{ fontSize:13, fontWeight:600, color:T.wsL, marginBottom:8 } }, "Use WebSocket when\u2026"),
+      ["Chat / messaging applications","Multiplayer games (low-latency, bidirectional)","Collaborative editing (Google Docs-style)","Financial trading terminals","Video/audio signaling (WebRTC setup)"].map((t,i) =>
+        e(M.div, { key:i, initial:{opacity:0,x:-10}, animate:{opacity:1,x:0}, transition:{delay:i*0.08,...ez},
+          style:{ fontSize:11, color:T.text2, padding:"4px 0", display:"flex", gap:6, lineHeight:1.4 }
+        }, e("span", { style:{color:T.ws,flexShrink:0} }, "\u2022"), t)
+      )
+    ),
+    e("div", { style:{ borderRadius:12, border:`1px solid ${T.sse}33`, background:`${T.sse}08`, padding:14 } },
+      e("div", { style:{ fontSize:13, fontWeight:600, color:T.sseL, marginBottom:8 } }, "Use SSE when\u2026"),
+      ["Live notifications and alerts","News / social media feeds","Dashboard and monitoring updates","CI/CD pipeline status","LLM token streaming (ChatGPT-style)"].map((t,i) =>
+        e(M.div, { key:i, initial:{opacity:0,x:-10}, animate:{opacity:1,x:0}, transition:{delay:i*0.08,...ez},
+          style:{ fontSize:11, color:T.text2, padding:"4px 0", display:"flex", gap:6, lineHeight:1.4 }
+        }, e("span", { style:{color:T.sse,flexShrink:0} }, "\u2022"), t)
+      )
+    )
+  );
+
+/* Finale */
+const Finale = () => {
+  const rows = [
+    { n:"WS", label:"WebSocket: full-duplex communication", sub:"Persistent TCP connection -- both sides send/receive freely with minimal overhead", c:T.ws },
+    { n:"SSE", label:"SSE: server push over HTTP", sub:"EventSource API -- automatic reconnection, resumable streams, standard HTTP", c:T.sse },
+    { n:"\u2194", label:"Direction matters", sub:"WebSocket: bidirectional. SSE: server-to-client only (use HTTP POST for uploads)", c:T.teal },
+    { n:"\u2699", label:"Protocol complexity", sub:"WebSocket: custom binary framing. SSE: plain text over standard HTTP", c:T.blue },
+    { n:"\u21bb", label:"Reconnection", sub:"WebSocket: manual. SSE: automatic with Last-Event-ID resume", c:T.coral },
+    { n:"\u2714", label:"Choose by need", sub:"Bidirectional or binary? WebSocket. Server push only? SSE. Often simpler wins.", c:T.purple },
+  ];
+  return e("div", { style:{ padding:"8px 0" } },
+    rows.map((r,i) => e(M.div, { key:i, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.1,...ez},
+      style:{ display:"flex", alignItems:"flex-start", gap:12, padding:"11px 14px", marginBottom:8, borderRadius:10, border:`1px solid ${r.c}28`, background:`${r.c}08` }
+    },
+      e("div", { style:{ width:28, height:28, borderRadius:"50%", border:`1.5px solid ${r.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:11, fontWeight:700, color:r.c } }, r.n),
+      e("div", null,
+        e("div", { style:{ fontSize:13, fontWeight:600, color:r.c, marginBottom:2 } }, r.label),
+        e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.5 } }, r.sub)
+      )
+    ))
+  );
+};
+
+const DetailPanel = ({ detailKey, onClose }) => {
+  const d = DETAILS[detailKey];
+  if (!d) return null;
+  return e("div", {
+    style:{ width:340, flexShrink:0, background:T.surface, borderRadius:14, border:`1.5px solid ${d.color}44`, overflow:"hidden", alignSelf:"flex-start", position:"sticky", top:56 }
+  },
+    e("div", { style:{ padding:"14px 18px 12px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:8 } },
+        e("div", { style:{ width:8, height:8, borderRadius:"50%", background:d.color } }),
+        e("span", { style:{ fontSize:14, fontWeight:600, color:T.text1 } }, d.title)
+      ),
+      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6, transition:"color 0.2s" }, onMouseEnter:ev=>ev.target.style.color=T.text1, onMouseLeave:ev=>ev.target.style.color=T.text3 }, "\u2715")
+    ),
+    e("div", { style:{ padding:"16px 18px 20px", maxHeight:"calc(100vh - 140px)", overflowY:"auto" } },
+      d.sections.map((s, i) =>
+        e("div", { key:i, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
+          e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
+        )
+      )
+    )
+  );
+};
+
+/* ─── APP ─── */
+function App() {
+  const [si, setSi] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [detail, setDetail] = useState(null);
+  const timer = useRef(null);
+  const sc = SCENES[si];
+
+  useEffect(() => { setPlaying(true); }, []);
+
+  useEffect(() => {
+    if (!playing) return;
+    const d = si===0 ? 3000 : sc.finale ? 99999 : 3400;
+    timer.current = setTimeout(() => { si < SCENES.length-1 ? setSi(i=>i+1) : setPlaying(false); }, d);
+    return () => clearTimeout(timer.current);
+  }, [playing, si]);
+
+  const go = d => { clearTimeout(timer.current); setPlaying(false); setSi(i=>Math.max(0,Math.min(SCENES.length-1,i+d))); };
+  const jump = i => { clearTimeout(timer.current); setPlaying(false); setSi(i); };
+  const togglePlay = () => { if(si===SCENES.length-1){setSi(0);setPlaying(true);}else setPlaying(p=>!p); };
+  const toggleDetail = key => { setDetail(d => d===key ? null : key); clearTimeout(timer.current); setPlaying(false); };
+
+  const hasViz = sc.viz;
+  const hasCompare = sc.compare && sc.compare.length > 0;
+
+  return e("div", { style:{ display:"flex", gap:16, alignItems:"flex-start", justifyContent: detail ? "flex-start" : "center" } },
+  e("div", { style:{ width:760, flexShrink:0, background:T.bg, fontFamily:"system-ui,sans-serif", padding:20, borderRadius:16 } },
+
+    /* header */
+    e("div", { style:{ marginBottom:18 } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:10, marginBottom:11 } },
+        e(AP, { mode:"wait" },
+          e(M.div, { key:sc.act, initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, exit:{opacity:0}, transition:sp(400,28),
+            style:{ fontSize:9,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:T.purple,background:`${T.purple}14`,padding:"3px 10px",borderRadius:20,border:`1px solid ${T.purple}30`,flexShrink:0 }
+          }, sc.act)
+        ),
+        e("div", { style:{ flex:1, height:1, background:T.border, borderRadius:99, overflow:"hidden" } },
+          e(M.div, { animate:{width:`${si/(SCENES.length-1)*100}%`}, transition:{duration:0.5}, style:{height:"100%",background:T.purple,borderRadius:99} })
+        ),
+        e("span", { style:{ fontSize:10, color:T.text3 } }, `${si+1} / ${SCENES.length}`)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.title, initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, exit:{opacity:0,y:-8}, transition:ez,
+          style:{ fontSize:20,fontWeight:600,color:T.text1,marginBottom:4,letterSpacing:"-0.02em" }
+        }, sc.title)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
+          style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
+        }, sc.sub)
+      )
+    ),
+
+    e("div", { style:{ minHeight:460 } },
+
+    /* finale */
+    sc.finale && e(Finale),
+
+    /* main content */
+    !sc.finale && e("div", null,
+
+      /* message flow visualization */
+      hasViz && e("div", { style:{ marginBottom:10 } },
+        e(MessageFlow, { type:sc.viz, messages:()=>toggleDetail("ws") })
+      ),
+
+      /* comparison bars */
+      hasCompare && e("div", { style:{ marginBottom:10 } },
+        e(ComparePanel, { compare:sc.compare, onClick:()=>toggleDetail("compare") })
+      ),
+
+      /* use cases */
+      sc.usecases && e("div", { style:{ marginBottom:10 } }, e(UseCases)),
+
+      /* code */
+      sc.code && sc.code.length > 0 && e("div", { style:{ marginBottom:10 } },
+        e(CodePanel, { tokens:sc.code, onClick:()=>toggleDetail("code") })
+      )
+    ),
+
+    ), /* close minHeight wrapper */
+
+    /* controls */
+    e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginTop:16 } },
+      e("button", { onClick:()=>go(-1), disabled:si===0,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===0?T.text3:T.text2,cursor:si===0?"not-allowed":"pointer",fontSize:11,transition:"color 0.2s" }
+      }, "\u2190 Back"),
+      e("button", { onClick:togglePlay,
+        style:{ padding:"6px 18px",borderRadius:8,border:`1px solid ${playing?T.coral:T.purple}44`,background:playing?`${T.coral}14`:`${T.purple}14`,color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all 0.2s" }
+      }, playing ? "\u23f8  Pause" : si===SCENES.length-1 ? "\u21ba  Replay" : "\u25b6  Play"),
+      e("button", { onClick:()=>go(1), disabled:si===SCENES.length-1,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
+      }, "Next \u2192"),
+      e("div", { style:{ flex:1 } }),
+      e("div", { style:{ display:"flex", gap:4, alignItems:"center" } },
+        SCENES.map((_,i) =>
+          e("button", { key:i, onClick:()=>jump(i),
+            style:{ width:i===si?16:5,height:5,borderRadius:99,border:"none",padding:0,background:i===si?T.purple:i<si?`${T.purple}55`:T.border,cursor:"pointer",transition:"all 0.25s" }
+          })
+        )
+      )
+    )
+  ),
+  detail && e(DetailPanel, { detailKey:detail, onClose:()=>setDetail(null) })
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(e(App));
+</script>
+</body>
+</html>

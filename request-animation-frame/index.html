@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>requestAnimationFrame</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111118;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px 16px 24px 196px;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  #root { width: 100%; max-width: 1120px; }
+  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: system-ui, sans-serif; }
+  .topnav a { text-decoration: none; color: #8888aa; font-size: 13px; transition: color 0.2s; }
+  .topnav a:hover { color: #e8e8f0; }
+  .topnav .name { font-weight: 600; color: #e8e8f0; font-size: 13px; }
+  .topnav .sep { color: #38384a; font-size: 12px; }
+  .topnav .current { color: #7c6fcd; font-size: 13px; font-weight: 500; }
+  .sidenav { position: fixed; top: 38px; left: 0; width: 180px; height: calc(100vh - 38px); background: #111118; border-right: 1px solid #2a2a38; padding: 14px 0; overflow-y: auto; z-index: 200; font-family: system-ui, sans-serif; }
+  .sidenav a { display: block; padding: 6px 16px; font-size: 11px; color: #8888aa; text-decoration: none; transition: color 0.2s, background 0.2s; border-left: 2px solid transparent; }
+  .sidenav a:hover { color: #e8e8f0; background: rgba(124,111,205,0.06); }
+  .sidenav a.active { color: #a99cf0; border-left-color: #7c6fcd; background: rgba(124,111,205,0.1); font-weight: 600; }
+  .sidenav .nav-section { padding: 8px 16px 4px; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #44445a; }
+  .sidenav .nav-section:first-child { padding-top: 4px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="../" class="name">Sharon Zhou</a>
+  <span class="sep">/</span>
+  <a href="../">Animations</a>
+  <span class="sep">/</span>
+  <span class="current">requestAnimationFrame</span>
+</nav>
+<nav class="sidenav">
+  <div class="nav-section">JavaScript</div>
+  <a href="../event-loop/">Event Loop</a>
+  <a href="../this-keyword/">this Keyword</a>
+  <a href="../hoisting/">Hoisting</a>
+  <a href="../garbage-collection/">Garbage Collection</a>
+  <a href="../event-delegation/">Event Delegation</a>
+  <a href="../iterators-generators/">Iterators & Generators</a>
+  <a href="../xhr-vs-fetch/">XHR vs fetch()</a>
+  <a href="../error-propagation/">Error Propagation</a>
+  <a href="../web-workers/">Web Workers</a>
+  <a href="../request-animation-frame/" class="active">requestAnimationFrame</a>
+  <div class="nav-section">Infrastructure</div>
+  <a href="../vms-vs-docker/">VMs vs Docker</a>
+  <a href="../opentelemetry/">OpenTelemetry</a>
+  <a href="../critical-rendering-path/">Critical Rendering Path</a>
+  <a href="../closures/">Closures</a>
+</nav>
+<div id="root" style="margin-top: 36px;"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/framer-motion@11/dist/framer-motion.js"></script>
+<script>
+const { useState, useEffect, useRef, useMemo } = React;
+const { motion, AnimatePresence, useMotionValue, animate } = window.Motion;
+const e = React.createElement;
+const M = motion;
+const AP = AnimatePresence;
+const sp = (s=380,d=28) => ({ type:"spring", stiffness:s, damping:d });
+const ez = { duration:0.32, ease:[0.22,1,0.36,1] };
+
+const T = {
+  bg:"#111118", surface:"#18181f", surface2:"#1e1e28",
+  border:"#2a2a38", border2:"#38384a",
+  text1:"#e8e8f0", text2:"#8888aa", text3:"#44445a",
+  purple:"#7c6fcd", purpleL:"#a99cf0",
+  teal:"#3db89a", tealL:"#6dd4b8",
+  coral:"#c4694a", coralL:"#e08a6a",
+  blue:"#4a8fd4", blueL:"#82b4e8",
+  amber:"#d4a84a", amberL:"#e8c86a",
+  pink:"#c45a8a", pinkL:"#e87aaa",
+  green:"#5a9a44", greenL:"#8acc6a",
+  codeBase:"#141428",
+};
+
+const TS = {
+  fn:    { color:"#82aaff" },
+  meth:  { color:"#89ddff" },
+  str:   { color:"#c3e88d" },
+  kw:    { color:"#c792ea" },
+  num:   { color:"#f78c6c" },
+  punc:  { color:"#89ddff" },
+  plain: { color:"#a6accd" },
+  this:  { color:"#ff5370", fontWeight:"bold" },
+  cmt:   { color:"#546e7a", fontStyle:"italic" },
+  raf:   { color:"#82aaff", fontWeight:"bold" },
+  css:   { color:"#c3e88d", fontStyle:"italic" },
+};
+
+/* ─── SCENES ─── */
+const SCENES = [
+  {
+    id:0, act:"01",
+    title:"Smooth animation in the browser",
+    sub:"The browser refreshes the screen ~60 times per second (60 Hz). For silky-smooth animation, your updates need to sync with this paint cycle.",
+    code:[
+      [["cmt","// The goal: 60 fps smooth animation"]],
+      [["cmt","// Display refreshes every ~16.67ms"]],
+      [["cmt","// Our code must keep up"]],
+    ],
+    viz:"intro",
+  },
+  {
+    id:1, act:"02",
+    title:"setTimeout / setInterval",
+    sub:"The classic approach: use a timer to update at a fixed interval. But timers don't know when the screen actually refreshes.",
+    code:[
+      [["kw","function"],["plain"," "],["fn","animateWithTimer"],["punc","() {"]],
+      [["plain","  "],["fn","setInterval"],["punc","(() => {"]],
+      [["plain","    element"],["punc","."],["plain","style"],["punc","."],["plain","left "],["punc","= "]],
+      [["plain","      pos"],["punc","++ + "],["str","'px'"]],
+      [["plain","  "],["punc","}, "],["num","16"],["punc",")"],["plain","  "],["cmt","// ~60fps?"]],
+      [["punc","}"]],
+    ],
+    viz:"setTimeout",
+  },
+  {
+    id:2, act:"03",
+    title:"The problem — jank & drift",
+    sub:"setTimeout/setInterval aren't precise. Callbacks can fire late, miss paint frames, or stack up — causing jank, stuttering, and wasted CPU cycles.",
+    code:[
+      [["cmt","// Timer fires at ~16ms but..."]],
+      [["cmt","// - Not synced to display refresh"]],
+      [["cmt","// - Can fire between frames"]],
+      [["cmt","// - Runs even when tab hidden"]],
+      [["cmt","// - Drifts over time"]],
+      [["cmt","// Result: dropped frames & jank"]],
+    ],
+    viz:"problem",
+  },
+  {
+    id:3, act:"04",
+    title:"requestAnimationFrame",
+    sub:"rAF tells the browser: \"call me right before the next repaint.\" The browser schedules your callback at the perfect moment.",
+    code:[
+      [["kw","function"],["plain"," "],["fn","animateWithRAF"],["punc","() {"]],
+      [["plain","  "],["raf","requestAnimationFrame"],["punc","(() => {"]],
+      [["plain","    element"],["punc","."],["plain","style"],["punc","."],["plain","left "],["punc","= "]],
+      [["plain","      pos"],["punc","++ + "],["str","'px'"]],
+      [["plain","    "],["fn","animateWithRAF"],["punc","()"],["plain"," "],["cmt","// loop"]],
+      [["plain","  "],["punc","})"]],
+      [["punc","}"]],
+    ],
+    viz:"raf",
+  },
+  {
+    id:4, act:"05",
+    title:"How rAF works",
+    sub:"The callback runs just before the browser's next repaint — roughly every 16.67ms at 60 Hz. The browser controls the timing, not you.",
+    code:[
+      [["cmt","// 60 Hz display = 1000ms / 60"]],
+      [["cmt","// = ~16.67ms per frame"]],
+      [["plain",""],],
+      [["raf","requestAnimationFrame"],["punc","(callback)"]],
+      [["cmt","// callback runs BEFORE next paint"]],
+      [["cmt","// browser decides exact timing"]],
+    ],
+    viz:"howItWorks",
+  },
+  {
+    id:5, act:"06",
+    title:"The rAF loop pattern",
+    sub:"rAF fires once per call. For continuous animation, you recursively request the next frame inside your callback.",
+    code:[
+      [["kw","function"],["plain"," "],["fn","loop"],["punc","() {"]],
+      [["plain","  "],["cmt","// 1. Update state"]],
+      [["plain","  pos "],["punc","+="],["plain"," speed"]],
+      [["plain","  "],["cmt","// 2. Apply to DOM"]],
+      [["plain","  el"],["punc","."],["plain","style"],["punc","."],["plain","transform "],["punc","="]],
+      [["plain","    "],["str","`translate(${pos}px)`"]],
+      [["plain","  "],["cmt","// 3. Schedule next frame"]],
+      [["plain","  "],["raf","requestAnimationFrame"],["punc","(loop)"]],
+      [["punc","}"]],
+      [["raf","requestAnimationFrame"],["punc","(loop)"],["plain"," "],["cmt","// start"]],
+    ],
+    viz:"loopPattern",
+  },
+  {
+    id:6, act:"07",
+    title:"The timestamp parameter",
+    sub:"rAF passes a high-resolution timestamp (DOMHighResTimeStamp) to your callback. Use it to calculate delta time for frame-rate independent animation.",
+    code:[
+      [["kw","let"],["plain"," prev "],["punc","="],["plain"," "],["num","0"]],
+      [["kw","function"],["plain"," "],["fn","loop"],["punc","("],["plain","timestamp"],["punc",") {"]],
+      [["plain","  "],["kw","const"],["plain"," delta "],["punc","="],["plain"," timestamp "],["punc","-"],["plain"," prev"]],
+      [["plain","  prev "],["punc","="],["plain"," timestamp"]],
+      [["plain","  "],["cmt","// Move 100px per second regardless"]],
+      [["plain","  "],["cmt","// of frame rate"]],
+      [["plain","  pos "],["punc","+="],["plain"," "],["num","100"],["plain"," "],["punc","*"],["plain"," (delta "],["punc","/"],["plain"," "],["num","1000"],["punc",")"]],
+      [["plain","  "],["raf","requestAnimationFrame"],["punc","(loop)"]],
+      [["punc","}"]],
+    ],
+    viz:"timestamp",
+  },
+  {
+    id:7, act:"08",
+    title:"Cancellation",
+    sub:"requestAnimationFrame returns an ID you can pass to cancelAnimationFrame to stop the loop — like clearTimeout for animation frames.",
+    code:[
+      [["kw","const"],["plain"," id "],["punc","="]],
+      [["plain","  "],["raf","requestAnimationFrame"],["punc","(loop)"]],
+      [["plain",""],],
+      [["cmt","// Later, to stop:"]],
+      [["fn","cancelAnimationFrame"],["punc","(id)"]],
+      [["plain",""],],
+      [["cmt","// Common pattern: store ID"]],
+      [["kw","let"],["plain"," rafId "],["punc","="],["plain"," "],["kw","null"]],
+      [["kw","function"],["plain"," "],["fn","stop"],["punc","() {"]],
+      [["plain","  "],["fn","cancelAnimationFrame"],["punc","(rafId)"]],
+      [["punc","}"]],
+    ],
+    viz:"cancel",
+  },
+  {
+    id:8, act:"09",
+    title:"rAF vs CSS animations",
+    sub:"CSS animations/transitions are GPU-accelerated and ideal for simple state changes. rAF is for complex, dynamic animations where you need per-frame control.",
+    code:[
+      [["cmt","// CSS: declarative, GPU-accelerated"]],
+      [["css",".box { transition: transform 0.3s }"]],
+      [["css",".box.moved { transform: translateX(100px) }"]],
+      [["plain",""],],
+      [["cmt","// rAF: imperative, per-frame control"]],
+      [["kw","function"],["plain"," "],["fn","loop"],["punc","(t) {"]],
+      [["plain","  pos "],["punc","="],["plain"," "],["fn","physics"],["punc","(t)"],["plain"," "],["cmt","// custom logic"]],
+      [["plain","  "],["raf","requestAnimationFrame"],["punc","(loop)"]],
+      [["punc","}"]],
+    ],
+    viz:"vsCSS",
+  },
+  {
+    id:9, act:"10",
+    title:"rAF for non-animation",
+    sub:"rAF isn't just for animation. It's perfect for debouncing scroll and resize handlers — coalescing rapid events into one-per-frame updates.",
+    code:[
+      [["kw","let"],["plain"," ticking "],["punc","="],["plain"," "],["kw","false"]],
+      [["plain","window"],["punc","."],["fn","addEventListener"],["punc","("],["str","'scroll'"],["punc",","]],
+      [["plain","  "],["punc","() => {"]],
+      [["plain","    "],["kw","if"],["plain"," ("],["punc","!"],["plain","ticking) {"]],
+      [["plain","      "],["raf","requestAnimationFrame"],["punc","(() => {"]],
+      [["plain","        "],["fn","updateLayout"],["punc","()"]],
+      [["plain","        ticking "],["punc","="],["plain"," "],["kw","false"]],
+      [["plain","      "],["punc","})"]],
+      [["plain","      ticking "],["punc","="],["plain"," "],["kw","true"]],
+      [["plain","    "],["punc","}"]],
+      [["punc","})"]],
+    ],
+    viz:"nonAnimation",
+  },
+  {
+    id:10, act:"11",
+    title:"Performance comparison",
+    sub:"setTimeout callbacks land at unpredictable times relative to display refresh. rAF callbacks are perfectly aligned — zero wasted frames.",
+    code:[
+      [["cmt","// setTimeout: fires whenever the"]],
+      [["cmt","//   event loop gets to it"]],
+      [["cmt","//   → can miss paint deadlines"]],
+      [["cmt","//   → runs in background tabs"]],
+      [["plain",""],],
+      [["cmt","// rAF: fires right before paint"]],
+      [["cmt","//   → never misses a frame"]],
+      [["cmt","//   → pauses in background tabs"]],
+      [["cmt","//   → batches with other rAFs"]],
+    ],
+    viz:"perfCompare",
+  },
+  {
+    id:11, act:"12",
+    title:"rAF and the event loop",
+    sub:"In the event loop, rAF callbacks run after microtasks (promises), but before the browser paints. This is the key to why it syncs perfectly.",
+    code:[
+      [["cmt","// Event loop order per frame:"]],
+      [["num","1."],["plain"," Run task (setTimeout, etc.)"]],
+      [["num","2."],["plain"," Flush microtask queue"]],
+      [["plain","   "],["cmt","// Promise.then, queueMicrotask"]],
+      [["num","3."],["plain"," "],["raf","requestAnimationFrame"],["plain"," callbacks"]],
+      [["num","4."],["plain"," Style / Layout / Paint"]],
+      [["num","5."],["plain"," requestIdleCallback"]],
+    ],
+    viz:"eventLoop",
+  },
+  {
+    id:12, act:"\u2713",
+    title:"requestAnimationFrame — Summary",
+    sub:"The browser's built-in animation scheduler. Sync with the display, save battery, get smooth frames.",
+    code:[
+      [["cmt","// The animation API checklist:"]],
+      [["num","1."],["plain"," Use rAF, not setTimeout"]],
+      [["num","2."],["plain"," Use timestamp for delta time"]],
+      [["num","3."],["plain"," Cancel when done"]],
+      [["num","4."],["plain"," CSS for simple transitions"]],
+      [["num","5."],["plain"," rAF for complex/dynamic anim"]],
+      [["num","6."],["plain"," rAF to debounce scroll/resize"]],
+    ],
+    viz:"finale",
+    finale:true,
+  },
+];
+
+/* ─── DETAIL CONTENT ─── */
+const DETAILS = {
+  code: {
+    title:"Source Code",
+    color:T.purpleL,
+    sections:[
+      {heading:"What to watch for",body:"Each scene shows a different aspect of requestAnimationFrame. The code examples progress from the problem (setTimeout) to the solution (rAF) and its advanced patterns."},
+      {heading:"Key patterns",body:"• rAF loop: recursively call rAF inside callback\n• Delta time: use the timestamp parameter\n• Cancellation: store and cancel the rAF ID\n• Debouncing: use a ticking flag with rAF\n• CSS for simple, rAF for complex animation"},
+    ]
+  },
+  timing: {
+    title:"Frame Timing",
+    color:T.tealL,
+    sections:[
+      {heading:"60 Hz refresh rate",body:"Most displays refresh 60 times per second. Each frame has a budget of ~16.67ms (1000ms / 60). If your code takes longer than that, you drop a frame and users see jank."},
+      {heading:"Why setTimeout drifts",body:"setTimeout(fn, 16) doesn't guarantee 16ms. The event loop might be busy with other tasks. The callback fires at the next available opportunity — which might be 18ms, 22ms, or later. These tiny delays compound into visible stuttering."},
+      {heading:"rAF alignment",body:"requestAnimationFrame callbacks are called by the browser at the optimal time — right before it needs to repaint. The browser knows its own refresh rate and schedules accordingly, even on 120Hz or 144Hz displays."},
+    ]
+  },
+  performance: {
+    title:"Performance",
+    color:T.amber,
+    sections:[
+      {heading:"Background tab behavior",body:"A huge advantage of rAF: it automatically pauses when the tab is in the background. setTimeout keeps firing, wasting CPU and battery on invisible animations."},
+      {heading:"Batching",body:"If you call rAF multiple times before a paint, all callbacks run in the same frame. The browser batches them efficiently. With setTimeout, each timer is independent and can cause layout thrashing."},
+      {heading:"Frame budget",body:"At 60 fps, you have 16.67ms per frame. Your rAF callback (JS execution) + style calculation + layout + paint must all fit. If JS takes 10ms, you have ~6ms for the browser's work."},
+    ]
+  },
+  viz: {
+    title:"Visualization",
+    color:T.blueL,
+    sections:[
+      {heading:"Timeline view",body:"The timeline shows display refresh ticks (vertical lines at regular intervals). Green markers show callbacks that land perfectly on refresh boundaries. Red/orange markers show callbacks that miss the mark."},
+      {heading:"Dropped frames",body:"When a setTimeout callback fires between two refresh ticks, the browser can't use it for either frame — it was too late for the last one and the work is stale by the next one. This shows up as a dropped frame (gap in the animation)."},
+    ]
+  },
+};
+
+/* ─── COMPONENTS ─── */
+const CodePanel = ({ tokens }) =>
+  e("div", { style:{ background:T.codeBase, borderRadius:12, overflow:"hidden", border:`1px solid ${T.border}` } },
+    e("div", { style:{ padding:"10px 14px 8px", borderBottom:`1px solid ${T.border}`, display:"flex", gap:7 } },
+      ...["#ff5f57","#febc2e","#28c840"].map((c,i) =>
+        e("div", { key:i, style:{ width:11, height:11, borderRadius:"50%", background:c } })
+      )
+    ),
+    e("div", { style:{ padding:"18px 22px 22px", fontFamily:"'SF Mono','Fira Code','Consolas',monospace", fontSize:12, lineHeight:1.95 } },
+      tokens.map((line, li) =>
+        e("div", { key:li, style:{ paddingLeft:0, borderRadius:3, display:"block" } },
+          line.map(([cls, txt], ti) =>
+            e("span", { key:ti, style:{ ...TS[cls], whiteSpace:"pre" } }, txt)
+          )
+        )
+      )
+    )
+  );
+
+const Panel = ({ label, children, style={}, focused=false, onClick }) =>
+  e(M.div, {
+    onClick,
+    animate:{
+      borderColor: focused ? T.purple : T.border2,
+      boxShadow: focused ? `0 0 16px ${T.purple}30, inset 0 0 12px ${T.purple}08` : "0 0 0px transparent"
+    },
+    transition:{ duration:0.4 },
+    style:{ borderRadius:12, border:"1.5px solid", background:T.surface, overflow:"hidden", cursor:onClick?"pointer":"default", ...style }
+  },
+    label && e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, label)
+    ),
+    e("div", { style:{ padding:12 } }, children)
+  );
+
+/* ─── TIMELINE VISUALIZATION ─── */
+const FrameTimeline = ({ mode, label, animKey }) => {
+  /* mode: "setTimeout" | "raf" | "both" | "problem" */
+  const W = 680, H = 120;
+  const refreshInterval = 50; /* px between refresh ticks */
+  const numTicks = Math.floor(W / refreshInterval);
+
+  const refreshTicks = [];
+  for (let i = 0; i <= numTicks; i++) refreshTicks.push(i * refreshInterval);
+
+  /* setTimeout callbacks - slightly off beat */
+  const stOffsets = [3,47,95,138,192,234,280,329,375,422,470,512,562,608];
+  /* rAF callbacks - perfectly on beat */
+  const rafOffsets = refreshTicks.slice(1);
+
+  const isSetTimeout = mode === "setTimeout" || mode === "problem" || mode === "both";
+  const isRaf = mode === "raf" || mode === "both";
+
+  return e(M.div, {
+    key: animKey,
+    initial:{opacity:0, y:10},
+    animate:{opacity:1, y:0},
+    transition:ez,
+    style:{ position:"relative", width:"100%", height:H, background:T.surface2, borderRadius:10, border:`1px solid ${T.border}`, overflow:"hidden", padding:"0 10px" }
+  },
+    /* label */
+    label && e("div", { style:{ position:"absolute", top:6, left:12, fontSize:9, color:T.text3, fontWeight:600, letterSpacing:"0.06em", textTransform:"uppercase" } }, label),
+
+    /* Display refresh line */
+    e("div", { style:{ position:"absolute", top:28, left:10, right:10, height:1, background:T.border } }),
+    e("div", { style:{ position:"absolute", top:16, left:10, fontSize:8, color:T.text3 } }, "Display Refresh (60 Hz)"),
+
+    /* Refresh ticks */
+    ...refreshTicks.map((x,i) =>
+      e(M.div, {
+        key:`rt${i}`,
+        initial:{scaleY:0}, animate:{scaleY:1},
+        transition:{delay:i*0.03, duration:0.2},
+        style:{ position:"absolute", top:22, left:x+10, width:2, height:14, background:T.blueL, borderRadius:1, transformOrigin:"top" }
+      })
+    ),
+
+    /* setTimeout callbacks */
+    isSetTimeout && e("div", null,
+      e("div", { style:{ position:"absolute", top:48, left:10, fontSize:8, color:T.coralL } }, "setTimeout(fn, 16)"),
+      ...stOffsets.map((x,i) => {
+        /* check if this lands near a refresh tick */
+        const nearTick = refreshTicks.some(t => Math.abs(x - t) < 8);
+        const missed = !nearTick;
+        return e(M.div, {
+          key:`st${i}`,
+          initial:{opacity:0, scale:0}, animate:{opacity:1, scale:1},
+          transition:{delay:0.3 + i*0.05, ...sp(300,20)},
+          style:{ position:"absolute", top:56, left:x+10, width:missed?8:6, height:missed?8:6, borderRadius:"50%", background: missed ? T.coral : T.coralL, border: missed ? `1px solid ${T.coralL}` : "none", transform:"translate(-50%,0)" }
+        });
+      }),
+      /* missed frame indicators */
+      mode === "problem" && stOffsets.filter(x => !refreshTicks.some(t => Math.abs(x-t)<8)).slice(0,5).map((x,i) =>
+        e(M.div, {
+          key:`miss${i}`,
+          initial:{opacity:0}, animate:{opacity:[0,1,0.6]},
+          transition:{delay:0.8+i*0.1, duration:0.4},
+          style:{ position:"absolute", top:68, left:x+10, fontSize:7, color:T.coral, fontWeight:700, transform:"translate(-50%,0)" }
+        }, "MISS")
+      )
+    ),
+
+    /* rAF callbacks */
+    isRaf && e("div", null,
+      e("div", { style:{ position:"absolute", top: isSetTimeout?78:48, left:10, fontSize:8, color:T.tealL } }, "requestAnimationFrame"),
+      ...rafOffsets.map((x,i) =>
+        e(M.div, {
+          key:`raf${i}`,
+          initial:{opacity:0, scale:0}, animate:{opacity:1, scale:1},
+          transition:{delay:0.5 + i*0.05, ...sp(300,20)},
+          style:{ position:"absolute", top:isSetTimeout?86:56, left:x+10, width:6, height:6, borderRadius:"50%", background:T.tealL, transform:"translate(-50%,0)" }
+        })
+      )
+    ),
+
+    /* alignment lines for "both" mode */
+    mode === "both" && rafOffsets.map((x,i) =>
+      e(M.div, {
+        key:`al${i}`,
+        initial:{scaleY:0}, animate:{scaleY:1},
+        transition:{delay:0.8+i*0.04, duration:0.3},
+        style:{ position:"absolute", top:36, left:x+9, width:1, height:54, background:`${T.teal}30`, transformOrigin:"top" }
+      })
+    ),
+
+    /* "perfect alignment" label for raf-only */
+    mode === "raf" && e(M.div, {
+      initial:{opacity:0}, animate:{opacity:1},
+      transition:{delay:1.2, duration:0.5},
+      style:{ position:"absolute", bottom:8, right:14, fontSize:8, color:T.tealL, fontWeight:600, letterSpacing:"0.05em" }
+    }, "PERFECTLY ALIGNED")
+  );
+};
+
+/* ─── SCENE VISUALIZATIONS ─── */
+const SceneViz = ({ scene }) => {
+  const v = scene.viz;
+
+  /* Intro: monitor with smooth refresh */
+  if (v === "intro") {
+    return e("div", { style:{ display:"flex", flexDirection:"column", gap:10 } },
+      /* monitor frame */
+      e("div", { style:{ position:"relative", background:T.surface2, borderRadius:10, border:`1px solid ${T.border}`, height:100, overflow:"hidden", display:"flex", alignItems:"center", padding:"0 20px" } },
+        e("div", { style:{ fontSize:9, color:T.text3, position:"absolute", top:6, left:12, fontWeight:600, letterSpacing:"0.06em", textTransform:"uppercase" } }, "60 Hz Display"),
+        /* smooth moving ball */
+        e(M.div, {
+          animate:{ x:[0,580,0] },
+          transition:{ duration:3, repeat:Infinity, ease:"linear" },
+          style:{ width:18, height:18, borderRadius:"50%", background:`linear-gradient(135deg, ${T.teal}, ${T.blue})`, boxShadow:`0 0 16px ${T.teal}66` }
+        }),
+      ),
+      e("div", { style:{ textAlign:"center", fontSize:10, color:T.text2, padding:"6px 0" } }, "16.67ms per frame = smooth 60fps motion"),
+      FrameTimeline({ mode:"raf", label:"ideal frame timing", animKey:"intro" })
+    );
+  }
+
+  /* setTimeout demo */
+  if (v === "setTimeout") {
+    return e("div", { style:{ display:"flex", flexDirection:"column", gap:10 } },
+      e("div", { style:{ position:"relative", background:T.surface2, borderRadius:10, border:`1px solid ${T.border}`, height:70, overflow:"hidden", display:"flex", alignItems:"center", padding:"0 20px" } },
+        e("div", { style:{ fontSize:9, color:T.text3, position:"absolute", top:6, left:12, fontWeight:600, letterSpacing:"0.06em", textTransform:"uppercase" } }, "setInterval animation"),
+        e(M.div, {
+          animate:{ x:[0,300,0] },
+          transition:{ duration:2, repeat:Infinity, ease:"linear", times:[0,0.5,1] },
+          style:{ width:16, height:16, borderRadius:4, background:T.coral, boxShadow:`0 0 10px ${T.coral}44` }
+        }),
+      ),
+      FrameTimeline({ mode:"setTimeout", label:"setTimeout callback timing", animKey:"st" })
+    );
+  }
+
+  /* Problem: jank visualization */
+  if (v === "problem") {
+    return e("div", { style:{ display:"flex", flexDirection:"column", gap:10 } },
+      /* Janky vs smooth comparison */
+      e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 } },
+        e("div", { style:{ position:"relative", background:T.surface2, borderRadius:8, border:`1px solid ${T.coral}33`, height:50, overflow:"hidden", display:"flex", alignItems:"center", padding:"0 14px" } },
+          e("div", { style:{ fontSize:8, color:T.coral, position:"absolute", top:4, left:8, fontWeight:600 } }, "setTimeout (janky)"),
+          e(M.div, {
+            animate:{ x:[0,60,62,120,121,180,182,240,241,280,0] },
+            transition:{ duration:2.5, repeat:Infinity, times:[0,0.15,0.2,0.35,0.4,0.55,0.6,0.75,0.8,0.9,1] },
+            style:{ width:12, height:12, borderRadius:3, background:T.coral }
+          }),
+        ),
+        e("div", { style:{ position:"relative", background:T.surface2, borderRadius:8, border:`1px solid ${T.teal}33`, height:50, overflow:"hidden", display:"flex", alignItems:"center", padding:"0 14px" } },
+          e("div", { style:{ fontSize:8, color:T.teal, position:"absolute", top:4, left:8, fontWeight:600 } }, "rAF (smooth)"),
+          e(M.div, {
+            animate:{ x:[0,280,0] },
+            transition:{ duration:2.5, repeat:Infinity, ease:"linear" },
+            style:{ width:12, height:12, borderRadius:3, background:T.teal }
+          }),
+        ),
+      ),
+      FrameTimeline({ mode:"problem", label:"setTimeout misses display refresh", animKey:"prob" })
+    );
+  }
+
+  /* rAF aligned */
+  if (v === "raf") {
+    return e("div", { style:{ display:"flex", flexDirection:"column", gap:10 } },
+      e("div", { style:{ position:"relative", background:T.surface2, borderRadius:10, border:`1px solid ${T.teal}33`, height:70, overflow:"hidden", display:"flex", alignItems:"center", padding:"0 20px" } },
+        e("div", { style:{ fontSize:9, color:T.tealL, position:"absolute", top:6, left:12, fontWeight:600, letterSpacing:"0.06em", textTransform:"uppercase" } }, "rAF animation"),
+        e(M.div, {
+          animate:{ x:[0,580,0] },
+          transition:{ duration:3, repeat:Infinity, ease:"linear" },
+          style:{ width:16, height:16, borderRadius:"50%", background:T.teal, boxShadow:`0 0 14px ${T.teal}66` }
+        }),
+      ),
+      FrameTimeline({ mode:"raf", label:"rAF callback timing", animKey:"raf" })
+    );
+  }
+
+  /* How it works: the paint cycle */
+  if (v === "howItWorks") {
+    const steps = [
+      { label:"JS task", color:T.amber, w:80 },
+      { label:"Microtasks", color:T.pink, w:50 },
+      { label:"rAF callbacks", color:T.teal, w:90 },
+      { label:"Style", color:T.blue, w:45 },
+      { label:"Layout", color:T.blue, w:45 },
+      { label:"Paint", color:T.purple, w:55 },
+    ];
+    return e("div", { style:{ display:"flex", flexDirection:"column", gap:12 } },
+      e("div", { style:{ fontSize:9, color:T.text3, fontWeight:600, letterSpacing:"0.06em", textTransform:"uppercase", marginBottom:2 } }, "One frame (~16.67ms)"),
+      e("div", { style:{ display:"flex", gap:3, alignItems:"center" } },
+        steps.map((s,i) =>
+          e(M.div, {
+            key:i,
+            initial:{scaleX:0, opacity:0},
+            animate:{scaleX:1, opacity:1},
+            transition:{delay:i*0.15, duration:0.3},
+            style:{ width:s.w, height:40, borderRadius:6, background:`${s.color}22`, border:`1px solid ${s.color}44`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:8, color:s.color, fontWeight:600, transformOrigin:"left", flexShrink:0 }
+          }, s.label)
+        ),
+        e(M.div, {
+          initial:{opacity:0}, animate:{opacity:1},
+          transition:{delay:1.2},
+          style:{ fontSize:18, color:T.text3, marginLeft:4 }
+        }, "→")
+      ),
+      e(M.div, {
+        initial:{opacity:0, y:6}, animate:{opacity:1, y:0},
+        transition:{delay:1.5, duration:0.4},
+        style:{ display:"flex", alignItems:"center", gap:8, padding:"8px 12px", background:`${T.teal}10`, borderRadius:8, border:`1px solid ${T.teal}22` }
+      },
+        e("div", { style:{ width:8, height:8, borderRadius:"50%", background:T.teal, flexShrink:0 } }),
+        e("div", { style:{ fontSize:10, color:T.tealL } }, "rAF runs right before Style/Layout/Paint — the perfect timing for visual updates")
+      ),
+      FrameTimeline({ mode:"raf", label:null, animKey:"how" })
+    );
+  }
+
+  /* Loop pattern */
+  if (v === "loopPattern") {
+    const frames = [1,2,3,4,5,6];
+    return e("div", { style:{ display:"flex", flexDirection:"column", gap:10 } },
+      e("div", { style:{ fontSize:9, color:T.text3, fontWeight:600, letterSpacing:"0.06em", textTransform:"uppercase" } }, "Recursive rAF loop"),
+      e("div", { style:{ display:"flex", gap:6, alignItems:"center", flexWrap:"wrap" } },
+        frames.map((f,i) =>
+          e(React.Fragment, { key:i },
+            e(M.div, {
+              initial:{opacity:0, scale:0.5},
+              animate:{opacity:1, scale:1},
+              transition:{delay:i*0.2, ...sp(300,22)},
+              style:{ width:80, padding:"10px 0", borderRadius:8, background:`${T.teal}14`, border:`1px solid ${T.teal}33`, display:"flex", flexDirection:"column", alignItems:"center", gap:4 }
+            },
+              e("div", { style:{ fontSize:8, color:T.text3, fontWeight:600 } }, `Frame ${f}`),
+              e("div", { style:{ fontSize:9, color:T.tealL, fontFamily:"monospace" } }, "loop()"),
+              e("div", { style:{ fontSize:7, color:T.text3 } }, "rAF(loop)")
+            ),
+            i < frames.length-1 && e(M.div, {
+              initial:{opacity:0}, animate:{opacity:1},
+              transition:{delay:i*0.2+0.15},
+              style:{ fontSize:14, color:T.text3 }
+            }, "→")
+          )
+        ),
+        e(M.div, {
+          initial:{opacity:0}, animate:{opacity:[0,1,0.4,1]},
+          transition:{delay:1.6, duration:1, repeat:Infinity},
+          style:{ fontSize:10, color:T.teal, fontWeight:600 }
+        }, "...")
+      ),
+      e(M.div, {
+        initial:{opacity:0}, animate:{opacity:1},
+        transition:{delay:1.8},
+        style:{ fontSize:10, color:T.text2, padding:"6px 12px", background:T.surface2, borderRadius:6, border:`1px solid ${T.border}` }
+      }, "Each callback schedules the next frame — one call per repaint, no stacking")
+    );
+  }
+
+  /* Timestamp / delta time */
+  if (v === "timestamp") {
+    const frames = [
+      { t:"0.000", d:"-", pos:"0px" },
+      { t:"16.67", d:"16.67ms", pos:"1.7px" },
+      { t:"33.34", d:"16.67ms", pos:"3.3px" },
+      { t:"50.01", d:"16.67ms", pos:"5.0px" },
+      { t:"66.68", d:"16.67ms", pos:"6.7px" },
+      { t:"83.35", d:"16.67ms", pos:"8.3px" },
+    ];
+    return e("div", { style:{ display:"flex", flexDirection:"column", gap:8 } },
+      e("div", { style:{ fontSize:9, color:T.text3, fontWeight:600, letterSpacing:"0.06em", textTransform:"uppercase" } }, "Timestamp progression"),
+      e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:1, background:T.border, borderRadius:8, overflow:"hidden", border:`1px solid ${T.border}` } },
+        ...["timestamp","delta","position"].map(h =>
+          e("div", { key:h, style:{ background:T.surface2, padding:"6px 10px", fontSize:9, fontWeight:700, color:T.text3, textTransform:"uppercase", letterSpacing:"0.05em" } }, h)
+        ),
+        ...frames.map((f,i) => [
+          e(M.div, { key:`t${i}`, initial:{opacity:0}, animate:{opacity:1}, transition:{delay:i*0.15},
+            style:{ background:T.surface, padding:"5px 10px", fontSize:11, fontFamily:"monospace", color:T.amberL }
+          }, f.t),
+          e(M.div, { key:`d${i}`, initial:{opacity:0}, animate:{opacity:1}, transition:{delay:i*0.15+0.05},
+            style:{ background:T.surface, padding:"5px 10px", fontSize:11, fontFamily:"monospace", color:f.d==="-"?T.text3:T.tealL }
+          }, f.d),
+          e(M.div, { key:`p${i}`, initial:{opacity:0}, animate:{opacity:1}, transition:{delay:i*0.15+0.1},
+            style:{ background:T.surface, padding:"5px 10px", fontSize:11, fontFamily:"monospace", color:T.blueL }
+          }, f.pos),
+        ]).flat()
+      ),
+      e(M.div, {
+        initial:{opacity:0}, animate:{opacity:1}, transition:{delay:1.2},
+        style:{ fontSize:10, color:T.text2, padding:"6px 12px", background:T.surface2, borderRadius:6, border:`1px solid ${T.border}` }
+      }, "100px/sec * (16.67ms / 1000) = 1.667px per frame — frame-rate independent!")
+    );
+  }
+
+  /* Cancellation */
+  if (v === "cancel") {
+    return e("div", { style:{ display:"flex", flexDirection:"column", gap:10 } },
+      e("div", { style:{ display:"flex", gap:12, alignItems:"center" } },
+        e(M.div, {
+          initial:{opacity:0,x:-20}, animate:{opacity:1,x:0},
+          transition:{delay:0.1,...ez},
+          style:{ flex:1, padding:"14px 16px", borderRadius:10, background:`${T.teal}10`, border:`1px solid ${T.teal}33` }
+        },
+          e("div", { style:{ fontSize:10, fontWeight:700, color:T.tealL, marginBottom:6 } }, "START"),
+          e("div", { style:{ fontSize:11, fontFamily:"monospace", color:T.text2 } }, "id = requestAnimationFrame(loop)"),
+          e("div", { style:{ fontSize:9, color:T.text3, marginTop:4 } }, "Returns numeric ID")
+        ),
+        e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.4},
+          style:{ fontSize:22, color:T.text3 } }, "→"),
+        e(M.div, {
+          initial:{opacity:0,x:20}, animate:{opacity:1,x:0},
+          transition:{delay:0.5,...ez},
+          style:{ flex:1, padding:"14px 16px", borderRadius:10, background:`${T.coral}10`, border:`1px solid ${T.coral}33` }
+        },
+          e("div", { style:{ fontSize:10, fontWeight:700, color:T.coralL, marginBottom:6 } }, "STOP"),
+          e("div", { style:{ fontSize:11, fontFamily:"monospace", color:T.text2 } }, "cancelAnimationFrame(id)"),
+          e("div", { style:{ fontSize:9, color:T.text3, marginTop:4 } }, "Prevents next callback from firing")
+        ),
+      ),
+      e(M.div, {
+        initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.8},
+        style:{ display:"flex", gap:4, alignItems:"center", padding:"10px 14px", background:T.surface2, borderRadius:8, border:`1px solid ${T.border}` }
+      },
+        e("div", { style:{ fontSize:10, color:T.text2, lineHeight:1.6 } }, "Common in React: cancel in useEffect cleanup. In vanilla JS: cancel on user interaction or when animation completes.")
+      )
+    );
+  }
+
+  /* rAF vs CSS */
+  if (v === "vsCSS") {
+    const items = [
+      { label:"CSS Transitions", items:["Hover, focus, class toggle","transform, opacity","GPU-accelerated","Declarative","Simple easing curves"], color:T.blue, emoji:"" },
+      { label:"requestAnimationFrame", items:["Physics simulations","Canvas/WebGL","Game loops","Data-driven animation","Dynamic/interactive"], color:T.teal, emoji:"" },
+    ];
+    return e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 } },
+      items.map((col,ci) =>
+        e(M.div, {
+          key:ci,
+          initial:{opacity:0, y:12}, animate:{opacity:1, y:0},
+          transition:{delay:ci*0.2,...ez},
+          style:{ padding:"14px 16px", borderRadius:10, background:`${col.color}08`, border:`1px solid ${col.color}28` }
+        },
+          e("div", { style:{ fontSize:11, fontWeight:700, color:col.color, marginBottom:10 } }, col.label),
+          ...col.items.map((item,i) =>
+            e(M.div, {
+              key:i,
+              initial:{opacity:0, x:-8}, animate:{opacity:1, x:0},
+              transition:{delay:ci*0.2+i*0.08+0.2,...ez},
+              style:{ fontSize:10, color:T.text2, padding:"3px 0", display:"flex", alignItems:"center", gap:6 }
+            },
+              e("div", { style:{ width:4, height:4, borderRadius:"50%", background:col.color, flexShrink:0 } }),
+              item
+            )
+          )
+        )
+      )
+    );
+  }
+
+  /* Non-animation use */
+  if (v === "nonAnimation") {
+    const events = ["scroll","scroll","scroll","scroll","scroll"];
+    return e("div", { style:{ display:"flex", flexDirection:"column", gap:10 } },
+      e("div", { style:{ fontSize:9, color:T.text3, fontWeight:600, letterSpacing:"0.06em", textTransform:"uppercase" } }, "Scroll event debouncing with rAF"),
+      /* Without rAF */
+      e("div", { style:{ display:"flex", gap:6, alignItems:"center", padding:"10px 14px", background:`${T.coral}08`, borderRadius:8, border:`1px solid ${T.coral}22` } },
+        e("div", { style:{ fontSize:9, color:T.coralL, fontWeight:700, width:60, flexShrink:0 } }, "Without rAF"),
+        ...events.map((ev,i) =>
+          e(M.div, { key:i,
+            initial:{opacity:0,scale:0}, animate:{opacity:1,scale:1},
+            transition:{delay:i*0.1,...sp(300,20)},
+            style:{ padding:"3px 8px", borderRadius:4, background:`${T.coral}22`, fontSize:8, color:T.coralL, fontFamily:"monospace" }
+          }, "update()")
+        ),
+        e("div", { style:{ fontSize:8, color:T.coral, fontWeight:600 } }, "5 updates per frame!")
+      ),
+      /* With rAF */
+      e("div", { style:{ display:"flex", gap:6, alignItems:"center", padding:"10px 14px", background:`${T.teal}08`, borderRadius:8, border:`1px solid ${T.teal}22` } },
+        e("div", { style:{ fontSize:9, color:T.tealL, fontWeight:700, width:60, flexShrink:0 } }, "With rAF"),
+        ...events.slice(0,4).map((ev,i) =>
+          e(M.div, { key:i,
+            initial:{opacity:0,scale:0}, animate:{opacity:0.3,scale:1},
+            transition:{delay:0.6+i*0.1,...sp(300,20)},
+            style:{ padding:"3px 8px", borderRadius:4, background:`${T.text3}22`, fontSize:8, color:T.text3, fontFamily:"monospace", textDecoration:"line-through" }
+          }, "skip")
+        ),
+        e(M.div, {
+          initial:{opacity:0,scale:0}, animate:{opacity:1,scale:1},
+          transition:{delay:1.2,...sp(300,20)},
+          style:{ padding:"3px 8px", borderRadius:4, background:`${T.teal}22`, fontSize:8, color:T.tealL, fontFamily:"monospace", fontWeight:700 }
+        }, "update()"),
+        e("div", { style:{ fontSize:8, color:T.teal, fontWeight:600 } }, "1 update per frame!")
+      ),
+    );
+  }
+
+  /* Performance comparison */
+  if (v === "perfCompare") {
+    return e("div", { style:{ display:"flex", flexDirection:"column", gap:10 } },
+      FrameTimeline({ mode:"both", label:"setTimeout vs rAF — frame alignment", animKey:"perf" }),
+      e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 } },
+        e(M.div, {
+          initial:{opacity:0,y:8}, animate:{opacity:1,y:0},
+          transition:{delay:0.4,...ez},
+          style:{ padding:"10px 14px", borderRadius:8, background:`${T.coral}08`, border:`1px solid ${T.coral}22` }
+        },
+          e("div", { style:{ fontSize:10, fontWeight:700, color:T.coralL, marginBottom:6 } }, "setTimeout"),
+          ...[
+            "Fires ~16ms (but drifts)",
+            "Runs in background tabs",
+            "Not synced to display",
+            "Can cause layout thrashing",
+          ].map((t,i) =>
+            e("div", { key:i, style:{ fontSize:9, color:T.text2, padding:"2px 0", display:"flex", gap:6, alignItems:"center" } },
+              e("span", { style:{ color:T.coral, fontSize:8 } }, "✗"), t
+            )
+          )
+        ),
+        e(M.div, {
+          initial:{opacity:0,y:8}, animate:{opacity:1,y:0},
+          transition:{delay:0.6,...ez},
+          style:{ padding:"10px 14px", borderRadius:8, background:`${T.teal}08`, border:`1px solid ${T.teal}22` }
+        },
+          e("div", { style:{ fontSize:10, fontWeight:700, color:T.tealL, marginBottom:6 } }, "requestAnimationFrame"),
+          ...[
+            "Synced to display refresh",
+            "Pauses in background tabs",
+            "Batched before paint",
+            "Provides DOMHighResTimestamp",
+          ].map((t,i) =>
+            e("div", { key:i, style:{ fontSize:9, color:T.text2, padding:"2px 0", display:"flex", gap:6, alignItems:"center" } },
+              e("span", { style:{ color:T.teal, fontSize:8 } }, "✓"), t
+            )
+          )
+        ),
+      )
+    );
+  }
+
+  /* Event loop */
+  if (v === "eventLoop") {
+    const stages = [
+      { label:"Task Queue", sub:"setTimeout, events", color:T.amber, active:false },
+      { label:"Microtask Queue", sub:"Promise.then, queueMicrotask", color:T.pink, active:false },
+      { label:"rAF Callbacks", sub:"requestAnimationFrame", color:T.teal, active:true },
+      { label:"Style Recalc", sub:"CSS, computed styles", color:T.blue, active:false },
+      { label:"Layout", sub:"Reflow, geometry", color:T.blue, active:false },
+      { label:"Paint", sub:"Pixels to screen", color:T.purple, active:false },
+    ];
+    return e("div", { style:{ display:"flex", flexDirection:"column", gap:6 } },
+      e("div", { style:{ fontSize:9, color:T.text3, fontWeight:600, letterSpacing:"0.06em", textTransform:"uppercase" } }, "Event loop — one frame"),
+      ...stages.map((s,i) =>
+        e(M.div, {
+          key:i,
+          initial:{opacity:0, x:-16}, animate:{opacity:1, x:0},
+          transition:{delay:i*0.12,...ez},
+          style:{ display:"flex", alignItems:"center", gap:10, padding:"8px 14px", borderRadius:8, background: s.active ? `${s.color}14` : T.surface2, border:`1px solid ${s.active?s.color+"55":T.border}` }
+        },
+          e("div", { style:{ width:22, height:22, borderRadius:"50%", border:`1.5px solid ${s.color}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:700, color:s.color, flexShrink:0 } }, i+1),
+          e("div", null,
+            e("div", { style:{ fontSize:11, fontWeight:s.active?700:500, color:s.active?s.color:T.text1 } }, s.label),
+            e("div", { style:{ fontSize:9, color:T.text3 } }, s.sub)
+          ),
+          s.active && e(M.div, {
+            initial:{opacity:0,scale:0}, animate:{opacity:1,scale:1},
+            transition:{delay:0.5,...sp(300,20)},
+            style:{ marginLeft:"auto", padding:"3px 10px", borderRadius:12, background:`${s.color}22`, fontSize:8, fontWeight:700, color:s.color, letterSpacing:"0.06em" }
+          }, "YOUR CODE HERE")
+        )
+      )
+    );
+  }
+
+  /* Finale */
+  if (v === "finale") return null; /* handled by Finale component */
+
+  return null;
+};
+
+/* ─── FINALE ─── */
+const Finale = () => {
+  const rows = [
+    { n:1, label:"Use rAF, not setTimeout", sub:"Sync with the display refresh for zero wasted frames and smooth animation", c:T.teal },
+    { n:2, label:"Delta time from timestamp", sub:"Use the timestamp parameter for frame-rate independent animation (works on 60Hz, 120Hz, etc.)", c:T.amber },
+    { n:3, label:"Cancel when done", sub:"Store the rAF ID and call cancelAnimationFrame in cleanup — especially in React useEffect", c:T.coral },
+    { n:4, label:"CSS for simple, rAF for complex", sub:"CSS transitions for hover/toggle; rAF for physics, canvas, game loops, data viz", c:T.blue },
+    { n:5, label:"rAF for scroll/resize debouncing", sub:"Coalesce rapid DOM events into one update per frame with the ticking flag pattern", c:T.pink },
+    { n:6, label:"Runs before paint in event loop", sub:"After microtasks, before style/layout/paint — the perfect spot for visual updates", c:T.purple },
+  ];
+  return e("div", { style:{ padding:"8px 0" } },
+    rows.map((r,i) => e(M.div, { key:i, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.12,...ez},
+      style:{ display:"flex", alignItems:"flex-start", gap:12, padding:"11px 14px", marginBottom:8, borderRadius:10, border:`1px solid ${r.c}28`, background:`${r.c}08` }
+    },
+      e("div", { style:{ width:26, height:26, borderRadius:"50%", border:`1.5px solid ${r.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:12, fontWeight:700, color:r.c } }, r.n),
+      e("div", null,
+        e("div", { style:{ fontSize:13, fontWeight:600, color:r.c, marginBottom:2 } }, r.label),
+        e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.5 } }, r.sub)
+      )
+    ))
+  );
+};
+
+/* ─── DETAIL PANEL ─── */
+const DetailPanel = ({ detailKey, onClose }) => {
+  const d = DETAILS[detailKey];
+  if (!d) return null;
+  return e("div", {
+    style:{ width:340, flexShrink:0, background:T.surface, borderRadius:14, border:`1.5px solid ${d.color}44`, overflow:"hidden", alignSelf:"flex-start", position:"sticky", top:56 }
+  },
+    e("div", { style:{ padding:"14px 18px 12px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:8 } },
+        e("div", { style:{ width:8, height:8, borderRadius:"50%", background:d.color } }),
+        e("span", { style:{ fontSize:14, fontWeight:600, color:T.text1 } }, d.title)
+      ),
+      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6, transition:"color 0.2s" }, onMouseEnter:ev=>ev.target.style.color=T.text1, onMouseLeave:ev=>ev.target.style.color=T.text3 }, "\u2715")
+    ),
+    e("div", { style:{ padding:"16px 18px 20px", maxHeight:"calc(100vh - 140px)", overflowY:"auto" } },
+      d.sections.map((s, i) =>
+        e("div", { key:i, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
+          e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
+        )
+      )
+    )
+  );
+};
+
+/* ─── APP ─── */
+function App() {
+  const [si, setSi] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [detail, setDetail] = useState(null);
+  const timer = useRef(null);
+  const sc = SCENES[si];
+
+  useEffect(() => { setPlaying(true); }, []);
+
+  useEffect(() => {
+    if (!playing) return;
+    const d = si===0 ? 3000 : sc.finale ? 99999 : 3800;
+    timer.current = setTimeout(() => { si < SCENES.length-1 ? setSi(i=>i+1) : setPlaying(false); }, d);
+    return () => clearTimeout(timer.current);
+  }, [playing, si]);
+
+  const go = d => { clearTimeout(timer.current); setPlaying(false); setSi(i=>Math.max(0,Math.min(SCENES.length-1,i+d))); };
+  const jump = i => { clearTimeout(timer.current); setPlaying(false); setSi(i); };
+  const togglePlay = () => { if(si===SCENES.length-1){setSi(0);setPlaying(true);}else setPlaying(p=>!p); };
+  const toggleDetail = key => { setDetail(d => d===key ? null : key); clearTimeout(timer.current); setPlaying(false); };
+
+  return e("div", { style:{ display:"flex", gap:16, alignItems:"flex-start", justifyContent: detail ? "flex-start" : "center" } },
+  e("div", { style:{ width:760, flexShrink:0, background:T.bg, fontFamily:"system-ui,sans-serif", padding:20, borderRadius:16 } },
+
+    /* header */
+    e("div", { style:{ marginBottom:18 } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:10, marginBottom:11 } },
+        e(AP, { mode:"wait" },
+          e(M.div, { key:sc.act, initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, exit:{opacity:0}, transition:sp(400,28),
+            style:{ fontSize:9,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:T.purple,background:`${T.purple}14`,padding:"3px 10px",borderRadius:20,border:`1px solid ${T.purple}30`,flexShrink:0 }
+          }, sc.act)
+        ),
+        e("div", { style:{ flex:1, height:1, background:T.border, borderRadius:99, overflow:"hidden" } },
+          e(M.div, { animate:{width:`${si/(SCENES.length-1)*100}%`}, transition:{duration:0.5}, style:{height:"100%",background:T.purple,borderRadius:99} })
+        ),
+        e("span", { style:{ fontSize:10, color:T.text3 } }, `${si+1} / ${SCENES.length}`)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.title, initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, exit:{opacity:0,y:-8}, transition:ez,
+          style:{ fontSize:20,fontWeight:600,color:T.text1,marginBottom:4,letterSpacing:"-0.02em" }
+        }, sc.title)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
+          style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
+        }, sc.sub)
+      )
+    ),
+
+    e("div", { style:{ minHeight:460 } },
+    /* finale */
+    sc.finale && e(Finale),
+
+    /* main content */
+    !sc.finale && e("div", null,
+
+      /* row 1: code */
+      e("div", { style:{ marginBottom:10, cursor:"pointer" }, onClick:()=>toggleDetail("code") },
+        e(CodePanel, { tokens: sc.code })
+      ),
+
+      /* row 2: visualization */
+      e("div", { style:{ marginBottom:10 } },
+        e(Panel, { label:"Visualization", onClick:()=>toggleDetail("viz") },
+          e(AP, { mode:"wait" },
+            e(M.div, { key:sc.id },
+              e(SceneViz, { scene:sc })
+            )
+          )
+        )
+      )
+    ),
+    ), /* close minHeight wrapper */
+
+    /* controls */
+    e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginTop:16 } },
+      e("button", { onClick:()=>go(-1), disabled:si===0,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===0?T.text3:T.text2,cursor:si===0?"not-allowed":"pointer",fontSize:11,transition:"color 0.2s" }
+      }, "\u2190 Back"),
+      e("button", { onClick:togglePlay,
+        style:{ padding:"6px 18px",borderRadius:8,border:`1px solid ${playing?T.coral:T.purple}44`,background:playing?`${T.coral}14`:`${T.purple}14`,color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all 0.2s" }
+      }, playing ? "\u23f8  Pause" : si===SCENES.length-1 ? "\u21ba  Replay" : "\u25b6  Play"),
+      e("button", { onClick:()=>go(1), disabled:si===SCENES.length-1,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
+      }, "Next \u2192"),
+      e("div", { style:{ flex:1 } }),
+      e("div", { style:{ display:"flex", gap:4, alignItems:"center" } },
+        SCENES.map((_,i) =>
+          e("button", { key:i, onClick:()=>jump(i),
+            style:{ width:i===si?16:5,height:5,borderRadius:99,border:"none",padding:0,background:i===si?T.purple:i<si?`${T.purple}55`:T.border,cursor:"pointer",transition:"all 0.25s" }
+          })
+        )
+      )
+    )
+  ),
+  detail && e(DetailPanel, { detailKey:detail, onClose:()=>setDetail(null) })
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(e(App));
+</script>
+</body>
+</html>
