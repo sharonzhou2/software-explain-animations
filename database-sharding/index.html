@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Database Sharding & Replication</title>
 <link href="https://cdn.lineicons.com/5.0/lineicons.css" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://api.fontshare.com">
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -16,17 +18,17 @@
     justify-content: center;
     min-height: 100vh;
     padding: 24px 16px 24px 196px;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Satoshi', system-ui, -apple-system, sans-serif;
     font-size: 15px;
   }
   #root { width: 100%; max-width: 1320px; }
-  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: 'Inter', system-ui, sans-serif; }
+  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: 'Satoshi', system-ui, sans-serif; }
   .topnav a { text-decoration: none; color: #8888aa; font-size: 13px; transition: color 0.2s; }
   .topnav a:hover { color: #e8e8f0; }
   .topnav .name { font-weight: 600; color: #e8e8f0; font-size: 13px; }
   .topnav .sep { color: #38384a; font-size: 12px; }
   .topnav .current { color: #7c6fcd; font-size: 13px; font-weight: 500; }
-  .sidenav { position: fixed; top: 38px; left: 0; width: 180px; height: calc(100vh - 38px); background: #111118; border-right: 1px solid #2a2a38; padding: 14px 0; overflow-y: auto; z-index: 200; font-family: 'Inter', system-ui, sans-serif; }
+  .sidenav { position: fixed; top: 38px; left: 0; width: 180px; height: calc(100vh - 38px); background: #111118; border-right: 1px solid #2a2a38; padding: 14px 0; overflow-y: auto; z-index: 200; font-family: 'Satoshi', system-ui, sans-serif; }
   .sidenav a { display: block; padding: 6px 16px; font-size: 11px; color: #8888aa; text-decoration: none; transition: color 0.2s, background 0.2s; border-left: 2px solid transparent; }
   .sidenav a:hover { color: #e8e8f0; background: rgba(124,111,205,0.06); }
   .sidenav a.active { color: #a99cf0; border-left-color: #7c6fcd; background: rgba(124,111,205,0.1); font-weight: 600; }
@@ -423,7 +425,7 @@ const DbNode = ({ label, color, size=60, sub, icon="iconify:tabler:database", di
       }
       return e("i", { className:"lni "+icon, style:{ color:dim?color+"88":color, fontSize:sz } });
     })(),
-    e("div", { style:{ fontSize:Math.max(9,Math.round(size*0.18)), fontWeight:700, color:dim?color+"88":color, fontFamily:"'SF Mono',monospace", textAlign:"center", lineHeight:1.2 } }, label),
+    e("div", { style:{ fontSize:Math.max(9,Math.round(size*0.18)), fontWeight:700, color:dim?color+"88":color, fontFamily:"'JetBrains Mono', 'SF Mono', monospace", textAlign:"center", lineHeight:1.2 } }, label),
     sub && e("div", { style:{ fontSize:8, color:T.text3, textAlign:"center" } }, sub)
   );
 
@@ -452,7 +454,7 @@ const Arrow = ({ x1, y1, x2, y2, color=T.text3, dashed=false, label, delay=0, th
     }),
     label && e(M.text, {
       x:mx, y:my-6, fontSize:9, fill:color, textAnchor:"middle",
-      fontFamily:"'SF Mono',monospace", fontWeight:700,
+      fontFamily:"'JetBrains Mono', 'SF Mono', monospace", fontWeight:700,
       initial:{opacity:0}, animate:{opacity:1}, transition:{delay:delay+0.2}
     }, label)
   );
@@ -480,7 +482,7 @@ const ViewSingle = () =>
       style:{ width:160, padding:"18px 14px", borderRadius:14, border:`2px solid ${T.red}66`, background:`${T.red}12`, display:"flex", flexDirection:"column", alignItems:"center", gap:6 }
     },
       e("iconify-icon", { icon:"tabler:database", width:28, height:28 }),
-      e("div", { style:{ fontSize:12, fontWeight:700, color:T.redL, fontFamily:"'SF Mono',monospace" } }, "single DB"),
+      e("div", { style:{ fontSize:12, fontWeight:700, color:T.redL, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, "single DB"),
       e("div", { style:{ fontSize:10, color:T.red+"cc", fontWeight:600, display:"flex", alignItems:"center", gap:4 } }, e("i", { className:"lni lni-bolt-3" }), "at capacity"),
     )
   );
@@ -537,13 +539,13 @@ const ViewReplication = ({ replicaCount=3, showWrites=false }) => {
           fill:`${T.purple}12`, stroke:T.purple, strokeWidth:1.5,
           initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.1}
         }),
-        e("text", { x:60, y:78, textAnchor:"middle", fontSize:10, fill:T.purpleL, fontFamily:"'SF Mono',monospace", fontWeight:700 }, "WRITE"),
+        e("text", { x:60, y:78, textAnchor:"middle", fontSize:10, fill:T.purpleL, fontFamily:"'JetBrains Mono', 'SF Mono', monospace", fontWeight:700 }, "WRITE"),
         e("text", { x:60, y:90, textAnchor:"middle", fontSize:8, fill:T.text3 }, "app"),
         e(M.rect, { x:20, y:200, width:80, height:36, rx:8,
           fill:`${T.teal}12`, stroke:T.teal, strokeWidth:1.5,
           initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.1}
         }),
-        e("text", { x:60, y:218, textAnchor:"middle", fontSize:10, fill:T.tealL, fontFamily:"'SF Mono',monospace", fontWeight:700 }, "READ"),
+        e("text", { x:60, y:218, textAnchor:"middle", fontSize:10, fill:T.tealL, fontFamily:"'JetBrains Mono', 'SF Mono', monospace", fontWeight:700 }, "READ"),
         e("text", { x:60, y:230, textAnchor:"middle", fontSize:8, fill:T.text3 }, "app"),
       ),
       /* Arrow from write app to primary */
@@ -556,7 +558,7 @@ const ViewReplication = ({ replicaCount=3, showWrites=false }) => {
       e(M.g, { initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, transition:sp() },
         e("rect", { x:primaryX-50, y:primaryY-35, width:100, height:70, rx:12,
           fill:`${T.red}14`, stroke:T.red, strokeWidth:2 }),
-        e("text", { x:primaryX, y:primaryY-12, textAnchor:"middle", fontSize:11, fontWeight:700, fill:T.redL, fontFamily:"'SF Mono',monospace" }, "PRIMARY"),
+        e("text", { x:primaryX, y:primaryY-12, textAnchor:"middle", fontSize:11, fontWeight:700, fill:T.redL, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" }, "PRIMARY"),
         e("text", { x:primaryX, y:primaryY+4, textAnchor:"middle", fontSize:9, fill:T.text2 }, "accepts writes"),
         e("circle", { cx:primaryX, cy:primaryY+18, r:6, fill:T.red })
       ),
@@ -569,7 +571,7 @@ const ViewReplication = ({ replicaCount=3, showWrites=false }) => {
         e(M.g, { key:"rnode"+i, initial:{opacity:0,x:10}, animate:{opacity:1,x:0}, transition:{delay:0.6+i*0.1,...sp()} },
           e("rect", { x:r.x-30, y:r.y-8, width:90, height:30, rx:8,
             fill:`${T.blue}14`, stroke:T.blue, strokeWidth:1.5 }),
-          e("text", { x:r.x+15, y:r.y+12, textAnchor:"middle", fontSize:10, fontWeight:700, fill:T.blueL, fontFamily:"'SF Mono',monospace" }, r.label)
+          e("text", { x:r.x+15, y:r.y+12, textAnchor:"middle", fontSize:10, fontWeight:700, fill:T.blueL, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" }, r.label)
         )
       )
     )
@@ -582,14 +584,14 @@ const ViewLag = () => {
     e("svg", { width:W, height:H, style:{ overflow:"visible" } },
       /* Primary */
       e("rect", { x:50, y:130, width:110, height:60, rx:12, fill:`${T.red}14`, stroke:T.red, strokeWidth:2 }),
-      e("text", { x:105, y:152, textAnchor:"middle", fontSize:11, fontWeight:700, fill:T.redL, fontFamily:"'SF Mono',monospace" }, "PRIMARY"),
-      e("text", { x:105, y:170, textAnchor:"middle", fontSize:10, fill:T.greenL, fontFamily:"'SF Mono',monospace" }, "name: Alice"),
+      e("text", { x:105, y:152, textAnchor:"middle", fontSize:11, fontWeight:700, fill:T.redL, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" }, "PRIMARY"),
+      e("text", { x:105, y:170, textAnchor:"middle", fontSize:10, fill:T.greenL, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" }, "name: Alice"),
       /* Replica */
       e("rect", { x:520, y:130, width:120, height:60, rx:12, fill:`${T.blue}14`, stroke:T.blue, strokeWidth:1.5 }),
-      e("text", { x:580, y:152, textAnchor:"middle", fontSize:11, fontWeight:700, fill:T.blueL, fontFamily:"'SF Mono',monospace" }, "REPLICA"),
+      e("text", { x:580, y:152, textAnchor:"middle", fontSize:11, fontWeight:700, fill:T.blueL, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" }, "REPLICA"),
       e(M.text, { x:580, y:170, textAnchor:"middle", fontSize:10,
         initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.1},
-        fill:T.amberL, fontFamily:"'SF Mono',monospace" }, "name: Alicia"),
+        fill:T.amberL, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" }, "name: Alicia"),
       /* Animated packet from primary to replica */
       e(M.circle, {
         r:7, fill:T.greenL,
@@ -598,13 +600,13 @@ const ViewLag = () => {
         transition:{duration:2.4,delay:0.5,times:[0,0.1,0.9,1],repeat:Infinity,repeatDelay:0.6}
       }),
       /* Replication lag label */
-      e("text", { x:340, y:90, textAnchor:"middle", fontSize:10, fill:T.text2, fontFamily:"'SF Mono',monospace" }, "replication lag"),
+      e("text", { x:340, y:90, textAnchor:"middle", fontSize:10, fill:T.text2, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" }, "replication lag"),
       e("text", { x:340, y:104, textAnchor:"middle", fontSize:9, fill:T.text3 }, "~5-50ms"),
       /* Client below reading stale */
       e("g", null,
         e("rect", { x:500, y:250, width:160, height:40, rx:8, fill:`${T.coral}10`, stroke:T.coral, strokeWidth:1.2, strokeDasharray:"4 4" }),
         e("text", { x:580, y:266, textAnchor:"middle", fontSize:10, fill:T.coralL, fontWeight:700 }, "client reads replica"),
-        e("text", { x:580, y:280, textAnchor:"middle", fontSize:9, fill:T.text3, fontFamily:"'SF Mono',monospace" }, "sees stale 'Alicia'"),
+        e("text", { x:580, y:280, textAnchor:"middle", fontSize:9, fill:T.text3, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" }, "sees stale 'Alicia'"),
       ),
       /* Arrow from replica to client */
       e("line", { x1:580, y1:190, x2:580, y2:250, stroke:T.coral, strokeWidth:1.2, strokeDasharray:"3 3" }),
@@ -621,23 +623,23 @@ const ViewMultiPrimary = () => {
       /* US-East primary */
       e("g", null,
         e("rect", { x:50, y:130, width:140, height:70, rx:12, fill:`${T.blue}14`, stroke:T.blue, strokeWidth:2 }),
-        e("text", { x:120, y:154, textAnchor:"middle", fontSize:11, fontWeight:700, fill:T.blueL, fontFamily:"'SF Mono',monospace" }, "US-EAST"),
+        e("text", { x:120, y:154, textAnchor:"middle", fontSize:11, fontWeight:700, fill:T.blueL, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" }, "US-EAST"),
         e("text", { x:120, y:170, textAnchor:"middle", fontSize:9, fill:T.text2 }, "primary"),
-        e("text", { x:120, y:186, textAnchor:"middle", fontSize:9, fill:T.greenL, fontFamily:"'SF Mono',monospace" }, "name: Alice"),
+        e("text", { x:120, y:186, textAnchor:"middle", fontSize:9, fill:T.greenL, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" }, "name: Alice"),
       ),
       /* EU-West primary */
       e("g", null,
         e("rect", { x:510, y:130, width:140, height:70, rx:12, fill:`${T.amber}14`, stroke:T.amber, strokeWidth:2 }),
-        e("text", { x:580, y:154, textAnchor:"middle", fontSize:11, fontWeight:700, fill:T.amberL, fontFamily:"'SF Mono',monospace" }, "EU-WEST"),
+        e("text", { x:580, y:154, textAnchor:"middle", fontSize:11, fontWeight:700, fill:T.amberL, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" }, "EU-WEST"),
         e("text", { x:580, y:170, textAnchor:"middle", fontSize:9, fill:T.text2 }, "primary"),
-        e("text", { x:580, y:186, textAnchor:"middle", fontSize:9, fill:T.coralL, fontFamily:"'SF Mono',monospace" }, "name: Alicia"),
+        e("text", { x:580, y:186, textAnchor:"middle", fontSize:9, fill:T.coralL, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" }, "name: Alicia"),
       ),
       /* Two-way arrows */
       e(M.path, { d:"M 200 150 Q 350 90 500 150", stroke:T.purple, strokeWidth:1.5, fill:"none",
         initial:{pathLength:0}, animate:{pathLength:1}, transition:{duration:0.8,delay:0.3} }),
       e(M.path, { d:"M 500 180 Q 350 240 200 180", stroke:T.purple, strokeWidth:1.5, fill:"none",
         initial:{pathLength:0}, animate:{pathLength:1}, transition:{duration:0.8,delay:0.5} }),
-      e("text", { x:350, y:82, textAnchor:"middle", fontSize:10, fill:T.purpleL, fontFamily:"'SF Mono',monospace" }, "bidirectional sync"),
+      e("text", { x:350, y:82, textAnchor:"middle", fontSize:10, fill:T.purpleL, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" }, "bidirectional sync"),
       /* Conflict marker */
       e(M.g, { initial:{opacity:0,scale:0.6}, animate:{opacity:1,scale:1}, transition:{delay:1.2,...sp()} },
         e("circle", { cx:350, cy:270, r:26, fill:`${T.red}18`, stroke:T.red, strokeWidth:1.5 }),
@@ -661,7 +663,7 @@ const ViewShardIntro = () => {
       style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:6 } },
       e("div", { style:{ padding:"12px 22px", borderRadius:12, border:`1.5px solid ${T.red}55`, background:`${T.red}10`, display:"flex", alignItems:"center", gap:10, color:T.redL } },
         e("iconify-icon", { icon:"tabler:database", width:22, height:22 }),
-        e("div", { style:{ fontSize:12, fontWeight:700, color:T.redL, fontFamily:"'SF Mono',monospace" } }, "all_data (A-Z)")
+        e("div", { style:{ fontSize:12, fontWeight:700, color:T.redL, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, "all_data (A-Z)")
       ),
     ),
     /* Split arrow */
@@ -677,8 +679,8 @@ const ViewShardIntro = () => {
           style:{ padding:"12px 16px", borderRadius:12, border:`1.5px solid ${b.color}66`, background:`${b.color}14`, display:"flex", flexDirection:"column", alignItems:"center", gap:4, color:b.color }
         },
           e("iconify-icon", { icon:"tabler:database", width:20, height:20 }),
-          e("div", { style:{ fontSize:10, fontWeight:700, color:b.color, fontFamily:"'SF Mono',monospace" } }, `shard_${i+1}`),
-          e("div", { style:{ fontSize:9, color:T.text3, fontFamily:"'SF Mono',monospace" } }, b.label)
+          e("div", { style:{ fontSize:10, fontWeight:700, color:b.color, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, `shard_${i+1}`),
+          e("div", { style:{ fontSize:9, color:T.text3, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, b.label)
         )
       )
     )
@@ -699,14 +701,14 @@ const ViewRange = () => {
       },
         e("div", { style:{ padding:"8px 10px", borderBottom:`1px solid ${b.color}44`, display:"flex", alignItems:"center", gap:6, color:b.color } },
           e("iconify-icon", { icon:"tabler:database", width:13, height:13 }),
-          e("div", { style:{ fontSize:10, fontWeight:700, color:b.color, fontFamily:"'SF Mono',monospace" } }, `shard_${bi+1}`),
+          e("div", { style:{ fontSize:10, fontWeight:700, color:b.color, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, `shard_${bi+1}`),
           e("div", { style:{ flex:1 } }),
-          e("div", { style:{ fontSize:9, color:b.color+"cc", fontFamily:"'SF Mono',monospace", fontWeight:700 } }, b.label)
+          e("div", { style:{ fontSize:9, color:b.color+"cc", fontFamily:"'JetBrains Mono', 'SF Mono', monospace", fontWeight:700 } }, b.label)
         ),
         e("div", { style:{ padding:8, display:"flex", flexDirection:"column", gap:4 } },
           ...b.samples.map((s,i)=>
             e(M.div, { key:i, initial:{opacity:0,x:-6}, animate:{opacity:1,x:0}, transition:{delay:bi*0.1+0.3+i*0.05},
-              style:{ fontSize:10, color:T.text2, padding:"3px 8px", background:`${b.color}10`, borderRadius:5, fontFamily:"'SF Mono',monospace" }
+              style:{ fontSize:10, color:T.text2, padding:"3px 8px", background:`${b.color}10`, borderRadius:5, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" }
             }, s)
           )
         )
@@ -737,11 +739,11 @@ const ViewHash = () => {
     e("div", { style:{ display:"flex", flexWrap:"wrap", gap:6, justifyContent:"center", padding:"10px 14px", borderRadius:10, border:`1px dashed ${T.border2}`, background:T.surface } },
       ...records.map((r,i)=>
         e(M.div, { key:i, initial:{opacity:0,y:-6}, animate:{opacity:1,y:0}, transition:{delay:i*0.04},
-          style:{ padding:"3px 8px", borderRadius:5, border:`1px solid ${SHARD_COLORS[r.s]}66`, background:`${SHARD_COLORS[r.s]}14`, fontSize:10, color:SHARD_COLORS[r.s], fontFamily:"'SF Mono',monospace", fontWeight:600 }
+          style:{ padding:"3px 8px", borderRadius:5, border:`1px solid ${SHARD_COLORS[r.s]}66`, background:`${SHARD_COLORS[r.s]}14`, fontSize:10, color:SHARD_COLORS[r.s], fontFamily:"'JetBrains Mono', 'SF Mono', monospace", fontWeight:600 }
         }, r.key)
       )
     ),
-    e("div", { style:{ textAlign:"center", fontSize:10, color:T.text2, fontFamily:"'SF Mono',monospace" } }, "hash(key) % 4  ↓"),
+    e("div", { style:{ textAlign:"center", fontSize:10, color:T.text2, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, "hash(key) % 4  ↓"),
     /* Shards */
     e("div", { style:{ display:"flex", gap:10, justifyContent:"center" } },
       ...SHARD_COLORS.map((c,si)=>{
@@ -750,11 +752,11 @@ const ViewHash = () => {
           style:{ flex:1, borderRadius:12, border:`1.5px solid ${c}66`, background:`${c}10`, padding:10, display:"flex", flexDirection:"column", alignItems:"center", gap:6, color:c }
         },
           e("iconify-icon", { icon:"tabler:database", width:18, height:18 }),
-          e("div", { style:{ fontSize:10, fontWeight:700, color:c, fontFamily:"'SF Mono',monospace" } }, shardLabels[si]),
+          e("div", { style:{ fontSize:10, fontWeight:700, color:c, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, shardLabels[si]),
           e("div", { style:{ display:"flex", flexDirection:"column", gap:3, width:"100%", marginTop:4 } },
             ...mine.map((r,i)=>
               e(M.div, { key:i, initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.8+i*0.06},
-                style:{ fontSize:9, padding:"2px 6px", background:`${c}18`, borderRadius:4, color:c, fontFamily:"'SF Mono',monospace", textAlign:"center" }
+                style:{ fontSize:9, padding:"2px 6px", background:`${c}18`, borderRadius:4, color:c, fontFamily:"'JetBrains Mono', 'SF Mono', monospace", textAlign:"center" }
               }, r.key)
             )
           )
@@ -778,7 +780,7 @@ const ViewRebalance = () => {
           ...Array.from({length:4}).map((_,si)=>
             e("div", { key:si, style:{ padding:"6px 4px", borderRadius:8, border:`1.5px solid ${SHARD_COLORS[si]}66`, background:`${SHARD_COLORS[si]}14`, display:"flex", flexDirection:"column", alignItems:"center", gap:3, minHeight:100, color:SHARD_COLORS[si] } },
               e("iconify-icon", { icon:"tabler:database", width:12, height:12 }),
-              ...records.map((r,ri)=> old4[ri]===si ? e("div",{key:ri,style:{fontSize:8,color:SHARD_COLORS[si],fontFamily:"'SF Mono',monospace"}},r) : null)
+              ...records.map((r,ri)=> old4[ri]===si ? e("div",{key:ri,style:{fontSize:8,color:SHARD_COLORS[si],fontFamily:"'JetBrains Mono', 'SF Mono', monospace"}},r) : null)
             )
           )
         )
@@ -799,14 +801,14 @@ const ViewRebalance = () => {
               style:{ padding:"6px 4px", borderRadius:8, border:`1.5px solid ${color}66`, background:`${color}14`, display:"flex", flexDirection:"column", alignItems:"center", gap:3, minHeight:100, color:color }
             },
               e("iconify-icon", { icon:"tabler:database", width:14, height:14 }),
-              ...records.map((r,ri)=> new5[ri]===si ? e(M.div,{key:ri,initial:{opacity:0},animate:{opacity:1},transition:{delay:0.8+ri*0.04},style:{fontSize:8,color,fontFamily:"'SF Mono',monospace"}},r) : null)
+              ...records.map((r,ri)=> new5[ri]===si ? e(M.div,{key:ri,initial:{opacity:0},animate:{opacity:1},transition:{delay:0.8+ri*0.04},style:{fontSize:8,color,fontFamily:"'JetBrains Mono', 'SF Mono', monospace"}},r) : null)
             );
           })
         )
       )
     ),
     e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:1.4},
-      style:{ padding:"8px 14px", borderRadius:8, border:`1px solid ${T.red}44`, background:`${T.red}10`, fontSize:10, color:T.redL, fontFamily:"'SF Mono',monospace", textAlign:"center" }
+      style:{ padding:"8px 14px", borderRadius:8, border:`1px solid ${T.red}44`, background:`${T.red}10`, fontSize:10, color:T.redL, fontFamily:"'JetBrains Mono', 'SF Mono', monospace", textAlign:"center" }
     }, "hash(key) % N changes → (N-1)/N of all keys move")
   );
 };
@@ -907,7 +909,7 @@ const ViewConsistent = () => {
             x:p.x, y:p.y+15, textAnchor:"middle", fontSize:9,
             animate:{ fill:k.owner, fontWeight:isMoved?900:700 },
             transition:{ duration:0.5 },
-            fontFamily:"'SF Mono',monospace"
+            fontFamily:"'JetBrains Mono', 'SF Mono', monospace"
           }, k.id)
         );
       }),
@@ -945,12 +947,12 @@ const ViewConsistent = () => {
             animate: isNew ? { strokeWidth:[2,3,2] } : {},
             transition: isNew ? { duration:0.8, repeat:Infinity } : {}
           }),
-          e("text", { x:p.x, y:p.y+5, textAnchor:"middle", fontSize:12, fill:n.color, fontFamily:"'SF Mono',monospace", fontWeight:700 }, n.label)
+          e("text", { x:p.x, y:p.y+5, textAnchor:"middle", fontSize:12, fill:n.color, fontFamily:"'JetBrains Mono', 'SF Mono', monospace", fontWeight:700 }, n.label)
         );
       }),
 
       /* Center label */
-      e("text", { x:cx, y:cy-4, textAnchor:"middle", fontSize:11, fill:T.text2, fontFamily:"'SF Mono',monospace", fontWeight:700 }, "hash ring"),
+      e("text", { x:cx, y:cy-4, textAnchor:"middle", fontSize:11, fill:T.text2, fontFamily:"'JetBrains Mono', 'SF Mono', monospace", fontWeight:700 }, "hash ring"),
       e("text", { x:cx, y:cy+10, textAnchor:"middle", fontSize:9, fill:T.text3 }, "0 → 2³²")
     ),
 
@@ -961,7 +963,7 @@ const ViewConsistent = () => {
         e("div", { style:{ fontSize:9, fontWeight:700, color:T.purple, letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:4 } }, `step ${phase+1}/5`),
         e(AP, { mode:"wait" },
           e(M.div, { key:phase, initial:{opacity:0,y:4}, animate:{opacity:1,y:0}, exit:{opacity:0,y:-4}, transition:{duration:0.25},
-            style:{ fontSize:11, color:T.purpleL, fontFamily:"'SF Mono',monospace", fontWeight:600 }
+            style:{ fontSize:11, color:T.purpleL, fontFamily:"'JetBrains Mono', 'SF Mono', monospace", fontWeight:600 }
           }, phaseLabel)
         )
       ),
@@ -982,7 +984,7 @@ const ViewCrossShard = () => {
     e("div", { style:{ display:"flex", justifyContent:"center" } },
       e("div", { style:{ padding:"10px 18px", borderRadius:10, border:`1.5px solid ${T.purple}55`, background:`${T.purple}14`, display:"flex", alignItems:"center", gap:8 } },
         e("i", { className:"lni lni-code-alt", style:{ color:T.purpleL, fontSize:14 } }),
-        e("div", { style:{ fontSize:11, fontWeight:700, color:T.purpleL, fontFamily:"'SF Mono',monospace" } }, "app (scatter-gather)")
+        e("div", { style:{ fontSize:11, fontWeight:700, color:T.purpleL, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, "app (scatter-gather)")
       )
     ),
     /* Four outgoing queries */
@@ -993,7 +995,7 @@ const ViewCrossShard = () => {
           initial:{pathLength:0,opacity:0}, animate:{pathLength:1,opacity:1}, transition:{delay:0.2+i*0.1,duration:0.5}
         })
       ),
-      e("text", { x:340, y:32, textAnchor:"middle", fontSize:9, fill:T.text2, fontFamily:"'SF Mono',monospace" }, "query all shards")
+      e("text", { x:340, y:32, textAnchor:"middle", fontSize:9, fill:T.text2, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" }, "query all shards")
     ),
     /* Shards */
     e("div", { style:{ display:"flex", gap:10, justifyContent:"center" } },
@@ -1002,13 +1004,13 @@ const ViewCrossShard = () => {
           style:{ width:130, padding:10, borderRadius:12, border:`1.5px solid ${c}66`, background:`${c}10`, display:"flex", flexDirection:"column", alignItems:"center", gap:4, color:c }
         },
           e("iconify-icon", { icon:"tabler:database", width:18, height:18 }),
-          e("div", { style:{ fontSize:10, fontWeight:700, color:c, fontFamily:"'SF Mono',monospace" } }, `shard_${i+1}`),
+          e("div", { style:{ fontSize:10, fontWeight:700, color:c, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, `shard_${i+1}`),
           e("div", { style:{ fontSize:9, color:T.text3 } }, i===1 || i===2 ? "partial match" : "no match")
         )
       )
     ),
     e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:1.2},
-      style:{ padding:"8px 14px", margin:"0 auto", borderRadius:8, border:`1px solid ${T.coral}44`, background:`${T.coral}10`, fontSize:10, color:T.coralL, fontFamily:"'SF Mono',monospace", textAlign:"center", maxWidth:480 }
+      style:{ padding:"8px 14px", margin:"0 auto", borderRadius:8, border:`1px solid ${T.coral}44`, background:`${T.coral}10`, fontSize:10, color:T.coralL, fontFamily:"'JetBrains Mono', 'SF Mono', monospace", textAlign:"center", maxWidth:480 }
     }, "merge results in app → slow, fragile, no transactions")
   );
 };
@@ -1029,8 +1031,8 @@ const ViewWhen = () => {
         e("div", { style:{ width:30, height:30, borderRadius:"50%", border:`1.5px solid ${s.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 } },
           e("i", { className:"lni "+s.icon, style:{ color:s.c, fontSize:14 } })
         ),
-        e("div", { style:{ fontSize:12, fontWeight:600, color:s.c, fontFamily:"'SF Mono',monospace", flex:1 } }, s.label),
-        e("div", { style:{ fontSize:10, color:s.ok?T.text3:T.redL, fontWeight:700, fontFamily:"'SF Mono',monospace" } }, s.ok?"try this first":"last resort")
+        e("div", { style:{ fontSize:12, fontWeight:600, color:s.c, fontFamily:"'JetBrains Mono', 'SF Mono', monospace", flex:1 } }, s.label),
+        e("div", { style:{ fontSize:10, color:s.ok?T.text3:T.redL, fontWeight:700, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, s.ok?"try this first":"last resort")
       )
     )
   );

@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Microservices vs Monolith</title>
 <link href="https://cdn.lineicons.com/5.0/lineicons.css" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://api.fontshare.com">
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -16,17 +18,17 @@
     justify-content: center;
     min-height: 100vh;
     padding: 24px 16px 24px 196px;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Satoshi', system-ui, -apple-system, sans-serif;
     font-size: 15px;
   }
   #root { width: 100%; max-width: 1320px; }
-  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: 'Inter', system-ui, sans-serif; }
+  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: 'Satoshi', system-ui, sans-serif; }
   .topnav a { text-decoration: none; color: #8888aa; font-size: 13px; transition: color 0.2s; }
   .topnav a:hover { color: #e8e8f0; }
   .topnav .name { font-weight: 600; color: #e8e8f0; font-size: 13px; }
   .topnav .sep { color: #38384a; font-size: 12px; }
   .topnav .current { color: #7c6fcd; font-size: 13px; font-weight: 500; }
-  .sidenav { position: fixed; top: 38px; left: 0; width: 180px; height: calc(100vh - 38px); background: #111118; border-right: 1px solid #2a2a38; padding: 14px 0; overflow-y: auto; z-index: 200; font-family: 'Inter', system-ui, sans-serif; }
+  .sidenav { position: fixed; top: 38px; left: 0; width: 180px; height: calc(100vh - 38px); background: #111118; border-right: 1px solid #2a2a38; padding: 14px 0; overflow-y: auto; z-index: 200; font-family: 'Satoshi', system-ui, sans-serif; }
   .sidenav a { display: block; padding: 6px 16px; font-size: 11px; color: #8888aa; text-decoration: none; transition: color 0.2s, background 0.2s; border-left: 2px solid transparent; }
   .sidenav a:hover { color: #e8e8f0; background: rgba(124,111,205,0.06); }
   .sidenav a.active { color: #a99cf0; border-left-color: #7c6fcd; background: rgba(124,111,205,0.1); font-weight: 600; }
@@ -448,7 +450,7 @@ const MonolithView = ({ onClick, emphasize }) =>
               style:{ padding:"6px 10px", borderRadius:7, border:`1px solid ${T.mono}44`, background:`${T.mono}14`, display:"flex", alignItems:"center", gap:7 }
             },
               e("i", { className:"lni " + m.icon, style:{ color:T.monoL, fontSize:12 } }),
-              e("span", { style:{ fontSize:11, fontWeight:600, color:T.monoL, fontFamily:"'SF Mono',monospace" } }, m.label)
+              e("span", { style:{ fontSize:11, fontWeight:600, color:T.monoL, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, m.label)
             )
           )
         )
@@ -459,7 +461,7 @@ const MonolithView = ({ onClick, emphasize }) =>
         style:{ alignSelf:"center", padding:"7px 16px", borderRadius:10, border:`1px solid ${T.blue}55`, background:`${T.blue}14`, display:"flex", alignItems:"center", gap:7 }
       },
         e("iconify-icon", { icon:"logos:postgresql", width:14, height:14 }),
-        e("span", { style:{ fontSize:11, fontWeight:600, color:T.blueL, fontFamily:"'SF Mono',monospace" } }, "one database")
+        e("span", { style:{ fontSize:11, fontWeight:600, color:T.blueL, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, "one database")
       )
     )
   );
@@ -482,14 +484,14 @@ const MicroserviceBox = ({ svc, delay=0, showDB=true, showArrows=false }) =>
       style:{ padding:"7px 10px", borderRadius:8, border:`1.5px solid ${svc.color}66`, background:`${svc.color}14`, display:"flex", alignItems:"center", gap:6, minWidth:78, justifyContent:"center" }
     },
       e("i", { className:"lni "+svc.icon, style:{ color:svc.color, fontSize:11 } }),
-      e("span", { style:{ fontSize:10, fontWeight:700, color:svc.color, fontFamily:"'SF Mono',monospace" } }, svc.label)
+      e("span", { style:{ fontSize:10, fontWeight:700, color:svc.color, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, svc.label)
     ),
     showDB && e("div", { style:{ width:1, height:8, background:`${svc.color}55` } }),
     showDB && e("div", {
       style:{ padding:"3px 7px", borderRadius:6, border:`1px solid ${T.blue}55`, background:`${T.blue}10`, display:"flex", alignItems:"center", gap:4 }
     },
       e("iconify-icon", { icon:"logos:postgresql", width:10, height:10 }),
-      e("span", { style:{ fontSize:8, fontWeight:600, color:T.blueL, fontFamily:"'SF Mono',monospace" } }, "db")
+      e("span", { style:{ fontSize:8, fontWeight:600, color:T.blueL, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, "db")
     )
   );
 
@@ -540,7 +542,7 @@ const DDDView = ({ onClick }) =>
         },
           e("div", { style:{ fontSize:11, fontWeight:700, color:ctx.color, marginBottom:8 } }, ctx.name),
           ctx.fields.map(f =>
-            e("div", { key:f, style:{ fontSize:10, color:T.text2, fontFamily:"'SF Mono',monospace", padding:"2px 0" } }, "· "+f)
+            e("div", { key:f, style:{ fontSize:10, color:T.text2, fontFamily:"'JetBrains Mono', 'SF Mono', monospace", padding:"2px 0" } }, "· "+f)
           )
         )
       )
@@ -559,12 +561,12 @@ const CommView = ({ onClick }) =>
         e("div", { style:{ fontSize:12, fontWeight:700, color:T.tealL } }, "Synchronous"),
         e("div", { style:{ fontSize:10, color:T.text2 } }, "REST / gRPC — caller waits"),
         e("div", { style:{ display:"flex", alignItems:"center", gap:6, marginTop:6 } },
-          e("div", { style:{ padding:"4px 8px", borderRadius:6, background:`${T.teal}22`, fontSize:10, fontWeight:600, color:T.tealL, fontFamily:"'SF Mono',monospace" } }, "A"),
+          e("div", { style:{ padding:"4px 8px", borderRadius:6, background:`${T.teal}22`, fontSize:10, fontWeight:600, color:T.tealL, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, "A"),
           e(M.div, {
             initial:{opacity:0,x:-6}, animate:{opacity:1,x:0}, transition:{delay:0.3,duration:0.5,repeat:Infinity,repeatType:"reverse",repeatDelay:0.4},
             style:{ flex:1, height:2, background:`${T.tealL}88`, borderRadius:2 }
           }),
-          e("div", { style:{ padding:"4px 8px", borderRadius:6, background:`${T.teal}22`, fontSize:10, fontWeight:600, color:T.tealL, fontFamily:"'SF Mono',monospace" } }, "B")
+          e("div", { style:{ padding:"4px 8px", borderRadius:6, background:`${T.teal}22`, fontSize:10, fontWeight:600, color:T.tealL, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, "B")
         ),
         e("div", { style:{ fontSize:9, color:T.text3, marginTop:4 } }, "A blocked until B replies")
       ),
@@ -573,11 +575,11 @@ const CommView = ({ onClick }) =>
         e("div", { style:{ fontSize:12, fontWeight:700, color:T.purpleL } }, "Asynchronous"),
         e("div", { style:{ fontSize:10, color:T.text2 } }, "Kafka / SQS — fire & forget"),
         e("div", { style:{ display:"flex", alignItems:"center", gap:6, marginTop:6 } },
-          e("div", { style:{ padding:"4px 8px", borderRadius:6, background:`${T.purple}22`, fontSize:10, fontWeight:600, color:T.purpleL, fontFamily:"'SF Mono',monospace" } }, "A"),
-          e("div", { style:{ padding:"4px 8px", borderRadius:6, background:`${T.amber}22`, border:`1px solid ${T.amber}55`, fontSize:9, fontWeight:700, color:T.amberL, fontFamily:"'SF Mono',monospace" } }, "event bus"),
+          e("div", { style:{ padding:"4px 8px", borderRadius:6, background:`${T.purple}22`, fontSize:10, fontWeight:600, color:T.purpleL, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, "A"),
+          e("div", { style:{ padding:"4px 8px", borderRadius:6, background:`${T.amber}22`, border:`1px solid ${T.amber}55`, fontSize:9, fontWeight:700, color:T.amberL, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, "event bus"),
           e("div", { style:{ display:"flex", flexDirection:"column", gap:3 } },
-            e("div", { style:{ padding:"2px 6px", borderRadius:5, background:`${T.purple}22`, fontSize:9, color:T.purpleL, fontFamily:"'SF Mono',monospace" } }, "B"),
-            e("div", { style:{ padding:"2px 6px", borderRadius:5, background:`${T.purple}22`, fontSize:9, color:T.purpleL, fontFamily:"'SF Mono',monospace" } }, "C")
+            e("div", { style:{ padding:"2px 6px", borderRadius:5, background:`${T.purple}22`, fontSize:9, color:T.purpleL, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, "B"),
+            e("div", { style:{ padding:"2px 6px", borderRadius:5, background:`${T.purple}22`, fontSize:9, color:T.purpleL, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, "C")
           )
         ),
         e("div", { style:{ fontSize:9, color:T.text3, marginTop:4 } }, "A doesn't wait — decoupled")
@@ -596,14 +598,14 @@ const GatewayView = ({ onClick }) =>
         style:{ padding:"6px 14px", borderRadius:8, border:`1px solid ${T.text2}44`, background:`${T.text2}08`, display:"flex", alignItems:"center", gap:6 }
       },
         e("i", { className:"lni lni-globe", style:{ color:T.text2, fontSize:12 } }),
-        e("span", { style:{ fontSize:10, fontWeight:600, color:T.text2, fontFamily:"'SF Mono',monospace" } }, "clients")
+        e("span", { style:{ fontSize:10, fontWeight:600, color:T.text2, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, "clients")
       ),
       e("div", { style:{ width:1, height:14, background:T.border2 } }),
       e(M.div, { initial:{opacity:0,scale:0.9}, animate:{opacity:1,scale:1}, transition:{...sp(400,28),delay:0.2},
         style:{ padding:"8px 18px", borderRadius:10, border:`1.5px solid ${T.amber}66`, background:`${T.amber}14`, display:"flex", alignItems:"center", gap:7 }
       },
         e("i", { className:"lni lni-shield-1", style:{ color:T.amberL, fontSize:13 } }),
-        e("span", { style:{ fontSize:11, fontWeight:700, color:T.amberL, fontFamily:"'SF Mono',monospace" } }, "API gateway")
+        e("span", { style:{ fontSize:11, fontWeight:700, color:T.amberL, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, "API gateway")
       ),
       e("div", { style:{ display:"flex", gap:6, fontSize:8, color:T.text3, marginTop:-4 } },
         ["auth","routing","rate limit","tls"].map(t => e("span", { key:t }, t))
@@ -616,7 +618,7 @@ const GatewayView = ({ onClick }) =>
             style:{ padding:"5px 9px", borderRadius:7, border:`1px solid ${svc.color}55`, background:`${svc.color}14`, display:"flex", alignItems:"center", gap:5 }
           },
             e("i", { className:"lni "+svc.icon, style:{ color:svc.color, fontSize:10 } }),
-            e("span", { style:{ fontSize:9, fontWeight:600, color:svc.color, fontFamily:"'SF Mono',monospace" } }, svc.label)
+            e("span", { style:{ fontSize:9, fontWeight:600, color:svc.color, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, svc.label)
           )
         )
       )
@@ -634,7 +636,7 @@ const DiscoveryView = ({ onClick }) =>
         style:{ padding:"7px 16px", borderRadius:10, border:`1.5px solid ${T.blue}66`, background:`${T.blue}14`, display:"flex", alignItems:"center", gap:7 }
       },
         e("i", { className:"lni lni-map", style:{ color:T.blueL, fontSize:13 } }),
-        e("span", { style:{ fontSize:11, fontWeight:700, color:T.blueL, fontFamily:"'SF Mono',monospace" } }, "service registry")
+        e("span", { style:{ fontSize:11, fontWeight:700, color:T.blueL, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, "service registry")
       ),
       e("div", { style:{ fontSize:9, color:T.text3 } }, "consul / etcd / kube-dns"),
       e("div", { style:{ width:"100%", display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginTop:6 } },
@@ -647,11 +649,11 @@ const DiscoveryView = ({ onClick }) =>
             initial:{opacity:0,y:6}, animate:{opacity:1,y:0}, transition:{...ez, delay:0.2+i*0.1},
             style:{ padding:10, borderRadius:8, border:`1px solid ${T.border2}`, background:T.surface2 }
           },
-            e("div", { style:{ fontSize:10, fontWeight:700, color:T.text1, marginBottom:5, fontFamily:"'SF Mono',monospace" } }, s.label),
+            e("div", { style:{ fontSize:10, fontWeight:700, color:T.text1, marginBottom:5, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, s.label),
             s.instances.map((ip,j) =>
               e("div", { key:j, style:{ display:"flex", alignItems:"center", gap:5, padding:"2px 0" } },
                 e("div", { style:{ width:5, height:5, borderRadius:"50%", background:T.green } }),
-                e("span", { style:{ fontSize:9, color:T.text2, fontFamily:"'SF Mono',monospace" } }, ip)
+                e("span", { style:{ fontSize:9, color:T.text2, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, ip)
               )
             )
           )

@@ -36,7 +36,7 @@ Each animation HTML file follows the same pattern:
 ### Shared Conventions
 
 - **Theme object `T`**: Color palette constants (bg, surface, border, text, accent colors) — consistent dark theme across animations
-- **Font**: Inter from Google Fonts is the primary sans — `'Inter', system-ui, -apple-system, sans-serif`. `'SF Mono', monospace` for code
+- **Font**: Satoshi from Fontshare is the primary sans — `'Satoshi', system-ui, -apple-system, sans-serif` (loaded via `https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap`). JetBrains Mono for code — `'JetBrains Mono', 'SF Mono', monospace` (loaded from Google Fonts). Satoshi approximates the Wotfard used on joshwcomeau.com — geometric humanist sans with rounded letterforms
 - **Animation helpers**: `sp(stiffness, damping)` for spring configs, `ez` for easing curves
 - **Motion aliases**: `M = motion`, `AP = AnimatePresence` from Framer Motion
 - **Scene-based structure**: Each animation defines a `SCENES` array of objects with `id`, `title`, `sub` (subtitle), `code` (tokenized code lines), and scene-specific data

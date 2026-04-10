@@ -6,7 +6,9 @@
 <title>Kubernetes</title>
 <link href="https://cdn.lineicons.com/5.0/lineicons.css" rel="stylesheet">
 <script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://api.fontshare.com">
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -16,17 +18,17 @@
     justify-content: center;
     min-height: 100vh;
     padding: 24px 16px 24px 196px;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Satoshi', system-ui, -apple-system, sans-serif;
     font-size: 15px;
   }
   #root { width: 100%; max-width: 1320px; }
-  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: 'Inter', system-ui, sans-serif; }
+  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: 'Satoshi', system-ui, sans-serif; }
   .topnav a { text-decoration: none; color: #8888aa; font-size: 13px; transition: color 0.2s; }
   .topnav a:hover { color: #e8e8f0; }
   .topnav .name { font-weight: 600; color: #e8e8f0; font-size: 13px; }
   .topnav .sep { color: #38384a; font-size: 12px; }
   .topnav .current { color: #7c6fcd; font-size: 13px; font-weight: 500; }
-  .sidenav { position: fixed; top: 38px; left: 0; width: 180px; height: calc(100vh - 38px); background: #111118; border-right: 1px solid #2a2a38; padding: 14px 0; overflow-y: auto; z-index: 200; font-family: 'Inter', system-ui, sans-serif; }
+  .sidenav { position: fixed; top: 38px; left: 0; width: 180px; height: calc(100vh - 38px); background: #111118; border-right: 1px solid #2a2a38; padding: 14px 0; overflow-y: auto; z-index: 200; font-family: 'Satoshi', system-ui, sans-serif; }
   .sidenav a { display: block; padding: 6px 16px; font-size: 11px; color: #8888aa; text-decoration: none; transition: color 0.2s, background 0.2s; border-left: 2px solid transparent; }
   .sidenav a:hover { color: #e8e8f0; background: rgba(124,111,205,0.06); }
   .sidenav a.active { color: #a99cf0; border-left-color: #7c6fcd; background: rgba(124,111,205,0.1); font-weight: 600; }
@@ -473,7 +475,7 @@ const PodBox = ({ label, color, small }) =>
   e(M.div, {
     initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, transition:sp(360,24),
     style:{ padding: small?"4px 8px":"6px 10px", borderRadius:6, border:`1px solid ${color}55`, background:`${color}18`,
-            display:"inline-flex", alignItems:"center", gap:4, fontSize: small?9:10, fontWeight:600, color, fontFamily:"'SF Mono',monospace" }
+            display:"inline-flex", alignItems:"center", gap:4, fontSize: small?9:10, fontWeight:600, color, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" }
   },
     e("div", { style:{ width: small?5:6, height: small?5:6, borderRadius:"50%", background:color } }),
     label
@@ -504,7 +506,7 @@ const ControlPlaneBox = ({ onClick, highlight }) =>
       ["API Server","etcd","Scheduler","Controller Mgr"].map((c,i) =>
         e(M.div, { key:i, initial:{opacity:0,y:6}, animate:{opacity:1,y:0}, transition:{delay:i*0.08,...ez},
           style:{ padding:"6px 10px", borderRadius:6, border:`1px solid ${T.k8sBlue}44`, background:`${T.k8sBlue}14`,
-                  fontSize:10, fontWeight:600, color:T.k8sBlueL, fontFamily:"'SF Mono',monospace" }
+                  fontSize:10, fontWeight:600, color:T.k8sBlueL, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" }
         }, c)
       )
     )
@@ -580,7 +582,7 @@ const K8sDiagram = ({ scene, onClickDetail }) => {
               e(M.div, { key:ci, initial:{opacity:0,x:-5}, animate:{opacity: s.status==="down"?0.3:1, x:0}, transition:{delay:0.2+ci*0.05,...ez},
                 style:{ padding:"4px 8px", borderRadius:5, border:`1px solid ${s.status==="down"?T.coral:T.podGreen}44`,
                         background:`${s.status==="down"?T.coral:T.podGreen}14`, fontSize:9, fontWeight:600,
-                        color:s.status==="down"?T.coralL:T.podGreenL, fontFamily:"'SF Mono',monospace",
+                        color:s.status==="down"?T.coralL:T.podGreenL, fontFamily:"'JetBrains Mono', 'SF Mono', monospace",
                         textDecoration:s.status==="down"?"line-through":"none" }
               }, c)
             )
@@ -656,7 +658,7 @@ const K8sDiagram = ({ scene, onClickDetail }) => {
         e("div", { style:{ fontSize:11, fontWeight:700, color:T.podGreenL, marginBottom:10 } }, "Single-container Pod (most common)"),
         e("div", { style:{ display:"flex", gap:8, alignItems:"center" } },
           e("div", { style:{ flex:1, padding:"10px 14px", borderRadius:8, border:`1px solid ${T.podGreen}44`, background:`${T.podGreen}14`, textAlign:"center" } },
-            e("div", { style:{ fontSize:10, fontWeight:600, color:T.podGreenL, fontFamily:"'SF Mono',monospace" } }, "nginx:1.25"),
+            e("div", { style:{ fontSize:10, fontWeight:600, color:T.podGreenL, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, "nginx:1.25"),
             e("div", { style:{ fontSize:8, color:T.text3, marginTop:2 } }, "Container")
           ),
           e("div", { style:{ fontSize:9, color:T.text3, padding:"4px 8px" } }, "Shared: IP, volumes")
@@ -666,11 +668,11 @@ const K8sDiagram = ({ scene, onClickDetail }) => {
         e("div", { style:{ fontSize:11, fontWeight:700, color:T.blueL, marginBottom:10 } }, "Multi-container Pod (sidecar pattern)"),
         e("div", { style:{ display:"flex", gap:8, alignItems:"center" } },
           e("div", { style:{ flex:1, padding:"8px 12px", borderRadius:8, border:`1px solid ${T.podGreen}44`, background:`${T.podGreen}14`, textAlign:"center" } },
-            e("div", { style:{ fontSize:10, fontWeight:600, color:T.podGreenL, fontFamily:"'SF Mono',monospace" } }, "app"),
+            e("div", { style:{ fontSize:10, fontWeight:600, color:T.podGreenL, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, "app"),
             e("div", { style:{ fontSize:8, color:T.text3, marginTop:2 } }, "Main container")
           ),
           e("div", { style:{ flex:1, padding:"8px 12px", borderRadius:8, border:`1px solid ${T.amber}44`, background:`${T.amber}14`, textAlign:"center" } },
-            e("div", { style:{ fontSize:10, fontWeight:600, color:T.amberL, fontFamily:"'SF Mono',monospace" } }, "log-collector"),
+            e("div", { style:{ fontSize:10, fontWeight:600, color:T.amberL, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, "log-collector"),
             e("div", { style:{ fontSize:8, color:T.text3, marginTop:2 } }, "Sidecar")
           ),
           e("div", { style:{ fontSize:9, color:T.text3, padding:"4px 8px" } }, "Shared: IP, volumes")
@@ -699,7 +701,7 @@ const K8sDiagram = ({ scene, onClickDetail }) => {
             style:{ display:"flex", alignItems:"center", gap:8, padding:"7px 12px", borderRadius:8, border:`1px solid ${r.color}44`, background:`${r.color}0c`, cursor:"pointer" }
           },
             e("div", { style:{ width:6, height:6, borderRadius:"50%", background:r.color } }),
-            e("span", { style:{ fontSize:10, fontWeight:600, color:r.color, fontFamily:"'SF Mono',monospace", flex:1 } }, r.name),
+            e("span", { style:{ fontSize:10, fontWeight:600, color:r.color, fontFamily:"'JetBrains Mono', 'SF Mono', monospace", flex:1 } }, r.name),
             e("span", { style:{ fontSize:9, color:T.text3, padding:"2px 6px", borderRadius:4, border:`1px solid ${T.border}`, background:T.surface } }, r.version),
             e("span", { style:{ fontSize:9, color:r.status==="Running"?T.podGreenL:T.coralL } }, r.status)
           )
@@ -727,7 +729,7 @@ const K8sDiagram = ({ scene, onClickDetail }) => {
             onClick:()=>onClickDetail("pods"),
             style:{ flex:1, padding:"8px 10px", borderRadius:8, border:`1px solid ${T.podGreen}44`, background:`${T.podGreen}0c`, textAlign:"center", cursor:"pointer" }
           },
-            e("div", { style:{ fontSize:9, fontWeight:600, color:T.podGreenL, fontFamily:"'SF Mono',monospace" } }, p),
+            e("div", { style:{ fontSize:9, fontWeight:600, color:T.podGreenL, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, p),
             e("div", { style:{ fontSize:8, color:T.text3, marginTop:2 } }, ":8080")
           )
         )
@@ -740,7 +742,7 @@ const K8sDiagram = ({ scene, onClickDetail }) => {
       e("div", { style:{ display:"flex", gap:8, justifyContent:"center" } },
         ["api.example.com/users","web.example.com/"].map((u,i) =>
           e(M.div, { key:i, initial:{opacity:0,y:-8}, animate:{opacity:1,y:0}, transition:{delay:i*0.1,...ez},
-            style:{ padding:"5px 12px", borderRadius:20, border:`1px solid ${T.text3}44`, background:`${T.text3}0c`, fontSize:9, color:T.text2, fontFamily:"'SF Mono',monospace" }
+            style:{ padding:"5px 12px", borderRadius:20, border:`1px solid ${T.text3}44`, background:`${T.text3}0c`, fontSize:9, color:T.text2, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" }
           }, u)
         )
       ),
@@ -762,7 +764,7 @@ const K8sDiagram = ({ scene, onClickDetail }) => {
           e("div", { key:i, onClick:()=>onClickDetail("services"),
             style:{ flex:1, padding:"8px 10px", borderRadius:8, border:`1px solid ${s.color}44`, background:`${s.color}0c`, textAlign:"center", cursor:"pointer" }
           },
-            e("div", { style:{ fontSize:10, fontWeight:600, color:s.color, fontFamily:"'SF Mono',monospace" } }, s.name),
+            e("div", { style:{ fontSize:10, fontWeight:600, color:s.color, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, s.name),
             e("div", { style:{ fontSize:8, color:T.text3, marginTop:2 } }, "ClusterIP")
           )
         )
@@ -779,8 +781,8 @@ const K8sDiagram = ({ scene, onClickDetail }) => {
             e(M.div, { key:i, initial:{opacity:0,x:-6}, animate:{opacity:1,x:0}, transition:{delay:i*0.06,...ez},
               style:{ display:"flex", justifyContent:"space-between", padding:"4px 8px", borderRadius:4, background:`${T.teal}0c`, fontSize:9 }
             },
-              e("span", { style:{ color:T.tealL, fontWeight:600, fontFamily:"'SF Mono',monospace" } }, k),
-              e("span", { style:{ color:T.text2, fontFamily:"'SF Mono',monospace" } }, v)
+              e("span", { style:{ color:T.tealL, fontWeight:600, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, k),
+              e("span", { style:{ color:T.text2, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, v)
             )
           )
         )
@@ -794,8 +796,8 @@ const K8sDiagram = ({ scene, onClickDetail }) => {
             e(M.div, { key:i, initial:{opacity:0,x:-6}, animate:{opacity:1,x:0}, transition:{delay:i*0.06,...ez},
               style:{ display:"flex", justifyContent:"space-between", padding:"4px 8px", borderRadius:4, background:`${T.coral}0c`, fontSize:9 }
             },
-              e("span", { style:{ color:T.coralL, fontWeight:600, fontFamily:"'SF Mono',monospace" } }, k),
-              e("span", { style:{ color:T.text3, fontFamily:"'SF Mono',monospace" } }, v)
+              e("span", { style:{ color:T.coralL, fontWeight:600, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, k),
+              e("span", { style:{ color:T.text3, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, v)
             )
           )
         )
@@ -823,7 +825,7 @@ const K8sDiagram = ({ scene, onClickDetail }) => {
       ),
       e(Arrow, { label:"mounted in", color:T.purple }),
       e("div", { onClick:()=>onClickDetail("pods"), style:{ borderRadius:8, border:`1px solid ${T.podGreen}44`, background:`${T.podGreen}0c`, padding:"8px 12px", textAlign:"center", cursor:"pointer" } },
-        e("div", { style:{ fontSize:10, fontWeight:600, color:T.podGreenL, fontFamily:"'SF Mono',monospace" } }, "Pod: my-db-0"),
+        e("div", { style:{ fontSize:10, fontWeight:600, color:T.podGreenL, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, "Pod: my-db-0"),
         e("div", { style:{ fontSize:8, color:T.text3, marginTop:2 } }, "mountPath: /var/lib/data")
       )
     );
@@ -847,7 +849,7 @@ const K8sDiagram = ({ scene, onClickDetail }) => {
             style:{ flex:1, borderRadius:8, border:`1px solid ${s.color}33`, background:`${s.color}08`, padding:8, textAlign:"center" }
           },
             e("div", { style:{ fontSize:8, color:T.text3, marginBottom:4 } }, s.label),
-            e("div", { style:{ fontSize:16, fontWeight:700, color:s.color, fontFamily:"'SF Mono',monospace" } }, s.replicas),
+            e("div", { style:{ fontSize:16, fontWeight:700, color:s.color, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, s.replicas),
             e("div", { style:{ fontSize:8, color:T.text3, margin:"2px 0" } }, "replicas"),
             e("div", { style:{ height:4, background:T.border, borderRadius:99, overflow:"hidden", marginTop:4 } },
               e(M.div, { initial:{width:0}, animate:{width:`${s.cpu}%`}, transition:{duration:0.6,delay:i*0.12},
@@ -878,7 +880,7 @@ const K8sDiagram = ({ scene, onClickDetail }) => {
             e("iconify-icon", { icon:c.icon, width:12, height:12, style:{ color:T.purpleL } })
           ),
           e("div", { style:{ flex:1 } },
-            e("div", { style:{ fontSize:10, fontWeight:600, color:T.purpleL, fontFamily:"'SF Mono',monospace" } }, c.cmd),
+            e("div", { style:{ fontSize:10, fontWeight:600, color:T.purpleL, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, c.cmd),
             e("div", { style:{ fontSize:9, color:T.text3, marginTop:1 } }, c.desc)
           )
         )
@@ -921,7 +923,7 @@ const K8sDiagram = ({ scene, onClickDetail }) => {
         e("div", { style:{ display:"flex", gap:6, justifyContent:"center" } },
           [1,2,3].map(i =>
             e(M.div, { key:i, initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, transition:{delay:0.8+i*0.1,...ez},
-              style:{ padding:"5px 12px", borderRadius:6, border:`1px solid ${T.podGreen}44`, background:`${T.podGreen}14`, fontSize:9, fontWeight:600, color:T.podGreenL, fontFamily:"'SF Mono',monospace" }
+              style:{ padding:"5px 12px", borderRadius:6, border:`1px solid ${T.podGreen}44`, background:`${T.podGreen}14`, fontSize:9, fontWeight:600, color:T.podGreenL, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" }
             }, `pod-${i}`)
           )
         )
@@ -1006,7 +1008,7 @@ function App() {
   const toggleDetail = key => { setDetail(d => d===key ? null : key); clearTimeout(timer.current); setPlaying(false); };
 
   return e("div", { style:{ display:"flex", gap:16, alignItems:"flex-start", justifyContent: detail ? "flex-start" : "center" } },
-  e("div", { style:{ width:760, flexShrink:0, background:T.bg, fontFamily:"'Inter', system-ui, sans-serif", padding:20, borderRadius:16 } },
+  e("div", { style:{ width:760, flexShrink:0, background:T.bg, fontFamily:"'Satoshi', system-ui, sans-serif", padding:20, borderRadius:16 } },
 
     /* header */
     e("div", { style:{ marginBottom:18 } },

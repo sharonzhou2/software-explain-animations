@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>HTTP Versions</title>
 <link href="https://cdn.lineicons.com/5.0/lineicons.css" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://api.fontshare.com">
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -15,17 +17,17 @@
     justify-content: center;
     min-height: 100vh;
     padding: 24px 16px 24px 196px;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Satoshi', system-ui, -apple-system, sans-serif;
     font-size: 15px;
   }
   #root { width: 100%; max-width: 1320px; }
-  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: 'Inter', system-ui, sans-serif; }
+  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: 'Satoshi', system-ui, sans-serif; }
   .topnav a { text-decoration: none; color: #8888aa; font-size: 13px; transition: color 0.2s; }
   .topnav a:hover { color: #e8e8f0; }
   .topnav .name { font-weight: 600; color: #e8e8f0; font-size: 13px; }
   .topnav .sep { color: #38384a; font-size: 12px; }
   .topnav .current { color: #7c6fcd; font-size: 13px; font-weight: 500; }
-  .sidenav { position: fixed; top: 38px; left: 0; width: 180px; height: calc(100vh - 38px); background: #111118; border-right: 1px solid #2a2a38; padding: 14px 0; overflow-y: auto; z-index: 200; font-family: 'Inter', system-ui, sans-serif; }
+  .sidenav { position: fixed; top: 38px; left: 0; width: 180px; height: calc(100vh - 38px); background: #111118; border-right: 1px solid #2a2a38; padding: 14px 0; overflow-y: auto; z-index: 200; font-family: 'Satoshi', system-ui, sans-serif; }
   .sidenav a { display: block; padding: 6px 16px; font-size: 11px; color: #8888aa; text-decoration: none; transition: color 0.2s, background 0.2s; border-left: 2px solid transparent; }
   .sidenav a:hover { color: #e8e8f0; background: rgba(124,111,205,0.06); }
   .sidenav a.active { color: #a99cf0; border-left-color: #7c6fcd; background: rgba(124,111,205,0.1); font-weight: 600; }
@@ -427,7 +429,7 @@ const IntroScene = () =>
         e("i", { className:"lni " + c.icon, style:{ fontSize:22, color:c.color } })
       ),
       e("div", { style:{ fontSize:14, fontWeight:700, color:c.color } }, c.title),
-      e("div", { style:{ fontSize:9, color:T.text3, fontFamily:"'SF Mono',monospace" } }, c.year),
+      e("div", { style:{ fontSize:9, color:T.text3, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, c.year),
       e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.55 } }, c.sub)
     ))
   );
@@ -435,9 +437,9 @@ const IntroScene = () =>
 /* Timeline: sequence of labeled blocks along a time axis */
 const Timeline = ({ rows, totalMs=2400, color, note }) =>
   e("div", null,
-    note && e("div", { style:{ fontSize:10, color:T.text3, marginBottom:10, fontFamily:"'SF Mono',monospace" } }, note),
+    note && e("div", { style:{ fontSize:10, color:T.text3, marginBottom:10, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, note),
     rows.map((r, ri) => e("div", { key:ri, style:{ display:"flex", alignItems:"center", gap:8, marginBottom:8 } },
-      e("div", { style:{ width:88, fontSize:10, color:T.text2, fontFamily:"'SF Mono',monospace", textAlign:"right", flexShrink:0 } }, r.label),
+      e("div", { style:{ width:88, fontSize:10, color:T.text2, fontFamily:"'JetBrains Mono', 'SF Mono', monospace", textAlign:"right", flexShrink:0 } }, r.label),
       e("div", { style:{ flex:1, position:"relative", height:22, background:`${T.border}55`, borderRadius:6 } },
         r.blocks.map((b, bi) => e(M.div, {
           key:bi,
@@ -459,7 +461,7 @@ const Timeline = ({ rows, totalMs=2400, color, note }) =>
         }, b.text))
       )
     )),
-    e("div", { style:{ display:"flex", justifyContent:"space-between", paddingLeft:96, marginTop:4, fontSize:8, color:T.text3, fontFamily:"'SF Mono',monospace" } },
+    e("div", { style:{ display:"flex", justifyContent:"space-between", paddingLeft:96, marginTop:4, fontSize:8, color:T.text3, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } },
       e("span", null, "0 ms"),
       e("span", null, `${totalMs} ms →`)
     )
@@ -562,7 +564,7 @@ const Http2FramesScene = () => {
     { type:"DATA",    stream:5, color:T.purple, label:"function init…" },
   ];
   return e("div", null,
-    e("div", { style:{ fontSize:10, color:T.text3, marginBottom:10, fontFamily:"'SF Mono',monospace" } },
+    e("div", { style:{ fontSize:10, color:T.text3, marginBottom:10, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } },
       "HTTP/2  —  each message is a sequence of typed binary frames"
     ),
     e("div", { style:{ display:"flex", flexDirection:"column", gap:5 } },
@@ -570,7 +572,7 @@ const Http2FramesScene = () => {
         key:i,
         initial:{ opacity:0, x:-10 }, animate:{ opacity:1, x:0 },
         transition:{ ...ez, delay:i*0.1 },
-        style:{ display:"flex", alignItems:"center", gap:10, padding:"7px 12px", borderRadius:8, border:`1px solid ${f.color}55`, background:`${f.color}10`, fontFamily:"'SF Mono',monospace" }
+        style:{ display:"flex", alignItems:"center", gap:10, padding:"7px 12px", borderRadius:8, border:`1px solid ${f.color}55`, background:`${f.color}10`, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" }
       },
         e("div", { style:{ fontSize:9, color:T.text3, width:56 } }, `stream ${f.stream}`),
         e("div", { style:{ fontSize:10, fontWeight:700, color:f.color, width:72 } }, f.type),
@@ -591,11 +593,11 @@ const Http2MuxScene = () => {
     e("div", { style:{ display:"flex", gap:8, marginBottom:12 } },
       streams.map(s => e("div", { key:s.id, style:{ flex:1, display:"flex", alignItems:"center", gap:6, padding:"6px 10px", borderRadius:8, border:`1px solid ${s.color}55`, background:`${s.color}12` } },
         e("div", { style:{ width:10, height:10, borderRadius:2, background:s.color } }),
-        e("div", { style:{ fontSize:10, fontWeight:700, color:s.color, fontFamily:"'SF Mono',monospace" } }, `stream ${s.id}`),
+        e("div", { style:{ fontSize:10, fontWeight:700, color:s.color, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, `stream ${s.id}`),
         e("div", { style:{ fontSize:9, color:T.text3 } }, s.label)
       ))
     ),
-    e("div", { style:{ fontSize:10, color:T.text3, marginBottom:6, fontFamily:"'SF Mono',monospace" } }, "single TCP connection →"),
+    e("div", { style:{ fontSize:10, color:T.text3, marginBottom:6, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, "single TCP connection →"),
     e("div", { style:{ display:"flex", gap:3, padding:10, background:T.codeBase, borderRadius:10, border:`1px solid ${T.border}` } },
       wire.map((sid,i) => {
         const s = streams.find(x=>x.id===sid);
@@ -607,7 +609,7 @@ const Http2MuxScene = () => {
         }, sid);
       })
     ),
-    e("div", { style:{ fontSize:10, color:T.text3, marginTop:8, textAlign:"center", fontFamily:"'SF Mono',monospace" } },
+    e("div", { style:{ fontSize:10, color:T.text3, marginTop:8, textAlign:"center", fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } },
       "frames from different streams interleave — no HTTP-level HOL"
     )
   );
@@ -620,7 +622,7 @@ const HpackScene = () => {
     { label:"Request 3", color:T.green, bytes:"~35 B",  detail:"just the path — everything else indexed", pct:4 },
   ];
   return e("div", null,
-    e("div", { style:{ fontSize:10, color:T.text3, marginBottom:10, fontFamily:"'SF Mono',monospace" } },
+    e("div", { style:{ fontSize:10, color:T.text3, marginBottom:10, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } },
       "HPACK  —  dynamic table shared between client & server"
     ),
     rows.map((r,i) => e(M.div, {
@@ -630,8 +632,8 @@ const HpackScene = () => {
       style:{ marginBottom:10, padding:10, borderRadius:10, border:`1px solid ${r.color}44`, background:`${r.color}0c` }
     },
       e("div", { style:{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 } },
-        e("div", { style:{ fontSize:11, fontWeight:700, color:r.color, fontFamily:"'SF Mono',monospace" } }, r.label),
-        e("div", { style:{ fontSize:11, fontWeight:700, color:r.color, fontFamily:"'SF Mono',monospace" } }, r.bytes)
+        e("div", { style:{ fontSize:11, fontWeight:700, color:r.color, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, r.label),
+        e("div", { style:{ fontSize:11, fontWeight:700, color:r.color, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, r.bytes)
       ),
       e("div", { style:{ height:6, background:T.border, borderRadius:99, overflow:"hidden", marginBottom:5 } },
         e(M.div, { initial:{ width:0 }, animate:{ width:`${r.pct}%` }, transition:{ duration:0.9, ease:[0.22,1,0.36,1], delay:i*0.15 }, style:{ height:"100%", background:r.color, borderRadius:99 } })
@@ -648,7 +650,7 @@ const Http2HolScene = () => {
     { id:5, color:T.amber, label:"stream 5", status:"arrived — waiting on TCP" },
   ];
   return e("div", null,
-    e("div", { style:{ fontSize:10, color:T.redL, marginBottom:10, fontFamily:"'SF Mono',monospace" } },
+    e("div", { style:{ fontSize:10, color:T.redL, marginBottom:10, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } },
       "TCP delivers bytes strictly in order — a single loss stalls everyone"
     ),
     e("div", { style:{ display:"flex", flexDirection:"column", gap:8 } },
@@ -658,7 +660,7 @@ const Http2HolScene = () => {
         transition:{ ...ez, delay:i*0.15 },
         style:{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", borderRadius:10, border:`1px solid ${s.color}55`, background:`${s.color}10` }
       },
-        e("div", { style:{ fontSize:11, fontWeight:700, color:s.color, fontFamily:"'SF Mono',monospace", width:70 } }, s.label),
+        e("div", { style:{ fontSize:11, fontWeight:700, color:s.color, fontFamily:"'JetBrains Mono', 'SF Mono', monospace", width:70 } }, s.label),
         e("div", { style:{ flex:1, height:4, background:T.border, borderRadius:99, position:"relative", overflow:"hidden" } },
           e(M.div, {
             animate:{ width:["0%","100%","100%"] },
@@ -666,7 +668,7 @@ const Http2HolScene = () => {
             style:{ height:"100%", background:s.color, borderRadius:99 }
           })
         ),
-        e("div", { style:{ fontSize:10, color:s.color, fontFamily:"'SF Mono',monospace", width:200, textAlign:"right" } }, s.status)
+        e("div", { style:{ fontSize:10, color:s.color, fontFamily:"'JetBrains Mono', 'SF Mono', monospace", width:200, textAlign:"right" } }, s.status)
       ))
     )
   );
@@ -689,13 +691,13 @@ const Http3StackScene = () => {
   ];
   return e("div", { style:{ display:"flex", gap:14 } },
     stacks.map((s,si) => e("div", { key:si, style:{ flex:1 } },
-      e("div", { style:{ fontSize:12, fontWeight:700, color:s.color, textAlign:"center", marginBottom:8, fontFamily:"'SF Mono',monospace" } }, s.title),
+      e("div", { style:{ fontSize:12, fontWeight:700, color:s.color, textAlign:"center", marginBottom:8, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, s.title),
       e("div", { style:{ display:"flex", flexDirection:"column", gap:4 } },
         s.layers.map((l,li) => e(M.div, {
           key:li,
           initial:{ opacity:0, x:si===0?-15:15 }, animate:{ opacity:1, x:0 },
           transition:{ ...sp(340,24), delay:li*0.1 },
-          style:{ padding:"12px 14px", borderRadius:8, border:`1.5px solid ${l.c}66`, background:`${l.c}14`, textAlign:"center", fontSize:12, fontWeight:700, color:l.c, fontFamily:"'SF Mono',monospace" }
+          style:{ padding:"12px 14px", borderRadius:8, border:`1.5px solid ${l.c}66`, background:`${l.c}14`, textAlign:"center", fontSize:12, fontWeight:700, color:l.c, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" }
         }, l.name))
       )
     ))
@@ -740,12 +742,12 @@ const CompareScene = () => {
     },
       e("div", { style:{ display:"flex", alignItems:"center", justifyContent:"space-between" } },
         e("div", { style:{ fontSize:13, fontWeight:700, color:v.color } }, v.title),
-        e("div", { style:{ fontSize:10, fontWeight:700, color:v.color, fontFamily:"'SF Mono',monospace", padding:"2px 8px", borderRadius:20, border:`1px solid ${v.color}44` } }, v.rtt)
+        e("div", { style:{ fontSize:10, fontWeight:700, color:v.color, fontFamily:"'JetBrains Mono', 'SF Mono', monospace", padding:"2px 8px", borderRadius:20, border:`1px solid ${v.color}44` } }, v.rtt)
       ),
       e("div", { style:{ display:"flex", flexDirection:"column", gap:4 } },
         Array.from({length:v.conns}).map((_,ci) =>
           e("div", { key:ci, style:{ display:"flex", gap:2, alignItems:"center" } },
-            e("div", { style:{ width:28, fontSize:8, color:T.text3, fontFamily:"'SF Mono',monospace" } }, v.streams ? "mux" : `c${ci+1}`),
+            e("div", { style:{ width:28, fontSize:8, color:T.text3, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, v.streams ? "mux" : `c${ci+1}`),
             e("div", { style:{ flex:1, display:"flex", gap:2 } },
               (v.streams ? [T.http2,T.teal,T.purple,T.amber] : [v.color]).map((sc,si) =>
                 e(M.div, {

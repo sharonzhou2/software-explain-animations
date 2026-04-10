@@ -4,7 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Event Delegation</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://api.fontshare.com">
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -14,17 +16,17 @@
     justify-content: center;
     min-height: 100vh;
     padding: 24px 16px 24px 196px;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Satoshi', system-ui, -apple-system, sans-serif;
     font-size: 15px;
   }
   #root { width: 100%; max-width: 1320px; }
-  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: 'Inter', system-ui, sans-serif; }
+  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: 'Satoshi', system-ui, sans-serif; }
   .topnav a { text-decoration: none; color: #8888aa; font-size: 13px; transition: color 0.2s; }
   .topnav a:hover { color: #e8e8f0; }
   .topnav .name { font-weight: 600; color: #e8e8f0; font-size: 13px; }
   .topnav .sep { color: #38384a; font-size: 12px; }
   .topnav .current { color: #7c6fcd; font-size: 13px; font-weight: 500; }
-  .sidenav { position: fixed; top: 38px; left: 0; width: 180px; height: calc(100vh - 38px); background: #111118; border-right: 1px solid #2a2a38; padding: 14px 0; overflow-y: auto; z-index: 200; font-family: 'Inter', system-ui, sans-serif; }
+  .sidenav { position: fixed; top: 38px; left: 0; width: 180px; height: calc(100vh - 38px); background: #111118; border-right: 1px solid #2a2a38; padding: 14px 0; overflow-y: auto; z-index: 200; font-family: 'Satoshi', system-ui, sans-serif; }
   .sidenav a { display: block; padding: 6px 16px; font-size: 11px; color: #8888aa; text-decoration: none; transition: color 0.2s, background 0.2s; border-left: 2px solid transparent; }
   .sidenav a:hover { color: #e8e8f0; background: rgba(124,111,205,0.06); }
   .sidenav a.active { color: #a99cf0; border-left-color: #7c6fcd; background: rgba(124,111,205,0.1); font-weight: 600; }
@@ -637,7 +639,7 @@ const DOMTreeViz = ({ tree, onClick }) => {
             }),
             e("text", {
               x:n.x, y:n.y+1, textAnchor:"middle", dominantBaseline:"middle",
-              fill:n.color, fontSize:10, fontFamily:"'SF Mono',monospace",
+              fill:n.color, fontSize:10, fontFamily:"'JetBrains Mono', 'SF Mono', monospace",
               fontWeight: isHL ? 700 : 400
             }, n.label),
 
@@ -685,7 +687,7 @@ const DOMTreeViz = ({ tree, onClick }) => {
           stroke:T.coral, strokeWidth:2, strokeDasharray:"6,4"
         }),
         stopped && e("text", {
-          x:svgW/2, y:167, textAnchor:"middle", fill:T.coralL, fontSize:9, fontFamily:"'SF Mono',monospace"
+          x:svgW/2, y:167, textAnchor:"middle", fill:T.coralL, fontSize:9, fontFamily:"'JetBrains Mono', 'SF Mono', monospace"
         }, "event blocked")
       )
     ),
@@ -825,7 +827,7 @@ function App() {
   var toggleDetail = function(key) { if(!key) return; setDetail(function(d){return d===key?null:key;}); clearTimeout(timer.current); setPlaying(false); };
 
   return e("div", { style:{ display:"flex", gap:16, alignItems:"flex-start", justifyContent: detail ? "flex-start" : "center" } },
-  e("div", { style:{ width:760, flexShrink:0, background:T.bg, fontFamily:"'Inter', system-ui, sans-serif", padding:20, borderRadius:16 } },
+  e("div", { style:{ width:760, flexShrink:0, background:T.bg, fontFamily:"'Satoshi', system-ui, sans-serif", padding:20, borderRadius:16 } },
 
     /* header */
     e("div", { style:{ marginBottom:18 } },

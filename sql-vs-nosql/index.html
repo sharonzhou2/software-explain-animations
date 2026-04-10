@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SQL vs NoSQL</title>
 <link href="https://cdn.lineicons.com/5.0/lineicons.css" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://api.fontshare.com">
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -16,17 +18,17 @@
     justify-content: center;
     min-height: 100vh;
     padding: 24px 16px 24px 196px;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Satoshi', system-ui, -apple-system, sans-serif;
     font-size: 15px;
   }
   #root { width: 100%; max-width: 1320px; }
-  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: 'Inter', system-ui, sans-serif; }
+  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: 'Satoshi', system-ui, sans-serif; }
   .topnav a { text-decoration: none; color: #8888aa; font-size: 13px; transition: color 0.2s; }
   .topnav a:hover { color: #e8e8f0; }
   .topnav .name { font-weight: 600; color: #e8e8f0; font-size: 13px; }
   .topnav .sep { color: #38384a; font-size: 12px; }
   .topnav .current { color: #7c6fcd; font-size: 13px; font-weight: 500; }
-  .sidenav { position: fixed; top: 38px; left: 0; width: 180px; height: calc(100vh - 38px); background: #111118; border-right: 1px solid #2a2a38; padding: 14px 0; overflow-y: auto; z-index: 200; font-family: 'Inter', system-ui, sans-serif; }
+  .sidenav { position: fixed; top: 38px; left: 0; width: 180px; height: calc(100vh - 38px); background: #111118; border-right: 1px solid #2a2a38; padding: 14px 0; overflow-y: auto; z-index: 200; font-family: 'Satoshi', system-ui, sans-serif; }
   .sidenav a { display: block; padding: 6px 16px; font-size: 11px; color: #8888aa; text-decoration: none; transition: color 0.2s, background 0.2s; border-left: 2px solid transparent; }
   .sidenav a:hover { color: #e8e8f0; background: rgba(124,111,205,0.06); }
   .sidenav a.active { color: #a99cf0; border-left-color: #7c6fcd; background: rgba(124,111,205,0.1); font-weight: 600; }
@@ -411,7 +413,7 @@ const SqlTable = ({ onClick, highlightJoin=false }) => {
     { id:102, user_id:1, total:80 },
     { id:103, user_id:3, total:250 },
   ];
-  const cell = { padding:"5px 8px", fontSize:10, fontFamily:"'SF Mono',monospace", color:T.text2, borderRight:`1px solid ${T.border}` };
+  const cell = { padding:"5px 8px", fontSize:10, fontFamily:"'JetBrains Mono', 'SF Mono', monospace", color:T.text2, borderRight:`1px solid ${T.border}` };
   const head = { ...cell, color:T.sqlL, fontWeight:700, background:`${T.sql}10`, borderBottom:`1px solid ${T.sql}44` };
   return e("div", { onClick, style:{ flex:1, borderRadius:12, border:`1.5px solid ${T.border2}`, background:T.surface, overflow:"hidden", cursor:"pointer" } },
     e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", gap:6 } },
@@ -485,7 +487,7 @@ const DocPanel = ({ onClick }) => {
       e("i", { className:"lni lni-files-1", style:{ color:T.nosql, fontSize:12 } }),
       e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.nosql } }, "NoSQL — DOCUMENT")
     ),
-    e("div", { style:{ padding:14, fontFamily:"'SF Mono',monospace", fontSize:11, lineHeight:1.75 } },
+    e("div", { style:{ padding:14, fontFamily:"'JetBrains Mono', 'SF Mono', monospace", fontSize:11, lineHeight:1.75 } },
       lines.map((l,i) =>
         e(M.div, { key:i, initial:{opacity:0,x:-8}, animate:{opacity:1,x:0}, transition:{delay:i*0.06,...ez},
           style:{ color: l.nested ? T.greenL : T.text2, whiteSpace:"pre" }
@@ -516,7 +518,7 @@ const AcidPanel = ({ onClick }) => {
         e(M.div, { key:i, initial:{opacity:0,y:10}, animate:{opacity:1,y:0}, transition:{delay:i*0.1,...ez},
           style:{ padding:"10px 12px", borderRadius:10, border:`1px solid ${T.sql}33`, background:`${T.sql}08`, display:"flex", gap:10, alignItems:"flex-start" }
         },
-          e("div", { style:{ width:28, height:28, borderRadius:8, background:`${T.sql}20`, border:`1px solid ${T.sql}55`, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:700, color:T.sqlL, flexShrink:0, fontFamily:"'SF Mono',monospace" } }, r.k),
+          e("div", { style:{ width:28, height:28, borderRadius:8, background:`${T.sql}20`, border:`1px solid ${T.sql}55`, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:700, color:T.sqlL, flexShrink:0, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, r.k),
           e("div", null,
             e("div", { style:{ fontSize:12, fontWeight:600, color:T.sqlL, marginBottom:2 } }, r.label),
             e("div", { style:{ fontSize:10, color:T.text2, lineHeight:1.4 } }, r.sub)
@@ -550,7 +552,7 @@ const NoSqlCats = ({ onClick, highlight }) => {
             e("i", { className:"lni "+c.icon, style:{ color:c.color, fontSize:16 } }),
             e("div", { style:{ fontSize:13, fontWeight:600, color:c.color } }, c.label)
           ),
-          e("div", { style:{ fontSize:10, color:T.text2, marginBottom:4, fontFamily:"'SF Mono',monospace" } }, c.examples),
+          e("div", { style:{ fontSize:10, color:T.text2, marginBottom:4, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, c.examples),
           e("div", { style:{ fontSize:10, color:T.text3 } }, c.desc)
         );
       })
@@ -576,9 +578,9 @@ const KvPanel = ({ onClick }) => {
         e(M.div, { key:i, initial:{opacity:0,x:-10}, animate:{opacity:1,x:0}, transition:{delay:i*0.1,...ez},
           style:{ display:"flex", alignItems:"center", gap:10, padding:"8px 12px", borderRadius:8, background:`${r.c}08`, border:`1px solid ${r.c}33` }
         },
-          e("div", { style:{ fontSize:11, color:r.c, fontFamily:"'SF Mono',monospace", fontWeight:600, minWidth:130 } }, r.k),
+          e("div", { style:{ fontSize:11, color:r.c, fontFamily:"'JetBrains Mono', 'SF Mono', monospace", fontWeight:600, minWidth:130 } }, r.k),
           e("div", { style:{ width:16, textAlign:"center", color:T.text3 } }, "→"),
-          e("div", { style:{ fontSize:11, color:T.text2, fontFamily:"'SF Mono',monospace", flex:1 } }, r.v)
+          e("div", { style:{ fontSize:11, color:T.text2, fontFamily:"'JetBrains Mono', 'SF Mono', monospace", flex:1 } }, r.v)
         )
       )
     )
@@ -587,9 +589,9 @@ const KvPanel = ({ onClick }) => {
 
 /* Wide-column visual */
 const WideColPanel = ({ onClick }) => {
-  const cell = { padding:"4px 7px", fontSize:9, fontFamily:"'SF Mono',monospace", color:T.text2, borderRight:`1px solid ${T.border}`, textAlign:"center", whiteSpace:"nowrap" };
+  const cell = { padding:"4px 7px", fontSize:9, fontFamily:"'JetBrains Mono', 'SF Mono', monospace", color:T.text2, borderRight:`1px solid ${T.border}`, textAlign:"center", whiteSpace:"nowrap" };
   const head = { ...cell, color:T.blueL, fontWeight:700, background:`${T.blue}10`, borderBottom:`1px solid ${T.blue}44` };
-  const part = { padding:"4px 8px", fontSize:9, fontFamily:"'SF Mono',monospace", color:T.blueL, fontWeight:700, borderRight:`1px solid ${T.blue}44`, background:`${T.blue}15` };
+  const part = { padding:"4px 8px", fontSize:9, fontFamily:"'JetBrains Mono', 'SF Mono', monospace", color:T.blueL, fontWeight:700, borderRight:`1px solid ${T.blue}44`, background:`${T.blue}15` };
   return e("div", { onClick, style:{ borderRadius:12, border:`1.5px solid ${T.blue}44`, background:T.surface, overflow:"hidden", cursor:"pointer" } },
     e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", gap:6 } },
       e("i", { className:"lni lni-grid-alt", style:{ color:T.blue, fontSize:12 } }),
@@ -664,7 +666,7 @@ const GraphPanel = ({ onClick }) => {
               cx:n.x, cy:n.y, fill:n.c+"22", stroke:n.c, strokeWidth:1.5
             }),
             e(M.text, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.3+i*0.08},
-              x:n.x, y:n.y+3, fill:n.c, fontSize:10, textAnchor:"middle", fontWeight:700, fontFamily:"'SF Mono',monospace"
+              x:n.x, y:n.y+3, fill:n.c, fontSize:10, textAnchor:"middle", fontWeight:700, fontFamily:"'JetBrains Mono', 'SF Mono', monospace"
             }, n.label)
           )
         )
@@ -735,7 +737,7 @@ const CapTriangle = ({ onClick, showDbs=false }) => {
               cx:d.x, cy:d.y, fill:d.c
             }),
             e(M.text, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:1.1+i*0.1},
-              x:d.x+8, y:d.y+3, fill:d.c, fontSize:9, fontFamily:"'SF Mono',monospace", fontWeight:600
+              x:d.x+8, y:d.y+3, fill:d.c, fontSize:9, fontFamily:"'JetBrains Mono', 'SF Mono', monospace", fontWeight:600
             }, d.name)
           )
         )
@@ -758,7 +760,7 @@ const CpApPanel = ({ onClick }) => {
         e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.6, marginBottom:10 } }, "When a partition happens, refuse requests rather than serve stale data. Clients may see errors until the network heals."),
         ["MongoDB","HBase","Redis (cluster)","etcd","Zookeeper"].map((n,i) =>
           e(M.div, { key:n, initial:{opacity:0,x:-6}, animate:{opacity:1,x:0}, transition:{delay:0.2+i*0.07,...ez},
-            style:{ padding:"5px 10px", borderRadius:6, background:`${T.sql}10`, border:`1px solid ${T.sql}33`, fontSize:11, color:T.sqlL, fontFamily:"'SF Mono',monospace", marginBottom:5 }
+            style:{ padding:"5px 10px", borderRadius:6, background:`${T.sql}10`, border:`1px solid ${T.sql}33`, fontSize:11, color:T.sqlL, fontFamily:"'JetBrains Mono', 'SF Mono', monospace", marginBottom:5 }
           }, n)
         )
       )
@@ -774,7 +776,7 @@ const CpApPanel = ({ onClick }) => {
         e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.6, marginBottom:10 } }, "When a partition happens, keep answering on both sides. Accept that replicas may diverge until they reconnect and sync."),
         ["Cassandra","DynamoDB","Riak","CouchDB","Voldemort"].map((n,i) =>
           e(M.div, { key:n, initial:{opacity:0,x:6}, animate:{opacity:1,x:0}, transition:{delay:0.3+i*0.07,...ez},
-            style:{ padding:"5px 10px", borderRadius:6, background:`${T.nosql}10`, border:`1px solid ${T.nosql}33`, fontSize:11, color:T.nosqlL, fontFamily:"'SF Mono',monospace", marginBottom:5 }
+            style:{ padding:"5px 10px", borderRadius:6, background:`${T.nosql}10`, border:`1px solid ${T.nosql}33`, fontSize:11, color:T.nosqlL, fontFamily:"'JetBrains Mono', 'SF Mono', monospace", marginBottom:5 }
           }, n)
         )
       )
@@ -819,7 +821,7 @@ const BasePanel = ({ onClick }) => {
               x:n.x, y:n.y-2, fill:n.c, fontSize:10, textAnchor:"middle", fontWeight:700
             }, "Node "+n.id),
             e(M.text, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:n.t},
-              x:n.x, y:n.y+10, fill:T.text2, fontSize:9, textAnchor:"middle", fontFamily:"'SF Mono',monospace"
+              x:n.x, y:n.y+10, fill:T.text2, fontSize:9, textAnchor:"middle", fontFamily:"'JetBrains Mono', 'SF Mono', monospace"
             }, n.val)
           )
         )
@@ -972,7 +974,7 @@ function App() {
   const toggleDetail = key => { setDetail(d => d===key ? null : key); clearTimeout(timer.current); setPlaying(false); };
 
   return e("div", { style:{ display:"flex", gap:16, alignItems:"flex-start", justifyContent: detail ? "flex-start" : "center" } },
-  e("div", { style:{ width:760, flexShrink:0, background:T.bg, fontFamily:"'Inter', system-ui, sans-serif", padding:20, borderRadius:16 } },
+  e("div", { style:{ width:760, flexShrink:0, background:T.bg, fontFamily:"'Satoshi', system-ui, sans-serif", padding:20, borderRadius:16 } },
 
     /* header */
     e("div", { style:{ marginBottom:18 } },
