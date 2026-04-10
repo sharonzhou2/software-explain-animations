@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HTTP Versions</title>
+<link href="https://cdn.lineicons.com/5.0/lineicons.css" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111118;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px 16px 24px 196px;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  #root { width: 100%; max-width: 1120px; }
+  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: system-ui, sans-serif; }
+  .topnav a { text-decoration: none; color: #8888aa; font-size: 13px; transition: color 0.2s; }
+  .topnav a:hover { color: #e8e8f0; }
+  .topnav .name { font-weight: 600; color: #e8e8f0; font-size: 13px; }
+  .topnav .sep { color: #38384a; font-size: 12px; }
+  .topnav .current { color: #7c6fcd; font-size: 13px; font-weight: 500; }
+  .sidenav { position: fixed; top: 38px; left: 0; width: 180px; height: calc(100vh - 38px); background: #111118; border-right: 1px solid #2a2a38; padding: 14px 0; overflow-y: auto; z-index: 200; font-family: system-ui, sans-serif; }
+  .sidenav a { display: block; padding: 6px 16px; font-size: 11px; color: #8888aa; text-decoration: none; transition: color 0.2s, background 0.2s; border-left: 2px solid transparent; }
+  .sidenav a:hover { color: #e8e8f0; background: rgba(124,111,205,0.06); }
+  .sidenav a.active { color: #a99cf0; border-left-color: #7c6fcd; background: rgba(124,111,205,0.1); font-weight: 600; }
+  .sidenav .nav-section { padding: 8px 16px 4px; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #44445a; }
+  .sidenav .nav-section:first-child { padding-top: 4px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="../" class="name">Sharon Zhou</a>
+  <span class="sep">/</span>
+  <a href="../">Animations</a>
+  <span class="sep">/</span>
+  <span class="current">HTTP Versions</span>
+</nav>
+<nav class="sidenav">
+  <div class="nav-section">JavaScript</div>
+  <a href="../event-loop/">Event Loop</a>
+  <a href="../this-keyword/">this Keyword</a>
+  <a href="../hoisting/">Hoisting</a>
+  <a href="../closures/">Closures</a>
+  <a href="../garbage-collection/">Garbage Collection</a>
+  <a href="../event-delegation/">Event Delegation</a>
+  <a href="../iterators-generators/">Iterators & Generators</a>
+  <a href="../xhr-vs-fetch/">XHR vs fetch()</a>
+  <a href="../error-propagation/">Error Propagation</a>
+  <a href="../web-workers/">Web Workers</a>
+  <a href="../prototypal-inheritance/">Prototypal Inheritance</a>
+  <div class="nav-section">Browser</div>
+  <a href="../critical-rendering-path/">Critical Rendering Path</a>
+  <a href="../reflow-vs-repaint/">Reflow vs Repaint</a>
+  <a href="../css-box-model/">CSS Box Model & Layout</a>
+  <a href="../web-security/">Web Security</a>
+  <a href="../request-animation-frame/">requestAnimationFrame</a>
+  <a href="../cors/">CORS</a>
+  <a href="../websocket-vs-sse/">WebSocket vs SSE</a>
+  <a href="../debounce-vs-throttle/">Debounce vs Throttle</a>
+  <div class="nav-section">Infrastructure</div>
+  <a href="../vms-vs-docker/">VMs vs Docker</a>
+  <a href="../opentelemetry/">OpenTelemetry</a>
+  <a href="../kubernetes/">Kubernetes</a>
+  <a href="../kafka/">Kafka</a>
+  <a href="../database-indexing/">Database Indexing</a>
+  <a href="../sql-vs-nosql/">SQL vs NoSQL</a>
+  <a href="../load-balancing/">Load Balancing</a>
+  <a href="../caching-strategies/">Caching Strategies</a>
+  <a href="../http-versions/" class="active">HTTP Versions</a>
+  <a href="../authentication/">Authentication</a>
+  <a href="../rate-limiting/">Rate Limiting</a>
+  <a href="../database-sharding/">Database Sharding</a>
+  <a href="../microservices-vs-monolith/">Microservices vs Monolith</a>
+</nav>
+<div id="root" style="margin-top: 36px;"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/framer-motion@11/dist/framer-motion.js"></script>
+<script>
+const { useState, useEffect, useRef } = React;
+const { motion, AnimatePresence } = window.Motion;
+const e = React.createElement;
+const M = motion;
+const AP = AnimatePresence;
+const sp = (s=380,d=28) => ({ type:"spring", stiffness:s, damping:d });
+const ez = { duration:0.32, ease:[0.22,1,0.36,1] };
+
+const T = {
+  bg:"#111118", surface:"#18181f", surface2:"#1e1e28",
+  border:"#2a2a38", border2:"#38384a",
+  text1:"#e8e8f0", text2:"#8888aa", text3:"#44445a",
+  purple:"#7c6fcd", purpleL:"#a99cf0",
+  teal:"#3db89a", tealL:"#6dd4b8",
+  coral:"#c4694a", coralL:"#e08a6a",
+  blue:"#4a8fd4", blueL:"#82b4e8",
+  amber:"#d4a84a", amberL:"#e8c86a",
+  green:"#4ac46a", greenL:"#6ae88a",
+  red:"#e05555", redL:"#ff7777",
+  http1:"#c4694a", http1L:"#e08a6a",
+  http2:"#4a8fd4", http2L:"#82b4e8",
+  http3:"#3db89a", http3L:"#6dd4b8",
+  codeBase:"#141428",
+};
+
+const TS = {
+  fn:{color:"#82aaff"}, meth:{color:"#89ddff"}, str:{color:"#c3e88d"},
+  kw:{color:"#c792ea"}, num:{color:"#f78c6c"}, punc:{color:"#89ddff"},
+  plain:{color:"#a6accd"}, cmt:{color:"#546e7a",fontStyle:"italic"},
+};
+
+/* ─── SCENES ─── */
+/*
+  Each scene can define a timeline visualization:
+  timeline: {
+    version: "http1" | "http2" | "http3",
+    connections: [{ id, label, color, requests:[{id, start, dur, label, blocked?}] }],
+    duration: total
+  }
+*/
+
+const SCENES = [
+  {
+    id:0, act:"01",
+    title:"HTTP/1 vs HTTP/2 vs HTTP/3",
+    sub:"Every web page you load speaks HTTP. But HTTP has evolved three major times to keep up with what the web demands. Let's see what changed — and why it matters.",
+    code:[
+      [["cmt","// The web was built on HTTP/1.0 (1996)"]],
+      [["cmt","// HTTP/1.1 arrived in 1997"]],
+      [["cmt","// HTTP/2 in 2015"]],
+      [["cmt","// HTTP/3 in 2022"]],
+    ],
+    viz:null,
+  },
+  {
+    id:1, act:"02",
+    title:"HTTP/1.0 — one request per connection",
+    sub:"In HTTP/1.0, each request opens a new TCP connection, sends the request, gets the response, and closes. Every single asset on a page — HTML, CSS, JS, images — needs its own handshake.",
+    code:[
+      [["cmt","// For each resource:"]],
+      [["num","1"],["punc",". "],["plain","DNS lookup"]],
+      [["num","2"],["punc",". "],["plain","TCP handshake (SYN, SYN-ACK, ACK)"]],
+      [["num","3"],["punc",". "],["plain","Send request"]],
+      [["num","4"],["punc",". "],["plain","Receive response"]],
+      [["num","5"],["punc",". "],["plain","Close connection"]],
+    ],
+    viz:{ kind:"timeline", version:"http1",
+      rows:[
+        { label:"conn 1", color:T.http1, reqs:[{ s:0, d:1.2, l:"HTML" }] },
+        { label:"conn 2", color:T.http1, reqs:[{ s:1.4, d:1.0, l:"CSS" }] },
+        { label:"conn 3", color:T.http1, reqs:[{ s:2.6, d:1.0, l:"JS" }] },
+        { label:"conn 4", color:T.http1, reqs:[{ s:3.8, d:1.1, l:"img.png" }] },
+      ],
+      total:5.2, note:"Each connection re-does the handshake"
+    },
+  },
+  {
+    id:2, act:"03",
+    title:"HTTP/1.1 — persistent connections",
+    sub:"HTTP/1.1 added keep-alive: one TCP connection can handle many requests in sequence. No more handshake per file. This was a huge win in 1997.",
+    code:[
+      [["cmt","// HTTP/1.1 default headers:"]],
+      [["plain","Connection"],["punc",": "],["str","keep-alive"]],
+      [["cmt",""]],
+      [["cmt","// One handshake, many requests"]],
+      [["cmt","// in sequence on the same socket"]],
+    ],
+    viz:{ kind:"timeline", version:"http1",
+      rows:[
+        { label:"conn 1", color:T.http1, reqs:[
+          { s:0.0, d:1.0, l:"HTML" },
+          { s:1.1, d:0.9, l:"CSS" },
+          { s:2.1, d:0.9, l:"JS" },
+          { s:3.1, d:1.0, l:"img.png" },
+        ]},
+      ],
+      total:4.3, note:"Sequential, but no re-handshaking"
+    },
+  },
+  {
+    id:3, act:"04",
+    title:"HTTP/1.1 — head-of-line blocking",
+    sub:"But requests on a single connection are still ordered. If one response is slow, everything behind it waits. This is HTTP-level head-of-line (HOL) blocking.",
+    code:[
+      [["cmt","// Slow response blocks the rest"]],
+      [["cmt",""]],
+      [["fn","GET"],["plain"," /slow.json   "],["cmt","// ← 3s delay"]],
+      [["fn","GET"],["plain"," /tiny.css    "],["cmt","// waits"]],
+      [["fn","GET"],["plain"," /small.js    "],["cmt","// waits"]],
+    ],
+    viz:{ kind:"timeline", version:"http1",
+      rows:[
+        { label:"conn 1", color:T.http1, reqs:[
+          { s:0.0, d:0.8, l:"HTML" },
+          { s:0.9, d:3.0, l:"slow.json", slow:true },
+          { s:4.0, d:0.4, l:"tiny.css" },
+          { s:4.5, d:0.5, l:"small.js" },
+        ]},
+      ],
+      total:5.2, note:"Fast requests stuck behind a slow one"
+    },
+  },
+  {
+    id:4, act:"05",
+    title:"HTTP/1.1 — the workarounds",
+    sub:"To paper over HOL blocking, the web developed hacks: open 6 connections per domain, shard assets across subdomains, sprite images, concatenate CSS and JS. All of this was load-bearing for years.",
+    code:[
+      [["cmt","// Browser limit: ~6 connections per origin"]],
+      [["plain","static1"],["punc","."],["plain","example"],["punc","."],["plain","com"],["plain","  "],["cmt","// domain sharding"]],
+      [["plain","static2"],["punc","."],["plain","example"],["punc","."],["plain","com"]],
+      [["cmt",""]],
+      [["plain","bundle"],["punc","."],["plain","js"],["plain","     "],["cmt","// concatenation"]],
+      [["plain","sprites"],["punc","."],["plain","png"],["plain","   "],["cmt","// image sprites"]],
+    ],
+    viz:{ kind:"timeline", version:"http1",
+      rows:[
+        { label:"conn 1", color:T.http1, reqs:[{ s:0.0, d:1.0, l:"HTML" },{ s:1.1, d:0.9, l:"bundle.js" }] },
+        { label:"conn 2", color:T.http1, reqs:[{ s:0.2, d:1.0, l:"bundle.css" },{ s:1.3, d:0.8, l:"sprite.png" }] },
+        { label:"conn 3", color:T.http1, reqs:[{ s:0.4, d:1.1, l:"fonts.woff" }] },
+        { label:"conn 4", color:T.http1, reqs:[{ s:0.6, d:0.9, l:"img-a.jpg" }] },
+        { label:"conn 5", color:T.http1, reqs:[{ s:0.8, d:0.9, l:"img-b.jpg" }] },
+        { label:"conn 6", color:T.http1, reqs:[{ s:1.0, d:1.0, l:"analytics" }] },
+      ],
+      total:3.2, note:"6 parallel TCP connections per origin"
+    },
+  },
+  {
+    id:5, act:"06",
+    title:"HTTP/2 — binary framing, one connection",
+    sub:"HTTP/2 keeps the same semantics (methods, headers, status codes) but totally rewrites the wire format. Text becomes binary frames, and everything runs over a single TCP connection.",
+    code:[
+      [["cmt","// HTTP/1.1 frame (text):"]],
+      [["fn","GET"],["plain"," /index.html HTTP/1.1"]],
+      [["plain","Host"],["punc",": "],["plain","example.com"]],
+      [["cmt",""]],
+      [["cmt","// HTTP/2 frame (binary):"]],
+      [["punc","["],["num","HEADERS"],["punc","]["],["num","DATA"],["punc","]["],["num","SETTINGS"],["punc","]"]],
+    ],
+    viz:{ kind:"timeline", version:"http2",
+      rows:[
+        { label:"conn", color:T.http2, reqs:[
+          { s:0.0, d:0.8, l:"HTML", stream:1 },
+          { s:0.0, d:0.6, l:"CSS",  stream:3 },
+          { s:0.0, d:0.7, l:"JS",   stream:5 },
+          { s:0.0, d:0.9, l:"img",  stream:7 },
+        ]},
+      ],
+      total:1.1, note:"Single TCP connection, many streams", showFrames:true
+    },
+  },
+  {
+    id:6, act:"07",
+    title:"HTTP/2 — multiplexing streams",
+    sub:"Multiple requests and responses flow over the same connection as interleaved streams. Each stream is independent — responses can arrive in any order, and a slow one no longer blocks the others.",
+    code:[
+      [["cmt","// Streams are independent"]],
+      [["cmt","// Each has its own ID and priority"]],
+      [["cmt",""]],
+      [["plain","stream "],["num","1"],["plain",": HTML   "],["punc","→"],["plain"," done"]],
+      [["plain","stream "],["num","3"],["plain",": CSS    "],["punc","→"],["plain"," done"]],
+      [["plain","stream "],["num","5"],["plain",": JS     "],["punc","→"],["plain"," done"]],
+    ],
+    viz:{ kind:"timeline", version:"http2",
+      rows:[
+        { label:"stream 1", color:T.http2, reqs:[{ s:0.0, d:2.5, l:"HTML (slow)", slow:true }] },
+        { label:"stream 3", color:T.http2, reqs:[{ s:0.1, d:0.7, l:"CSS" }] },
+        { label:"stream 5", color:T.http2, reqs:[{ s:0.1, d:0.9, l:"JS" }] },
+        { label:"stream 7", color:T.http2, reqs:[{ s:0.2, d:1.1, l:"img.png" }] },
+      ],
+      total:2.8, note:"Fast streams no longer wait for the slow one"
+    },
+  },
+  {
+    id:7, act:"08",
+    title:"HTTP/2 — header compression (HPACK)",
+    sub:"Every HTTP request carries headers — cookies, user-agent, accept, referer. HTTP/1 sent them as plaintext, repeated on every request. HPACK compresses them with a shared dictionary per connection.",
+    code:[
+      [["cmt","// HTTP/1.1 — every request:"]],
+      [["plain","User-Agent"],["punc",": "],["plain","Mozilla/5.0 ..."],["plain","  "],["cmt","// 200+ bytes"]],
+      [["plain","Cookie"],["punc",": "],["plain","sid=abc123; ..."]],
+      [["cmt",""]],
+      [["cmt","// HTTP/2 — after first request:"]],
+      [["plain","62 "],["cmt","// index into HPACK table"]],
+    ],
+    viz:{ kind:"hpack" },
+  },
+  {
+    id:8, act:"09",
+    title:"HTTP/2 — but TCP HOL blocking remains",
+    sub:"HTTP/2 solved HTTP-level HOL blocking. But everything still rides on one TCP connection. If a single TCP packet is lost, TCP stalls the whole connection until it's retransmitted — blocking all streams.",
+    code:[
+      [["cmt","// TCP guarantees in-order delivery"]],
+      [["cmt","// across the whole connection"]],
+      [["cmt",""]],
+      [["plain","packet "],["num","42"],["plain"," dropped "],["punc","→"]],
+      [["plain","  all streams wait for retransmit"]],
+    ],
+    viz:{ kind:"timeline", version:"http2",
+      rows:[
+        { label:"stream 1", color:T.http2, reqs:[{ s:0.0, d:1.0, l:"HTML" }, { s:1.1, d:0.6, l:"..." , blocked:true}] },
+        { label:"stream 3", color:T.http2, reqs:[{ s:0.1, d:0.9, l:"CSS" }, { s:1.1, d:0.6, l:"..." , blocked:true}] },
+        { label:"stream 5", color:T.http2, reqs:[{ s:0.1, d:1.0, l:"JS" }, { s:1.1, d:0.6, l:"..." , blocked:true}] },
+      ],
+      total:2.0, note:"Dropped packet → all streams frozen", tcpDrop:true
+    },
+  },
+  {
+    id:9, act:"10",
+    title:"HTTP/3 — QUIC over UDP",
+    sub:"HTTP/3 throws out TCP entirely. It runs on QUIC, a new protocol built over UDP that handles its own reliability, ordering, and encryption. Streams are truly independent at the transport layer.",
+    code:[
+      [["cmt","// The protocol stack:"]],
+      [["cmt",""]],
+      [["cmt","// HTTP/1 & HTTP/2:"]],
+      [["plain","  HTTP → TLS → TCP → IP"]],
+      [["cmt",""]],
+      [["cmt","// HTTP/3:"]],
+      [["plain","  HTTP → QUIC → UDP → IP"]],
+      [["cmt","//         (TLS 1.3 built in)"]],
+    ],
+    viz:{ kind:"stack", layers:[
+      { label:"HTTP/3", c:T.http3, w:"full" },
+      { label:"QUIC  (streams + TLS 1.3 + congestion)", c:T.purple, w:"full" },
+      { label:"UDP", c:T.blue, w:"full" },
+      { label:"IP", c:T.text3, w:"full" },
+    ]},
+  },
+  {
+    id:10, act:"11",
+    title:"HTTP/3 — the QUIC wins",
+    sub:"Because QUIC streams are independent at the transport layer, a lost packet only blocks the affected stream. It also ships with 0-RTT resumption and connection migration — your connection survives a wifi → cellular switch.",
+    code:[
+      [["cmt","// QUIC advantages:"]],
+      [["plain","• "],["cmt","No TCP HOL blocking"]],
+      [["plain","• "],["cmt","0-RTT handshake on resume"]],
+      [["plain","• "],["cmt","Encrypted by default (TLS 1.3)"]],
+      [["plain","• "],["cmt","Connection migration (wifi → LTE)"]],
+      [["plain","• "],["cmt","Connection ID, not IP+port"]],
+    ],
+    viz:{ kind:"timeline", version:"http3",
+      rows:[
+        { label:"stream 1", color:T.http3, reqs:[{ s:0.0, d:1.2, l:"HTML", dropped:true }] },
+        { label:"stream 3", color:T.http3, reqs:[{ s:0.0, d:0.8, l:"CSS" }] },
+        { label:"stream 5", color:T.http3, reqs:[{ s:0.0, d:1.0, l:"JS" }] },
+        { label:"stream 7", color:T.http3, reqs:[{ s:0.0, d:1.1, l:"img.png" }] },
+      ],
+      total:1.4, note:"One stream drops — others sail through"
+    },
+  },
+  {
+    id:11, act:"12",
+    title:"All three, side by side",
+    sub:"Same page, three protocols. HTTP/1.1 serializes everything. HTTP/2 multiplexes but stalls on packet loss. HTTP/3 keeps streams truly independent.",
+    code:[
+      [["cmt","// Same 4 assets loaded three ways:"]],
+      [["cmt","// HTTP/1.1: sequential on keep-alive"]],
+      [["cmt","// HTTP/2:   interleaved over 1 TCP"]],
+      [["cmt","// HTTP/3:   independent QUIC streams"]],
+    ],
+    viz:{ kind:"compare",
+      http1:{ rows:[
+        { label:"conn", color:T.http1, reqs:[
+          { s:0.0, d:0.9, l:"HTML" },
+          { s:1.0, d:0.7, l:"CSS" },
+          { s:1.8, d:0.8, l:"JS" },
+          { s:2.7, d:0.9, l:"img" },
+        ]}
+      ], total:3.8 },
+      http2:{ rows:[
+        { label:"s1", color:T.http2, reqs:[{ s:0.0, d:1.0, l:"HTML" }] },
+        { label:"s3", color:T.http2, reqs:[{ s:0.1, d:0.8, l:"CSS" }] },
+        { label:"s5", color:T.http2, reqs:[{ s:0.1, d:0.9, l:"JS" }] },
+        { label:"s7", color:T.http2, reqs:[{ s:0.2, d:1.1, l:"img" }] },
+      ], total:1.5 },
+      http3:{ rows:[
+        { label:"s1", color:T.http3, reqs:[{ s:0.0, d:0.9, l:"HTML" }] },
+        { label:"s3", color:T.http3, reqs:[{ s:0.0, d:0.7, l:"CSS" }] },
+        { label:"s5", color:T.http3, reqs:[{ s:0.0, d:0.8, l:"JS" }] },
+        { label:"s7", color:T.http3, reqs:[{ s:0.0, d:1.0, l:"img" }] },
+      ], total:1.1 },
+    },
+  },
+  {
+    id:12, act:"DONE",
+    title:"HTTP Versions — summary",
+    sub:"HTTP/1.1 made the web usable. HTTP/2 made it fast at scale. HTTP/3 made it resilient on lossy networks. Each generation solved the bottleneck the previous one exposed.",
+    code:[], viz:null,
+    finale:true,
+  },
+];
+
+/* ─── DETAIL CONTENT ─── */
+const DETAILS = {
+  http1: {
+    title:"HTTP/1.1",
+    color:T.http1,
+    sections:[
+      {heading:"What it is",body:"HTTP/1.1 (1997) is the text-based protocol that defined the web for nearly two decades. Human-readable requests and responses sent over a persistent TCP connection."},
+      {heading:"Key features",body:"• Keep-alive connections (one TCP, many requests)\n• Pipelining (rarely used — broken in practice)\n• Chunked transfer encoding\n• Host header (enables virtual hosting)\n• Conditional requests (If-Modified-Since, ETag)"},
+      {heading:"The problem",body:"Requests on a connection are strictly ordered. A slow response blocks every request behind it — head-of-line (HOL) blocking. Browsers worked around this by opening ~6 parallel connections per origin."},
+      {heading:"Workarounds you've seen",body:"• Domain sharding (static1.example.com, static2…)\n• CSS/JS concatenation into bundle.js\n• Image sprites\n• Inlining small assets as data: URIs\nAll of these exist because of HTTP/1.1 HOL blocking."},
+    ]
+  },
+  http2: {
+    title:"HTTP/2",
+    color:T.http2,
+    sections:[
+      {heading:"What it is",body:"HTTP/2 (2015, from Google's SPDY) keeps the same semantics as HTTP/1.1 but replaces the wire format with a binary framing layer. Same methods, same headers, same status codes — totally new bytes on the wire."},
+      {heading:"Multiplexing",body:"All requests share one TCP connection and are split into frames belonging to independent streams. Frames from different streams are interleaved, so a slow response on stream 1 doesn't block stream 3."},
+      {heading:"HPACK header compression",body:"Both sides maintain a table of previously-seen headers. After the first request, repeated headers (User-Agent, Cookie, Accept) are sent as small indices instead of full strings."},
+      {heading:"Server push (deprecated)",body:"HTTP/2 let servers proactively send resources before the client requested them. Push was hard to use correctly and is now deprecated in most browsers in favor of <link rel=\"preload\"> hints."},
+      {heading:"The remaining problem",body:"Everything still rides one TCP connection. A single dropped packet stalls the whole socket until retransmit — TCP head-of-line blocking hits every stream at once."},
+    ]
+  },
+  http3: {
+    title:"HTTP/3",
+    color:T.http3,
+    sections:[
+      {heading:"What it is",body:"HTTP/3 (2022) maps the HTTP/2 semantics onto QUIC instead of TCP. Same streams, same binary framing, but now riding on a transport that understands streams natively."},
+      {heading:"Why it matters",body:"A lost packet only blocks the stream it belongs to. Other streams keep flowing. On lossy mobile networks, this is a dramatic improvement — HTTP/2 could stall completely; HTTP/3 degrades gracefully."},
+      {heading:"Adoption",body:"Supported by Chrome, Firefox, Safari, and most CDNs (Cloudflare, Fastly, Google, Meta). Falls back to HTTP/2 or HTTP/1.1 when UDP is blocked by corporate firewalls."},
+      {heading:"Wire detection",body:"Browsers learn a server speaks HTTP/3 via an Alt-Svc header on an HTTP/2 response, then try QUIC on the next request. DNS HTTPS records (type 65) also advertise it."},
+    ]
+  },
+  quic: {
+    title:"QUIC",
+    color:T.purple,
+    sections:[
+      {heading:"What QUIC is",body:"QUIC is a general-purpose transport protocol built on UDP. It combines what used to be three layers (TCP + TLS + parts of HTTP/2) into one. Originally designed by Google, now standardized as RFC 9000."},
+      {heading:"Streams as first-class citizens",body:"QUIC understands streams at the transport layer. Loss on stream 1 affects only stream 1. Compare to TCP, which sees one giant byte sequence and stalls everything on loss."},
+      {heading:"0-RTT handshake",body:"For returning clients, QUIC can send the first request in the very first packet — zero round trips before data flows. TCP + TLS 1.2 needs 3 round trips; TLS 1.3 needs 1; QUIC resumption needs 0."},
+      {heading:"Connection migration",body:"Connections are identified by a Connection ID, not by the 4-tuple (src IP, src port, dst IP, dst port). When your phone switches from wifi to LTE, your IP changes — TCP dies, QUIC survives."},
+      {heading:"Encrypted by default",body:"TLS 1.3 is built into the protocol. There is no unencrypted QUIC. Middleboxes can't peek into or interfere with QUIC the way they do with TCP."},
+    ]
+  },
+  multiplexing: {
+    title:"Multiplexing",
+    color:T.http2L,
+    sections:[
+      {heading:"What it is",body:"Multiplexing means sending multiple logical message streams over a single physical connection, interleaved as small frames, so they don't block each other."},
+      {heading:"How HTTP/2 does it",body:"Each request/response pair gets a stream ID. Frames carry a stream ID and a type (HEADERS, DATA, SETTINGS, WINDOW_UPDATE, ...). The receiver reassembles frames back into full messages per stream."},
+      {heading:"Stream priorities",body:"Clients can suggest priorities and dependencies between streams (e.g. CSS > JS > images). Servers use this to allocate bandwidth when they can't send everything at once."},
+      {heading:"Flow control",body:"Each stream has its own window — receivers can slow down senders per-stream, so one fast stream can't starve the others."},
+    ]
+  },
+  code: {
+    title:"Source Code",
+    color:T.purpleL,
+    sections:[
+      {heading:"Reading the examples",body:"Each scene shows headers, request flow, or protocol stack relevant to that HTTP version. Comments describe the behavior; real bytes on the wire would be binary for HTTP/2 and HTTP/3."},
+      {heading:"Check what you're using",body:"In Chrome DevTools: Network tab → right-click columns → enable \"Protocol\". You'll see h1, h2, h3 per request. Or run:\n\n  curl -sI --http3 https://example.com\n  curl -sI --http2 https://example.com"},
+      {heading:"Opt-in to HTTP/3",body:"Server-side: Cloudflare, Fastly, nginx-quic, Caddy all support HTTP/3 with one config line. You need a valid TLS cert and UDP port 443 open."},
+    ]
+  },
+};
+
+/* ─── COMPONENTS ─── */
+const CodePanel = ({ tokens, onClick }) =>
+  e("div", { onClick, style:{ background:T.codeBase, borderRadius:12, overflow:"hidden", border:`1px solid ${T.border}`, cursor:onClick?"pointer":"default" } },
+    e("div", { style:{ padding:"10px 14px 8px", borderBottom:`1px solid ${T.border}`, display:"flex", gap:7 } },
+      ...["#ff5f57","#febc2e","#28c840"].map((c,i) =>
+        e("div", { key:i, style:{ width:11, height:11, borderRadius:"50%", background:c } })
+      )
+    ),
+    e("div", { style:{ padding:"14px 18px 16px", fontFamily:"'SF Mono','Fira Code','Consolas',monospace", fontSize:12, lineHeight:1.85 } },
+      tokens.map((line, li) =>
+        e("div", { key:li },
+          line.map(([cls, txt], ti) =>
+            e("span", { key:ti, style:{ ...TS[cls], whiteSpace:"pre" } }, txt)
+          )
+        )
+      )
+    )
+  );
+
+/* ─── TIMELINE PANEL ─── */
+const TimelinePanel = ({ viz, onClick, compact=false }) => {
+  const total = viz.total || 5;
+  const rowH = compact ? 26 : 34;
+  const labelW = compact ? 44 : 64;
+  const chartH = viz.rows.length * (rowH + 4) + 12;
+  const color = viz.rows[0] && viz.rows[0].color || T.purple;
+  return e("div", { onClick, style:{ borderRadius:12, border:`1.5px solid ${T.border2}`, background:T.surface, overflow:"hidden", cursor:onClick?"pointer":"default" } },
+    !compact && e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", gap:6 } },
+      e("div", { style:{ width:8, height:8, borderRadius:"50%", background:color } }),
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color } },
+        viz.version === "http1" ? "HTTP/1.1" : viz.version === "http2" ? "HTTP/2" : viz.version === "http3" ? "HTTP/3" : "Timeline")
+    ),
+    e("div", { style:{ padding: compact ? "8px 10px 6px" : "14px 14px 8px" } },
+      /* tick marks / time axis */
+      e("div", { style:{ position:"relative", marginLeft:labelW, height:10, marginBottom:4 } },
+        [0,1,2,3,4,5].filter(t => t <= total).map(t =>
+          e("div", { key:t, style:{ position:"absolute", left:`${(t/total)*100}%`, top:0, bottom:0, borderLeft:`1px dashed ${T.border}` } },
+            !compact && e("span", { style:{ position:"absolute", top:-1, left:2, fontSize:8, color:T.text3 } }, `${t}s`)
+          )
+        )
+      ),
+      /* rows */
+      e("div", { style:{ position:"relative" } },
+        viz.rows.map((row, ri) =>
+          e("div", { key:ri, style:{ display:"flex", alignItems:"center", marginBottom:4, height:rowH } },
+            e("div", { style:{ width:labelW, flexShrink:0, fontSize: compact ? 9 : 10, color:T.text3, fontFamily:"'SF Mono',monospace", paddingRight:6 } }, row.label),
+            e("div", { style:{ position:"relative", flex:1, height:rowH, background:`${T.border}44`, borderRadius:6, overflow:"hidden" } },
+              row.reqs.map((r, i) => {
+                const leftPct = (r.s/total)*100;
+                const widthPct = (r.d/total)*100;
+                const barColor = r.slow ? T.red : r.blocked ? T.text3 : r.dropped ? T.amber : row.color;
+                return e(M.div, {
+                  key:i,
+                  initial:{ opacity:0, scaleX:0, originX:0 },
+                  animate:{ opacity:1, scaleX:1 },
+                  transition:{ delay: compact ? 0.05*i : 0.15 + 0.1*i + 0.05*ri, duration: 0.5, ease:[0.22,1,0.36,1] },
+                  style:{
+                    position:"absolute",
+                    left:`${leftPct}%`,
+                    top:3,
+                    bottom:3,
+                    width:`${widthPct}%`,
+                    background: r.blocked ? `repeating-linear-gradient(45deg, ${barColor}33, ${barColor}33 4px, transparent 4px, transparent 8px)` : `${barColor}cc`,
+                    border:`1px solid ${barColor}`,
+                    borderRadius:4,
+                    display:"flex",
+                    alignItems:"center",
+                    paddingLeft:5,
+                    overflow:"hidden",
+                  }
+                },
+                  !compact && e("span", { style:{ fontSize:9, fontWeight:600, color: r.blocked ? T.text2 : "#0a0a14", whiteSpace:"nowrap", fontFamily:"'SF Mono',monospace" } }, r.l),
+                  r.dropped && e("i", { className:"lni lni-warning", style:{ position:"absolute", right:4, top:"50%", transform:"translateY(-50%)", color:T.red, fontSize:10 } })
+                );
+              })
+            )
+          )
+        )
+      ),
+      viz.note && !compact && e("div", { style:{ fontSize:10, color:T.text3, marginLeft:labelW, marginTop:6, fontStyle:"italic" } }, viz.note),
+      viz.tcpDrop && !compact && e(M.div, {
+        initial:{ opacity:0 }, animate:{ opacity:1 }, transition:{ delay:1.0 },
+        style:{ marginLeft:labelW, marginTop:4, fontSize:10, color:T.red, display:"flex", alignItems:"center", gap:5 }
+      },
+        e("i", { className:"lni lni-warning" }),
+        "TCP packet lost → all streams blocked waiting for retransmit"
+      )
+    )
+  );
+};
+
+/* ─── HPACK VISUALIZATION ─── */
+const HpackPanel = ({ onClick }) =>
+  e("div", { onClick, style:{ borderRadius:12, border:`1.5px solid ${T.border2}`, background:T.surface, overflow:"hidden", cursor:"pointer" } },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", gap:6 } },
+      e("div", { style:{ width:8, height:8, borderRadius:"50%", background:T.http2 } }),
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.http2 } }, "HPACK header compression")
+    ),
+    e("div", { style:{ padding:14, display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 } },
+      /* HTTP/1.1 side */
+      e("div", null,
+        e("div", { style:{ fontSize:10, fontWeight:700, color:T.http1L, marginBottom:6 } }, "HTTP/1.1 — every request"),
+        ["User-Agent: Mozilla/5.0 (...)","Accept: text/html,application/...","Accept-Encoding: gzip, deflate, br","Cookie: sid=abc123; pref=..."].map((h,i) =>
+          e(M.div, { key:i, initial:{opacity:0,x:-8}, animate:{opacity:1,x:0}, transition:{delay:0.1*i,...ez},
+            style:{ fontSize:10, padding:"5px 8px", marginBottom:3, borderRadius:5, background:`${T.http1}14`, border:`1px solid ${T.http1}33`, color:T.text2, fontFamily:"'SF Mono',monospace", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" } }, h)
+        ),
+        e("div", { style:{ marginTop:8, fontSize:10, color:T.http1L, fontWeight:600 } }, "~ 800 bytes / request")
+      ),
+      /* HTTP/2 side */
+      e("div", null,
+        e("div", { style:{ fontSize:10, fontWeight:700, color:T.http2L, marginBottom:6 } }, "HTTP/2 — subsequent requests"),
+        ["62","63","64","65"].map((idx,i) =>
+          e(M.div, { key:i, initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, transition:{delay:0.6 + 0.1*i,...ez},
+            style:{ fontSize:10, padding:"5px 8px", marginBottom:3, borderRadius:5, background:`${T.http2}14`, border:`1px solid ${T.http2}33`, color:T.http2L, fontFamily:"'SF Mono',monospace", display:"flex", justifyContent:"space-between" } },
+            e("span", null, `index ${idx}`),
+            e("span", { style:{ color:T.text3 } }, "1 byte")
+          )
+        ),
+        e(M.div, { initial:{opacity:0}, animate:{opacity:1}, transition:{delay:1.1},
+          style:{ marginTop:8, fontSize:10, color:T.http2L, fontWeight:600 } }, "~ 4 bytes / request")
+      )
+    ),
+    e("div", { style:{ padding:"8px 14px 12px", fontSize:10, color:T.text3, fontStyle:"italic", borderTop:`1px solid ${T.border}` } },
+      "Both sides keep a shared dictionary. Repeated headers become tiny indices.")
+  );
+
+/* ─── PROTOCOL STACK ─── */
+const StackPanel = ({ layers, onClick }) =>
+  e("div", { onClick, style:{ borderRadius:12, border:`1.5px solid ${T.border2}`, background:T.surface, overflow:"hidden", cursor:"pointer" } },
+    e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", gap:6 } },
+      e("div", { style:{ width:8, height:8, borderRadius:"50%", background:T.http3 } }),
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.http3 } }, "Protocol stack")
+    ),
+    e("div", { style:{ padding:14, display:"flex", flexDirection:"column", gap:6 } },
+      layers.map((l,i) =>
+        e(M.div, { key:i, initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, transition:{delay:i*0.1,...ez},
+          style:{ padding:"12px 16px", borderRadius:8, background:`${l.c}14`, border:`1px solid ${l.c}44`, display:"flex", alignItems:"center", justifyContent:"center" }
+        },
+          e("span", { style:{ fontSize:12, fontWeight:700, color:l.c, fontFamily:"'SF Mono',monospace" } }, l.label)
+        )
+      )
+    )
+  );
+
+/* ─── COMPARE PANEL ─── */
+const ComparePanel = ({ viz, onClick }) =>
+  e("div", { style:{ display:"flex", flexDirection:"column", gap:8 } },
+    [
+      { k:"http1", label:"HTTP/1.1", color:T.http1, data:viz.http1 },
+      { k:"http2", label:"HTTP/2",   color:T.http2, data:viz.http2 },
+      { k:"http3", label:"HTTP/3",   color:T.http3, data:viz.http3 },
+    ].map((g, gi) =>
+      e(M.div, { key:g.k,
+        initial:{opacity:0,y:6}, animate:{opacity:1,y:0}, transition:{delay:gi*0.18,...ez},
+        onClick: ()=>onClick(g.k),
+        style:{ borderRadius:10, border:`1.5px solid ${g.color}44`, background:T.surface, overflow:"hidden", cursor:"pointer" }
+      },
+        e("div", { style:{ padding:"6px 12px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" } },
+          e("div", { style:{ display:"flex", alignItems:"center", gap:6 } },
+            e("div", { style:{ width:7, height:7, borderRadius:"50%", background:g.color } }),
+            e("span", { style:{ fontSize:10, fontWeight:700, color:g.color, letterSpacing:"0.04em" } }, g.label)
+          ),
+          e("span", { style:{ fontSize:9, color:T.text3, fontFamily:"monospace" } }, `${g.data.total.toFixed(1)}s`)
+        ),
+        e(TimelinePanel, { viz:{ ...g.data, version:g.k }, compact:true })
+      )
+    )
+  );
+
+/* ─── FINALE ─── */
+const Finale = () => {
+  const rows = [
+    { n:"1.1", label:"HTTP/1.1 — persistent, text, serial", sub:"Keep-alive let connections be reused — but one slow response blocks the rest", c:T.http1 },
+    { n:"2", label:"HTTP/2 — binary, multiplexed", sub:"One TCP connection, many streams. HPACK compresses headers. Still hurt by TCP HOL blocking", c:T.http2 },
+    { n:"3", label:"HTTP/3 — QUIC over UDP", sub:"Truly independent streams. 0-RTT resumption. Survives a network switch", c:T.http3 },
+    { n:"lni-bolt-2", label:"Same semantics", sub:"Methods, headers, and status codes are unchanged. Only the wire format evolves", c:T.amber },
+    { n:"lni-shield-2", label:"Always TLS in /3", sub:"HTTP/3 is encrypted by default via TLS 1.3 baked into QUIC", c:T.purple },
+    { n:"lni-globe", label:"All three coexist", sub:"Servers negotiate the best version they and the client can speak", c:T.teal },
+  ];
+  return e("div", { style:{ padding:"8px 0" } },
+    rows.map((r,i) => e(M.div, { key:i, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.1,...ez},
+      style:{ display:"flex", alignItems:"flex-start", gap:12, padding:"11px 14px", marginBottom:8, borderRadius:10, border:`1px solid ${r.c}28`, background:`${r.c}08` }
+    },
+      e("div", { style:{ width:28, height:28, borderRadius:"50%", border:`1.5px solid ${r.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:11, fontWeight:700, color:r.c } }, r.n.startsWith("lni-") ? e("i", { className:"lni " + r.n }) : r.n),
+      e("div", null,
+        e("div", { style:{ fontSize:13, fontWeight:600, color:r.c, marginBottom:2 } }, r.label),
+        e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.5 } }, r.sub)
+      )
+    ))
+  );
+};
+
+/* ─── DETAIL SIDEBAR ─── */
+const DetailPanel = ({ detailKey, onClose }) => {
+  const d = DETAILS[detailKey];
+  if (!d) return null;
+  return e("div", {
+    style:{ width:340, flexShrink:0, background:T.surface, borderRadius:14, border:`1.5px solid ${d.color}44`, overflow:"hidden", alignSelf:"flex-start", position:"sticky", top:56 }
+  },
+    e("div", { style:{ padding:"14px 18px 12px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:8 } },
+        e("div", { style:{ width:8, height:8, borderRadius:"50%", background:d.color } }),
+        e("span", { style:{ fontSize:14, fontWeight:600, color:T.text1 } }, d.title)
+      ),
+      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6, transition:"color 0.2s" }, onMouseEnter:ev=>ev.target.style.color=T.text1, onMouseLeave:ev=>ev.target.style.color=T.text3 }, e("i", { className:"lni lni-xmark" }))
+    ),
+    e("div", { style:{ padding:"16px 18px 20px", maxHeight:"calc(100vh - 140px)", overflowY:"auto" } },
+      d.sections.map((s, i) =>
+        e("div", { key:i, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
+          e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
+        )
+      )
+    )
+  );
+};
+
+/* ─── APP ─── */
+function App() {
+  const [si, setSi] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [detail, setDetail] = useState(null);
+  const timer = useRef(null);
+  const sc = SCENES[si];
+
+  useEffect(() => { setPlaying(true); }, []);
+
+  useEffect(() => {
+    if (!playing) return;
+    const d = si===0 ? 3000 : sc.finale ? 99999 : 3800;
+    timer.current = setTimeout(() => { si < SCENES.length-1 ? setSi(i=>i+1) : setPlaying(false); }, d);
+    return () => clearTimeout(timer.current);
+  }, [playing, si]);
+
+  const go = d => { clearTimeout(timer.current); setPlaying(false); setSi(i=>Math.max(0,Math.min(SCENES.length-1,i+d))); };
+  const jump = i => { clearTimeout(timer.current); setPlaying(false); setSi(i); };
+  const togglePlay = () => { if(si===SCENES.length-1){setSi(0);setPlaying(true);}else setPlaying(p=>!p); };
+  const toggleDetail = key => { setDetail(d => d===key ? null : key); clearTimeout(timer.current); setPlaying(false); };
+
+  const viz = sc.viz;
+
+  return e("div", { style:{ display:"flex", gap:16, alignItems:"flex-start", justifyContent: detail ? "flex-start" : "center" } },
+  e("div", { style:{ width:760, flexShrink:0, background:T.bg, fontFamily:"system-ui,sans-serif", padding:20, borderRadius:16 } },
+
+    /* header */
+    e("div", { style:{ marginBottom:18 } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:10, marginBottom:11 } },
+        e(AP, { mode:"wait" },
+          e(M.div, { key:sc.act, initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, exit:{opacity:0}, transition:sp(400,28),
+            style:{ fontSize:9,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:T.purple,background:`${T.purple}14`,padding:"3px 10px",borderRadius:20,border:`1px solid ${T.purple}30`,flexShrink:0 }
+          }, sc.act)
+        ),
+        e("div", { style:{ flex:1, height:1, background:T.border, borderRadius:99, overflow:"hidden" } },
+          e(M.div, { animate:{width:`${si/(SCENES.length-1)*100}%`}, transition:{duration:0.5}, style:{height:"100%",background:T.purple,borderRadius:99} })
+        ),
+        e("span", { style:{ fontSize:10, color:T.text3 } }, `${si+1} / ${SCENES.length}`)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.title, initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, exit:{opacity:0,y:-8}, transition:ez,
+          style:{ fontSize:20,fontWeight:600,color:T.text1,marginBottom:4,letterSpacing:"-0.02em" }
+        }, sc.title)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
+          style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
+        }, sc.sub)
+      )
+    ),
+
+    e("div", { style:{ minHeight:460 } },
+
+    /* finale */
+    sc.finale && e(Finale),
+
+    /* main */
+    !sc.finale && e("div", null,
+
+      /* timeline viz */
+      viz && viz.kind === "timeline" && e("div", { key:`tl-${si}`, style:{ marginBottom:10 } },
+        e(TimelinePanel, { viz, onClick:()=>toggleDetail(viz.version) })
+      ),
+
+      /* hpack viz */
+      viz && viz.kind === "hpack" && e("div", { style:{ marginBottom:10 } },
+        e(HpackPanel, { onClick:()=>toggleDetail("http2") })
+      ),
+
+      /* stack viz */
+      viz && viz.kind === "stack" && e("div", { style:{ marginBottom:10 } },
+        e(StackPanel, { layers:viz.layers, onClick:()=>toggleDetail("quic") })
+      ),
+
+      /* compare viz */
+      viz && viz.kind === "compare" && e("div", { key:`cmp-${si}`, style:{ marginBottom:10 } },
+        e(ComparePanel, { viz, onClick:(k)=>toggleDetail(k) })
+      ),
+
+      /* code */
+      sc.code.length > 0 && e("div", { style:{ marginBottom:10 } },
+        e(CodePanel, { tokens:sc.code, onClick:()=>toggleDetail("code") })
+      )
+    ),
+
+    ), /* close minHeight wrapper */
+
+    /* controls */
+    e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginTop:16 } },
+      e("button", { onClick:()=>go(-1), disabled:si===0,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===0?T.text3:T.text2,cursor:si===0?"not-allowed":"pointer",fontSize:11,transition:"color 0.2s" }
+      }, "← Back"),
+      e("button", { onClick:togglePlay,
+        style:{ padding:"6px 18px",borderRadius:8,border:`1px solid ${playing?T.coral:T.purple}44`,background:playing?`${T.coral}14`:`${T.purple}14`,color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all 0.2s" }
+      }, playing ? "⏸  Pause" : si===SCENES.length-1 ? "↺  Replay" : "▶  Play"),
+      e("button", { onClick:()=>go(1), disabled:si===SCENES.length-1,
+        style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
+      }, "Next →"),
+      e("div", { style:{ flex:1 } }),
+      e("div", { style:{ display:"flex", gap:4, alignItems:"center" } },
+        SCENES.map((_,i) =>
+          e("button", { key:i, onClick:()=>jump(i),
+            style:{ width:i===si?16:5,height:5,borderRadius:99,border:"none",padding:0,background:i===si?T.purple:i<si?`${T.purple}55`:T.border,cursor:"pointer",transition:"all 0.25s" }
+          })
+        )
+      )
+    )
+  ),
+  detail && e(DetailPanel, { detailKey:detail, onClose:()=>setDetail(null) })
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(e(App));
+</script>
+</body>
+</html>
