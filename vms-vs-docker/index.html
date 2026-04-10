@@ -529,6 +529,28 @@ const StackDiagram = ({ layers, label, color, onClick }) =>
     )
   );
 
+/* icon lookup by layer id prefix */
+const LAYER_ICONS = {
+  app: "lni-rocket-5",
+  gos: "lni-monitor",
+  hyp: "lni-layers-1",
+  hos: "lni-monitor-code",
+  hw:  "lni-gears-3",
+  deng:"lni-docker",
+  ca:  "lni-box-closed",
+};
+const iconForLayer = id => {
+  if (!id) return null;
+  if (id.indexOf("deng") === 0) return LAYER_ICONS.deng;
+  if (id.indexOf("app") === 0) return LAYER_ICONS.app;
+  if (id.indexOf("gos") === 0) return LAYER_ICONS.gos;
+  if (id.indexOf("hyp") === 0) return LAYER_ICONS.hyp;
+  if (id.indexOf("hos") === 0) return LAYER_ICONS.hos;
+  if (id.indexOf("hw")  === 0) return LAYER_ICONS.hw;
+  if (id.indexOf("ca")  === 0) return LAYER_ICONS.ca;
+  return null;
+};
+
 /* Better stack rendering */
 const ArchStack = ({ layers, label, color, onClick }) => {
   /* Group layers: consecutive pos layers form a row, non-pos layers are full-width */
@@ -560,24 +582,28 @@ const ArchStack = ({ layers, label, color, onClick }) => {
         ? e("div", { style:{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", color:T.text3, fontSize:11 } }, "—")
         : groups.map((g, gi) => {
             if (g.type === "full") {
+              var fullIcon = iconForLayer(g.item.id);
               return e(M.div, {
                 key:g.item.id, layout:true,
                 initial:{opacity:0,y:10}, animate:{opacity:1,y:0}, transition:sp(360,24),
-                style:{ padding:"8px 12px", borderRadius:8, border:`1px solid ${g.item.color}44`, background:`${g.item.color}14`, textAlign:"center" }
+                style:{ padding:"8px 12px", borderRadius:8, border:`1px solid ${g.item.color}44`, background:`${g.item.color}14`, display:"flex", alignItems:"center", justifyContent:"center", gap:7 }
               },
+                fullIcon && e("i", { className:"lni " + fullIcon, style:{ color:g.item.color, fontSize:13 } }),
                 e("span", { style:{ fontSize:11, fontWeight:600, color:g.item.color, fontFamily:"'SF Mono',monospace" } }, g.item.label)
               );
             } else {
               return e("div", { key:`row-${gi}`, style:{ display:"flex", gap:4 } },
-                g.items.map(item =>
-                  e(M.div, {
+                g.items.map(item => {
+                  var splitIcon = iconForLayer(item.id);
+                  return e(M.div, {
                     key:item.id, layout:true,
                     initial:{opacity:0,scale:0.9}, animate:{opacity:1,scale:1}, transition:sp(360,24),
-                    style:{ flex:1, padding:"6px 8px", borderRadius:8, border:`1px solid ${item.color}44`, background:`${item.color}14`, textAlign:"center" }
+                    style:{ flex:1, padding:"6px 8px", borderRadius:8, border:`1px solid ${item.color}44`, background:`${item.color}14`, display:"flex", alignItems:"center", justifyContent:"center", gap:5 }
                   },
+                    splitIcon && e("i", { className:"lni " + splitIcon, style:{ color:item.color, fontSize:11 } }),
                     e("span", { style:{ fontSize:10, fontWeight:600, color:item.color, fontFamily:"'SF Mono',monospace" } }, item.label)
-                  )
-                )
+                  );
+                })
               );
             }
           })
