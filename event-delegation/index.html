@@ -491,7 +491,14 @@ const DOMTreeViz = ({ tree, onClick }) => {
     bubbleArrows = [["document","div"],["div","ul"],["ul","li2"]];
   } else if (phase === "all") {
     highlightNodes = ["document","div","ul","li2"];
-    bubbleArrows = [["document","div"],["div","ul"],["ul","li2"],["li2","ul"],["ul","div"],["div","document"]];
+    bubbleArrows = [
+      { pair:["document","div"], phase:"capture" },
+      { pair:["div","ul"],       phase:"capture" },
+      { pair:["ul","li2"],       phase:"capture" },
+      { pair:["li2","ul"],       phase:"bubble"  },
+      { pair:["ul","div"],       phase:"bubble"  },
+      { pair:["div","document"], phase:"bubble"  },
+    ];
   } else if (phase === "target-vs-current") {
     highlightNodes = ["li2","ul"];
     listenerNode = "ul";
@@ -527,30 +534,40 @@ const DOMTreeViz = ({ tree, onClick }) => {
     e("div", { style:{ padding:8, display:"flex", justifyContent:"center" } },
       e("svg", { width:svgW, height:extraH, viewBox:`0 0 ${svgW} ${extraH}` },
 
+        /* normalize arrows — each entry becomes { pair, phase } */
+        (function() { return null; })(),
+
         /* edges */
         edges.map(function(pair, i) {
           var from = getNode(pair[0]);
           var to = getNode(pair[1]);
           if (!from || !to) return null;
-          var isHL = bubbleArrows.some(function(a) {
-            return (a[0]===pair[0] && a[1]===pair[1]) || (a[0]===pair[1] && a[1]===pair[0]);
+          var matchArrow = bubbleArrows.find(function(a) {
+            var p = a.pair || a;
+            return (p[0]===pair[0] && p[1]===pair[1]) || (p[0]===pair[1] && p[1]===pair[0]);
           });
+          var isHL = !!matchArrow;
+          var arrowPhase = matchArrow && matchArrow.phase;
+          var strokeC = !isHL ? T.border2 :
+            (arrowPhase === "capture" ? T.blue :
+             arrowPhase === "bubble"  ? T.amber : T.amber);
           return e("line", {
             key:i, x1:from.x, y1:from.y+nodeH/2, x2:to.x, y2:to.y-nodeH/2,
-            stroke: isHL ? T.amber : T.border2, strokeWidth: isHL ? 2 : 1,
+            stroke: strokeC, strokeWidth: isHL ? 2 : 1,
             strokeDasharray: isHL ? "none" : "4,3",
           });
         }),
 
         /* animated dots traveling along arrows (edge-to-edge, never over node text) */
-        bubbleArrows.map(function(pair, i) {
+        bubbleArrows.map(function(a, i) {
+          var pair = a.pair || a;
+          var arrowPhase = a.phase;
           var from = getNode(pair[0]);
           var to = getNode(pair[1]);
           if (!from || !to) return null;
           var dx = to.x - from.x;
           var dy = to.y - from.y;
           var len = Math.sqrt(dx*dx + dy*dy) || 1;
-          /* scale exit distance so dot clears the rect on both axes */
           var tx = Math.abs(dx) > 0.001 ? (nodeW/2 + 2) / Math.abs(dx) : Infinity;
           var ty = Math.abs(dy) > 0.001 ? (nodeH/2 + 2) / Math.abs(dy) : Infinity;
           var tExit = Math.min(tx, ty);
@@ -558,11 +575,13 @@ const DOMTreeViz = ({ tree, onClick }) => {
           var sy = from.y + dy * tExit;
           var ex = to.x - dx * tExit;
           var ey = to.y - dy * tExit;
+          var dotColor = arrowPhase === "capture" ? T.blueL :
+                         arrowPhase === "bubble"  ? T.amberL : T.amber;
           return e(M.circle, {
-            key:"dot-"+i, r:4, fill:T.amber,
+            key:"dot-"+i, r:5, fill:dotColor,
             initial:{ cx:sx, cy:sy },
             animate:{ cx:[sx,ex], cy:[sy,ey] },
-            transition:{ duration:0.8, delay:i*0.4, repeat:Infinity, repeatDelay:bubbleArrows.length*0.4, ease:"easeInOut" },
+            transition:{ duration:0.6, delay:i*0.5, repeat:Infinity, repeatDelay:bubbleArrows.length*0.5-0.1, ease:"easeInOut" },
           });
         }),
 
@@ -649,7 +668,20 @@ const DOMTreeViz = ({ tree, onClick }) => {
     phase && e("div", { style:{ padding:"4px 14px 10px", display:"flex", gap:10, flexWrap:"wrap", justifyContent:"center" } },
       phase === "bubble" && e("span", { style:{ fontSize:9, color:T.amberL } }, "event bubbles up from target"),
       phase === "capture" && e("span", { style:{ fontSize:9, color:T.blueL } }, "event captures down to target"),
-      phase === "all" && e("span", { style:{ fontSize:9, color:T.amberL } }, "capture down, then bubble up"),
+      phase === "all" && e("div", { style:{ display:"flex", alignItems:"center", gap:10 } },
+        e("div", { style:{ display:"flex", alignItems:"center", gap:4 } },
+          e("div", { style:{ width:8, height:8, borderRadius:"50%", background:T.blueL } }),
+          e("span", { style:{ fontSize:9, color:T.blueL, fontWeight:600 } }, "1. Capture (down)")
+        ),
+        e("div", { style:{ display:"flex", alignItems:"center", gap:4 } },
+          e("div", { style:{ width:8, height:8, borderRadius:"50%", background:T.purpleL } }),
+          e("span", { style:{ fontSize:9, color:T.purpleL, fontWeight:600 } }, "2. Target")
+        ),
+        e("div", { style:{ display:"flex", alignItems:"center", gap:4 } },
+          e("div", { style:{ width:8, height:8, borderRadius:"50%", background:T.amberL } }),
+          e("span", { style:{ fontSize:9, color:T.amberL, fontWeight:600 } }, "3. Bubble (up)")
+        )
+      ),
       phase === "target-vs-current" && e("span", { style:{ fontSize:9, color:T.purpleL } }, "target = clicked | currentTarget = listener"),
       phase === "delegation" && e("span", { style:{ fontSize:9, color:T.tealL } }, "one listener on parent catches all"),
       phase === "step-by-step" && e("span", { style:{ fontSize:9, color:T.tealL } }, "click child, bubble, parent handles"),
@@ -665,7 +697,7 @@ const InfoPanel = ({ scene, onClick }) => {
   var phaseLabels = {
     "bubble": { label:"Bubbling", desc:"Event travels up the tree", color:T.amber },
     "capture": { label:"Capturing", desc:"Event travels down the tree", color:T.blue },
-    "all": { label:"All Phases", desc:"Capture then Target then Bubble", color:T.amber },
+    "all": { label:"All 3 Phases", desc:"Blue dots go down (capture), orange dots come back up (bubble)", color:T.amber },
     "target-vs-current": { label:"target / currentTarget", desc:"Who fired vs who listens", color:T.purple },
     "delegation": { label:"Delegation", desc:"One listener on parent", color:T.teal },
     "step-by-step": { label:"Step by Step", desc:"How delegation works in detail", color:T.teal },
