@@ -149,7 +149,7 @@ const SCENES = [
   {
     id:0, act:"01",
     title:"What is OpenTelemetry?",
-    sub:"OTel is a vendor-neutral, open-source standard for collecting telemetry data — traces, metrics, and logs. It decouples instrumentation from backends so you're never locked in.",
+    sub:"**OTel is a vendor-neutral, open-source standard for collecting telemetry data — traces, metrics, and logs.** It decouples instrumentation from backends so you're never locked in.",
     code:[
       [["cmt","// OpenTelemetry (OTel)"]],
       [["cmt","// CNCF project — industry standard"]],
@@ -160,7 +160,7 @@ const SCENES = [
   {
     id:1, act:"02",
     title:"The problem before OTel",
-    sub:"Every vendor had its own SDK. Switching from Datadog to Jaeger meant rewriting all instrumentation. No standard format, no interoperability, no portable telemetry.",
+    sub:"**Every vendor had its own SDK.** Switching from Datadog to Jaeger meant rewriting all instrumentation. No standard format, no interoperability, no portable telemetry.",
     code:[
       [["cmt","// Before OTel:"]],
       [["kw","import"],["plain"," "],["str","'datadog-sdk'"],["plain","    "],["cmt","// vendor A"]],
@@ -174,7 +174,7 @@ const SCENES = [
   {
     id:2, act:"03",
     title:"The three signals",
-    sub:"OTel standardizes three types of telemetry data. Traces show request flow across services. Metrics measure system health. Logs capture discrete events.",
+    sub:"**OTel standardizes three types of telemetry data.** Traces show request flow across services. Metrics measure system health. Logs capture discrete events.",
     code:[
       [["cmt","// Three pillars of observability"]],
       [["cmt","// 1. Traces  — request flow"]],
@@ -191,7 +191,7 @@ const SCENES = [
   {
     id:3, act:"04",
     title:"Instrumentation — adding telemetry to code",
-    sub:"Auto-instrumentation wraps popular frameworks (Express, Flask, gRPC) automatically. Manual instrumentation lets you add custom spans and metrics where you need them.",
+    sub:"**Auto-instrumentation wraps popular frameworks (Express, Flask, gRPC) automatically.** Manual instrumentation lets you add custom spans and metrics where you need them.",
     code:[
       [["cmt","// Auto-instrumentation (zero code)"]],
       [["fn","registerInstrumentations"],["punc","({"]],
@@ -206,7 +206,7 @@ const SCENES = [
   {
     id:4, act:"05",
     title:"Manual span creation",
-    sub:"You create a tracer, then start spans around the operations you want to measure. Spans can be nested to show parent-child relationships.",
+    sub:"**You create a tracer, then start spans around the operations you want to measure.** Spans can be nested to show parent-child relationships.",
     code:[
       [["kw","const"],["plain"," tracer "],["punc","= "],["fn","trace"],["punc","."],["meth","getTracer"],["punc","("],["str","'my-app'"],["punc",")"]],
       [["plain",""]],
@@ -223,7 +223,7 @@ const SCENES = [
   {
     id:5, act:"06",
     title:"Traces — a tree of spans",
-    sub:"A trace represents one request flowing through your system. Each service creates a span. Spans form a tree — the root span is the entry point, child spans are downstream calls.",
+    sub:"**A trace represents one request flowing through your system.** Each service creates a span. Spans form a tree — the root span is the entry point, child spans are downstream calls.",
     code:[
       [["cmt","// Trace: one request, multiple spans"]],
       [["cmt","// API Gateway → Auth → User Service → DB"]],
@@ -258,7 +258,7 @@ const SCENES = [
   {
     id:7, act:"08",
     title:"Context propagation",
-    sub:"When Service A calls Service B, the trace context must travel with the request. OTel uses the W3C traceparent header to propagate traceId and parentSpanId across service boundaries.",
+    sub:"**When Service A calls Service B, the trace context must travel with the request.** OTel uses the W3C traceparent header to propagate traceId and parentSpanId across service boundaries.",
     code:[
       [["cmt","// W3C traceparent header format:"]],
       [["str","'traceparent: 00-<traceId>-<spanId>-01'"]],
@@ -276,7 +276,7 @@ const SCENES = [
   {
     id:8, act:"09",
     title:"The OTel Collector",
-    sub:"The Collector is a standalone process that receives telemetry, processes it, and exports it to backends. It's the central hub of the OTel pipeline: Receivers → Processors → Exporters.",
+    sub:"**The Collector is a standalone process that receives telemetry, processes it, and exports it to backends.** It's the central hub of the OTel pipeline: Receivers → Processors → Exporters.",
     code:[
       [["cmt","# collector-config.yaml"]],
       [["key","receivers"],["punc",":"]],
@@ -297,7 +297,7 @@ const SCENES = [
   {
     id:9, act:"10",
     title:"Collector processors",
-    sub:"Processors transform telemetry in-flight. Batch groups data for efficiency. Filter drops unwanted spans. Sampling reduces volume. Attributes add/remove metadata.",
+    sub:"**Processors transform telemetry in-flight.** Batch groups data for efficiency. Filter drops unwanted spans. Sampling reduces volume. Attributes add/remove metadata.",
     code:[
       [["key","processors"],["punc",":"]],
       [["plain","  "],["key","batch"],["punc",":"]],
@@ -314,7 +314,7 @@ const SCENES = [
   {
     id:10, act:"11",
     title:"Push model — app pushes telemetry",
-    sub:"OTel uses a push model: the app SDK sends data to the Collector (or directly to a backend). Contrast with Prometheus which pulls metrics from your app's /metrics endpoint.",
+    sub:"**OTel uses a push model: the app SDK sends data to the Collector (or directly to a backend).** Contrast with Prometheus which pulls metrics from your app's /metrics endpoint.",
     code:[
       [["cmt","// OTel: PUSH model"]],
       [["cmt","// App SDK → pushes → Collector → Backend"]],
@@ -341,7 +341,7 @@ const SCENES = [
   {
     id:11, act:"12",
     title:"Export destinations",
-    sub:"Because OTel is vendor-neutral, you can export to any backend without changing your instrumentation. Switch from Jaeger to Datadog? Just change the Collector config.",
+    sub:"**Because OTel is vendor-neutral, you can export to any backend without changing your instrumentation.** Switch from Jaeger to Datadog? Just change the Collector config.",
     code:[
       [["key","exporters"],["punc",":"]],
       [["plain","  "],["key","jaeger"],["punc",":    { "],["key","endpoint"],["punc",": "],["str","\"jaeger:14250\""],["punc"," }"]],
@@ -355,7 +355,7 @@ const SCENES = [
   {
     id:12, act:"13",
     title:"OTLP — the native protocol",
-    sub:"OpenTelemetry Protocol (OTLP) is the standard wire format for sending all three signals. Supports gRPC (fast, streaming) and HTTP/protobuf (firewall-friendly).",
+    sub:"**OpenTelemetry Protocol (OTLP) is the standard wire format for sending all three signals.** Supports gRPC (fast, streaming) and HTTP/protobuf (firewall-friendly).",
     code:[
       [["cmt","// OTLP over gRPC (default port 4317)"]],
       [["key","endpoint"],["punc",": "],["str","\"otel-collector:4317\""]],
@@ -370,7 +370,7 @@ const SCENES = [
   {
     id:13, act:"14",
     title:"Typical deployment",
-    sub:"In production: your app includes the OTel SDK, which pushes telemetry to a Collector running as a sidecar or DaemonSet. The Collector fans out to one or more backends.",
+    sub:"**In production: your app includes the OTel SDK, which pushes telemetry to a Collector running as a sidecar or DaemonSet.** The Collector fans out to one or more backends.",
     code:[
       [["cmt","// Typical production setup:"]],
       [["cmt","//"]],
@@ -394,7 +394,7 @@ const SCENES = [
   {
     id:14, act:"DONE",
     title:"OpenTelemetry — summary",
-    sub:"Instrument once, export anywhere. OTel is the future of observability.",
+    sub:"**Instrument once, export anywhere.** OTel is the future of observability.",
     code:[], pipeline:null, signals:null, spans:null, collector:null,
     finale:true,
   },
@@ -628,7 +628,7 @@ const Finale = () => {
     { n:"2", label:"Three signals", sub:"Traces, metrics, and logs — all correlated with traceId", c:T.trace },
     { n:"3", label:"Auto-instrumentation", sub:"Zero-code setup for popular frameworks and libraries", c:T.teal },
     { n:"4", label:"Context propagation", sub:"W3C traceparent header carries traceId across services", c:T.blue },
-    { n:"5", label:"OTel Collector", sub:"Receives → processes → exports. Decouples app from backend", c:T.coral },
+    { n:"5", label:"OTel Collector", sub:"**Receives → processes → exports.** Decouples app from backend", c:T.coral },
     { n:"6", label:"Push model + OTLP", sub:"App pushes telemetry via gRPC/HTTP using the OTLP protocol", c:T.amber },
   ];
   return e("div", { style:{ padding:"8px 0" } },
@@ -724,7 +724,7 @@ function App() {
       e(AP, { mode:"wait" },
         e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
           style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
-        }, sc.sub)
+        }, renderBody(sc.sub))
       )
     ),
 

@@ -147,7 +147,7 @@ const SCENES = [
   {
     id:0, act:"01",
     title:"HTTP — the web's conversation",
-    sub:"Every page, every API call, every image starts with HTTP. But there isn't just one HTTP — there are three active versions, each solving the previous one's bottleneck. Let's see what changed and why it matters.",
+    sub:"**Every page, every API call, every image starts with HTTP.** But there isn't just one HTTP — there are three active versions, each solving the previous one's bottleneck. Let's see what changed and why it matters.",
     code:[
       [["cmt","// HTTP/1.1  — 1997, text, one request at a time"]],
       [["cmt","// HTTP/2    — 2015, binary, multiplexed over TCP"]],
@@ -161,7 +161,7 @@ const SCENES = [
   {
     id:1, act:"02",
     title:"HTTP/1.0 — one connection per request",
-    sub:"The original HTTP opened a fresh TCP connection for every resource. Handshake, request, response, close — repeat for every image, stylesheet, and script. A page with 30 assets meant 30 TCP handshakes.",
+    sub:"**The original HTTP opened a fresh TCP connection for every resource.** Handshake, request, response, close — repeat for every image, stylesheet, and script. A page with 30 assets meant 30 TCP handshakes.",
     code:[
       [["cmt","// HTTP/1.0 — each resource pays the full cost"]],
       [["plain","TCP SYN → SYN-ACK → ACK  "],["cmt","// 1 RTT"]],
@@ -177,7 +177,7 @@ const SCENES = [
   {
     id:2, act:"03",
     title:"HTTP/1.1 — keep-alive",
-    sub:"HTTP/1.1 made connections persistent by default. One TCP handshake, many requests. You can also send the next request before the previous response arrives — that's called pipelining — but it's rarely used in practice.",
+    sub:"**HTTP/1.1 made connections persistent by default.** One TCP handshake, many requests. You can also send the next request before the previous response arrives — that's called pipelining — but it's rarely used in practice.",
     code:[
       [["cmt","// One connection, many requests"]],
       [["kw","Connection"],["punc",": "],["plain","keep-alive"]],
@@ -193,7 +193,7 @@ const SCENES = [
   {
     id:3, act:"04",
     title:"Head-of-line blocking",
-    sub:"HTTP/1.1 still handles one response at a time per connection. If the first request is slow (a big image, a slow query), every request behind it waits. Browsers work around this by opening 6 parallel connections per origin.",
+    sub:"**HTTP/1.1 still handles one response at a time per connection.** If the first request is slow (a big image, a slow query), every request behind it waits. Browsers work around this by opening 6 parallel connections per origin.",
     code:[
       [["cmt","// Single connection, strict order"]],
       [["plain","GET /big.jpg      "],["cmt","// slow… 2000ms"]],
@@ -209,7 +209,7 @@ const SCENES = [
   {
     id:4, act:"05",
     title:"HTTP/1.1 workarounds",
-    sub:"To squeeze more parallelism out of HTTP/1.1, developers sharded assets across subdomains (to beat the 6-connection limit), spliced sprites together, inlined CSS, and concatenated JS bundles. Hacks to hide a protocol limitation.",
+    sub:"**To squeeze more parallelism out of HTTP/1.1, developers sharded assets across subdomains (to beat the 6-connection limit), spliced sprites together, inlined CSS, and concatenated JS bundles.** Hacks to hide a protocol limitation.",
     code:[
       [["cmt","// Domain sharding"]],
       [["plain","img1.example.com  "],["cmt","// +6 conns"]],
@@ -225,7 +225,7 @@ const SCENES = [
   {
     id:5, act:"06",
     title:"HTTP/2 — binary framing",
-    sub:"HTTP/2 keeps the same semantics (methods, headers, status codes) but replaces the text wire format with binary frames. Requests and responses are broken into small frames that can be interleaved on a single connection.",
+    sub:"**HTTP/2 keeps the same semantics (methods, headers, status codes) but replaces the text wire format with binary frames.** Requests and responses are broken into small frames that can be interleaved on a single connection.",
     code:[
       [["cmt","// HTTP/2 frame (binary)"]],
       [["plain","┌─────────────────────────┐"]],
@@ -241,7 +241,7 @@ const SCENES = [
   {
     id:6, act:"07",
     title:"Multiplexing — many streams, one socket",
-    sub:"Each request/response pair is a stream with its own ID. Frames from different streams are interleaved on the wire, so a slow response never blocks a fast one. One TCP connection carries them all — in parallel.",
+    sub:"**Each request/response pair is a stream with its own ID.** Frames from different streams are interleaved on the wire, so a slow response never blocks a fast one. One TCP connection carries them all — in parallel.",
     code:[
       [["cmt","// Stream IDs identify each request"]],
       [["plain","stream 1: GET /big.jpg"]],
@@ -257,7 +257,7 @@ const SCENES = [
   {
     id:7, act:"08",
     title:"HPACK — header compression",
-    sub:"HTTP headers are repetitive — cookies, user-agents, accept-encoding all show up on every request. HPACK uses a shared dynamic table so repeated headers cost just a few bytes instead of hundreds.",
+    sub:"**HTTP headers are repetitive — cookies, user-agents, accept-encoding all show up on every request.** HPACK uses a shared dynamic table so repeated headers cost just a few bytes instead of hundreds.",
     code:[
       [["cmt","// First request — full headers"]],
       [["plain","user-agent: Mozilla/5.0…  (200 B)"]],
@@ -273,7 +273,7 @@ const SCENES = [
   {
     id:8, act:"09",
     title:"HTTP/2 still has TCP head-of-line",
-    sub:"HTTP/2 solves HTTP-level blocking, but TCP still delivers bytes in order. If a single packet is lost, TCP stalls the entire connection — including streams that had nothing to do with the lost packet.",
+    sub:"**HTTP/2 solves HTTP-level blocking, but TCP still delivers bytes in order.** If a single packet is lost, TCP stalls the entire connection — including streams that had nothing to do with the lost packet.",
     code:[
       [["cmt","// TCP promises in-order delivery"]],
       [["plain","stream 1 ──── packet lost!"]],
@@ -289,7 +289,7 @@ const SCENES = [
   {
     id:9, act:"10",
     title:"HTTP/3 — QUIC over UDP",
-    sub:"HTTP/3 swaps the entire transport. Instead of TCP, it runs on QUIC — a new protocol built on UDP that brings streams, encryption, and reliability into one layer. Lost packets only stall their own stream.",
+    sub:"**HTTP/3 swaps the entire transport.** Instead of TCP, it runs on QUIC — a new protocol built on UDP that brings streams, encryption, and reliability into one layer. Lost packets only stall their own stream.",
     code:[
       [["cmt","// The stack, side by side"]],
       [["plain","HTTP/2        HTTP/3"]],
@@ -305,7 +305,7 @@ const SCENES = [
   {
     id:10, act:"11",
     title:"QUIC — 0-RTT and no HOL",
-    sub:"QUIC combines the TCP + TLS handshakes into one round-trip — or zero, for returning visitors. Streams are independent: a lost packet on stream 1 doesn't block streams 3 or 5. Connections survive network changes via connection IDs.",
+    sub:"**QUIC combines the TCP + TLS handshakes into one round-trip — or zero, for returning visitors.** Streams are independent: a lost packet on stream 1 doesn't block streams 3 or 5. Connections survive network changes via connection IDs.",
     code:[
       [["cmt","// QUIC benefits"]],
       [["plain","• 1-RTT handshake  "],["cmt","// TCP+TLS used 2–3"]],
@@ -320,7 +320,7 @@ const SCENES = [
   {
     id:11, act:"12",
     title:"Side by side",
-    sub:"Same page, same requests, three protocols. HTTP/1.1 serializes and needs many connections. HTTP/2 multiplexes over one TCP socket. HTTP/3 multiplexes over QUIC with independent streams and faster handshakes.",
+    sub:"**Same page, same requests, three protocols.** HTTP/1.1 serializes and needs many connections. HTTP/2 multiplexes over one TCP socket. HTTP/3 multiplexes over QUIC with independent streams and faster handshakes.",
     code:[
       [["cmt","// Handshake round-trips (cold start)"]],
       [["plain","HTTP/1.1 + TLS:  "],["num","3"],["plain"," RTTs"]],
@@ -333,7 +333,7 @@ const SCENES = [
   {
     id:12, act:"DONE",
     title:"HTTP versions — summary",
-    sub:"Each version tackled the last one's bottleneck. HTTP/1.1 gave us persistent connections. HTTP/2 gave us multiplexing. HTTP/3 gave us QUIC to escape TCP's head-of-line blocking. The semantics never changed — only the plumbing.",
+    sub:"**Each version tackled the last one's bottleneck.** HTTP/1.1 gave us persistent connections. HTTP/2 gave us multiplexing. HTTP/3 gave us QUIC to escape TCP's head-of-line blocking. The semantics never changed — only the plumbing.",
     scene:"finale",
     finale:true,
   },
@@ -427,9 +427,9 @@ const CodePanel = ({ tokens, onClick }) =>
 const IntroScene = () =>
   e("div", { style:{ display:"flex", gap:10 } },
     [
-      { title:"HTTP/1.1", color:T.http1, icon:"lni-text-format", sub:"Text protocol. Persistent TCP, one response at a time.", year:"1997" },
-      { title:"HTTP/2",   color:T.http2, icon:"lni-layers-1",    sub:"Binary framing. Multiplexed streams on one TCP connection.", year:"2015" },
-      { title:"HTTP/3",   color:T.http3, icon:"lni-bolt-2",      sub:"QUIC over UDP. Independent streams, faster handshakes.", year:"2022" },
+      { title:"HTTP/1.1", color:T.http1, icon:"lni-text-format", sub:"**Text protocol.** Persistent TCP, one response at a time.", year:"1997" },
+      { title:"HTTP/2",   color:T.http2, icon:"lni-layers-1",    sub:"**Binary framing.** Multiplexed streams on one TCP connection.", year:"2015" },
+      { title:"HTTP/3",   color:T.http3, icon:"lni-bolt-2",      sub:"**QUIC over UDP.** Independent streams, faster handshakes.", year:"2022" },
     ].map((c,i) => e(M.div, {
       key:i,
       initial:{ opacity:0, y:20 }, animate:{ opacity:1, y:0 },
@@ -784,7 +784,7 @@ const Finale = () => {
     { icon:"lni-warning",     label:"TCP head-of-line", sub:"HTTP/2's Achilles heel — a single lost packet stalls every stream on the socket", c:T.amber },
     { icon:"lni-bolt-2",      label:"HTTP/3 + QUIC", sub:"User-space transport on UDP, independent streams, 1-RTT handshake (0 on resume)", c:T.http3 },
     { icon:"lni-network",     label:"Connection migration", sub:"QUIC connection IDs let a session survive WiFi → cellular handoffs", c:T.purple },
-    { icon:"lni-hand",        label:"Same semantics", sub:"Methods, status codes, headers — unchanged. Only the wire and transport evolve.", c:T.green },
+    { icon:"lni-hand",        label:"Same semantics", sub:"**Methods, status codes, headers — unchanged.** Only the wire and transport evolve.", c:T.green },
   ];
   return e("div", { style:{ padding:"8px 0" } },
     rows.map((r,i) => e(M.div, { key:i, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.1,...ez},
@@ -901,7 +901,7 @@ function App() {
       e(AP, { mode:"wait" },
         e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
           style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
-        }, sc.sub)
+        }, renderBody(sc.sub))
       )
     ),
 

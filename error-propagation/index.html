@@ -345,25 +345,25 @@ const CODES = {
 const SCENES = [
   {
     id:0, act:"01", title:"When things go wrong",
-    sub:"JavaScript errors don't just vanish. When a function throws, the error propagates up the call stack looking for someone to catch it. Understanding this flow is essential.",
+    sub:"**JavaScript errors don't just vanish.** When a function throws, the error propagates up the call stack looking for someone to catch it. Understanding this flow is essential.",
     code:"intro", hl:[], stack:[], errorAt:null, errorTravel:null, focus:[],
     vis:"intro"
   },
   {
     id:1, act:"02", title:"The throw keyword",
-    sub:"throw creates an error and immediately stops the current function. Execution transfers to the nearest catch block, or crashes if there isn't one.",
+    sub:"**throw creates an error and immediately stops the current function.** Execution transfers to the nearest catch block, or crashes if there isn't one.",
     code:"throw_kw", hl:[2,5], stack:[], errorAt:null, errorTravel:null, focus:["code"],
     vis:"throw"
   },
   {
     id:2, act:"03", title:"Built-in error types",
-    sub:"JavaScript has several built-in error constructors. Each signals a different kind of problem. You can also extend Error to create your own types.",
+    sub:"**JavaScript has several built-in error constructors.** Each signals a different kind of problem. You can also extend Error to create your own types.",
     code:"error_types", hl:[], stack:[], errorAt:null, errorTravel:null, focus:["code"],
     vis:"types"
   },
   {
     id:3, act:"04", title:"The call stack before the throw",
-    sub:"When parseInput() is called, three frames are on the stack: main -> handleRequest -> parseInput. The throw happens in the deepest frame.",
+    sub:"**When parseInput() is called, three frames are on the stack: main -> handleRequest -> parseInput.** The throw happens in the deepest frame.",
     code:"callstack_unwind", hl:[0,1,2,3,4,5,6,7,8,9,10], stack:[
       {id:"s-main",label:"main()",tier:"base"},
       {id:"s-handle",label:"handleRequest()",tier:"sync"},
@@ -373,7 +373,7 @@ const SCENES = [
   },
   {
     id:4, act:"05", title:"Error thrown! Stack unwinds",
-    sub:"parseInput() has no try/catch, so its frame is popped and the error moves to handleRequest(). No catch there either. It keeps going up.",
+    sub:"**parseInput() has no try/catch, so its frame is popped and the error moves to handleRequest().** No catch there either. It keeps going up.",
     code:"callstack_unwind", hl:[9], stack:[
       {id:"s-main",label:"main()",tier:"base"},
       {id:"s-handle",label:"handleRequest()",tier:"sync"},
@@ -383,13 +383,13 @@ const SCENES = [
   },
   {
     id:5, act:"06", title:"try / catch / finally",
-    sub:"try wraps risky code. catch receives the error object if one is thrown. finally always runs — whether there was an error or not — perfect for cleanup.",
+    sub:"**try wraps risky code.** catch receives the error object if one is thrown. finally always runs — whether there was an error or not — perfect for cleanup.",
     code:"try_catch", hl:[0,1,2,3,4,5,6,7], stack:[], errorAt:null, errorTravel:null, focus:["code"],
     vis:"trycatch"
   },
   {
     id:6, act:"07", title:"Step-by-step propagation",
-    sub:"repository() throws. No catch in repository, service, or controller. The error unwinds all the way up to app(), where try/catch finally handles it.",
+    sub:"**repository() throws.** No catch in repository, service, or controller. The error unwinds all the way up to app(), where try/catch finally handles it.",
     code:"propagation_step", hl:[17], stack:[
       {id:"p-app",label:"app()",tier:"catch"},
       {id:"p-ctrl",label:"controller()",tier:"sync"},
@@ -400,7 +400,7 @@ const SCENES = [
   },
   {
     id:7, act:"08", title:"Uncaught errors",
-    sub:"If no function catches the error, it reaches the runtime. In browsers: window.onerror. In Node.js: process 'uncaughtException'. Both are last resorts.",
+    sub:"**If no function catches the error, it reaches the runtime.** In browsers: window.onerror. In Node.js: process 'uncaughtException'. Both are last resorts.",
     code:"uncaught", hl:[1,2,3,6,7,8], stack:[
       {id:"u-global",label:"(global)",tier:"base"},
     ], errorAt:"u-global", errorTravel:null, focus:["stack","code"],
@@ -408,43 +408,43 @@ const SCENES = [
   },
   {
     id:8, act:"09", title:"Async errors: callbacks",
-    sub:"In callbacks, throw doesn't propagate to the caller. Node.js uses the error-first pattern: callback(err, data). You must check err manually.",
+    sub:"**In callbacks, throw doesn't propagate to the caller.** Node.js uses the error-first pattern: callback(err, data). You must check err manually.",
     code:"callback_err", hl:[2,3,4], stack:[], errorAt:null, errorTravel:null, focus:["code"],
     vis:"callback"
   },
   {
     id:9, act:"10", title:"Promise rejection",
-    sub:"When a promise rejects or throws inside .then(), the error skips to the next .catch() in the chain. No .catch()? UnhandledPromiseRejection.",
+    sub:"**When a promise rejects or throws inside .then(), the error skips to the next .catch() in the chain.** No .catch()? UnhandledPromiseRejection.",
     code:"promise_catch", hl:[3,6,7], stack:[], errorAt:null, errorTravel:null, focus:["code"],
     vis:"promise"
   },
   {
     id:10, act:"11", title:"async/await: try/catch returns",
-    sub:"async/await lets you use try/catch for async errors just like synchronous code. await turns a rejection into a throw. Re-throw to propagate up.",
+    sub:"**async/await lets you use try/catch for async errors just like synchronous code.** await turns a rejection into a throw. Re-throw to propagate up.",
     code:"async_await", hl:[2,3,6,7,8], stack:[], errorAt:null, errorTravel:null, focus:["code"],
     vis:"asyncawait"
   },
   {
     id:11, act:"12", title:"Promise chain: where .catch() goes",
-    sub:".catch() handles errors from any .then() above it. After .catch() returns a value, the chain continues normally. Position matters!",
+    sub:"**.catch() handles errors from any .then() above it.** After .catch() returns a value, the chain continues normally. Position matters!",
     code:"chain_catch", hl:[6,7,8,9,10], stack:[], errorAt:null, errorTravel:null, focus:["code"],
     vis:"chain"
   },
   {
     id:12, act:"13", title:"finally always runs",
-    sub:"finally executes after try (and catch if present), even after a return or throw. Use it for cleanup: closing connections, clearing timers, releasing resources.",
+    sub:"**finally executes after try (and catch if present), even after a return or throw.** Use it for cleanup: closing connections, clearing timers, releasing resources.",
     code:"finally_return", hl:[2,3,4], stack:[], errorAt:null, errorTravel:null, focus:["code"],
     vis:"finally"
   },
   {
     id:13, act:"14", title:"Best practices",
-    sub:"Catch at the level where you can meaningfully recover. Log what you can't handle. Never silently swallow errors. Always handle promise rejections.",
+    sub:"**Catch at the level where you can meaningfully recover.** Log what you can't handle. Never silently swallow errors. Always handle promise rejections.",
     code:"best_practices", hl:[], stack:[], errorAt:null, errorTravel:null, focus:["code"],
     vis:"bestpractices"
   },
   {
     id:14, act:"DONE", title:"Errors are signals, not failures",
-    sub:"throw creates errors. try/catch handles them. Errors unwind the call stack seeking a handler. In async code, use .catch() or try/catch with await. Always handle, never ignore.",
+    sub:"**throw creates errors.** try/catch handles them. Errors unwind the call stack seeking a handler. In async code, use .catch() or try/catch with await. Always handle, never ignore.",
     code:"summary", hl:[], stack:[], errorAt:null, errorTravel:null, focus:[],
     vis:"summary", finale:true
   },
@@ -1009,7 +1009,7 @@ function App() {
         e(AP, { mode:"wait" },
           e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
             style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
-          }, sc.sub)
+          }, renderBody(sc.sub))
         )
       ),
 

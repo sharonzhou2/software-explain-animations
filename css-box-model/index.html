@@ -160,7 +160,7 @@ const SCENES = [
   {
     id:0, act:"01",
     title:"Every element is a box",
-    sub:"In CSS, every HTML element generates a rectangular box. The box model describes how size, padding, border, and margin combine to form the element's total footprint.",
+    sub:"**In CSS, every HTML element generates a rectangular box.** The box model describes how size, padding, border, and margin combine to form the element's total footprint.",
     code:[
       [["cmt","/* every element is a rectangular box */"]],
       [["sel","div"],["punc"," {"]],
@@ -175,7 +175,7 @@ const SCENES = [
   {
     id:1, act:"02",
     title:"Content box",
-    sub:"The innermost area holds text, images, or child elements. width and height set the content box dimensions by default.",
+    sub:"**The innermost area holds text, images, or child elements.** width and height set the content box dimensions by default.",
     code:[
       [["sel",".box"],["punc"," {"]],
       [["plain","  "],["prop","width"],["punc",": "],["num","200"],["unit","px"],["punc",";"]],
@@ -190,7 +190,7 @@ const SCENES = [
   {
     id:2, act:"03",
     title:"Padding",
-    sub:"Padding creates space between the content and the border. It pushes the border outward and expands the element's total size (in content-box mode).",
+    sub:"**Padding creates space between the content and the border.** It pushes the border outward and expands the element's total size (in content-box mode).",
     code:[
       [["sel",".box"],["punc"," {"]],
       [["plain","  "],["prop","width"],["punc",": "],["num","200"],["unit","px"],["punc",";"]],
@@ -205,7 +205,7 @@ const SCENES = [
   {
     id:3, act:"04",
     title:"Border",
-    sub:"The border wraps around the padding. It has its own thickness, style, and color — and adds to the total element size.",
+    sub:"**The border wraps around the padding.** It has its own thickness, style, and color — and adds to the total element size.",
     code:[
       [["sel",".box"],["punc"," {"]],
       [["plain","  "],["prop","width"],["punc",": "],["num","200"],["unit","px"],["punc",";"]],
@@ -220,7 +220,7 @@ const SCENES = [
   {
     id:4, act:"05",
     title:"Margin",
-    sub:"Margin is the outermost layer — transparent space that separates the element from its neighbors. It doesn't affect the element's rendered size, but controls spacing.",
+    sub:"**Margin is the outermost layer — transparent space that separates the element from its neighbors.** It doesn't affect the element's rendered size, but controls spacing.",
     code:[
       [["sel",".box"],["punc"," {"]],
       [["plain","  "],["prop","width"],["punc",": "],["num","200"],["unit","px"],["punc",";"]],
@@ -236,7 +236,7 @@ const SCENES = [
   {
     id:5, act:"06",
     title:"box-sizing",
-    sub:"content-box (default) sizes width/height to just the content. border-box includes padding and border in the declared width/height — far easier to reason about.",
+    sub:"**content-box (default) sizes width/height to just the content.** border-box includes padding and border in the declared width/height — far easier to reason about.",
     code:[
       [["cmt","/* content-box (default): */"]],
       [["cmt","/* width = content only */"]],
@@ -254,7 +254,7 @@ const SCENES = [
   {
     id:6, act:"07",
     title:"Margin collapse",
-    sub:"When two vertical margins meet, they don't add up — the larger one wins. This only happens vertically, never horizontally.",
+    sub:"**When two vertical margins meet, they don't add up — the larger one wins.** This only happens vertically, never horizontally.",
     code:[
       [["sel",".top"],["punc"," { "],["prop","margin-bottom"],["punc",": "],["num","24"],["unit","px"],["punc","; }"]],
       [["sel",".bottom"],["punc"," { "],["prop","margin-top"],["punc",": "],["num","16"],["unit","px"],["punc","; }"]],
@@ -270,7 +270,7 @@ const SCENES = [
   {
     id:7, act:"08",
     title:"Display types",
-    sub:"block elements take full width and stack vertically. inline elements flow with text. inline-block combines both — flows inline but accepts width/height.",
+    sub:"**block elements take full width and stack vertically.** inline elements flow with text. inline-block combines both — flows inline but accepts width/height.",
     code:[
       [["sel","div"],["punc","  { "],["prop","display"],["punc",": "],["val","block"],["punc","; }"]],
       [["sel","span"],["punc"," { "],["prop","display"],["punc",": "],["val","inline"],["punc","; }"]],
@@ -283,7 +283,7 @@ const SCENES = [
   {
     id:8, act:"09",
     title:"Normal flow",
-    sub:"By default, block elements stack top-to-bottom, and inline elements flow left-to-right wrapping at the container edge. This is normal document flow.",
+    sub:"**By default, block elements stack top-to-bottom, and inline elements flow left-to-right wrapping at the container edge.** This is normal document flow.",
     code:[
       [["tag","<div>"],["plain","Block 1"],["tag","</div>"]],
       [["tag","<div>"],["plain","Block 2"],["tag","</div>"]],
@@ -298,7 +298,7 @@ const SCENES = [
   {
     id:9, act:"10",
     title:"Flexbox",
-    sub:"Flexbox lays out items along one axis — horizontal or vertical. It handles alignment, spacing, and wrapping with simple, powerful properties.",
+    sub:"**Flexbox lays out items along one axis — horizontal or vertical.** It handles alignment, spacing, and wrapping with simple, powerful properties.",
     code:[
       [["sel",".container"],["punc"," {"]],
       [["plain","  "],["prop","display"],["punc",": "],["val","flex"],["punc",";"]],
@@ -313,7 +313,7 @@ const SCENES = [
   {
     id:10, act:"11",
     title:"Grid",
-    sub:"CSS Grid creates a two-dimensional layout — rows and columns simultaneously. It's ideal for page layouts and complex component structures.",
+    sub:"**CSS Grid creates a two-dimensional layout — rows and columns simultaneously.** It's ideal for page layouts and complex component structures.",
     code:[
       [["sel",".grid"],["punc"," {"]],
       [["plain","  "],["prop","display"],["punc",": "],["val","grid"],["punc",";"]],
@@ -328,7 +328,7 @@ const SCENES = [
   {
     id:11, act:"12",
     title:"Position",
-    sub:"Position removes or offsets elements from normal flow. static is the default. relative offsets in-place. absolute positions relative to a positioned ancestor. fixed and sticky anchor to the viewport.",
+    sub:"**Position removes or offsets elements from normal flow.** static is the default. relative offsets in-place. absolute positions relative to a positioned ancestor. fixed and sticky anchor to the viewport.",
     code:[
       [["sel",".rel"],["punc"," { "],["prop","position"],["punc",": "],["val","relative"],["punc","; "],["prop","top"],["punc",": "],["num","10"],["unit","px"],["punc","; }"]],
       [["sel",".abs"],["punc"," { "],["prop","position"],["punc",": "],["val","absolute"],["punc","; "],["prop","top"],["punc",": "],["num","0"],["punc","; }"]],
@@ -342,7 +342,7 @@ const SCENES = [
   {
     id:12, act:"DONE",
     title:"The CSS Box Model & Layout",
-    sub:"Every element is a box with content, padding, border, and margin. Layout modes control how boxes relate to each other.",
+    sub:"**Every element is a box with content, padding, border, and margin.** Layout modes control how boxes relate to each other.",
     code:[
       [["cmt","/* The CSS Box Model */"]],
       [["cmt","/* margin → border → padding → content */"]],
@@ -845,7 +845,7 @@ function App() {
       e(AP, { mode:"wait" },
         e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
           style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
-        }, sc.sub)
+        }, renderBody(sc.sub))
       )
     ),
 

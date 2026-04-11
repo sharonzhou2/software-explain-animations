@@ -184,7 +184,7 @@ const SCENES = [
   {
     id:0, act:"01",
     title:"Debounce vs Throttle",
-    sub:"Two techniques for taming rapid-fire events. Both limit how often a function runs — but they do it very differently. Let's see how each one works and when to reach for which.",
+    sub:"**Two techniques for taming rapid-fire events.** Both limit how often a function runs — but they do it very differently. Let's see how each one works and when to reach for which.",
     code:[
       [["cmt","// when events fire faster than you can handle:"]],
       [["kw","const"],["plain"," debounced "],["punc","= "],["fn","debounce"],["punc","(fn, "],["num","300"],["punc",")"],["plain","  "],["cmt","// wait for silence"]],
@@ -198,7 +198,7 @@ const SCENES = [
   {
     id:1, act:"02",
     title:"The problem — rapid events",
-    sub:"Events like scroll, resize, input, and mousemove can fire hundreds of times per second. If your handler is expensive — a network call, a layout recalculation — that's a recipe for jank.",
+    sub:"**Events like scroll, resize, input, and mousemove can fire hundreds of times per second.** If your handler is expensive — a network call, a layout recalculation — that's a recipe for jank.",
     code:[
       [["plain","window"],["punc","."],["fn","addEventListener"],["punc","("],["str","'scroll'"],["punc",","],["plain"," "],["fn","handler"],["punc",")"]],
       [["cmt","// handler runs 100+ times per second"]],
@@ -212,7 +212,7 @@ const SCENES = [
   {
     id:2, act:"03",
     title:"The naive approach",
-    sub:"Without any rate-limiting, every event becomes a call. Network thrashing, reflow storms, wasted CPU — and your user interface stutters under load.",
+    sub:"**Without any rate-limiting, every event becomes a call.** Network thrashing, reflow storms, wasted CPU — and your user interface stutters under load.",
     code:[
       [["kw","function"],["plain"," "],["fn","onScroll"],["punc","() {"]],
       [["plain","  "],["fn","updateLayout"],["punc","()  "],["cmt","// heavy!"]],
@@ -228,7 +228,7 @@ const SCENES = [
   {
     id:3, act:"04",
     title:"Debounce — wait for silence",
-    sub:"Debounce collapses a burst of events into a single call. It only fires AFTER the user has been quiet for N milliseconds. Every new event resets the timer.",
+    sub:"**Debounce collapses a burst of events into a single call.** It only fires AFTER the user has been quiet for N milliseconds. Every new event resets the timer.",
     code:[
       [["cmt","// wait until the storm is over"]],
       [["kw","const"],["plain"," debounced "],["punc","= "],["fn","debounce"],["punc","("],["plain","handler"],["punc",", "],["num","300"],["punc",")"]],
@@ -243,7 +243,7 @@ const SCENES = [
   {
     id:4, act:"05",
     title:"Debounce step-by-step",
-    sub:"Each event schedules a timer for now + 300ms. If another event arrives before it fires, the old timer is cleared and a new one starts. Only the quiet period triggers execution.",
+    sub:"**Each event schedules a timer for now + 300ms.** If another event arrives before it fires, the old timer is cleared and a new one starts. Only the quiet period triggers execution.",
     code:[
       [["num","1."],["plain"," event → start 300ms timer"]],
       [["num","2."],["plain"," event → clear, restart timer"]],
@@ -259,7 +259,7 @@ const SCENES = [
   {
     id:5, act:"06",
     title:"Debounce — the implementation",
-    sub:"A closure captures the timer ID. Each call clears the pending timer and schedules a new one. Classic 8-line recipe.",
+    sub:"**A closure captures the timer ID.** Each call clears the pending timer and schedules a new one. Classic 8-line recipe.",
     code:[
       [["kw","function"],["plain"," "],["fn","debounce"],["punc","(fn, wait) {"]],
       [["plain","  "],["kw","let"],["plain"," timer"]],
@@ -279,7 +279,7 @@ const SCENES = [
   {
     id:6, act:"07",
     title:"Throttle — fire on a schedule",
-    sub:"Throttle guarantees the handler runs at most once per N milliseconds. Unlike debounce, it doesn't wait for silence — it fires at regular intervals while events keep coming.",
+    sub:"**Throttle guarantees the handler runs at most once per N milliseconds.** Unlike debounce, it doesn't wait for silence — it fires at regular intervals while events keep coming.",
     code:[
       [["cmt","// at most once every 300ms"]],
       [["kw","const"],["plain"," throttled "],["punc","= "],["fn","throttle"],["punc","("],["plain","handler"],["punc",", "],["num","300"],["punc",")"]],
@@ -295,7 +295,7 @@ const SCENES = [
   {
     id:7, act:"08",
     title:"Throttle step-by-step",
-    sub:"A timestamp gates each call. If enough time has passed since the last fire, run the handler and remember the new timestamp. Otherwise, skip.",
+    sub:"**A timestamp gates each call.** If enough time has passed since the last fire, run the handler and remember the new timestamp. Otherwise, skip.",
     code:[
       [["num","1."],["plain"," event → fire, record time t₀"]],
       [["num","2."],["plain"," event at t₀+50ms → ignored"]],
@@ -311,7 +311,7 @@ const SCENES = [
   {
     id:8, act:"09",
     title:"Throttle — the implementation",
-    sub:"Track the last fire time in a closure variable. Compare against now. Simpler than debounce — no timer to clear.",
+    sub:"**Track the last fire time in a closure variable.** Compare against now. Simpler than debounce — no timer to clear.",
     code:[
       [["kw","function"],["plain"," "],["fn","throttle"],["punc","(fn, wait) {"]],
       [["plain","  "],["kw","let"],["plain"," last "],["punc","= "],["num","0"]],
@@ -332,7 +332,7 @@ const SCENES = [
   {
     id:9, act:"10",
     title:"Leading vs trailing edge",
-    sub:"Should the handler fire at the START of a burst (leading) or the END (trailing)? Debounce defaults to trailing. Throttle defaults to leading. Both variants exist for both.",
+    sub:"**Should the handler fire at the START of a burst (leading) or the END (trailing)?** Debounce defaults to trailing. Throttle defaults to leading. Both variants exist for both.",
     code:[
       [["cmt","// trailing (default debounce):"]],
       [["cmt","//   wait for silence, then fire"]],
@@ -351,7 +351,7 @@ const SCENES = [
   {
     id:10, act:"11",
     title:"Side-by-side",
-    sub:"Same event stream, three different outputs. Debounce gives you one call per burst. Throttle gives you a steady drip. Raw gives you chaos.",
+    sub:"**Same event stream, three different outputs.** Debounce gives you one call per burst. Throttle gives you a steady drip. Raw gives you chaos.",
     code:[
       [["cmt","// events:   ● ● ● ●   ● ● ●   ● ●"]],
       [["cmt","// debounce:        ▼          ▼     ▼"]],
@@ -367,7 +367,7 @@ const SCENES = [
   {
     id:11, act:"12",
     title:"Use cases",
-    sub:"Choose debounce when you only care about the final value. Choose throttle when you need regular sampling during the action.",
+    sub:"**Choose debounce when you only care about the final value.** Choose throttle when you need regular sampling during the action.",
     code:[
       [["cmt","// DEBOUNCE — wait for done"]],
       [["plain","• search input → API call"]],
@@ -710,11 +710,11 @@ const MetricPanel = ({ metric, onClick }) => {
 
 const Finale = () => {
   const rows = [
-    { icon:"lni-stopwatch", label:"Debounce", sub:"Fire ONCE after N ms of silence. Every event resets the timer.", c:T.tealL, tag:"wait for done" },
-    { icon:"lni-hourglass", label:"Throttle", sub:"Fire at most ONCE per N ms. Ignore events within the window.", c:T.amberL, tag:"steady rhythm" },
-    { icon:"lni-arrow-right", label:"Leading edge", sub:"Fire on the first event of a burst. Good for immediate feedback.", c:T.blueL, tag:"front" },
-    { icon:"lni-arrow-left", label:"Trailing edge", sub:"Fire after the burst ends. Good for capturing the final state.", c:T.pinkL, tag:"back" },
-    { icon:"lni-star-fat", label:"Rule of thumb", sub:"Final value only? debounce. Continuous sampling? throttle.", c:T.purpleL, tag:"decision" },
+    { icon:"lni-stopwatch", label:"Debounce", sub:"**Fire ONCE after N ms of silence.** Every event resets the timer.", c:T.tealL, tag:"wait for done" },
+    { icon:"lni-hourglass", label:"Throttle", sub:"**Fire at most ONCE per N ms.** Ignore events within the window.", c:T.amberL, tag:"steady rhythm" },
+    { icon:"lni-arrow-right", label:"Leading edge", sub:"**Fire on the first event of a burst.** Good for immediate feedback.", c:T.blueL, tag:"front" },
+    { icon:"lni-arrow-left", label:"Trailing edge", sub:"**Fire after the burst ends.** Good for capturing the final state.", c:T.pinkL, tag:"back" },
+    { icon:"lni-star-fat", label:"Rule of thumb", sub:"**Final value only?** debounce. Continuous sampling? throttle.", c:T.purpleL, tag:"decision" },
   ];
   return e("div", { style:{ padding:"8px 0" } },
     rows.map((r,i) => e(M.div, { key:i, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.12,...ez},
@@ -812,7 +812,7 @@ function App() {
       e(AP, { mode:"wait" },
         e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
           style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
-        }, sc.sub)
+        }, renderBody(sc.sub))
       )
     ),
 

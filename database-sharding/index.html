@@ -147,7 +147,7 @@ const SCENES = [
   {
     id:0, act:"01",
     title:"One database, one bottleneck",
-    sub:"Every app starts with a single database. It's simple, consistent, easy to reason about. But as users and data grow, one machine eventually can't keep up — CPU, RAM, disk, and network all have limits.",
+    sub:"**Every app starts with a single database.** It's simple, consistent, easy to reason about. But as users and data grow, one machine eventually can't keep up — CPU, RAM, disk, and network all have limits.",
     code:[
       [["cmt","// The happy path"]],
       [["kw","SELECT"],["plain"," * "],["kw","FROM"],["plain"," users "],["kw","WHERE"],["plain"," id "],["punc","="],["plain"," "],["num","42"],["punc",";"]],
@@ -159,7 +159,7 @@ const SCENES = [
   {
     id:1, act:"02",
     title:"Scale up vs scale out",
-    sub:"Two ways to grow: vertical scaling buys a bigger machine (more CPU, RAM, SSD). Horizontal scaling adds more machines. Vertical is simple but has a ceiling; horizontal is harder but virtually unlimited.",
+    sub:"**Two ways to grow: vertical scaling buys a bigger machine (more CPU, RAM, SSD).** Horizontal scaling adds more machines. Vertical is simple but has a ceiling; horizontal is harder but virtually unlimited.",
     code:[
       [["cmt","// Vertical  — scale up"]],
       [["plain","  4 CPU  "],["punc","→"],["plain","  64 CPU"]],
@@ -172,7 +172,7 @@ const SCENES = [
   {
     id:2, act:"03",
     title:"Replication: copy, copy, copy",
-    sub:"Replication means keeping multiple copies of the same data on different machines. If the primary dies, a replica takes over. If a disk fails, you haven't lost everything. It's the foundation of availability.",
+    sub:"**Replication means keeping multiple copies of the same data on different machines.** If the primary dies, a replica takes over. If a disk fails, you haven't lost everything. It's the foundation of availability.",
     code:[
       [["cmt","// One primary, many followers"]],
       [["plain","primary "],["punc","→"],["plain"," replica_1"]],
@@ -185,7 +185,7 @@ const SCENES = [
   {
     id:3, act:"04",
     title:"Primary-replica: writes vs reads",
-    sub:"In primary-replica (leader-follower), all writes go to the primary. Replicas stream changes from the primary and serve read queries. This scales reads massively — perfect for read-heavy workloads like feeds and timelines.",
+    sub:"**In primary-replica (leader-follower), all writes go to the primary.** Replicas stream changes from the primary and serve read queries. This scales reads massively — perfect for read-heavy workloads like feeds and timelines.",
     code:[
       [["cmt","// Writes → primary only"]],
       [["kw","INSERT"],["plain"," "],["kw","INTO"],["plain"," orders "],["punc","..."]],
@@ -198,7 +198,7 @@ const SCENES = [
   {
     id:4, act:"05",
     title:"Replication lag & eventual consistency",
-    sub:"Replicas don't update instantly — there's a delay between a write landing on the primary and showing up on a replica. Read your own write from a replica and you might see stale data. This is eventual consistency.",
+    sub:"**Replicas don't update instantly — there's a delay between a write landing on the primary and showing up on a replica.** Read your own write from a replica and you might see stale data. This is eventual consistency.",
     code:[
       [["cmt","// T=0ms  — write to primary"]],
       [["kw","UPDATE"],["plain"," users "],["kw","SET"],["plain"," name"],["punc","="],["str","'Alice'"]],
@@ -212,7 +212,7 @@ const SCENES = [
   {
     id:5, act:"06",
     title:"Multi-primary: write anywhere",
-    sub:"Multi-primary (multi-master) lets every node accept writes. Great for multi-region latency — but now two regions can write to the same row simultaneously. You need conflict resolution: last-write-wins, CRDTs, or app-level merging.",
+    sub:"**Multi-primary (multi-master) lets every node accept writes.** Great for multi-region latency — but now two regions can write to the same row simultaneously. You need conflict resolution: last-write-wins, CRDTs, or app-level merging.",
     code:[
       [["cmt","// Both primaries accept writes"]],
       [["plain","US-East  "],["punc","⇄"],["plain","  EU-West"]],
@@ -226,7 +226,7 @@ const SCENES = [
   {
     id:6, act:"07",
     title:"Sharding: split the data itself",
-    sub:"Replication copies all data to many nodes. Sharding does the opposite — it splits the data across nodes so each one only stores a subset. Now you can scale writes and storage, not just reads.",
+    sub:"**Replication copies all data to many nodes.** Sharding does the opposite — it splits the data across nodes so each one only stores a subset. Now you can scale writes and storage, not just reads.",
     code:[
       [["cmt","// Each shard holds a slice"]],
       [["plain","shard_1  → A-G"]],
@@ -239,7 +239,7 @@ const SCENES = [
   {
     id:7, act:"08",
     title:"Range-based sharding",
-    sub:"Split by key ranges: A-G on shard 1, H-M on shard 2, and so on. Range scans are efficient because related keys live together. But if writes cluster on recent data (timestamps!), you get hot shards.",
+    sub:"**Split by key ranges: A-G on shard 1, H-M on shard 2, and so on.** Range scans are efficient because related keys live together. But if writes cluster on recent data (timestamps!), you get hot shards.",
     code:[
       [["cmt","// Route by first letter"]],
       [["kw","function"],["plain"," "],["fn","shardFor"],["punc","("],["plain","key"],["punc",") {"]],
@@ -255,7 +255,7 @@ const SCENES = [
   {
     id:8, act:"09",
     title:"Hash-based sharding",
-    sub:"Hash the key and mod by the number of shards. Same key always goes to the same shard, and hashing spreads load evenly — no hot shards from sequential keys. But you lose range scan locality.",
+    sub:"**Hash the key and mod by the number of shards.** Same key always goes to the same shard, and hashing spreads load evenly — no hot shards from sequential keys. But you lose range scan locality.",
     code:[
       [["cmt","// Distribute by hash"]],
       [["kw","function"],["plain"," "],["fn","shardFor"],["punc","("],["plain","key"],["punc",") {"]],
@@ -270,7 +270,7 @@ const SCENES = [
   {
     id:9, act:"10",
     title:"The rebalancing nightmare",
-    sub:"Add one shard (N=4 → N=5) and hash(key) % N changes for almost every key. Nearly all your data has to move between nodes. For a real database this means hours of downtime or a thundering herd of network traffic.",
+    sub:"**Add one shard (N=4 → N=5) and hash(key) % N changes for almost every key.** Nearly all your data has to move between nodes. For a real database this means hours of downtime or a thundering herd of network traffic.",
     code:[
       [["cmt","// N = 4  → N = 5"]],
       [["fn","hash"],["punc","("],["str","'alice'"],["punc",") % "],["num","4"],["plain"," = "],["num","2"]],
@@ -283,7 +283,7 @@ const SCENES = [
   {
     id:10, act:"11",
     title:"Consistent hashing",
-    sub:"Put nodes on a ring at hashed positions. A key goes to the next node clockwise. Add or remove a node and only keys in that arc move — roughly 1/N of the data, not all of it. Virtual nodes smooth out the distribution.",
+    sub:"**Put nodes on a ring at hashed positions.** A key goes to the next node clockwise. Add or remove a node and only keys in that arc move — roughly 1/N of the data, not all of it. Virtual nodes smooth out the distribution.",
     code:[
       [["cmt","// Ring positions"]],
       [["plain","node_A "],["punc","→"],["plain"," "],["fn","hash"],["punc","("],["str","'A'"],["punc",")"]],
@@ -297,7 +297,7 @@ const SCENES = [
   {
     id:11, act:"12",
     title:"Cross-shard queries are hard",
-    sub:"A JOIN between users on shard 1 and orders on shard 3 can't happen inside a single database. You have to query every shard, ship the results back, and merge in the application — or denormalize to avoid the join entirely.",
+    sub:"**A JOIN between users on shard 1 and orders on shard 3 can't happen inside a single database.** You have to query every shard, ship the results back, and merge in the application — or denormalize to avoid the join entirely.",
     code:[
       [["cmt","// Single-shard query [ok]"]],
       [["kw","SELECT"],["plain"," * "],["kw","FROM"],["plain"," users "],["kw","WHERE"],["plain"," id"],["punc","="],["num","42"]],
@@ -312,7 +312,7 @@ const SCENES = [
   {
     id:12, act:"13",
     title:"When should you shard?",
-    sub:"Sharding adds massive operational complexity. Only shard when you have to: when vertical scaling, read replicas, caching, and indexing can't keep up. Most apps never need it — and the ones that do usually wait too long.",
+    sub:"**Sharding adds massive operational complexity.** Only shard when you have to: when vertical scaling, read replicas, caching, and indexing can't keep up. Most apps never need it — and the ones that do usually wait too long.",
     code:[
       [["cmt","// Try first:"]],
       [["cmt","//   1. Add indexes"]],
@@ -327,7 +327,7 @@ const SCENES = [
   {
     id:13, act:"DONE",
     title:"Sharding & replication — summary",
-    sub:"Replication copies data for availability and read scale. Sharding splits data for write and storage scale. Together they let a database span the planet — at the cost of consistency, complexity, and painful rebalancing.",
+    sub:"**Replication copies data for availability and read scale.** Sharding splits data for write and storage scale. Together they let a database span the planet — at the cost of consistency, complexity, and painful rebalancing.",
     view:"finale", finale:true,
   },
 ];
@@ -1174,7 +1174,7 @@ function App() {
       e(AP, { mode:"wait" },
         e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
           style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
-        }, sc.sub)
+        }, renderBody(sc.sub))
       )
     ),
 

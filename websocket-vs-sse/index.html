@@ -146,7 +146,7 @@ const SCENES = [
   {
     id:0, act:"01",
     title:"Real-time communication on the web",
-    sub:"HTTP was designed as request-response: the client asks, the server answers. But modern apps need real-time data flow -- chat, live feeds, collaborative editing. Let's explore how the web evolved to handle this.",
+    sub:"**HTTP was designed as request-response: the client asks, the server answers.** But modern apps need real-time data flow -- chat, live feeds, collaborative editing. Let's explore how the web evolved to handle this.",
     code:[
       [["cmt","// The challenge:"]],
       [["cmt","// HTTP is request-response only"]],
@@ -158,7 +158,7 @@ const SCENES = [
   {
     id:1, act:"02",
     title:"HTTP polling -- the naive approach",
-    sub:"The simplest strategy: the client repeatedly asks 'anything new?' at a fixed interval. Simple to implement, but wasteful -- most responses are empty, and there's always latency between the event and the next poll.",
+    sub:"**The simplest strategy: the client repeatedly asks 'anything new?' at a fixed interval.** Simple to implement, but wasteful -- most responses are empty, and there's always latency between the event and the next poll.",
     code:[
       [["kw","setInterval"],["punc","(() => {"]],
       [["plain","  "],["fn","fetch"],["punc","("],["str","'/api/messages'"],["punc",")"]],
@@ -171,7 +171,7 @@ const SCENES = [
   {
     id:2, act:"03",
     title:"Long polling -- hold the connection",
-    sub:"An improvement: the server holds the request open until new data is available, then responds immediately. The client reconnects right away. Less wasted requests, but still one connection per message cycle.",
+    sub:"**An improvement: the server holds the request open until new data is available, then responds immediately.** The client reconnects right away. Less wasted requests, but still one connection per message cycle.",
     code:[
       [["kw","async function"],["plain"," "],["fn","longPoll"],["punc","() {"]],
       [["plain","  "],["kw","const"],["plain"," res = "],["kw","await"],["plain"," "],["fn","fetch"],["punc","("],["str","'/poll'"],["punc",");"]],
@@ -185,7 +185,7 @@ const SCENES = [
   {
     id:3, act:"04",
     title:"WebSocket -- full-duplex persistent connection",
-    sub:"WebSocket is a completely different protocol. After an initial HTTP handshake, the connection upgrades to a persistent, full-duplex TCP channel. Both client and server can send messages at any time, with minimal overhead per frame.",
+    sub:"**WebSocket is a completely different protocol.** After an initial HTTP handshake, the connection upgrades to a persistent, full-duplex TCP channel. Both client and server can send messages at any time, with minimal overhead per frame.",
     code:[
       [["kw","const"],["plain"," ws = "],["kw","new"],["plain"," "],["fn","WebSocket"],["punc","("],["str","'ws://server/chat'"],["punc",");"]],
       [["cmt",""]],
@@ -201,7 +201,7 @@ const SCENES = [
   {
     id:4, act:"05",
     title:"WebSocket handshake -- HTTP upgrade",
-    sub:"The connection begins as a normal HTTP request with an 'Upgrade: websocket' header. The server responds with 101 Switching Protocols, and the connection switches from HTTP to the WebSocket binary framing protocol.",
+    sub:"**The connection begins as a normal HTTP request with an 'Upgrade: websocket' header.** The server responds with 101 Switching Protocols, and the connection switches from HTTP to the WebSocket binary framing protocol.",
     code:[
       [["cmt","// Client sends HTTP upgrade request:"]],
       [["fn","GET"],["plain"," /chat HTTP/1.1"]],
@@ -218,7 +218,7 @@ const SCENES = [
   {
     id:5, act:"06",
     title:"WebSocket messaging -- frames and binary",
-    sub:"After the upgrade, data flows as lightweight frames (as small as 2 bytes of overhead). WebSocket supports text and binary data, ping/pong heartbeats, and close frames. Messages can be fragmented across multiple frames.",
+    sub:"**After the upgrade, data flows as lightweight frames (as small as 2 bytes of overhead).** WebSocket supports text and binary data, ping/pong heartbeats, and close frames. Messages can be fragmented across multiple frames.",
     code:[
       [["cmt","// Text message"]],
       [["fn","ws"],["punc","."],["meth","send"],["punc","("],["str","'text data'"],["punc",");"]],
@@ -234,7 +234,7 @@ const SCENES = [
   {
     id:6, act:"07",
     title:"SSE -- server pushes over HTTP",
-    sub:"Server-Sent Events use a simple, elegant approach: the server holds open a regular HTTP connection and streams text events down to the client. The browser's EventSource API handles reconnection automatically. One-way only: server to client.",
+    sub:"**Server-Sent Events use a simple, elegant approach: the server holds open a regular HTTP connection and streams text events down to the client.** The browser's EventSource API handles reconnection automatically. One-way only: server to client.",
     code:[
       [["kw","const"],["plain"," src = "],["kw","new"],["plain"," "],["fn","EventSource"],["punc","("],["str","'/events'"],["punc",");"]],
       [["cmt",""]],
@@ -250,7 +250,7 @@ const SCENES = [
   {
     id:7, act:"08",
     title:"SSE format -- text/event-stream",
-    sub:"The server responds with Content-Type: text/event-stream and sends plain-text events. Each event can have an event type, data payload, unique ID (for resume), and a retry interval. Simple, human-readable, and debuggable.",
+    sub:"**The server responds with Content-Type: text/event-stream and sends plain-text events.** Each event can have an event type, data payload, unique ID (for resume), and a retry interval. Simple, human-readable, and debuggable.",
     code:[
       [["cmt","// HTTP response header:"]],
       [["fn","Content-Type"],["punc",": "],["str","text/event-stream"]],
@@ -267,7 +267,7 @@ const SCENES = [
   {
     id:8, act:"09",
     title:"Side-by-side comparison",
-    sub:"WebSocket and SSE solve different problems with different trade-offs. WebSocket gives you full-duplex binary communication. SSE gives you simple, auto-reconnecting server push over standard HTTP.",
+    sub:"**WebSocket and SSE solve different problems with different trade-offs.** WebSocket gives you full-duplex binary communication. SSE gives you simple, auto-reconnecting server push over standard HTTP.",
     code:[
       [["cmt","//              WebSocket       SSE"]],
       [["cmt","// Direction:   Bidirectional   Server→Client"]],
@@ -286,7 +286,7 @@ const SCENES = [
   {
     id:9, act:"10",
     title:"Connection lifecycle",
-    sub:"WebSocket connections must be manually managed: open, message, error, close. If the connection drops, you write the reconnection logic. SSE's EventSource handles reconnection transparently, resuming from the last event ID.",
+    sub:"**WebSocket connections must be manually managed: open, message, error, close.** If the connection drops, you write the reconnection logic. SSE's EventSource handles reconnection transparently, resuming from the last event ID.",
     code:[
       [["cmt","// WebSocket lifecycle (manual)"]],
       [["fn","ws"],["punc","."],["fn","onopen"],["plain","    = "],["fn","handleOpen"],["punc",";"]],
@@ -302,7 +302,7 @@ const SCENES = [
   {
     id:10, act:"11",
     title:"Use cases",
-    sub:"WebSocket shines when you need bidirectional, low-latency communication: chat apps, multiplayer games, collaborative editing. SSE is ideal for one-way server push: live feeds, notifications, dashboards, and real-time monitoring.",
+    sub:"**WebSocket shines when you need bidirectional, low-latency communication: chat apps, multiplayer games, collaborative editing.** SSE is ideal for one-way server push: live feeds, notifications, dashboards, and real-time monitoring.",
     code:[
       [["cmt","// WebSocket: bidirectional needed"]],
       [["cmt","//   Chat, gaming, collab editing"]],
@@ -318,7 +318,7 @@ const SCENES = [
   {
     id:11, act:"12",
     title:"When to use which -- decision tree",
-    sub:"Start with the simplest solution. If you only need server-to-client push, SSE is simpler and works over standard HTTP infrastructure. If you need bidirectional communication or binary data, choose WebSocket.",
+    sub:"**Start with the simplest solution.** If you only need server-to-client push, SSE is simpler and works over standard HTTP infrastructure. If you need bidirectional communication or binary data, choose WebSocket.",
     code:[
       [["cmt","// Decision flow:"]],
       [["cmt","// Need bidirectional?  → WebSocket"]],
@@ -332,7 +332,7 @@ const SCENES = [
   {
     id:12, act:"DONE",
     title:"WebSocket vs SSE -- summary",
-    sub:"WebSocket provides full-duplex binary communication over a persistent TCP connection. SSE provides simple, auto-reconnecting server push over standard HTTP. Choose based on your data flow direction and infrastructure needs.",
+    sub:"**WebSocket provides full-duplex binary communication over a persistent TCP connection.** SSE provides simple, auto-reconnecting server push over standard HTTP. Choose based on your data flow direction and infrastructure needs.",
     code:[], viz:null, compare:null,
     finale:true,
   },
@@ -744,10 +744,10 @@ const Finale = () => {
   const rows = [
     { n:"WS", label:"WebSocket: full-duplex communication", sub:"Persistent TCP connection -- both sides send/receive freely with minimal overhead", c:T.ws },
     { n:"SSE", label:"SSE: server push over HTTP", sub:"EventSource API -- automatic reconnection, resumable streams, standard HTTP", c:T.sse },
-    { n:"\u2194", label:"Direction matters", sub:"WebSocket: bidirectional. SSE: server-to-client only (use HTTP POST for uploads)", c:T.teal },
-    { n:"\u2699", label:"Protocol complexity", sub:"WebSocket: custom binary framing. SSE: plain text over standard HTTP", c:T.blue },
-    { n:"\u21bb", label:"Reconnection", sub:"WebSocket: manual. SSE: automatic with Last-Event-ID resume", c:T.coral },
-    { n:"\u2714", label:"Choose by need", sub:"Bidirectional or binary? WebSocket. Server push only? SSE. Often simpler wins.", c:T.purple },
+    { n:"\u2194", label:"Direction matters", sub:"**WebSocket: bidirectional.** SSE: server-to-client only (use HTTP POST for uploads)", c:T.teal },
+    { n:"\u2699", label:"Protocol complexity", sub:"**WebSocket: custom binary framing.** SSE: plain text over standard HTTP", c:T.blue },
+    { n:"\u21bb", label:"Reconnection", sub:"**WebSocket: manual.** SSE: automatic with Last-Event-ID resume", c:T.coral },
+    { n:"\u2714", label:"Choose by need", sub:"**Bidirectional or binary?** WebSocket. Server push only? SSE. Often simpler wins.", c:T.purple },
   ];
   return e("div", { style:{ padding:"8px 0" } },
     rows.map((r,i) => e(M.div, { key:i, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.1,...ez},
@@ -845,7 +845,7 @@ function App() {
       e(AP, { mode:"wait" },
         e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
           style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
-        }, sc.sub)
+        }, renderBody(sc.sub))
       )
     ),
 

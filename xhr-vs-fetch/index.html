@@ -149,7 +149,7 @@ const SCENES = [
   {
     id:0, act:"01",
     title:"Two ways to make HTTP requests",
-    sub:"JavaScript offers two main APIs for making network requests: the classic XMLHttpRequest (XHR) and the modern fetch(). Let\u2019s compare them.",
+    sub:"**JavaScript offers two main APIs for making network requests: the classic XMLHttpRequest (XHR) and the modern fetch().** Let\u2019s compare them.",
     code:[
       [["cmt","// The old way"]],
       [["kw","const"],["plain"," xhr "],["punc","= "],["kw","new"],["plain"," "],["xhr","XMLHttpRequest"],["punc","()"]],
@@ -182,7 +182,7 @@ const SCENES = [
   {
     id:2, act:"03",
     title:"XHR readyState values",
-    sub:"XHR tracks request progress through 5 readyState values (0\u20134). Most code only cares about state 4 (DONE), but all five exist.",
+    sub:"**XHR tracks request progress through 5 readyState values (0\u20134).** Most code only cares about state 4 (DONE), but all five exist.",
     code:[
       [["cmt","// readyState values:"]],
       [["num","0"],["plain"," "],["punc","\u2500"],["plain"," UNSENT      "],["cmt","// open() not called"]],
@@ -198,7 +198,7 @@ const SCENES = [
   {
     id:3, act:"04",
     title:"XHR callback verbosity",
-    sub:"A real-world XHR request needs error handling, status checks, and JSON parsing. It adds up to a lot of boilerplate code.",
+    sub:"**A real-world XHR request needs error handling, status checks, and JSON parsing.** It adds up to a lot of boilerplate code.",
     code:[
       [["kw","const"],["plain"," xhr "],["punc","= "],["kw","new"],["plain"," "],["xhr","XMLHttpRequest"],["punc","()"]],
       [["plain","xhr"],["punc","."],["meth","open"],["punc","("],["str","'GET'"],["punc",", "],["str","'/api/users'"],["punc",")"]],
@@ -217,7 +217,7 @@ const SCENES = [
   {
     id:4, act:"05",
     title:"fetch() basics",
-    sub:"fetch() returns a Promise, enabling clean .then() chains or async/await. The same request takes far fewer lines.",
+    sub:"**fetch() returns a Promise, enabling clean .then() chains or async/await.** The same request takes far fewer lines.",
     code:[
       [["cmt","// Promise chain"]],
       [["fetch","fetch"],["punc","("],["str","'/api/users'"],["punc",")"]],
@@ -235,7 +235,7 @@ const SCENES = [
   {
     id:5, act:"06",
     title:"Response handling",
-    sub:"XHR can auto-parse JSON via responseType. fetch() always returns a Response object \u2014 you must call .json(), .text(), or .blob() explicitly.",
+    sub:"**XHR can auto-parse JSON via responseType.** fetch() always returns a Response object \u2014 you must call .json(), .text(), or .blob() explicitly.",
     code:[
       [["cmt","// XHR: auto-parse with responseType"]],
       [["plain","xhr"],["punc","."],["plain","responseType"],["punc"," = "],["str","'json'"]],
@@ -253,7 +253,7 @@ const SCENES = [
   {
     id:6, act:"07",
     title:"Error handling differences",
-    sub:"This is the biggest gotcha! XHR fires onerror on network failures. fetch() only rejects on network errors \u2014 a 404 or 500 is still a resolved promise.",
+    sub:"**This is the biggest gotcha!** XHR fires onerror on network failures. fetch() only rejects on network errors \u2014 a 404 or 500 is still a resolved promise.",
     code:[
       [["cmt","// XHR: onerror for network failures"]],
       [["plain","xhr"],["punc","."],["plain","onerror"],["punc"," = () => "],["fn","console"],["punc","."],["meth","log"],["punc","("],["str","'failed'"],["punc",")"]],
@@ -272,7 +272,7 @@ const SCENES = [
   {
     id:7, act:"08",
     title:"Progress tracking",
-    sub:"XHR has built-in progress events for both upload and download. fetch() has no native progress API for uploads, though download streaming exists.",
+    sub:"**XHR has built-in progress events for both upload and download.** fetch() has no native progress API for uploads, though download streaming exists.",
     code:[
       [["cmt","// XHR: built-in progress events"]],
       [["plain","xhr"],["punc","."],["plain","onprogress"],["punc"," = ("],["plain","e"],["punc",") => {"]],
@@ -290,7 +290,7 @@ const SCENES = [
   {
     id:8, act:"09",
     title:"Streaming with fetch",
-    sub:"fetch() supports ReadableStream, letting you process data as it arrives. This is powerful for large files and server-sent events.",
+    sub:"**fetch() supports ReadableStream, letting you process data as it arrives.** This is powerful for large files and server-sent events.",
     code:[
       [["kw","const"],["plain"," res "],["punc","= "],["kw","await"],["plain"," "],["fetch","fetch"],["punc","("],["str","'/large-file'"],["punc",")"]],
       [["kw","const"],["plain"," reader "],["punc","= "],["plain","res"],["punc","."],["plain","body"],["punc","."],["meth","getReader"],["punc","()"]],
@@ -308,7 +308,7 @@ const SCENES = [
   {
     id:9, act:"10",
     title:"Aborting requests",
-    sub:"XHR has a simple .abort() method. fetch() uses the AbortController API \u2014 more verbose but works with any Promise-based API.",
+    sub:"**XHR has a simple .abort() method.** fetch() uses the AbortController API \u2014 more verbose but works with any Promise-based API.",
     code:[
       [["cmt","// XHR: simple abort"]],
       [["plain","xhr"],["punc","."],["meth","abort"],["punc","()"]],
@@ -327,7 +327,7 @@ const SCENES = [
   {
     id:10, act:"11",
     title:"Side-by-side \u2014 same request",
-    sub:"Here\u2019s the same GET request returning JSON, written both ways. The fetch version is roughly half the code.",
+    sub:"**Here\u2019s the same GET request returning JSON, written both ways.** The fetch version is roughly half the code.",
     code:[
       [["cmt","// \u2500\u2500 XHR \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500"]],
       [["kw","const"],["plain"," xhr "],["punc","= "],["kw","new"],["plain"," "],["xhr","XMLHttpRequest"],["punc","()"]],
@@ -347,7 +347,7 @@ const SCENES = [
   {
     id:11, act:"12",
     title:"When to use which",
-    sub:"fetch() is the default choice for modern web apps. XHR still wins for upload progress tracking and legacy browser support.",
+    sub:"**fetch() is the default choice for modern web apps.** XHR still wins for upload progress tracking and legacy browser support.",
     code:[
       [["cmt","// Use fetch() when:"]],
       [["cmt","//   - Modern browsers (all current ones)"]],
@@ -367,7 +367,7 @@ const SCENES = [
   {
     id:12, act:"DONE",
     title:"XHR vs Fetch summary",
-    sub:"fetch() is the modern standard \u2014 cleaner, Promise-based, and streaming-capable. XHR lives on for upload progress and backward compatibility.",
+    sub:"**fetch() is the modern standard \u2014 cleaner, Promise-based, and streaming-capable.** XHR lives on for upload progress and backward compatibility.",
     code:[
       [["cmt","// The evolution of HTTP in JS"]],
       [["cmt","// XHR (1999) -> fetch (2015)"]],
@@ -611,7 +611,7 @@ const Finale = () => {
     { n:"3", label:"Progress", sub:"XHR: built-in upload/download progress | fetch: no native upload progress", c:T.coral },
     { n:"4", label:"Streaming", sub:"XHR: buffers everything | fetch: ReadableStream for chunk-by-chunk processing", c:T.teal },
     { n:"5", label:"Abort", sub:"XHR: simple .abort() | fetch: AbortController (works with any signal-aware API)", c:T.blue },
-    { n:"\u2192", label:"Default choice: fetch()", sub:"Modern, clean, streaming-capable. Use XHR only for upload progress or legacy IE.", c:T.tealL },
+    { n:"\u2192", label:"Default choice: fetch()", sub:"**Modern, clean, streaming-capable.** Use XHR only for upload progress or legacy IE.", c:T.tealL },
   ];
   return e("div", { style:{ padding:"8px 0" } },
     rows.map(function(r,i) { return e(M.div, { key:i, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.12, duration:ez.duration, ease:ez.ease},
@@ -706,7 +706,7 @@ function App() {
       e(AP, { mode:"wait" },
         e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
           style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
-        }, sc.sub)
+        }, renderBody(sc.sub))
       )
     ),
 

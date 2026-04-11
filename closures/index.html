@@ -149,7 +149,7 @@ const SCENES = [
   {
     id:0, act:"01",
     title:"What is a closure?",
-    sub:"A closure is a function bundled together with references to its surrounding state (the lexical environment). It lets an inner function access variables from an outer function — even after that outer function has returned.",
+    sub:"**A closure is a function bundled together with references to its surrounding state (the lexical environment).** It lets an inner function access variables from an outer function — even after that outer function has returned.",
     code:[
       [["cmt","// A closure = function + its lexical scope"]],
       [["cmt","// The inner function 'remembers'"]],
@@ -181,7 +181,7 @@ const SCENES = [
   {
     id:2, act:"03",
     title:"A simple closure",
-    sub:"When inner() is returned from outer(), it still has access to the message variable. The variable lives on inside the closure.",
+    sub:"**When inner() is returned from outer(), it still has access to the message variable.** The variable lives on inside the closure.",
     code:[
       [["kw","function"],["plain"," "],["fn","outer"],["punc","() {"]],
       [["plain","  "],["kw","const"],["plain"," message "],["punc","= "],["str","'hello'"]],
@@ -199,7 +199,7 @@ const SCENES = [
   {
     id:3, act:"04",
     title:"Closure in action — counter",
-    sub:"The classic closure example: a counter factory. Each call to makeCounter() creates a fresh count variable, and the returned functions close over it.",
+    sub:"**The classic closure example: a counter factory.** Each call to makeCounter() creates a fresh count variable, and the returned functions close over it.",
     code:[
       [["kw","function"],["plain"," "],["fn","makeCounter"],["punc","() {"]],
       [["plain","  "],["kw","let"],["plain"," count "],["punc","= "],["num","0"]],
@@ -219,7 +219,7 @@ const SCENES = [
   {
     id:4, act:"05",
     title:"Each closure gets its own copy",
-    sub:"Every invocation of the outer function creates a new lexical environment. Two counters are completely independent — they don't share state.",
+    sub:"**Every invocation of the outer function creates a new lexical environment.** Two counters are completely independent — they don't share state.",
     code:[
       [["kw","const"],["plain"," a "],["punc","= "],["fn","makeCounter"],["punc","()"]],
       [["kw","const"],["plain"," b "],["punc","= "],["fn","makeCounter"],["punc","()"]],
@@ -235,7 +235,7 @@ const SCENES = [
   {
     id:5, act:"06",
     title:"The loop problem",
-    sub:"Using var in a for loop: all callbacks share the same i variable. By the time they run, the loop has finished and i is 3.",
+    sub:"**Using var in a for loop: all callbacks share the same i variable.** By the time they run, the loop has finished and i is 3.",
     code:[
       [["kw","for"],["punc"," ("],["kw","var"],["plain"," i "],["punc","= "],["num","0"],["punc","; i < "],["num","3"],["punc","; i++) {"]],
       [["plain","  "],["fn","setTimeout"],["punc","(() => {"]],
@@ -252,7 +252,7 @@ const SCENES = [
   {
     id:6, act:"07",
     title:"Fixing the loop",
-    sub:"Use let (block-scoped), an IIFE, or a closure factory. Each creates a separate scope per iteration, giving each callback its own copy of i.",
+    sub:"**Use let (block-scoped), an IIFE, or a closure factory.** Each creates a separate scope per iteration, giving each callback its own copy of i.",
     code:[
       [["cmt","// Fix 1: let (block scope)"]],
       [["kw","for"],["punc"," ("],["kw","let"],["plain"," i "],["punc","= "],["num","0"],["punc","; i < "],["num","3"],["punc","; i++) {"]],
@@ -272,7 +272,7 @@ const SCENES = [
   {
     id:7, act:"08",
     title:"Closures and memory",
-    sub:"Captured variables can't be garbage collected as long as the closure exists. This is by design — but can cause memory leaks if closures hold references to large objects unintentionally.",
+    sub:"**Captured variables can't be garbage collected as long as the closure exists.** This is by design — but can cause memory leaks if closures hold references to large objects unintentionally.",
     code:[
       [["kw","function"],["plain"," "],["fn","createLeak"],["punc","() {"]],
       [["plain","  "],["kw","const"],["plain"," huge "],["punc","= "],["kw","new"],["plain"," "],["fn","Array"],["punc","("],["num","1e6"],["punc",")"]],
@@ -289,7 +289,7 @@ const SCENES = [
   {
     id:8, act:"09",
     title:"Private state pattern",
-    sub:"Closures can hide data that no outside code can access directly. The only way to interact with secret is through the returned methods.",
+    sub:"**Closures can hide data that no outside code can access directly.** The only way to interact with secret is through the returned methods.",
     code:[
       [["kw","function"],["plain"," "],["fn","createWallet"],["punc","("],["plain","initial"],["punc",") {"]],
       [["plain","  "],["kw","let"],["plain"," balance "],["punc","= "],["plain","initial"]],
@@ -309,7 +309,7 @@ const SCENES = [
   {
     id:9, act:"10",
     title:"Module pattern",
-    sub:"Before ES modules, closures powered the Module pattern — an IIFE that returns a public API while keeping internals private. This is closures at scale.",
+    sub:"**Before ES modules, closures powered the Module pattern — an IIFE that returns a public API while keeping internals private.** This is closures at scale.",
     code:[
       [["kw","const"],["plain"," Cache "],["punc","= ("],["kw","function"],["punc","() {"]],
       [["plain","  "],["kw","const"],["plain"," store "],["punc","= "],["kw","new"],["plain"," "],["fn","Map"],["punc","()"]],
@@ -329,7 +329,7 @@ const SCENES = [
   {
     id:10, act:"11",
     title:"Closures in event handlers",
-    sub:"Event handlers are one of the most common places closures appear. The handler closes over variables from its surrounding scope, keeping them available when the event fires later.",
+    sub:"**Event handlers are one of the most common places closures appear.** The handler closes over variables from its surrounding scope, keeping them available when the event fires later.",
     code:[
       [["kw","function"],["plain"," "],["fn","setupBtn"],["punc","("],["plain","label"],["punc",") {"]],
       [["plain","  "],["kw","let"],["plain"," clicks "],["punc","= "],["num","0"]],
@@ -369,7 +369,7 @@ const SCENES = [
   {
     id:12, act:"DONE",
     title:"Closures — the full picture",
-    sub:"A closure is a function that remembers its lexical scope. They power private state, modules, callbacks, and much of modern JavaScript.",
+    sub:"**A closure is a function that remembers its lexical scope.** They power private state, modules, callbacks, and much of modern JavaScript.",
     code:[
       [["cmt","// Closures in a nutshell:"]],
       [["num","1."],["plain"," Functions remember their birth scope"]],
@@ -655,7 +655,7 @@ function App() {
       e(AP, { mode:"wait" },
         e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
           style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
-        }, sc.sub)
+        }, renderBody(sc.sub))
       )
     ),
 

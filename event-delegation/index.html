@@ -150,7 +150,7 @@ const SCENES = [
   {
     id:0, act:"01",
     title:"The problem — too many listeners",
-    sub:"Imagine a list with 100 items. Attaching a click handler to every single item means 100 event listeners — wasteful and slow.",
+    sub:"**Imagine a list with 100 items.** Attaching a click handler to every single item means 100 event listeners — wasteful and slow.",
     code:[
       [["cmt","// Adding a listener to each item"]],
       [["plain","items"],["punc","."],["meth","forEach"],["punc","("],["plain","item"],["punc"," => {"]],
@@ -165,7 +165,7 @@ const SCENES = [
   {
     id:1, act:"02",
     title:"Event bubbling",
-    sub:"When you click an element, the event doesn't stop there. It bubbles up through every ancestor in the DOM tree, from the target to the root.",
+    sub:"**When you click an element, the event doesn't stop there.** It bubbles up through every ancestor in the DOM tree, from the target to the root.",
     code:[
       [["tag","<div>"],["plain","              "],["cmt","// 3. receives event"]],
       [["plain","  "],["tag","<ul>"],["plain","            "],["cmt","// 2. receives event"]],
@@ -179,7 +179,7 @@ const SCENES = [
   {
     id:2, act:"03",
     title:"Event capturing",
-    sub:"Before bubbling, events actually travel top-down — from the root to the target. This is called the capture phase. Most code ignores it.",
+    sub:"**Before bubbling, events actually travel top-down — from the root to the target.** This is called the capture phase. Most code ignores it.",
     code:[
       [["cmt","// Capture phase: top to down"]],
       [["plain","el"],["punc","."],["meth","addEventListener"],["punc","("]],
@@ -194,7 +194,7 @@ const SCENES = [
   {
     id:3, act:"04",
     title:"Three phases",
-    sub:"Every DOM event goes through three phases: Capture (down) then Target (the element) then Bubble (up). This is the complete event lifecycle.",
+    sub:"**Every DOM event goes through three phases: Capture (down) then Target (the element) then Bubble (up).** This is the complete event lifecycle.",
     code:[
       [["cmt","// Phase 1: Capture  (root to target)"]],
       [["cmt","// Phase 2: Target   (the element)"]],
@@ -210,7 +210,7 @@ const SCENES = [
   {
     id:4, act:"05",
     title:"event.target vs event.currentTarget",
-    sub:"event.target is the element that was actually clicked. event.currentTarget is the element the listener is attached to. They can be different!",
+    sub:"**event.target is the element that was actually clicked.** event.currentTarget is the element the listener is attached to. They can be different!",
     code:[
       [["plain","ul"],["punc","."],["meth","addEventListener"],["punc","("],["str","'click'"],["punc",","],["plain"," e"],["punc"," => {"]],
       [["plain","  e"],["punc","."],["evt","target"],["plain","         "],["cmt","// <li> clicked"]],
@@ -223,7 +223,7 @@ const SCENES = [
   {
     id:5, act:"06",
     title:"The naive approach",
-    sub:"Attaching one listener per element works for small lists. But with hundreds of elements, it hurts performance and breaks for dynamically added items.",
+    sub:"**Attaching one listener per element works for small lists.** But with hundreds of elements, it hurts performance and breaks for dynamically added items.",
     code:[
       [["cmt","// Naive: one listener per <li>"]],
       [["plain","document"],["punc","."],["meth","querySelectorAll"],["punc","("],["str","'li'"],["punc",")"]],
@@ -239,7 +239,7 @@ const SCENES = [
   {
     id:6, act:"07",
     title:"Event delegation pattern",
-    sub:"Instead of many listeners, attach ONE listener to the parent. When a child is clicked, the event bubbles up and the parent catches it.",
+    sub:"**Instead of many listeners, attach ONE listener to the parent.** When a child is clicked, the event bubbles up and the parent catches it.",
     code:[
       [["cmt","// Delegation: one listener on parent"]],
       [["plain","ul"],["punc","."],["meth","addEventListener"],["punc","("],["str","'click'"],["punc",","],["plain"," e"],["punc"," => {"]],
@@ -286,7 +286,7 @@ const SCENES = [
   {
     id:9, act:"10",
     title:"Dynamic elements",
-    sub:"Delegation shines with dynamic content. Since the listener is on the parent, newly added children are automatically handled — no rebinding needed.",
+    sub:"**Delegation shines with dynamic content.** Since the listener is on the parent, newly added children are automatically handled — no rebinding needed.",
     code:[
       [["cmt","// Parent listener already exists"]],
       [["kw","const"],["plain"," newLi "],["punc","= "],["plain","document"]],
@@ -301,7 +301,7 @@ const SCENES = [
   {
     id:10, act:"11",
     title:"event.stopPropagation()",
-    sub:"stopPropagation() prevents an event from bubbling further. Use it sparingly — it can break delegation if a child stops the event before it reaches the delegating parent.",
+    sub:"**stopPropagation() prevents an event from bubbling further.** Use it sparingly — it can break delegation if a child stops the event before it reaches the delegating parent.",
     code:[
       [["plain","button"],["punc","."],["meth","addEventListener"],["punc","("],["str","'click'"],["punc",","],["plain"," e"],["punc"," => {"]],
       [["plain","  e"],["punc","."],["meth","stopPropagation"],["punc","()"]],
@@ -331,7 +331,7 @@ const SCENES = [
   {
     id:12, act:"DONE",
     title:"Event delegation — summary",
-    sub:"One listener on a parent, handling events for all children through bubbling. Efficient, dynamic, and the professional way to handle DOM events.",
+    sub:"**One listener on a parent, handling events for all children through bubbling.** Efficient, dynamic, and the professional way to handle DOM events.",
     code:[
       [["cmt","// Event delegation in one pattern:"]],
       [["plain","parent"],["punc","."],["meth","addEventListener"],["punc","("],["str","'click'"],["punc",","],["plain"," e"],["punc"," => {"]],
@@ -871,7 +871,7 @@ function App() {
       e(AP, { mode:"wait" },
         e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
           style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
-        }, sc.sub)
+        }, renderBody(sc.sub))
       )
     ),
 

@@ -222,7 +222,7 @@ const SCENES = [
   {
     id:0, act:"01",
     title:"The Critical Rendering Path",
-    sub:"You type a URL and hit Enter. Within milliseconds the browser transforms raw bytes into pixels on screen. This is the Critical Rendering Path \u2014 the sequence of steps between receiving HTML and rendering the first frame.",
+    sub:"**You type a URL and hit Enter.** Within milliseconds the browser transforms raw bytes into pixels on screen. This is the Critical Rendering Path \u2014 the sequence of steps between receiving HTML and rendering the first frame.",
     code:[
       [["cmt","// The journey of a web page"]],
       [["cmt","// URL \u2192 Network \u2192 Bytes \u2192 Characters"]],
@@ -263,7 +263,7 @@ const SCENES = [
   {
     id:2, act:"03",
     title:"CSS parsing \u2192 CSSOM tree",
-    sub:"CSS is parsed into the CSS Object Model \u2014 another tree. Each node stores the computed styles that apply to it. The CSSOM mirrors the DOM structure but carries style information instead of content.",
+    sub:"**CSS is parsed into the CSS Object Model \u2014 another tree.** Each node stores the computed styles that apply to it. The CSSOM mirrors the DOM structure but carries style information instead of content.",
     code:[
       [["fn","body"],["plain"," { "],["attr","font-size"],["punc",": "],["num","16px"],["punc","; }"]],
       [["fn","h1"],["plain"," { "],["attr","color"],["punc",": "],["val","blue"],["punc","; "],["attr","font-size"],["punc",": "],["num","2em"],["punc","; }"]],
@@ -290,7 +290,7 @@ const SCENES = [
   {
     id:3, act:"04",
     title:"Render Tree = DOM + CSSOM",
-    sub:"The browser combines the DOM and CSSOM into a Render Tree. Only visible nodes appear \u2014 <head>, display:none elements, and scripts are excluded. Each render node knows what to display and how to style it.",
+    sub:"**The browser combines the DOM and CSSOM into a Render Tree.** Only visible nodes appear \u2014 <head>, display:none elements, and scripts are excluded. Each render node knows what to display and how to style it.",
     code:[
       [["cmt","// Render tree includes only visible content"]],
       [["cmt","// [no] <head>       \u2014 not visual"]],
@@ -305,7 +305,7 @@ const SCENES = [
   {
     id:4, act:"05",
     title:"Layout \u2014 calculating geometry",
-    sub:"The browser walks the Render Tree to calculate the exact position and size of every element. This is called Layout (or Reflow). It computes widths, heights, margins, padding \u2014 turning relative CSS units into absolute pixel coordinates.",
+    sub:"**The browser walks the Render Tree to calculate the exact position and size of every element.** This is called Layout (or Reflow). It computes widths, heights, margins, padding \u2014 turning relative CSS units into absolute pixel coordinates.",
     code:[
       [["cmt","// Layout computes geometry"]],
       [["fn","body"],["plain","   { "],["attr","x"],["punc",":"],["num","0"],["plain",", "],["attr","y"],["punc",":"],["num","0"],["plain",", "],["attr","w"],["punc",":"],["num","1200"],["plain",", "],["attr","h"],["punc",":"],["num","800"],["plain"," }"]],
@@ -317,7 +317,7 @@ const SCENES = [
   {
     id:5, act:"06",
     title:"Paint \u2014 filling in pixels",
-    sub:"Once layout is complete, the browser paints every visible node. It draws text, colors, images, borders, and shadows into layers. The paint step converts the layout boxes into actual pixel data.",
+    sub:"**Once layout is complete, the browser paints every visible node.** It draws text, colors, images, borders, and shadows into layers. The paint step converts the layout boxes into actual pixel data.",
     code:[
       [["cmt","// Paint operations (simplified)"]],
       [["fn","drawRect"],["punc","("],["num","0"],["punc",","],["num","0"],["punc",","],["num","1200"],["punc",","],["num","800"],["punc",","],["str","'white'"],["punc",")"]],
@@ -329,7 +329,7 @@ const SCENES = [
   {
     id:6, act:"07",
     title:"Composite \u2014 GPU layers merged",
-    sub:"The browser separates painted content into compositing layers (for transforms, opacity, will-change elements). The GPU composites these layers in the correct order into the final image you see on screen.",
+    sub:"**The browser separates painted content into compositing layers (for transforms, opacity, will-change elements).** The GPU composites these layers in the correct order into the final image you see on screen.",
     code:[
       [["cmt","// Compositing layers"]],
       [["cmt","// Layer 1: Background + text"]],
@@ -342,7 +342,7 @@ const SCENES = [
   {
     id:7, act:"08",
     title:"Render-blocking resources",
-    sub:"CSS blocks rendering \u2014 the browser won\u2019t paint until all CSS is parsed into the CSSOM. JavaScript blocks HTML parsing \u2014 when the parser hits a <script>, it stops building the DOM until the script downloads and executes.",
+    sub:"**CSS blocks rendering \u2014 the browser won\u2019t paint until all CSS is parsed into the CSSOM.** JavaScript blocks HTML parsing \u2014 when the parser hits a <script>, it stops building the DOM until the script downloads and executes.",
     code:[
       [["tag","<head>"]],
       [["plain","  "],["cmt","<!-- Render-blocking CSS -->"]],
@@ -357,7 +357,7 @@ const SCENES = [
   {
     id:8, act:"09",
     title:"async vs defer for scripts",
-    sub:"async downloads the script in parallel and executes it as soon as it\u2019s ready (blocking parsing briefly). defer downloads in parallel but waits to execute until the DOM is fully parsed. Both avoid blocking the initial parse.",
+    sub:"**async downloads the script in parallel and executes it as soon as it\u2019s ready (blocking parsing briefly).** defer downloads in parallel but waits to execute until the DOM is fully parsed. Both avoid blocking the initial parse.",
     code:[
       [["cmt","// Default: blocks parsing completely"]],
       [["tag","<script "],["attr","src"],["punc","="],["str","\"app.js\""],["tag",">"],["tag","<\/script>"]],
@@ -373,7 +373,7 @@ const SCENES = [
   {
     id:9, act:"10",
     title:"CRP optimization strategies",
-    sub:"Minimize critical resources (inline small CSS, defer non-critical JS). Reduce critical path length (fewer round trips). Minimize critical bytes (compress, minify). Every resource on the critical path delays First Paint.",
+    sub:"**Minimize critical resources (inline small CSS, defer non-critical JS).** Reduce critical path length (fewer round trips). Minimize critical bytes (compress, minify). Every resource on the critical path delays First Paint.",
     code:[
       [["cmt","// 1. Inline critical CSS"]],
       [["tag","<style>"],["fn","h1"],["punc","{"],["attr","color"],["punc",":"],["val","blue"],["punc","}"],["tag","</style>"]],
@@ -389,7 +389,7 @@ const SCENES = [
   {
     id:10, act:"11",
     title:"FCP and LCP \u2014 key metrics",
-    sub:"First Contentful Paint (FCP) is when the browser renders the first bit of content. Largest Contentful Paint (LCP) is when the main content finishes rendering. Both are Core Web Vitals that measure real user experience.",
+    sub:"**First Contentful Paint (FCP) is when the browser renders the first bit of content.** Largest Contentful Paint (LCP) is when the main content finishes rendering. Both are Core Web Vitals that measure real user experience.",
     code:[
       [["cmt","// Performance Observer API"]],
       [["kw","new"],["plain"," "],["fn","PerformanceObserver"],["punc","("],["punc","("],["plain","list"],["punc",")"],["plain"," "],["kw","=>"],["plain"," {"]],
@@ -403,7 +403,7 @@ const SCENES = [
   {
     id:11, act:"12",
     title:"Resource hints \u2014 preload, prefetch, preconnect",
-    sub:"preload tells the browser to fetch a resource immediately (it\u2019s needed now). prefetch hints that a resource will be needed on a future page. preconnect establishes early connections to important origins.",
+    sub:"**preload tells the browser to fetch a resource immediately (it\u2019s needed now).** prefetch hints that a resource will be needed on a future page. preconnect establishes early connections to important origins.",
     code:[
       [["cmt","// Preload: needed for current page"]],
       [["tag","<link "],["attr","rel"],["punc","="],["str","\"preload\""],["tag"," "],["attr","href"],["punc","="],["str","\"font.woff2\""],["tag"," "],["attr","as"],["punc","="],["str","\"font\""],["tag",">"]],
@@ -433,7 +433,7 @@ const SCENES = [
   {
     id:13, act:"DONE",
     title:"Critical Rendering Path \u2014 summary",
-    sub:"The browser\u2019s rendering pipeline transforms raw HTML, CSS, and JS into pixels. Understanding each step lets you optimize what matters: reduce blocking resources, minimize critical bytes, and deliver pixels to users faster.",
+    sub:"**The browser\u2019s rendering pipeline transforms raw HTML, CSS, and JS into pixels.** Understanding each step lets you optimize what matters: reduce blocking resources, minimize critical bytes, and deliver pixels to users faster.",
     code:[], finale:true,
   },
 ];
@@ -929,7 +929,7 @@ function App() {
       e(AP, { mode:"wait" },
         e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
           style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
-        }, sc.sub)
+        }, renderBody(sc.sub))
       )
     ),
 

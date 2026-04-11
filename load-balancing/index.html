@@ -145,7 +145,7 @@ const SCENES = [
   {
     id:0, act:"01",
     title:"One server is a bottleneck",
-    sub:"A single server handling all traffic is both a performance bottleneck and a single point of failure. When it slows down or crashes, everything stops.",
+    sub:"**A single server handling all traffic is both a performance bottleneck and a single point of failure.** When it slows down or crashes, everything stops.",
     mode:"single",
     code:[
       [["cmt","// Single-server setup"]],
@@ -157,7 +157,7 @@ const SCENES = [
   {
     id:1, act:"02",
     title:"Enter the load balancer",
-    sub:"A load balancer is a single entry point that distributes incoming traffic across a pool of backend servers. Clients see one address; traffic is spread across many machines.",
+    sub:"**A load balancer is a single entry point that distributes incoming traffic across a pool of backend servers.** Clients see one address; traffic is spread across many machines.",
     mode:"intro",
     code:[
       [["cmt","// Single entry point"]],
@@ -168,7 +168,7 @@ const SCENES = [
   {
     id:2, act:"03",
     title:"Round robin",
-    sub:"The simplest algorithm: rotate through servers in order. Request 1 → A, request 2 → B, request 3 → C, then back to A. Fair, predictable, no server state required.",
+    sub:"**The simplest algorithm: rotate through servers in order.** Request 1 → A, request 2 → B, request 3 → C, then back to A. Fair, predictable, no server state required.",
     mode:"roundrobin",
     code:[
       [["cmt","// Round robin"]],
@@ -181,7 +181,7 @@ const SCENES = [
   {
     id:3, act:"04",
     title:"Least connections",
-    sub:"Track active connections per server and send the next request to the one with the fewest. Adapts to uneven request durations — slow requests don't pile up on one server.",
+    sub:"**Track active connections per server and send the next request to the one with the fewest.** Adapts to uneven request durations — slow requests don't pile up on one server.",
     mode:"leastconn",
     code:[
       [["cmt","// Least connections"]],
@@ -194,7 +194,7 @@ const SCENES = [
   {
     id:4, act:"05",
     title:"Least response time",
-    sub:"Measure recent response times and route to the fastest responder. Rewards healthy, fast servers and routes around ones that are struggling under load.",
+    sub:"**Measure recent response times and route to the fastest responder.** Rewards healthy, fast servers and routes around ones that are struggling under load.",
     mode:"leastrt",
     code:[
       [["cmt","// Least response time"]],
@@ -207,7 +207,7 @@ const SCENES = [
   {
     id:5, act:"06",
     title:"IP hash / consistent hashing",
-    sub:"Hash the client IP (or session key) onto a ring of servers. The same client always lands on the same server — great for caches and session affinity without central state.",
+    sub:"**Hash the client IP (or session key) onto a ring of servers.** The same client always lands on the same server — great for caches and session affinity without central state.",
     mode:"iphash",
     code:[
       [["cmt","// Consistent hashing"]],
@@ -220,7 +220,7 @@ const SCENES = [
   {
     id:6, act:"07",
     title:"Weighted round robin",
-    sub:"Not all servers are equal. Give bigger machines higher weights so they receive proportionally more traffic. A server with weight 3 gets 3× the requests of a server with weight 1.",
+    sub:"**Not all servers are equal.** Give bigger machines higher weights so they receive proportionally more traffic. A server with weight 3 gets 3× the requests of a server with weight 1.",
     mode:"weighted",
     code:[
       [["cmt","// Weighted pool"]],
@@ -234,7 +234,7 @@ const SCENES = [
   {
     id:7, act:"08",
     title:"Layer 4 — transport-layer LB",
-    sub:"L4 balancers operate on TCP/UDP. They see IPs and ports but not the contents of the request. Extremely fast — they just forward packets — but can't make decisions based on URL or headers.",
+    sub:"**L4 balancers operate on TCP/UDP.** They see IPs and ports but not the contents of the request. Extremely fast — they just forward packets — but can't make decisions based on URL or headers.",
     mode:"l4",
     code:[
       [["cmt","// L4 sees:"]],
@@ -248,7 +248,7 @@ const SCENES = [
   {
     id:8, act:"09",
     title:"Layer 7 — app-aware routing",
-    sub:"L7 balancers terminate the HTTP connection and can inspect paths, headers, cookies, and methods. Route /api/* to one pool, /static/* to another — even do A/B tests by header.",
+    sub:"**L7 balancers terminate the HTTP connection and can inspect paths, headers, cookies, and methods.** Route /api/* to one pool, /static/* to another — even do A/B tests by header.",
     mode:"l7",
     code:[
       [["cmt","// L7 rules"]],
@@ -260,7 +260,7 @@ const SCENES = [
   {
     id:9, act:"10",
     title:"Sticky sessions",
-    sub:"Sometimes a user must keep hitting the same backend — e.g. for in-memory session data. The LB pins the client (via cookie or IP hash) to a specific server for the duration of their session.",
+    sub:"**Sometimes a user must keep hitting the same backend — e.g.** for in-memory session data. The LB pins the client (via cookie or IP hash) to a specific server for the duration of their session.",
     mode:"sticky",
     code:[
       [["cmt","// Sticky session via cookie"]],
@@ -272,7 +272,7 @@ const SCENES = [
   {
     id:10, act:"11",
     title:"Health checks",
-    sub:"The load balancer continually pings each backend. If a server fails N checks in a row, it's marked unhealthy and removed from the pool. When it recovers, it's added back automatically.",
+    sub:"**The load balancer continually pings each backend.** If a server fails N checks in a row, it's marked unhealthy and removed from the pool. When it recovers, it's added back automatically.",
     mode:"health",
     code:[
       [["cmt","// Health check loop"]],
@@ -284,7 +284,7 @@ const SCENES = [
   {
     id:11, act:"12",
     title:"Active-active vs active-passive",
-    sub:"The load balancer itself is an SPOF! Active-active: multiple LBs share traffic via DNS or anycast. Active-passive: a standby LB takes over via VRRP/heartbeat if the primary fails.",
+    sub:"**The load balancer itself is an SPOF!** Active-active: multiple LBs share traffic via DNS or anycast. Active-passive: a standby LB takes over via VRRP/heartbeat if the primary fails.",
     mode:"ha",
     code:[
       [["cmt","// Active-active"]],
@@ -298,7 +298,7 @@ const SCENES = [
   {
     id:12, act:"DONE",
     title:"Load balancing — summary",
-    sub:"One entry point, many backends. Choose an algorithm that fits your traffic, work at L4 or L7 depending on what decisions you need, and remember: the LB itself must be highly available.",
+    sub:"**One entry point, many backends.** Choose an algorithm that fits your traffic, work at L4 or L7 depending on what decisions you need, and remember: the LB itself must be highly available.",
     mode:"finale",
     code:[],
     finale:true,
@@ -711,11 +711,11 @@ const modeLabel = m => ({
 const Finale = () => {
   const rows = [
     { n:"lni-direction-alt", label:"One entry, many backends", sub:"Clients see one address, traffic spreads across a pool — horizontal scaling made simple", c:T.purple },
-    { n:"lni-reload", label:"Round robin & weighted", sub:"Rotate through servers (weighted for uneven capacities). Simple and predictable", c:T.teal },
-    { n:"lni-stats-up", label:"Least conn / least RT", sub:"Route to the server doing the least work right now. Adapts to variable request cost", c:T.blue },
-    { n:"lni-network", label:"Consistent hashing", sub:"Same client → same server. Great for caches; adding a node only remaps ~1/n of keys", c:T.pink },
-    { n:"lni-layers-1", label:"L4 vs L7", sub:"L4: fast, IP/port only. L7: slower, but can route by URL/header/cookie", c:T.amber },
-    { n:"lni-heart-monitor", label:"Health checks", sub:"Ping backends; remove failing ones, re-add recovered ones. Drain gracefully", c:T.green },
+    { n:"lni-reload", label:"Round robin & weighted", sub:"**Rotate through servers (weighted for uneven capacities).** Simple and predictable", c:T.teal },
+    { n:"lni-stats-up", label:"Least conn / least RT", sub:"**Route to the server doing the least work right now.** Adapts to variable request cost", c:T.blue },
+    { n:"lni-network", label:"Consistent hashing", sub:"**Same client → same server.** Great for caches; adding a node only remaps ~1/n of keys", c:T.pink },
+    { n:"lni-layers-1", label:"L4 vs L7", sub:"**L4: fast, IP/port only.** L7: slower, but can route by URL/header/cookie", c:T.amber },
+    { n:"lni-heart-monitor", label:"Health checks", sub:"**Ping backends; remove failing ones, re-add recovered ones.** Drain gracefully", c:T.green },
     { n:"lni-shield-2", label:"The LB itself must be HA", sub:"Active-active (DNS/anycast) or active-passive (VRRP/heartbeat) — never a single LB", c:T.coral },
   ];
   return e("div", { style:{ padding:"8px 0" } },
@@ -839,7 +839,7 @@ function App() {
       e(AP, { mode:"wait" },
         e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
           style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
-        }, sc.sub)
+        }, renderBody(sc.sub))
       )
     ),
 

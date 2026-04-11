@@ -147,7 +147,7 @@ const SCENES = [
   {
     id:0, act:"01",
     title:"Authentication vs Authorization",
-    sub:"Authentication (AuthN) asks 'who are you?' — verifying identity. Authorization (AuthZ) asks 'what can you do?' — checking permissions. Sessions, JWTs, and OAuth all solve the question of proving identity across stateless HTTP requests.",
+    sub:"**Authentication (AuthN) asks 'who are you?' — verifying identity.** Authorization (AuthZ) asks 'what can you do?' — checking permissions. Sessions, JWTs, and OAuth all solve the question of proving identity across stateless HTTP requests.",
     code:[
       [["cmt","// AuthN  →  who are you?"]],
       [["cmt","// AuthZ  →  what may you do?"]],
@@ -160,7 +160,7 @@ const SCENES = [
   {
     id:1, act:"02",
     title:"Sessions — server remembers you",
-    sub:"The classic approach. After login, the server creates a session record in its store (memory, Redis, DB) and sends back a cookie containing the session ID. The server holds the state; the cookie is just a pointer.",
+    sub:"**The classic approach.** After login, the server creates a session record in its store (memory, Redis, DB) and sends back a cookie containing the session ID. The server holds the state; the cookie is just a pointer.",
     code:[
       [["cmt","// Server-side store"]],
       [["fn","sessions"],["punc","["],["str","\"abc123\""],["punc","]"],["plain"," = "],["punc","{"]],
@@ -177,7 +177,7 @@ const SCENES = [
   {
     id:2, act:"03",
     title:"Session flow — every request",
-    sub:"The browser automatically attaches the cookie to each request. The server looks up the session ID in its store, finds the user record, and processes the request. Lose the store, lose all sessions.",
+    sub:"**The browser automatically attaches the cookie to each request.** The server looks up the session ID in its store, finds the user record, and processes the request. Lose the store, lose all sessions.",
     code:[
       [["kw","POST"],["plain"," /login    "],["cmt","// user + password"]],
       [["kw","GET"],["plain","  /me       Cookie: sid=abc123"]],
@@ -194,7 +194,7 @@ const SCENES = [
   {
     id:3, act:"04",
     title:"Sessions — trade-offs",
-    sub:"Sessions are simple and revocable — delete the server record and the user is logged out instantly. But they're stateful: horizontal scaling means sticky sessions or shared stores like Redis, and mobile/API clients need cookie juggling.",
+    sub:"**Sessions are simple and revocable — delete the server record and the user is logged out instantly.** But they're stateful: horizontal scaling means sticky sessions or shared stores like Redis, and mobile/API clients need cookie juggling.",
     code:[
       [["cmt","// [ok] easy to revoke"]],
       [["fn","sessions"],["punc","."],["meth","delete"],["punc","("],["str","\"abc123\""],["punc",")"]],
@@ -207,7 +207,7 @@ const SCENES = [
   {
     id:4, act:"05",
     title:"JWT — stateless tokens",
-    sub:"JSON Web Tokens flip the model. Instead of a pointer to server state, the token carries the state itself — signed by the server so it can't be tampered with. The server doesn't need to remember anything.",
+    sub:"**JSON Web Tokens flip the model.** Instead of a pointer to server state, the token carries the state itself — signed by the server so it can't be tampered with. The server doesn't need to remember anything.",
     code:[
       [["cmt","// Token carries the claims"]],
       [["kw","const"],["plain"," token = "],["fn","jwt"],["punc","."],["meth","sign"],["punc","("]],
@@ -223,7 +223,7 @@ const SCENES = [
   {
     id:5, act:"06",
     title:"JWT structure — header.payload.signature",
-    sub:"Three base64url chunks joined by dots. Header names the algorithm. Payload holds claims (sub, exp, custom fields). Signature is HMAC or RSA over the first two — any edit breaks it.",
+    sub:"**Three base64url chunks joined by dots.** Header names the algorithm. Payload holds claims (sub, exp, custom fields). Signature is HMAC or RSA over the first two — any edit breaks it.",
     code:[
       [["cmt","// header.payload.signature"]],
       [["cmt",""]],
@@ -236,7 +236,7 @@ const SCENES = [
   {
     id:6, act:"07",
     title:"JWT flow — Authorization header",
-    sub:"The client stores the token (localStorage, memory, or an httpOnly cookie) and sends it on every request in the Authorization header. The server verifies the signature — no database lookup required.",
+    sub:"**The client stores the token (localStorage, memory, or an httpOnly cookie) and sends it on every request in the Authorization header.** The server verifies the signature — no database lookup required.",
     code:[
       [["kw","POST"],["plain"," /login"]],
       [["cmt","// → { token: \"eyJ...\" }"]],
@@ -254,7 +254,7 @@ const SCENES = [
   {
     id:7, act:"08",
     title:"JWT — trade-offs",
-    sub:"Stateless is the superpower: any server can verify without a shared store. The curse: revocation. A stolen JWT is valid until it expires. You end up building a blocklist — and now you have state again.",
+    sub:"**Stateless is the superpower: any server can verify without a shared store.** The curse: revocation. A stolen JWT is valid until it expires. You end up building a blocklist — and now you have state again.",
     code:[
       [["cmt","// [ok] stateless — scales horizontally"]],
       [["cmt","// [ok] works well for APIs / mobile"]],
@@ -267,7 +267,7 @@ const SCENES = [
   {
     id:8, act:"09",
     title:"OAuth 2.0 — delegated authorization",
-    sub:"OAuth isn't really about logging in — it's about letting one app access resources owned by a user on another app, without sharing passwords. 'Sign in with Google' is actually OAuth asking Google for your profile scope.",
+    sub:"**OAuth isn't really about logging in — it's about letting one app access resources owned by a user on another app, without sharing passwords.** 'Sign in with Google' is actually OAuth asking Google for your profile scope.",
     code:[
       [["cmt","// Four roles:"]],
       [["cmt","//   Resource owner  (the user)"]],
@@ -280,7 +280,7 @@ const SCENES = [
   {
     id:9, act:"10",
     title:"Authorization Code flow",
-    sub:"The standard OAuth 2.0 dance. User is redirected to the auth server, logs in, consents, and is redirected back with a short-lived code. The client exchanges the code (plus its secret) for an access token on the back channel.",
+    sub:"**The standard OAuth 2.0 dance.** User is redirected to the auth server, logs in, consents, and is redirected back with a short-lived code. The client exchanges the code (plus its secret) for an access token on the back channel.",
     code:[
       [["cmt","// 1. Redirect to authorize"]],
       [["plain","/authorize?client_id=&scope=&redirect="]],
@@ -301,7 +301,7 @@ const SCENES = [
   {
     id:10, act:"11",
     title:"OAuth vs OpenID Connect",
-    sub:"OAuth 2.0 gives you an access token — a key to an API. It says nothing about who the user is. OpenID Connect (OIDC) is a thin layer on top that adds an id_token (a JWT) describing the user. OAuth = authorization. OIDC = authentication.",
+    sub:"**OAuth 2.0 gives you an access token — a key to an API.** It says nothing about who the user is. OpenID Connect (OIDC) is a thin layer on top that adds an id_token (a JWT) describing the user. OAuth = authorization. OIDC = authentication.",
     code:[
       [["cmt","// OAuth 2.0 response"]],
       [["punc","{ "],["plain","access_token"],["punc",": "],["str","\"ya29...\""],["punc"," }"]],
@@ -317,7 +317,7 @@ const SCENES = [
   {
     id:11, act:"12",
     title:"Refresh tokens — short + long lived",
-    sub:"Access tokens should be short-lived (5-15 minutes) to limit blast radius if stolen. Refresh tokens live much longer and are used only to mint new access tokens. Keep refresh tokens in httpOnly cookies, never in localStorage.",
+    sub:"**Access tokens should be short-lived (5-15 minutes) to limit blast radius if stolen.** Refresh tokens live much longer and are used only to mint new access tokens. Keep refresh tokens in httpOnly cookies, never in localStorage.",
     code:[
       [["cmt","// Login returns both"]],
       [["punc","{"]],
@@ -335,7 +335,7 @@ const SCENES = [
   {
     id:12, act:"13",
     title:"Cookie security — the four flags that matter",
-    sub:"If you use cookies (and you should for refresh tokens), set them correctly. httpOnly blocks JavaScript access (defeats XSS theft). Secure forces HTTPS. SameSite blocks CSRF. Pair with a CSRF token for state-changing requests.",
+    sub:"**If you use cookies (and you should for refresh tokens), set them correctly.** httpOnly blocks JavaScript access (defeats XSS theft). Secure forces HTTPS. SameSite blocks CSRF. Pair with a CSRF token for state-changing requests.",
     code:[
       [["kw","Set-Cookie"],["punc",": "],["plain","refresh="],["str","xyz"],["punc",";"]],
       [["plain","  "],["fn","HttpOnly"],["punc",";"],["plain","    "],["cmt","// no JS access"]],
@@ -348,7 +348,7 @@ const SCENES = [
   {
     id:13, act:"DONE",
     title:"Authentication — summary",
-    sub:"Sessions are simple and revocable but stateful. JWTs are stateless and scale well but are painful to revoke. OAuth 2.0 delegates access; OIDC adds identity. Short-lived access tokens plus long-lived refresh tokens is the modern default.",
+    sub:"**Sessions are simple and revocable but stateful.** JWTs are stateless and scale well but are painful to revoke. OAuth 2.0 delegates access; OIDC adds identity. Short-lived access tokens plus long-lived refresh tokens is the modern default.",
     code:[], flow:[], highlight:null, finale:true,
   },
 ];
@@ -786,11 +786,11 @@ const IntroViz = () =>
 
 const Finale = () => {
   const rows = [
-    { n:"lni-cookie", label:"Sessions", sub:"Stateful — server remembers via session ID cookie. Easy to revoke, hard to scale.", c:T.session },
-    { n:"lni-key-1", label:"JWTs", sub:"Stateless — signed token carries the claims. Scales horizontally, hard to revoke.", c:T.jwt },
-    { n:"lni-shield-2", label:"OAuth 2.0", sub:"Delegated authorization. Access a user's data on another service without their password.", c:T.oauth },
-    { n:"lni-user-4", label:"OpenID Connect", sub:"OAuth + an id_token. Use this for 'Sign in with Google', not raw OAuth.", c:T.purpleL },
-    { n:"lni-reload", label:"Refresh tokens", sub:"Short-lived access + long-lived refresh. Rotate on each use, detect reuse.", c:T.coralL },
+    { n:"lni-cookie", label:"Sessions", sub:"**Stateful — server remembers via session ID cookie.** Easy to revoke, hard to scale.", c:T.session },
+    { n:"lni-key-1", label:"JWTs", sub:"**Stateless — signed token carries the claims.** Scales horizontally, hard to revoke.", c:T.jwt },
+    { n:"lni-shield-2", label:"OAuth 2.0", sub:"**Delegated authorization.** Access a user's data on another service without their password.", c:T.oauth },
+    { n:"lni-user-4", label:"OpenID Connect", sub:"**OAuth + an id_token.** Use this for 'Sign in with Google', not raw OAuth.", c:T.purpleL },
+    { n:"lni-reload", label:"Refresh tokens", sub:"**Short-lived access + long-lived refresh.** Rotate on each use, detect reuse.", c:T.coralL },
     { n:"lni-lock-3", label:"Security flags", sub:"httpOnly, Secure, SameSite — plus CSRF tokens for state-changing requests.", c:T.red },
   ];
   return e("div", { style:{ padding:"8px 0" } },
@@ -976,7 +976,7 @@ function App() {
             initial:{ opacity:0 }, animate:{ opacity:1 }, exit:{ opacity:0 },
             transition:{ duration:0.25 },
             style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
-          }, sc.sub)
+          }, renderBody(sc.sub))
         )
       ),
 

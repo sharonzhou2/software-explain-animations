@@ -155,7 +155,7 @@ const SCENES = [
   {
     id:0, act:"01",
     title:"Why cache?",
-    sub:"A cache is a fast, temporary store placed in front of a slower source. The goal: avoid doing expensive work twice. Databases are slow, networks are slower, computation costs money — caching is how systems scale.",
+    sub:"**A cache is a fast, temporary store placed in front of a slower source.** The goal: avoid doing expensive work twice. Databases are slow, networks are slower, computation costs money — caching is how systems scale.",
     code:[
       [["cmt","// The core idea:"]],
       [["cmt","// 1. Check cache first"]],
@@ -167,7 +167,7 @@ const SCENES = [
   {
     id:1, act:"02",
     title:"The cache hierarchy",
-    sub:"Caching happens at many layers between the user and the database. Each layer is a chance to answer the request faster. The closer to the user, the faster — and the cheaper.",
+    sub:"**Caching happens at many layers between the user and the database.** Each layer is a chance to answer the request faster. The closer to the user, the faster — and the cheaper.",
     code:[
       [["cmt","// Request path:"]],
       [["plain","  browser  → "],["str","memory / disk"]],
@@ -182,7 +182,7 @@ const SCENES = [
   {
     id:2, act:"03",
     title:"Cache hit vs cache miss",
-    sub:"A hit is the whole point: the data is already in the cache, and the request returns in microseconds. A miss means we pay the full cost — go to the database, return the answer, and (usually) populate the cache for next time.",
+    sub:"**A hit is the whole point: the data is already in the cache, and the request returns in microseconds.** A miss means we pay the full cost — go to the database, return the answer, and (usually) populate the cache for next time.",
     code:[
       [["kw","async function"],["plain"," "],["fn","getUser"],["punc","("],["plain","id"],["punc",") {"]],
       [["plain","  "],["kw","const"],["plain"," cached "],["punc","="],["plain"," "],["kw","await"],["plain"," cache."],["meth","get"],["punc","("],["plain","id"],["punc",")"]],
@@ -198,7 +198,7 @@ const SCENES = [
   {
     id:3, act:"04",
     title:"Cache-aside (lazy loading)",
-    sub:"The app manages the cache itself. On read, check the cache; on miss, fetch from DB and populate. Simple, flexible, and the most common pattern. Downside: the first request for any key always pays the full cost.",
+    sub:"**The app manages the cache itself.** On read, check the cache; on miss, fetch from DB and populate. Simple, flexible, and the most common pattern. Downside: the first request for any key always pays the full cost.",
     code:[
       [["cmt","// Cache-aside read"]],
       [["kw","let"],["plain"," data "],["punc","="],["plain"," cache."],["meth","get"],["punc","("],["plain","key"],["punc",")"]],
@@ -215,7 +215,7 @@ const SCENES = [
   {
     id:4, act:"05",
     title:"Read-through",
-    sub:"The cache itself is in charge of fetching from the database. The app only talks to the cache. Cleaner code, but you need a cache library (or service) that supports it.",
+    sub:"**The cache itself is in charge of fetching from the database.** The app only talks to the cache. Cleaner code, but you need a cache library (or service) that supports it.",
     code:[
       [["cmt","// App only talks to cache"]],
       [["kw","const"],["plain"," data "],["punc","="],["plain"," "],["kw","await"],["plain"," cache."],["meth","get"],["punc","("],["plain","key"],["punc",")"]],
@@ -232,7 +232,7 @@ const SCENES = [
   {
     id:5, act:"06",
     title:"Write-through",
-    sub:"On write, update the cache AND the database in the same synchronous operation. The cache is always consistent with the DB — but every write pays for both stores. Safe. Slower writes.",
+    sub:"**On write, update the cache AND the database in the same synchronous operation.** The cache is always consistent with the DB — but every write pays for both stores. Safe. Slower writes.",
     code:[
       [["kw","async function"],["plain"," "],["fn","setUser"],["punc","("],["plain","id"],["punc",", user"],["punc",") {"]],
       [["plain","  "],["kw","await"],["plain"," db."],["meth","write"],["punc","("],["plain","id"],["punc",", user"],["punc",")   "],["cmt","// 1. DB"]],
@@ -247,7 +247,7 @@ const SCENES = [
   {
     id:6, act:"07",
     title:"Write-behind (write-back)",
-    sub:"Write to the cache immediately, then flush to the DB asynchronously. Fast writes, high throughput — but if the cache dies before the flush, you lose data. Used when throughput > durability.",
+    sub:"**Write to the cache immediately, then flush to the DB asynchronously.** Fast writes, high throughput — but if the cache dies before the flush, you lose data. Used when throughput > durability.",
     code:[
       [["cmt","// App writes to cache"]],
       [["kw","await"],["plain"," cache."],["meth","set"],["punc","("],["plain","id"],["punc",", user"],["punc",")"]],
@@ -264,7 +264,7 @@ const SCENES = [
   {
     id:7, act:"08",
     title:"Write-around",
-    sub:"Skip the cache on writes — they go straight to the DB. The cache is only populated on reads (via cache-aside). Good when written data is rarely read again, like logs or analytics events.",
+    sub:"**Skip the cache on writes — they go straight to the DB.** The cache is only populated on reads (via cache-aside). Good when written data is rarely read again, like logs or analytics events.",
     code:[
       [["cmt","// Write: bypass cache"]],
       [["kw","await"],["plain"," db."],["meth","write"],["punc","("],["plain","id"],["punc",", row"],["punc",")"]],
@@ -280,7 +280,7 @@ const SCENES = [
   {
     id:8, act:"09",
     title:"Eviction policies",
-    sub:"Caches are small. When full, something has to go. LRU evicts the least-recently-used item — usually the best default. LFU evicts the least-frequently-used. FIFO evicts in insertion order. TTL evicts when items expire.",
+    sub:"**Caches are small.** When full, something has to go. LRU evicts the least-recently-used item — usually the best default. LFU evicts the least-frequently-used. FIFO evicts in insertion order. TTL evicts when items expire.",
     code:[
       [["cmt","// LRU: move on access"]],
       [["fn","get"],["punc","("],["plain","key"],["punc",") {"]],
@@ -296,7 +296,7 @@ const SCENES = [
   {
     id:9, act:"10",
     title:"Cache invalidation",
-    sub:"\"There are only two hard things in Computer Science: cache invalidation and naming things.\" — Phil Karlton. When the DB changes, how does the cache know? Get it wrong and users see stale data.",
+    sub:"**\"There are only two hard things in Computer Science: cache invalidation and naming things.\" — Phil Karlton.** When the DB changes, how does the cache know? Get it wrong and users see stale data.",
     code:[
       [["cmt","// Approaches:"]],
       [["cmt","//   1. TTL          — expire after N seconds"]],
@@ -311,7 +311,7 @@ const SCENES = [
   {
     id:10, act:"11",
     title:"Cache stampede",
-    sub:"A popular key expires. Suddenly 10,000 concurrent requests all miss at the same instant — and all hammer the database at once. This is a thundering herd. Fixes: request coalescing, locking, stale-while-revalidate.",
+    sub:"**A popular key expires.** Suddenly 10,000 concurrent requests all miss at the same instant — and all hammer the database at once. This is a thundering herd. Fixes: request coalescing, locking, stale-while-revalidate.",
     code:[
       [["cmt","// Bad: all misses hit DB"]],
       [["kw","if"],["plain"," "],["punc","(!"],["plain","cache."],["meth","get"],["punc","("],["plain","key"],["punc","))"]],
@@ -326,7 +326,7 @@ const SCENES = [
   {
     id:11, act:"12",
     title:"Common pitfalls",
-    sub:"Caching bugs are sneaky because the app still \"works\" — just wrong. Stale reads, inconsistent views across replicas, cold-cache latency spikes after deploys, and unbounded memory growth are the usual suspects.",
+    sub:"**Caching bugs are sneaky because the app still \"works\" — just wrong.** Stale reads, inconsistent views across replicas, cold-cache latency spikes after deploys, and unbounded memory growth are the usual suspects.",
     code:[
       [["cmt","// (warn)  Pitfalls"]],
       [["cmt","//   • Stale data — old snapshot"]],
@@ -340,7 +340,7 @@ const SCENES = [
   {
     id:12, act:"13",
     title:"Browser caching",
-    sub:"The browser has its own HTTP cache. Cache-Control sets max-age and public/private. ETag and Last-Modified let the server say \"your copy is still good\" with a 304 Not Modified — saving the full response body.",
+    sub:"**The browser has its own HTTP cache.** Cache-Control sets max-age and public/private. ETag and Last-Modified let the server say \"your copy is still good\" with a 304 Not Modified — saving the full response body.",
     code:[
       [["cmt","// Response headers"]],
       [["plain","Cache-Control"],["punc",": "],["str","max-age=3600, public"]],
@@ -357,7 +357,7 @@ const SCENES = [
   {
     id:13, act:"DONE",
     title:"Caching strategies — summary",
-    sub:"Cache where it's cheap and close. Pick a write strategy by what you can afford to lose. Invalidate deliberately. Plan for stampedes. Measure hit rates — if they're low, the cache is just overhead.",
+    sub:"**Cache where it's cheap and close.** Pick a write strategy by what you can afford to lose. Invalidate deliberately. Plan for stampedes. Measure hit rates — if they're low, the cache is just overhead.",
     finale:true,
   },
 ];
@@ -967,11 +967,11 @@ const BrowserView = () => {
 const Finale = () => {
   const rows = [
     { icon:"lni-bolt-2", label:"Cache close, cache deep", sub:"Every layer — browser, CDN, proxy, app, Redis — is a chance to answer faster", c:T.teal },
-    { icon:"lni-layers-1", label:"Aside is the default", sub:"Simple, flexible, and works with any cache. Reach for through patterns when you need cleaner code", c:T.purple },
+    { icon:"lni-layers-1", label:"Aside is the default", sub:"**Simple, flexible, and works with any cache.** Reach for through patterns when you need cleaner code", c:T.purple },
     { icon:"lni-reload", label:"Write strategy = durability tradeoff", sub:"Write-through is safe, write-behind is fast, write-around skips the cache entirely", c:T.blue },
     { icon:"lni-timer-3", label:"Invalidate deliberately", sub:"TTL + explicit delete + versioning — pick the tools that match your staleness budget", c:T.amber },
     { icon:"lni-warning", label:"Plan for stampedes", sub:"Single-flight, stale-while-revalidate, and jittered TTLs prevent the thundering herd", c:T.coral },
-    { icon:"lni-stats-up", label:"Measure hit rate", sub:"A cache below ~80% hit rate is adding latency, not removing it. Track it always", c:T.green },
+    { icon:"lni-stats-up", label:"Measure hit rate", sub:"**A cache below ~80% hit rate is adding latency, not removing it.** Track it always", c:T.green },
   ];
   return e("div", { style:{ padding:"8px 0" } },
     rows.map((r,i) => e(M.div, { key:i, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.1,...ez},
@@ -1084,7 +1084,7 @@ function App() {
       e(AP, { mode:"wait" },
         e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
           style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
-        }, sc.sub)
+        }, renderBody(sc.sub))
       )
     ),
 

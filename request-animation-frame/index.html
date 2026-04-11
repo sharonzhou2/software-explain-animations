@@ -152,7 +152,7 @@ const SCENES = [
   {
     id:0, act:"01",
     title:"Smooth animation in the browser",
-    sub:"The browser refreshes the screen ~60 times per second (60 Hz). For silky-smooth animation, your updates need to sync with this paint cycle.",
+    sub:"**The browser refreshes the screen ~60 times per second (60 Hz).** For silky-smooth animation, your updates need to sync with this paint cycle.",
     code:[
       [["cmt","// The goal: 60 fps smooth animation"]],
       [["cmt","// Display refreshes every ~16.67ms"]],
@@ -163,7 +163,7 @@ const SCENES = [
   {
     id:1, act:"02",
     title:"setTimeout / setInterval",
-    sub:"The classic approach: use a timer to update at a fixed interval. But timers don't know when the screen actually refreshes.",
+    sub:"**The classic approach: use a timer to update at a fixed interval.** But timers don't know when the screen actually refreshes.",
     code:[
       [["kw","function"],["plain"," "],["fn","animateWithTimer"],["punc","() {"]],
       [["plain","  "],["fn","setInterval"],["punc","(() => {"]],
@@ -177,7 +177,7 @@ const SCENES = [
   {
     id:2, act:"03",
     title:"The problem — jank & drift",
-    sub:"setTimeout/setInterval aren't precise. Callbacks can fire late, miss paint frames, or stack up — causing jank, stuttering, and wasted CPU cycles.",
+    sub:"**setTimeout/setInterval aren't precise.** Callbacks can fire late, miss paint frames, or stack up — causing jank, stuttering, and wasted CPU cycles.",
     code:[
       [["cmt","// Timer fires at ~16ms but..."]],
       [["cmt","// - Not synced to display refresh"]],
@@ -206,7 +206,7 @@ const SCENES = [
   {
     id:4, act:"05",
     title:"How rAF works",
-    sub:"The callback runs just before the browser's next repaint — roughly every 16.67ms at 60 Hz. The browser controls the timing, not you.",
+    sub:"**The callback runs just before the browser's next repaint — roughly every 16.67ms at 60 Hz.** The browser controls the timing, not you.",
     code:[
       [["cmt","// 60 Hz display = 1000ms / 60"]],
       [["cmt","// = ~16.67ms per frame"]],
@@ -220,7 +220,7 @@ const SCENES = [
   {
     id:5, act:"06",
     title:"The rAF loop pattern",
-    sub:"rAF fires once per call. For continuous animation, you recursively request the next frame inside your callback.",
+    sub:"**rAF fires once per call.** For continuous animation, you recursively request the next frame inside your callback.",
     code:[
       [["kw","function"],["plain"," "],["fn","loop"],["punc","() {"]],
       [["plain","  "],["cmt","// 1. Update state"]],
@@ -238,7 +238,7 @@ const SCENES = [
   {
     id:6, act:"07",
     title:"The timestamp parameter",
-    sub:"rAF passes a high-resolution timestamp (DOMHighResTimeStamp) to your callback. Use it to calculate delta time for frame-rate independent animation.",
+    sub:"**rAF passes a high-resolution timestamp (DOMHighResTimeStamp) to your callback.** Use it to calculate delta time for frame-rate independent animation.",
     code:[
       [["kw","let"],["plain"," prev "],["punc","="],["plain"," "],["num","0"]],
       [["kw","function"],["plain"," "],["fn","loop"],["punc","("],["plain","timestamp"],["punc",") {"]],
@@ -274,7 +274,7 @@ const SCENES = [
   {
     id:8, act:"09",
     title:"rAF vs CSS animations",
-    sub:"CSS animations/transitions are GPU-accelerated and ideal for simple state changes. rAF is for complex, dynamic animations where you need per-frame control.",
+    sub:"**CSS animations/transitions are GPU-accelerated and ideal for simple state changes.** rAF is for complex, dynamic animations where you need per-frame control.",
     code:[
       [["cmt","// CSS: declarative, GPU-accelerated"]],
       [["css",".box { transition: transform 0.3s }"]],
@@ -291,7 +291,7 @@ const SCENES = [
   {
     id:9, act:"10",
     title:"rAF for non-animation",
-    sub:"rAF isn't just for animation. It's perfect for debouncing scroll and resize handlers — coalescing rapid events into one-per-frame updates.",
+    sub:"**rAF isn't just for animation.** It's perfect for debouncing scroll and resize handlers — coalescing rapid events into one-per-frame updates.",
     code:[
       [["kw","let"],["plain"," ticking "],["punc","="],["plain"," "],["kw","false"]],
       [["plain","window"],["punc","."],["fn","addEventListener"],["punc","("],["str","'scroll'"],["punc",","]],
@@ -310,7 +310,7 @@ const SCENES = [
   {
     id:10, act:"11",
     title:"Performance comparison",
-    sub:"setTimeout callbacks land at unpredictable times relative to display refresh. rAF callbacks are perfectly aligned — zero wasted frames.",
+    sub:"**setTimeout callbacks land at unpredictable times relative to display refresh.** rAF callbacks are perfectly aligned — zero wasted frames.",
     code:[
       [["cmt","// setTimeout: fires whenever the"]],
       [["cmt","//   event loop gets to it"]],
@@ -327,7 +327,7 @@ const SCENES = [
   {
     id:11, act:"12",
     title:"rAF and the event loop",
-    sub:"In the event loop, rAF callbacks run after microtasks (promises), but before the browser paints. This is the key to why it syncs perfectly.",
+    sub:"**In the event loop, rAF callbacks run after microtasks (promises), but before the browser paints.** This is the key to why it syncs perfectly.",
     code:[
       [["cmt","// Event loop order per frame:"]],
       [["num","1."],["plain"," Run task (setTimeout, etc.)"]],
@@ -342,7 +342,7 @@ const SCENES = [
   {
     id:12, act:"DONE",
     title:"requestAnimationFrame — Summary",
-    sub:"The browser's built-in animation scheduler. Sync with the display, save battery, get smooth frames.",
+    sub:"**The browser's built-in animation scheduler.** Sync with the display, save battery, get smooth frames.",
     code:[
       [["cmt","// The animation API checklist:"]],
       [["num","1."],["plain"," Use rAF, not setTimeout"]],
@@ -995,7 +995,7 @@ function App() {
       e(AP, { mode:"wait" },
         e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
           style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
-        }, sc.sub)
+        }, renderBody(sc.sub))
       )
     ),
 

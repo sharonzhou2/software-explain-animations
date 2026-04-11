@@ -146,7 +146,7 @@ const SCENES = [
   {
     id:0, act:"01",
     title:"Why rate limiting?",
-    sub:"APIs, login endpoints, and backend services can be overwhelmed by too many requests — intentional abuse, runaway clients, or viral traffic. Rate limiting is the doorman that decides who gets in, who waits, and who gets turned away.",
+    sub:"**APIs, login endpoints, and backend services can be overwhelmed by too many requests — intentional abuse, runaway clients, or viral traffic.** Rate limiting is the doorman that decides who gets in, who waits, and who gets turned away.",
     code:[
       [["cmt","// Without rate limiting:"]],
       [["cmt","//   10,000 req/sec → server melts"]],
@@ -158,7 +158,7 @@ const SCENES = [
   {
     id:1, act:"02",
     title:"Fixed window counter",
-    sub:"The simplest algorithm: count requests in fixed time buckets (say, 10/min). When the counter exceeds the limit, reject. When the window ends, reset the counter to zero. Cheap, obvious, easy to implement.",
+    sub:"**The simplest algorithm: count requests in fixed time buckets (say, 10/min).** When the counter exceeds the limit, reject. When the window ends, reset the counter to zero. Cheap, obvious, easy to implement.",
     code:[
       [["kw","if"],["plain"," (counter"],["punc","["],["fn","window"],["punc","]"],["plain"," >= "],["num","10"],["punc",") "],["kw","reject"],["punc","()"]],
       [["kw","else"],["plain"," counter"],["punc","["],["fn","window"],["punc","]"],["plain","++"]],
@@ -170,7 +170,7 @@ const SCENES = [
   {
     id:2, act:"03",
     title:"The boundary problem",
-    sub:"Fixed windows have a nasty edge case: a client can fire 10 requests at the end of one window and 10 more at the start of the next — 20 requests in a few seconds, all legal. That's 2x the intended rate.",
+    sub:"**Fixed windows have a nasty edge case: a client can fire 10 requests at the end of one window and 10 more at the start of the next — 20 requests in a few seconds, all legal.** That's 2x the intended rate.",
     code:[
       [["cmt","// Window 1 (00:00–01:00)"]],
       [["cmt","//   10 reqs at 00:59.9  [ok]"]],
@@ -184,7 +184,7 @@ const SCENES = [
   {
     id:3, act:"04",
     title:"Sliding window log",
-    sub:"Store a timestamp for every request. When a new one arrives, drop timestamps older than the window, then count what's left. Perfectly accurate — but memory scales linearly with request volume.",
+    sub:"**Store a timestamp for every request.** When a new one arrives, drop timestamps older than the window, then count what's left. Perfectly accurate — but memory scales linearly with request volume.",
     code:[
       [["fn","log"],["punc",".push(now)"]],
       [["fn","log"],["plain"," = log."],["meth","filter"],["punc","(t => now - t < "],["num","60000"],["punc",")"]],
@@ -196,7 +196,7 @@ const SCENES = [
   {
     id:4, act:"05",
     title:"Sliding window counter",
-    sub:"A clever hybrid: keep counters for the current and previous fixed window, then weight the previous window by how much of it still falls inside the sliding window. Near-perfect accuracy at O(1) memory.",
+    sub:"**A clever hybrid: keep counters for the current and previous fixed window, then weight the previous window by how much of it still falls inside the sliding window.** Near-perfect accuracy at O(1) memory.",
     code:[
       [["plain","estimate = prev * ("],["num","1 - elapsed/window"],["plain",") + curr"]],
       [["cmt","// e.g. 30s into current window:"]],
@@ -209,7 +209,7 @@ const SCENES = [
   {
     id:5, act:"06",
     title:"Token bucket",
-    sub:"Imagine a bucket that holds N tokens. Every request consumes one token. Tokens refill at a steady rate. If the bucket has tokens — allow. If it's empty — reject. Bursts are allowed up to the bucket's capacity.",
+    sub:"**Imagine a bucket that holds N tokens.** Every request consumes one token. Tokens refill at a steady rate. If the bucket has tokens — allow. If it's empty — reject. Bursts are allowed up to the bucket's capacity.",
     code:[
       [["kw","if"],["plain"," (bucket.tokens >= "],["num","1"],["punc",") {"]],
       [["plain","  bucket.tokens--"]],
@@ -223,7 +223,7 @@ const SCENES = [
   {
     id:6, act:"07",
     title:"Token bucket in motion",
-    sub:"Watch the bucket fill steadily over time while requests drain it. A quiet period lets tokens accumulate up to capacity — enabling a clean burst when traffic spikes.",
+    sub:"**Watch the bucket fill steadily over time while requests drain it.** A quiet period lets tokens accumulate up to capacity — enabling a clean burst when traffic spikes.",
     code:[
       [["cmt","// capacity = 10"]],
       [["cmt","// refill   = 1 token / 600ms"]],
@@ -237,7 +237,7 @@ const SCENES = [
   {
     id:7, act:"08",
     title:"Leaky bucket",
-    sub:"Instead of tokens, think of a bucket with a hole in the bottom. Requests pour in at the top into a queue; the bucket \"leaks\" requests out to the server at a fixed rate. Overflow the bucket — you're rejected.",
+    sub:"**Instead of tokens, think of a bucket with a hole in the bottom.** Requests pour in at the top into a queue; the bucket \"leaks\" requests out to the server at a fixed rate. Overflow the bucket — you're rejected.",
     code:[
       [["kw","if"],["plain"," (queue.length >= capacity) "],["kw","reject"],["punc","()"]],
       [["kw","else"],["plain"," queue."],["meth","push"],["punc","(req)"]],
@@ -249,7 +249,7 @@ const SCENES = [
   {
     id:8, act:"09",
     title:"Leaky bucket vs token bucket",
-    sub:"Token bucket allows bursts — unused tokens accumulate. Leaky bucket smooths traffic — requests always exit at a constant rate, no matter how bursty the input. Different shapes for different needs.",
+    sub:"**Token bucket allows bursts — unused tokens accumulate.** Leaky bucket smooths traffic — requests always exit at a constant rate, no matter how bursty the input. Different shapes for different needs.",
     code:[
       [["cmt","// Token bucket: bursty allowed"]],
       [["cmt","//   out: 0 0 0 6 0 0 0 1 ..."]],
@@ -263,7 +263,7 @@ const SCENES = [
   {
     id:9, act:"10",
     title:"Distributed rate limiting",
-    sub:"A single process is easy. A fleet of 20 API servers is not — each must see the same counter. The usual answer: a shared store like Redis with atomic INCR + EXPIRE, so every node queries one source of truth.",
+    sub:"**A single process is easy.** A fleet of 20 API servers is not — each must see the same counter. The usual answer: a shared store like Redis with atomic INCR + EXPIRE, so every node queries one source of truth.",
     code:[
       [["plain","key = "],["str","`rl:${userId}:${minute}`"]],
       [["plain","count = "],["kw","await"],["plain"," redis."],["meth","incr"],["punc","(key)"]],
@@ -276,7 +276,7 @@ const SCENES = [
   {
     id:10, act:"11",
     title:"Tell the client what's happening",
-    sub:"Well-behaved APIs return rate limit info in response headers — how many requests are allowed, how many remain, and when the counter resets. Clients can self-throttle instead of hammering blindly.",
+    sub:"**Well-behaved APIs return rate limit info in response headers — how many requests are allowed, how many remain, and when the counter resets.** Clients can self-throttle instead of hammering blindly.",
     code:[
       [["cmt","// Response headers"]],
       [["plain","X-RateLimit-Limit"],["punc",": "],["num","100"]],
@@ -289,7 +289,7 @@ const SCENES = [
   {
     id:11, act:"12",
     title:"429 Too Many Requests",
-    sub:"When the limit is exceeded, respond with HTTP 429 and a Retry-After header telling the client how long to wait. Polite clients back off; aggressive clients get nothing.",
+    sub:"**When the limit is exceeded, respond with HTTP 429 and a Retry-After header telling the client how long to wait.** Polite clients back off; aggressive clients get nothing.",
     code:[
       [["plain","HTTP/1.1 "],["num","429"],["plain"," Too Many Requests"]],
       [["plain","Retry-After"],["punc",": "],["num","30"]],
@@ -303,7 +303,7 @@ const SCENES = [
   {
     id:12, act:"DONE",
     title:"Rate limiting — summary",
-    sub:"Fixed window is cheap. Sliding window is accurate. Token bucket allows bursts. Leaky bucket smooths flow. In production: share counters via Redis, return clear headers, and always send 429 with Retry-After.",
+    sub:"**Fixed window is cheap.** Sliding window is accurate. Token bucket allows bursts. Leaky bucket smooths flow. In production: share counters via Redis, return clear headers, and always send 429 with Retry-After.",
     code:[], finale:true,
   },
 ];
@@ -1051,7 +1051,7 @@ function App() {
       e(AP, { mode:"wait" },
         e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
           style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
-        }, sc.sub)
+        }, renderBody(sc.sub))
       )
     ),
 

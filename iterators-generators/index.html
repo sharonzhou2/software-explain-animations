@@ -150,7 +150,7 @@ const SCENES = [
   {
     id:0, act:"01",
     title:"The iteration problem",
-    sub:"How do we traverse different data structures uniformly? JavaScript solves this with a single protocol that any object can implement.",
+    sub:"**How do we traverse different data structures uniformly?** JavaScript solves this with a single protocol that any object can implement.",
     code:[
       [["cmt","// arrays, strings, maps, sets..."]],
       [["cmt","// each stores data differently"]],
@@ -164,7 +164,7 @@ const SCENES = [
   {
     id:1, act:"02",
     title:"The iterator protocol",
-    sub:"An iterator is any object with a next() method that returns { value, done }. When done is true, iteration stops.",
+    sub:"**An iterator is any object with a next() method that returns { value, done }.** When done is true, iteration stops.",
     code:[
       [["cmt","// Iterator protocol contract:"]],
       [["plain","iterator"],["punc","."],["meth","next"],["punc","()"]],
@@ -178,7 +178,7 @@ const SCENES = [
   {
     id:2, act:"03",
     title:"Built-in iterables",
-    sub:"An iterable is any object with a [Symbol.iterator]() method that returns an iterator. Arrays, strings, maps, and sets are all built-in iterables.",
+    sub:"**An iterable is any object with a [Symbol.iterator]() method that returns an iterator.** Arrays, strings, maps, and sets are all built-in iterables.",
     code:[
       [["kw","const"],["plain"," arr "],["punc","= ["],["num","1"],["punc",", "],["num","2"],["punc",", "],["num","3"],["punc","]"]],
       [["kw","const"],["plain"," iter "],["punc","= "],["plain","arr"],["punc","["],["iter","Symbol.iterator"],["punc","]()"]],
@@ -199,7 +199,7 @@ const SCENES = [
   {
     id:3, act:"04",
     title:"for...of under the hood",
-    sub:"for...of calls [Symbol.iterator]() to get an iterator, then calls .next() repeatedly until done is true. It's syntax sugar for the protocol.",
+    sub:"**for...of calls [Symbol.iterator]() to get an iterator, then calls .next() repeatedly until done is true.** It's syntax sugar for the protocol.",
     code:[
       [["kw","for"],["plain"," "],["punc","("],["kw","const"],["plain"," item "],["kw","of"],["plain"," "],["punc","["],["num","1"],["punc",","],["num","2"],["punc",","],["num","3"],["punc","]) {"]],
       [["plain","  "],["fn","console"],["punc","."],["meth","log"],["punc","("],["plain","item"],["punc",")"]],
@@ -235,7 +235,7 @@ const SCENES = [
   {
     id:5, act:"06",
     title:"What is a generator?",
-    sub:"A generator is a special kind of function that can PAUSE mid-execution, hand a value back to the caller, then RESUME later from exactly where it stopped. Written with function* syntax. Calling it doesn't run the body — it returns a generator object you control step-by-step with .next().",
+    sub:"**A generator is a special kind of function that can PAUSE mid-execution, hand a value back to the caller, then RESUME later from exactly where it stopped.** Written with function* syntax. Calling it doesn't run the body — it returns a generator object you control step-by-step with .next().",
     code:[
       [["cmt","// function* = \"pausable function\""]],
       [["kw","function"],["gen","*"],["plain"," "],["fn","count"],["punc","() {"]],
@@ -255,7 +255,7 @@ const SCENES = [
   {
     id:6, act:"07",
     title:"The yield keyword",
-    sub:"yield pauses the generator and sends a value out. The function's state is frozen \u2014 local variables, execution position \u2014 everything preserved until next() is called again.",
+    sub:"**yield pauses the generator and sends a value out.** The function's state is frozen \u2014 local variables, execution position \u2014 everything preserved until next() is called again.",
     code:[
       [["kw","function"],["gen","*"],["plain"," "],["fn","greet"],["punc","() {"]],
       [["plain","  "],["fn","console"],["punc","."],["meth","log"],["punc","("],["str","'Start'"],["punc",")"]],
@@ -297,7 +297,7 @@ const SCENES = [
   {
     id:8, act:"09",
     title:"Lazy evaluation",
-    sub:"Generators compute values on demand \u2014 perfect for infinite sequences. Values are only generated when requested, saving memory and computation.",
+    sub:"**Generators compute values on demand \u2014 perfect for infinite sequences.** Values are only generated when requested, saving memory and computation.",
     code:[
       [["kw","function"],["gen","*"],["plain"," "],["fn","naturals"],["punc","() {"]],
       [["plain","  "],["kw","let"],["plain"," n "],["punc","= "],["num","1"]],
@@ -315,7 +315,7 @@ const SCENES = [
   {
     id:9, act:"10",
     title:"yield* delegation",
-    sub:"yield* delegates iteration to another iterable or generator. It pulls values from the inner source and yields them one by one.",
+    sub:"**yield* delegates iteration to another iterable or generator.** It pulls values from the inner source and yields them one by one.",
     code:[
       [["kw","function"],["gen","*"],["plain"," "],["fn","inner"],["punc","() {"]],
       [["plain","  "],["gen","yield"],["plain"," "],["str","'b'"]],
@@ -334,7 +334,7 @@ const SCENES = [
   {
     id:10, act:"11",
     title:"Historical: generators for async (NOT used today)",
-    sub:"Before async/await existed (ES2017), generators + promises were hacked together to make async code look synchronous. A runner like co() would call .next(), wait for the yielded promise, then call .next(result) to resume. TODAY: use async/await — it's literally a language-level version of this pattern. You almost never write generators for async in modern code.",
+    sub:"**Before async/await existed (ES2017), generators + promises were hacked together to make async code look synchronous.** A runner like co() would call .next(), wait for the yielded promise, then call .next(result) to resume. TODAY: use async/await — it's literally a language-level version of this pattern. You almost never write generators for async in modern code.",
     code:[
       [["cmt","// === OLD (pre-2017) — don't write this ==="]],
       [["kw","function"],["gen","*"],["plain"," "],["fn","fetchUser"],["punc","() {"]],
@@ -383,7 +383,7 @@ const SCENES = [
   {
     id:12, act:"DONE",
     title:"Iterators & Generators",
-    sub:"Two protocols that give JavaScript uniform traversal and lazy computation. Generators are syntactic sugar for creating iterators with pausable execution.",
+    sub:"**Two protocols that give JavaScript uniform traversal and lazy computation.** Generators are syntactic sugar for creating iterators with pausable execution.",
     code:[
       [["cmt","// The iteration protocol:"]],
       [["plain","obj"],["punc","["],["iter","Symbol.iterator"],["punc","]()"],["plain"," \u2192 iterator"]],
@@ -780,7 +780,7 @@ function App() {
       e(AP, { mode:"wait" },
         e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
           style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
-        }, sc.sub)
+        }, renderBody(sc.sub))
       )
     ),
 

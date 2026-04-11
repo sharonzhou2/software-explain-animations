@@ -153,7 +153,7 @@ const SCENES = [
   {
     id:0, act:"01",
     title:"VMs vs Docker containers",
-    sub:"Both solve the same problem — running isolated workloads — but they do it at fundamentally different layers. Let's build up each architecture from the hardware.",
+    sub:"**Both solve the same problem — running isolated workloads — but they do it at fundamentally different layers.** Let's build up each architecture from the hardware.",
     code:[
       [["cmt","// The question:"]],
       [["cmt","// How do you run multiple isolated"]],
@@ -164,7 +164,7 @@ const SCENES = [
   {
     id:1, act:"02",
     title:"It starts with hardware",
-    sub:"Both approaches begin the same way: a physical server with CPU, RAM, disk, and network. This is the foundation everything runs on.",
+    sub:"**Both approaches begin the same way: a physical server with CPU, RAM, disk, and network.** This is the foundation everything runs on.",
     code:[
       [["cmt","// Physical server"]],
       [["cmt","// CPU, RAM, Disk, NIC"]],
@@ -181,7 +181,7 @@ const SCENES = [
   {
     id:2, act:"03",
     title:"The host OS",
-    sub:"On bare metal, you install a host operating system — Linux, Windows, macOS. This OS has full control of the hardware and manages all resources.",
+    sub:"**On bare metal, you install a host operating system — Linux, Windows, macOS.** This OS has full control of the hardware and manages all resources.",
     code:[
       [["cmt","// Both need an OS on the hardware"]],
       [["cmt","// Linux is the most common choice"]],
@@ -200,7 +200,7 @@ const SCENES = [
   {
     id:3, act:"04",
     title:"VM path: the hypervisor",
-    sub:"For VMs, a hypervisor sits on top of (or replaces) the host OS. It creates and manages virtual machines by emulating hardware. Each VM thinks it has its own physical machine.",
+    sub:"**For VMs, a hypervisor sits on top of (or replaces) the host OS.** It creates and manages virtual machines by emulating hardware. Each VM thinks it has its own physical machine.",
     code:[
       [["cmt","// Hypervisor examples:"]],
       [["plain","  "],["str","'VMware ESXi'"],["plain","  "],["cmt","// Type 1"]],
@@ -222,7 +222,7 @@ const SCENES = [
   {
     id:4, act:"05",
     title:"Each VM gets a full guest OS",
-    sub:"Every VM runs its own complete operating system — kernel, drivers, system libraries, everything. This is powerful (full isolation) but expensive (each OS uses GBs of RAM and disk).",
+    sub:"**Every VM runs its own complete operating system — kernel, drivers, system libraries, everything.** This is powerful (full isolation) but expensive (each OS uses GBs of RAM and disk).",
     code:[
       [["cmt","// Each VM = full OS copy"]],
       [["cmt","// VM 1: Ubuntu 22.04 (2GB RAM)"]],
@@ -250,7 +250,7 @@ const SCENES = [
   {
     id:5, act:"06",
     title:"Docker path: the container engine",
-    sub:"Docker takes a different approach. Instead of a hypervisor, it uses the Docker Engine — which talks directly to the host kernel. No guest OS needed.",
+    sub:"**Docker takes a different approach.** Instead of a hypervisor, it uses the Docker Engine — which talks directly to the host kernel. No guest OS needed.",
     code:[
       [["cmt","// Docker Engine uses Linux features:"]],
       [["plain","  "],["fn","namespaces"],["plain","  "],["cmt","// isolation"]],
@@ -278,7 +278,7 @@ const SCENES = [
   {
     id:6, act:"07",
     title:"Containers share the host kernel",
-    sub:"Each container bundles only the app and its dependencies — not an entire OS. They all share the host's Linux kernel. This is why containers are so lightweight.",
+    sub:"**Each container bundles only the app and its dependencies — not an entire OS.** They all share the host's Linux kernel. This is why containers are so lightweight.",
     code:[
       [["cmt","// Container = app + libs only"]],
       [["cmt","// Container 1: Node.js app  (~150MB)"]],
@@ -310,7 +310,7 @@ const SCENES = [
   {
     id:7, act:"08",
     title:"Side by side — the key difference",
-    sub:"VMs virtualize hardware — each VM gets fake hardware + full OS. Docker virtualizes the OS — containers share one kernel, isolate only processes and filesystems.",
+    sub:"**VMs virtualize hardware — each VM gets fake hardware + full OS.** Docker virtualizes the OS — containers share one kernel, isolate only processes and filesystems.",
     code:[
       [["cmt","// VMs:    hardware-level isolation"]],
       [["cmt","// Docker: OS-level isolation"]],
@@ -342,7 +342,7 @@ const SCENES = [
   {
     id:8, act:"09",
     title:"Startup time",
-    sub:"A VM boots an entire OS — BIOS, kernel, init system, services. This takes 30-60 seconds. A container just starts a process — it's ready in milliseconds.",
+    sub:"**A VM boots an entire OS — BIOS, kernel, init system, services.** This takes 30-60 seconds. A container just starts a process — it's ready in milliseconds.",
     code:[
       [["cmt","// VM startup"]],
       [["fn","vm"],["punc","."],["meth","start"],["punc","()"],["plain","   "],["cmt","// 30-60 seconds"]],
@@ -361,7 +361,7 @@ const SCENES = [
   {
     id:9, act:"10",
     title:"Resource overhead",
-    sub:"Each VM carries a full OS in memory (1-4GB+). Containers share the kernel and only load their app's dependencies — often just 50-200MB.",
+    sub:"**Each VM carries a full OS in memory (1-4GB+).** Containers share the kernel and only load their app's dependencies — often just 50-200MB.",
     code:[
       [["cmt","// 3 VMs running"]],
       [["plain","  OS overhead"],["punc",": "],["num","~6GB"],["plain"," RAM"]],
@@ -380,7 +380,7 @@ const SCENES = [
   {
     id:10, act:"11",
     title:"Isolation & security",
-    sub:"VMs have hardware-level isolation — a compromised VM can't easily reach the host. Containers share a kernel — a kernel exploit in one container can affect all others.",
+    sub:"**VMs have hardware-level isolation — a compromised VM can't easily reach the host.** Containers share a kernel — a kernel exploit in one container can affect all others.",
     code:[
       [["cmt","// VM isolation"]],
       [["cmt","// Separate kernel per VM"]],
@@ -401,7 +401,7 @@ const SCENES = [
   {
     id:11, act:"12",
     title:"Portability",
-    sub:"Docker images are self-contained, versioned artifacts — build once, run anywhere with a Docker Engine. VMs are tied to hypervisor formats and harder to move between clouds.",
+    sub:"**Docker images are self-contained, versioned artifacts — build once, run anywhere with a Docker Engine.** VMs are tied to hypervisor formats and harder to move between clouds.",
     code:[
       [["cmt","// Dockerfile → Image → Run anywhere"]],
       [["kw","FROM"],["plain"," node"],["punc",":"],["num","20"]],
@@ -420,7 +420,7 @@ const SCENES = [
   {
     id:12, act:"13",
     title:"Density — how many can you run?",
-    sub:"Because containers are so lightweight, you can run far more of them on the same hardware. A server that holds 10 VMs can easily run 100+ containers.",
+    sub:"**Because containers are so lightweight, you can run far more of them on the same hardware.** A server that holds 10 VMs can easily run 100+ containers.",
     code:[
       [["cmt","// Same 32GB RAM server:"]],
       [["cmt","//   VMs:        ~8-10 instances"]],
@@ -440,7 +440,7 @@ const SCENES = [
   {
     id:13, act:"14",
     title:"When to use which",
-    sub:"They're not competitors — they're tools for different situations. Many production setups run Docker containers inside VMs for the best of both worlds.",
+    sub:"**They're not competitors — they're tools for different situations.** Many production setups run Docker containers inside VMs for the best of both worlds.",
     code:[
       [["cmt","// Use VMs when:"]],
       [["cmt","//   Different OS needed (Windows on Linux)"]],
@@ -460,7 +460,7 @@ const SCENES = [
   {
     id:14, act:"DONE",
     title:"VMs vs Docker — summary",
-    sub:"VMs virtualize hardware. Docker virtualizes the OS. VMs are heavier but more isolated. Docker is lighter but shares the kernel. Use both together in production.",
+    sub:"**VMs virtualize hardware.** Docker virtualizes the OS. VMs are heavier but more isolated. Docker is lighter but shares the kernel. Use both together in production.",
     code:[], vmStack:[], dockerStack:[], compare:null, highlight:null,
     finale:true,
   },
@@ -825,7 +825,7 @@ function App() {
       e(AP, { mode:"wait" },
         e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
           style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
-        }, sc.sub)
+        }, renderBody(sc.sub))
       )
     ),
 

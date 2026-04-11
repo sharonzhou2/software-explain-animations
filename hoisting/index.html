@@ -153,7 +153,7 @@ const SCENES = [
   {
     id:0, act:"01",
     title:"Hoisting",
-    sub:"Before any code executes, JavaScript scans for declarations and allocates them in memory. This two-phase process is why some things work before they appear in your code.",
+    sub:"**Before any code executes, JavaScript scans for declarations and allocates them in memory.** This two-phase process is why some things work before they appear in your code.",
     code:[
       [["cmt","// before your code runs,"]],
       [["cmt","// JS scans for declarations"]],
@@ -166,7 +166,7 @@ const SCENES = [
   {
     id:1, act:"02",
     title:"var is hoisted",
-    sub:"The engine finds var x and allocates it in memory with undefined. The assignment = 5 only happens when that line actually executes.",
+    sub:"**The engine finds var x and allocates it in memory with undefined.** The assignment = 5 only happens when that line actually executes.",
     code:[
       [["fn","console"],["punc","."],["meth","log"],["punc","("],["plain","x"],["punc",")"]],
       [["kw","var"],["plain"," x "],["punc","="],["plain"," "],["num","5"]],
@@ -180,7 +180,7 @@ const SCENES = [
   {
     id:2, act:"03",
     title:"Function declarations \u2014 fully hoisted",
-    sub:"Function declarations are special. The engine hoists both the name AND the entire function body. You can call them before they appear in code.",
+    sub:"**Function declarations are special.** The engine hoists both the name AND the entire function body. You can call them before they appear in code.",
     code:[
       [["fn","greet"],["punc","()"]],
       [],
@@ -196,7 +196,7 @@ const SCENES = [
   {
     id:3, act:"04",
     title:"let and the Temporal Dead Zone",
-    sub:"let and const are hoisted too \u2014 but NOT initialized. Accessing them before the declaration throws a ReferenceError. This zone is called the TDZ.",
+    sub:"**let and const are hoisted too \u2014 but NOT initialized.** Accessing them before the declaration throws a ReferenceError. This zone is called the TDZ.",
     code:[
       [["fn","console"],["punc","."],["meth","log"],["punc","("],["plain","x"],["punc",")"]],
       [["kw","let"],["plain"," x "],["punc","="],["plain"," "],["num","5"]],
@@ -209,7 +209,7 @@ const SCENES = [
   {
     id:4, act:"05",
     title:"Function expression with var",
-    sub:"A function stored in var gets var\u2019s hoisting \u2014 the variable exists as undefined, but the function value isn\u2019t assigned yet. Calling it throws TypeError.",
+    sub:"**A function stored in var gets var\u2019s hoisting \u2014 the variable exists as undefined, but the function value isn\u2019t assigned yet.** Calling it throws TypeError.",
     code:[
       [["fn","greet"],["punc","()"]],
       [],
@@ -225,7 +225,7 @@ const SCENES = [
   {
     id:5, act:"06",
     title:"Arrow function with const",
-    sub:"Arrow functions in const have TDZ behavior. The variable is hoisted but completely inaccessible until the declaration line.",
+    sub:"**Arrow functions in const have TDZ behavior.** The variable is hoisted but completely inaccessible until the declaration line.",
     code:[
       [["fn","greet"],["punc","()"]],
       [],
@@ -241,7 +241,7 @@ const SCENES = [
   {
     id:6, act:"07",
     title:"Function vs var \u2014 who wins?",
-    sub:"When both a function declaration and var share the same name, the function is hoisted first with its body. var\u2019s undefined doesn\u2019t overwrite it.",
+    sub:"**When both a function declaration and var share the same name, the function is hoisted first with its body.** var\u2019s undefined doesn\u2019t overwrite it.",
     code:[
       [["fn","console"],["punc","."],["meth","log"],["punc","("],["kw","typeof"],["plain"," x"],["punc",")"]],
       [["kw","var"],["plain"," x "],["punc","="],["plain"," "],["num","5"]],
@@ -255,7 +255,7 @@ const SCENES = [
   {
     id:7, act:"08",
     title:"var ignores block scope",
-    sub:"var is hoisted to the nearest function scope (or global). Block boundaries like if, for, and while don\u2019t contain it.",
+    sub:"**var is hoisted to the nearest function scope (or global).** Block boundaries like if, for, and while don\u2019t contain it.",
     code:[
       [["kw","if"],["plain"," "],["punc","("],["kw","false"],["punc",") {"]],
       [["plain","  "],["kw","var"],["plain"," x "],["punc","="],["plain"," "],["num","5"]],
@@ -270,7 +270,7 @@ const SCENES = [
   {
     id:8, act:"09",
     title:"let respects block scope",
-    sub:"let and const are scoped to their enclosing block. Outside that block, the variable doesn\u2019t exist at all.",
+    sub:"**let and const are scoped to their enclosing block.** Outside that block, the variable doesn\u2019t exist at all.",
     code:[
       [["kw","if"],["plain"," "],["punc","("],["kw","true"],["punc",") {"]],
       [["plain","  "],["kw","let"],["plain"," x "],["punc","="],["plain"," "],["num","5"]],
@@ -285,7 +285,7 @@ const SCENES = [
   {
     id:9, act:"10",
     title:"class \u2014 TDZ like let",
-    sub:"class declarations are hoisted but land in the Temporal Dead Zone, just like let and const. You must declare the class before using it.",
+    sub:"**class declarations are hoisted but land in the Temporal Dead Zone, just like let and const.** You must declare the class before using it.",
     code:[
       [["kw","const"],["plain"," d "],["punc","="],["plain"," "],["kw","new"],["plain"," "],["fn","Dog"],["punc","()"]],
       [],
@@ -303,7 +303,7 @@ const SCENES = [
   {
     id:10, act:"DONE",
     title:"The hoisting rules",
-    sub:"Three tiers of hoisting behavior. The key question: what type of declaration is it?",
+    sub:"**Three tiers of hoisting behavior.** The key question: what type of declaration is it?",
     code:[
       [["cmt","// Hoisting tiers:"]],
       [["num","1."],["plain"," "],["kw","function"],["plain"," decl \u2192 fully hoisted"]],
@@ -567,7 +567,7 @@ function App() {
       e(AP, { mode:"wait" },
         e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
           style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
-        }, sc.sub)
+        }, renderBody(sc.sub))
       )
     ),
 

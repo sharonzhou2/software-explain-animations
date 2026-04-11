@@ -150,7 +150,7 @@ const SCENES = [
   {
     id:0, act:"01",
     title:"Prototypal Inheritance",
-    sub:"JavaScript uses prototypes, not classes, as its core inheritance mechanism. Every object can serve as a blueprint for another — forming a chain of delegation.",
+    sub:"**JavaScript uses prototypes, not classes, as its core inheritance mechanism.** Every object can serve as a blueprint for another — forming a chain of delegation.",
     code:[
       [["cmt","// How does JS really do inheritance?"]],
       [["cmt","// Hint: it's not like Java or C++"]],
@@ -163,7 +163,7 @@ const SCENES = [
   {
     id:1, act:"02",
     title:"Classical inheritance (Java/C++)",
-    sub:"In classical OOP, classes are blueprints. You define a class, extend it, call super(). Objects are instances stamped from these class templates.",
+    sub:"**In classical OOP, classes are blueprints.** You define a class, extend it, call super(). Objects are instances stamped from these class templates.",
     code:[
       [["cmt","// Java-style (classical)"]],
       [["kw","class"],["plain"," "],["cls","Animal"],["plain"," {"]],
@@ -182,7 +182,7 @@ const SCENES = [
   {
     id:2, act:"03",
     title:"JS has no real classes",
-    sub:"JavaScript's class keyword is syntactic sugar. Under the hood, it's all prototype chains and constructor functions — no class copying.",
+    sub:"**JavaScript's class keyword is syntactic sugar.** Under the hood, it's all prototype chains and constructor functions — no class copying.",
     code:[
       [["cmt","// ES6 class is syntactic sugar"]],
       [["kw","class"],["plain"," "],["cls","Dog"],["plain"," "],["kw","extends"],["plain"," "],["cls","Animal"],["plain"," {}"]],
@@ -200,7 +200,7 @@ const SCENES = [
   {
     id:3, act:"04",
     title:"The prototype chain",
-    sub:"Every object has an internal [[Prototype]] link pointing to another object. This forms a chain that ends at null.",
+    sub:"**Every object has an internal [[Prototype]] link pointing to another object.** This forms a chain that ends at null.",
     code:[
       [["kw","const"],["plain"," animal "],["op","="],["plain"," { "],["fn","speak"],["punc","()"],["plain"," { } }"]],
       [["kw","const"],["plain"," dog "],["op","="],["plain"," Object"],["punc","."],["fn","create"],["punc","("],["plain","animal"],["punc",")"]],
@@ -220,7 +220,7 @@ const SCENES = [
   {
     id:4, act:"05",
     title:"Object.create",
-    sub:"Object.create() is the purest way to set up prototypal inheritance. It creates a new object with the specified prototype.",
+    sub:"**Object.create() is the purest way to set up prototypal inheritance.** It creates a new object with the specified prototype.",
     code:[
       [["kw","const"],["plain"," vehicle "],["op","="],["plain"," {"]],
       [["plain","  "],["fn","start"],["punc","()"],["plain"," { "],["kw","return"],["plain"," "],["str","'Vroom'"],["plain"," }"]],
@@ -239,7 +239,7 @@ const SCENES = [
   {
     id:5, act:"06",
     title:"Property lookup",
-    sub:"When you access a property, JS walks up the prototype chain. It checks the object first, then its prototype, then the next, until null.",
+    sub:"**When you access a property, JS walks up the prototype chain.** It checks the object first, then its prototype, then the next, until null.",
     code:[
       [["kw","const"],["plain"," a "],["op","="],["plain"," { "],["plain","x"],["punc",":"],["plain"," "],["num","1"],["plain"," }"]],
       [["kw","const"],["plain"," b "],["op","="],["plain"," Object"],["punc","."],["fn","create"],["punc","("],["plain","a"],["punc",")"]],
@@ -258,7 +258,7 @@ const SCENES = [
   {
     id:6, act:"07",
     title:"Constructor functions + .prototype",
-    sub:"Before ES6 classes, constructor functions were the standard pattern. Every function has a .prototype property used when called with new.",
+    sub:"**Before ES6 classes, constructor functions were the standard pattern.** Every function has a .prototype property used when called with new.",
     code:[
       [["kw","function"],["plain"," "],["fn","Animal"],["punc","("],["plain","name"],["punc",") {"]],
       [["plain","  "],["proto","this"],["punc","."],["plain","name "],["op","="],["plain"," name"]],
@@ -277,7 +277,7 @@ const SCENES = [
   {
     id:7, act:"08",
     title:"ES6 class syntax",
-    sub:"The class keyword provides familiar syntax but desugars to constructor functions + prototypes. Same mechanism, cleaner look.",
+    sub:"**The class keyword provides familiar syntax but desugars to constructor functions + prototypes.** Same mechanism, cleaner look.",
     code:[
       [["kw","class"],["plain"," "],["cls","Animal"],["plain"," {"]],
       [["plain","  "],["fn","constructor"],["punc","("],["plain","name"],["punc",") {"]],
@@ -296,7 +296,7 @@ const SCENES = [
   {
     id:8, act:"09",
     title:"extends / super",
-    sub:"extends sets up the prototype chain between constructors. super() calls the parent constructor. Both map directly to prototype operations.",
+    sub:"**extends sets up the prototype chain between constructors.** super() calls the parent constructor. Both map directly to prototype operations.",
     code:[
       [["kw","class"],["plain"," "],["cls","Animal"],["plain"," {"]],
       [["plain","  "],["fn","constructor"],["punc","(n)"],["plain"," { "],["proto","this"],["punc","."],["plain","name"],["op","="],["plain","n }"]],
@@ -315,7 +315,7 @@ const SCENES = [
   {
     id:9, act:"10",
     title:"hasOwnProperty vs in",
-    sub:"hasOwnProperty checks only the object itself. The in operator walks the entire prototype chain. Knowing the difference prevents subtle bugs.",
+    sub:"**hasOwnProperty checks only the object itself.** The in operator walks the entire prototype chain. Knowing the difference prevents subtle bugs.",
     code:[
       [["kw","const"],["plain"," parent "],["op","="],["plain"," { "],["plain","x"],["punc",":"],["plain"," "],["num","1"],["plain"," }"]],
       [["kw","const"],["plain"," child "],["op","="],["plain"," Object"],["punc","."],["fn","create"],["punc","("],["plain","parent"],["punc",")"]],
@@ -356,7 +356,7 @@ const SCENES = [
   {
     id:11, act:"12",
     title:"When to use which pattern",
-    sub:"Prototypal delegation for shared behavior, composition for flexibility, classes for familiarity. Each has trade-offs.",
+    sub:"**Prototypal delegation for shared behavior, composition for flexibility, classes for familiarity.** Each has trade-offs.",
     code:[
       [["cmt","// Prototype delegation"]],
       [["cmt","//   shared methods, memory efficient"]],
@@ -378,7 +378,7 @@ const SCENES = [
   {
     id:12, act:"DONE",
     title:"Prototypal inheritance",
-    sub:"JavaScript's inheritance is delegation through prototype chains — not class copying. Understanding this unlocks the language.",
+    sub:"**JavaScript's inheritance is delegation through prototype chains — not class copying.** Understanding this unlocks the language.",
     code:[
       [["cmt","// Key takeaways:"]],
       [["num","1."],["plain"," Objects link to other objects"]],
@@ -550,7 +550,7 @@ const Finale = () => {
     { n:3, label:"Property lookup", sub:"Accessing a property walks up the chain until found or null — delegation, not copying", c:T.amber },
     { n:4, label:"Object.create", sub:"The purest prototypal pattern: create a new object with a specific prototype, no constructor needed", c:T.purple },
     { n:5, label:"Composition", sub:"Object.assign enables mixins — combine capabilities from multiple sources without deep chains", c:T.blue },
-    { n:"\u21B3", label:"Own vs inherited", sub:"hasOwnProperty checks the object only; in walks the chain. Know the difference.", c:T.pink },
+    { n:"\u21B3", label:"Own vs inherited", sub:"**hasOwnProperty checks the object only; in walks the chain.** Know the difference.", c:T.pink },
   ];
   return e("div", { style:{ padding:"8px 0" } },
     rows.map((r,i) => e(M.div, { key:i, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.12,...ez},
@@ -645,7 +645,7 @@ function App() {
       e(AP, { mode:"wait" },
         e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
           style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
-        }, sc.sub)
+        }, renderBody(sc.sub))
       )
     ),
 

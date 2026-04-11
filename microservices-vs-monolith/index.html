@@ -147,7 +147,7 @@ const SCENES = [
   {
     id:0, act:"01",
     title:"Microservices vs Monolith",
-    sub:"Two fundamentally different ways to structure a backend. One ships everything as a single unit; the other splits things into small independent services. Let's look at what each actually means in practice.",
+    sub:"**Two fundamentally different ways to structure a backend.** One ships everything as a single unit; the other splits things into small independent services. Let's look at what each actually means in practice.",
     code:[
       [["cmt","// The question:"]],
       [["cmt","// How do you organize a backend"]],
@@ -158,7 +158,7 @@ const SCENES = [
   {
     id:1, act:"02",
     title:"The monolith — one app, one deploy",
-    sub:"A monolith is a single codebase that contains every feature — users, orders, payments, notifications — compiled and deployed as one unit. One process, one database, one release.",
+    sub:"**A monolith is a single codebase that contains every feature — users, orders, payments, notifications — compiled and deployed as one unit.** One process, one database, one release.",
     code:[
       [["cmt","// shop/"]],
       [["plain","  src/"]],
@@ -174,7 +174,7 @@ const SCENES = [
   {
     id:2, act:"03",
     title:"Monolith pros — simplicity wins early",
-    sub:"For the first year of a product, a monolith is almost always the right choice. One repo to clone, one process to run, one deploy to ship. In-process calls are basically free.",
+    sub:"**For the first year of a product, a monolith is almost always the right choice.** One repo to clone, one process to run, one deploy to ship. In-process calls are basically free.",
     code:[
       [["cmt","// Everything is a function call"]],
       [["kw","const"],["plain"," user "],["punc","= "],["kw","await"],["plain"," "],["fn","users"],["punc","."],["meth","find"],["punc","("],["plain","id"],["punc",")"]],
@@ -188,7 +188,7 @@ const SCENES = [
   {
     id:3, act:"04",
     title:"Monolith cons — it gets slow to change",
-    sub:"As the codebase grows past a few hundred thousand lines and a few dozen engineers, everything gets harder. A one-line fix ships the entire app. Scaling one hot feature means scaling everything.",
+    sub:"**As the codebase grows past a few hundred thousand lines and a few dozen engineers, everything gets harder.** A one-line fix ships the entire app. Scaling one hot feature means scaling everything.",
     code:[
       [["cmt","// The pain points:"]],
       [["cmt","// 1. Deploy = rebuild + redeploy ALL"]],
@@ -202,7 +202,7 @@ const SCENES = [
   {
     id:4, act:"05",
     title:"Microservices — many small apps",
-    sub:"Split the monolith along business capabilities. Each service owns its code, its data, and its deploy pipeline. Services talk over the network — REST, gRPC, or events.",
+    sub:"**Split the monolith along business capabilities.** Each service owns its code, its data, and its deploy pipeline. Services talk over the network — REST, gRPC, or events.",
     code:[
       [["cmt","// repos/"]],
       [["plain","  user-service/      "],["cmt","// own DB"]],
@@ -216,7 +216,7 @@ const SCENES = [
   {
     id:5, act:"06",
     title:"Service boundaries — DDD",
-    sub:"The hard part isn't making services — it's drawing the lines. Domain-Driven Design says: find the bounded contexts. Things that change together stay together. Things that don't, split.",
+    sub:"**The hard part isn't making services — it's drawing the lines.** Domain-Driven Design says: find the bounded contexts. Things that change together stay together. Things that don't, split.",
     code:[
       [["cmt","// Bounded contexts (DDD)"]],
       [["cmt","// Each owns its own model of"]],
@@ -231,7 +231,7 @@ const SCENES = [
   {
     id:6, act:"07",
     title:"Communication — sync vs async",
-    sub:"Sync (REST/gRPC): one service calls another and waits. Simple, but couples their uptimes. Async (Kafka/SQS): one service emits an event, others react whenever they can. Decoupled, but eventually consistent.",
+    sub:"**Sync (REST/gRPC): one service calls another and waits.** Simple, but couples their uptimes. Async (Kafka/SQS): one service emits an event, others react whenever they can. Decoupled, but eventually consistent.",
     code:[
       [["cmt","// Sync — REST or gRPC"]],
       [["kw","const"],["plain"," u "],["punc","= "],["kw","await"],["plain"," "],["fn","fetch"],["punc","("],["str","'http://users/42'"],["punc",")"]],
@@ -245,7 +245,7 @@ const SCENES = [
   {
     id:7, act:"08",
     title:"API Gateway — one front door",
-    sub:"Clients don't want to know about 40 services. An API gateway is the single entry point — it routes requests, handles auth, rate limits, and stitches responses together.",
+    sub:"**Clients don't want to know about 40 services.** An API gateway is the single entry point — it routes requests, handles auth, rate limits, and stitches responses together.",
     code:[
       [["cmt","// Client → Gateway → Services"]],
       [["fn","GET"],["plain"," /api/checkout"]],
@@ -259,7 +259,7 @@ const SCENES = [
   {
     id:8, act:"09",
     title:"Service discovery",
-    sub:"Services come and go — containers restart, pods reschedule, IPs change. A discovery layer (Consul, etcd, DNS in Kubernetes) lets services find each other by name, not address.",
+    sub:"**Services come and go — containers restart, pods reschedule, IPs change.** A discovery layer (Consul, etcd, DNS in Kubernetes) lets services find each other by name, not address.",
     code:[
       [["cmt","// Instead of this:"]],
       [["fn","fetch"],["punc","("],["str","'http://10.0.3.14:8080'"],["punc",")"]],
@@ -274,7 +274,7 @@ const SCENES = [
   {
     id:9, act:"10",
     title:"The hard parts",
-    sub:"Microservices trade in-process complexity for distributed-systems complexity. The network lies. Clocks drift. Transactions span services. Debugging a single request means tracing it across many hops.",
+    sub:"**Microservices trade in-process complexity for distributed-systems complexity.** The network lies. Clocks drift. Transactions span services. Debugging a single request means tracing it across many hops.",
     code:[
       [["cmt","// What breaks in production:"]],
       [["cmt","// • Partial failures (A up, B down)"]],
@@ -288,7 +288,7 @@ const SCENES = [
   {
     id:10, act:"11",
     title:"Saga pattern — distributed transactions",
-    sub:"You can't BEGIN TRANSACTION across services. Instead, model the workflow as a sequence of local transactions, each with a compensating action to undo it if a later step fails.",
+    sub:"**You can't BEGIN TRANSACTION across services.** Instead, model the workflow as a sequence of local transactions, each with a compensating action to undo it if a later step fails.",
     code:[
       [["cmt","// Order saga"]],
       [["num","1"],["punc",". "],["fn","reserve"],["plain"," inventory   "],["cmt","// ↺ release"]],
@@ -303,7 +303,7 @@ const SCENES = [
   {
     id:11, act:"12",
     title:"Side-by-side comparison",
-    sub:"Neither is strictly better. They sit at opposite ends of several trade-offs. What you're really choosing is which set of problems you'd rather deal with.",
+    sub:"**Neither is strictly better.** They sit at opposite ends of several trade-offs. What you're really choosing is which set of problems you'd rather deal with.",
     code:[
       [["cmt","// Complexity shifts:"]],
       [["cmt","// Monolith: code complexity"]],
@@ -314,7 +314,7 @@ const SCENES = [
   {
     id:12, act:"13",
     title:"When to use which",
-    sub:"Almost always, start with a monolith. Split to services only when you have real organizational or scaling pressure — multiple teams blocking each other, genuinely different scaling profiles, or load the monolith can't absorb.",
+    sub:"**Almost always, start with a monolith.** Split to services only when you have real organizational or scaling pressure — multiple teams blocking each other, genuinely different scaling profiles, or load the monolith can't absorb.",
     code:[
       [["cmt","// Good default: modular monolith"]],
       [["cmt","// One deploy, clean internal boundaries"]],
@@ -329,7 +329,7 @@ const SCENES = [
   {
     id:13, act:"DONE",
     title:"Microservices vs Monolith — summary",
-    sub:"Monoliths optimize for simplicity. Microservices optimize for independence. Start simple; split when the pain of not splitting exceeds the pain of distributed systems.",
+    sub:"**Monoliths optimize for simplicity.** Microservices optimize for independence. Start simple; split when the pain of not splitting exceeds the pain of distributed systems.",
     code:[],
     show:null,
     finale:true,
@@ -829,7 +829,7 @@ const Finale = () => {
     { n:"lni-link-2-angular-right", label:"Communication", sub:"Sync (REST/gRPC) when you need an answer; async (events) when you don't", c:T.teal },
     { n:"lni-shield-1", label:"Gateway & discovery", sub:"One front door for clients; a registry so services can find each other", c:T.amber },
     { n:"lni-warning", label:"The hard parts", sub:"Tracing, consistency, partial failure, tail latency, ops cost", c:T.red },
-    { n:"lni-rocket-5", label:"Start simple", sub:"A modular monolith gets you 90% of the way. Split only when you must.", c:T.purple },
+    { n:"lni-rocket-5", label:"Start simple", sub:"**A modular monolith gets you 90% of the way.** Split only when you must.", c:T.purple },
   ];
   return e("div", { style:{ padding:"8px 0" } },
     rows.map((r,i) => e(M.div, { key:i, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.1,...ez},
@@ -967,7 +967,7 @@ function App() {
       e(AP, { mode:"wait" },
         e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
           style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
-        }, sc.sub)
+        }, renderBody(sc.sub))
       )
     ),
 

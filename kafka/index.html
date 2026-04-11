@@ -145,7 +145,7 @@ const SCENES = [
   {
     id:0, act:"01",
     title:"What is Apache Kafka?",
-    sub:"Kafka is a distributed event streaming platform. It lets services produce and consume streams of events in real time, decoupling producers from consumers through a durable, ordered log.",
+    sub:"**Kafka is a distributed event streaming platform.** It lets services produce and consume streams of events in real time, decoupling producers from consumers through a durable, ordered log.",
     code:[
       [["cmt","// Event streaming:"]],
       [["cmt","// Producer  -->  Kafka  -->  Consumer"]],
@@ -158,7 +158,7 @@ const SCENES = [
   {
     id:1, act:"02",
     title:"The problem: point-to-point chaos",
-    sub:"Without Kafka, every service talks directly to every other service. N services need N*(N-1) connections. Adding a new service means updating all the others. Data gets siloed and fragile.",
+    sub:"**Without Kafka, every service talks directly to every other service.** N services need N*(N-1) connections. Adding a new service means updating all the others. Data gets siloed and fragile.",
     code:[
       [["cmt","// Point-to-point integrations"]],
       [["cmt","// 4 services = 12 connections"]],
@@ -171,7 +171,7 @@ const SCENES = [
   {
     id:2, act:"03",
     title:"Kafka as a distributed commit log",
-    sub:"At its core, Kafka is an append-only, immutable, ordered log of records. Producers append to the end. Consumers read from any position. Records are never modified or deleted (until retention expires).",
+    sub:"**At its core, Kafka is an append-only, immutable, ordered log of records.** Producers append to the end. Consumers read from any position. Records are never modified or deleted (until retention expires).",
     code:[
       [["cmt","// Append-only log:"]],
       [["plain","  offset "],["num","0"],["plain"," | "],["str","\"user.signup\""]],
@@ -185,7 +185,7 @@ const SCENES = [
   {
     id:3, act:"04",
     title:"Core concepts",
-    sub:"Producers write events. Brokers store them in topics. Consumers read them. Topics are the categories of events. Everything flows through the broker cluster.",
+    sub:"**Producers write events.** Brokers store them in topics. Consumers read them. Topics are the categories of events. Everything flows through the broker cluster.",
     code:[
       [["kw","Producer"],["plain"," "],["punc","->"],["plain"," "],["fn","Broker"],["plain"," (Topic)"]],
       [["fn","Broker"],["plain"," (Topic) "],["punc","->"],["plain"," "],["kw","Consumer"]],
@@ -200,7 +200,7 @@ const SCENES = [
   {
     id:4, act:"05",
     title:"Topics and partitions",
-    sub:"A topic is split into partitions for parallelism. Each partition is an independent ordered log. Partitions are spread across brokers. More partitions = more throughput.",
+    sub:"**A topic is split into partitions for parallelism.** Each partition is an independent ordered log. Partitions are spread across brokers. More partitions = more throughput.",
     code:[
       [["cmt","// Topic: 'orders'"]],
       [["cmt","//   Partition 0: [0][1][2][3]"]],
@@ -215,7 +215,7 @@ const SCENES = [
   {
     id:5, act:"06",
     title:"How producers write",
-    sub:"Producers send records to a topic. Each record has an optional key. If a key is set, records with the same key always go to the same partition (hash partitioning). No key = round-robin.",
+    sub:"**Producers send records to a topic.** Each record has an optional key. If a key is set, records with the same key always go to the same partition (hash partitioning). No key = round-robin.",
     code:[
       [["fn","producer"],["punc","."],["meth","send"],["punc","({"]],
       [["plain","  "],["str","topic"],["punc",": "],["str","'orders'"],["punc",","]],
@@ -229,7 +229,7 @@ const SCENES = [
   {
     id:6, act:"07",
     title:"How consumers read",
-    sub:"Consumers read from partitions at their own pace using offsets. A consumer group shares the partitions: each partition is consumed by exactly one member of the group.",
+    sub:"**Consumers read from partitions at their own pace using offsets.** A consumer group shares the partitions: each partition is consumed by exactly one member of the group.",
     code:[
       [["cmt","// Consumer group 'analytics'"]],
       [["cmt","// 3 consumers, 3 partitions"]],
@@ -243,7 +243,7 @@ const SCENES = [
   {
     id:7, act:"08",
     title:"Consumer groups",
-    sub:"Multiple consumer groups can read the same topic independently. Adding consumers to a group scales reads. If a consumer leaves, its partitions are rebalanced to surviving members.",
+    sub:"**Multiple consumer groups can read the same topic independently.** Adding consumers to a group scales reads. If a consumer leaves, its partitions are rebalanced to surviving members.",
     code:[
       [["cmt","// Group A: 3 consumers (analytics)"]],
       [["cmt","// Group B: 2 consumers (billing)"]],
@@ -257,7 +257,7 @@ const SCENES = [
   {
     id:8, act:"09",
     title:"Offsets and commits",
-    sub:"Each consumer tracks its position (offset) per partition. After processing a record, the consumer commits the offset. On restart, it resumes from the last committed offset.",
+    sub:"**Each consumer tracks its position (offset) per partition.** After processing a record, the consumer commits the offset. On restart, it resumes from the last committed offset.",
     code:[
       [["cmt","// Consumer reads offset 5"]],
       [["cmt","// Processes message"]],
@@ -272,7 +272,7 @@ const SCENES = [
   {
     id:9, act:"10",
     title:"Replication",
-    sub:"Each partition is replicated across multiple brokers. One replica is the leader (handles reads/writes), others are followers. The ISR (In-Sync Replicas) are followers caught up with the leader.",
+    sub:"**Each partition is replicated across multiple brokers.** One replica is the leader (handles reads/writes), others are followers. The ISR (In-Sync Replicas) are followers caught up with the leader.",
     code:[
       [["cmt","// Partition 0, replication factor 3"]],
       [["cmt","//   Broker 1: Leader   [0-7]"]],
@@ -286,7 +286,7 @@ const SCENES = [
   {
     id:10, act:"11",
     title:"Broker failure and recovery",
-    sub:"When a leader broker fails, Kafka elects a new leader from the ISR. Consumers and producers switch to the new leader automatically. No data is lost as long as ISR has members.",
+    sub:"**When a leader broker fails, Kafka elects a new leader from the ISR.** Consumers and producers switch to the new leader automatically. No data is lost as long as ISR has members.",
     code:[
       [["cmt","// Broker 1 (leader) goes down"]],
       [["cmt","// Controller detects failure"]],
@@ -301,7 +301,7 @@ const SCENES = [
   {
     id:11, act:"12",
     title:"Kafka vs message queues",
-    sub:"Traditional queues (RabbitMQ) delete messages after consumption. Kafka retains them. Consumers can replay from any offset. Multiple groups read independently. It's a log, not a queue.",
+    sub:"**Traditional queues (RabbitMQ) delete messages after consumption.** Kafka retains them. Consumers can replay from any offset. Multiple groups read independently. It's a log, not a queue.",
     code:[
       [["cmt","// RabbitMQ: message consumed -> deleted"]],
       [["cmt","// Kafka:    message consumed -> stays"]],
@@ -331,7 +331,7 @@ const SCENES = [
   {
     id:13, act:"14",
     title:"Kafka ecosystem",
-    sub:"Kafka Connect moves data in/out of Kafka without code. Kafka Streams processes streams in your app. Schema Registry manages event schemas. ksqlDB lets you query streams with SQL.",
+    sub:"**Kafka Connect moves data in/out of Kafka without code.** Kafka Streams processes streams in your app. Schema Registry manages event schemas. ksqlDB lets you query streams with SQL.",
     code:[
       [["kw","Connect"],["plain","    "],["cmt","// DB <-> Kafka connectors"]],
       [["kw","Streams"],["plain","    "],["cmt","// stream processing library"]],
@@ -343,7 +343,7 @@ const SCENES = [
   {
     id:14, act:"DONE",
     title:"Kafka \u2014 summary",
-    sub:"Kafka is a distributed commit log that decouples producers from consumers. Topics are split into partitions for parallelism. Replication ensures durability. Consumer groups enable scalable reads.",
+    sub:"**Kafka is a distributed commit log that decouples producers from consumers.** Topics are split into partitions for parallelism. Replication ensures durability. Consumer groups enable scalable reads.",
     code:[], viz:"finale",
     finale:true,
   },
@@ -863,7 +863,7 @@ function App() {
       e(AP, { mode:"wait" },
         e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
           style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
-        }, sc.sub)
+        }, renderBody(sc.sub))
       )
     ),
 

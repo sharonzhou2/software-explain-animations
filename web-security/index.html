@@ -156,7 +156,7 @@ const SCENES = [
   {
     id:0, act:"01",
     title:"Web Security Fundamentals",
-    sub:"The web is built on trust — and attackers exploit that trust. Understanding common threats is the first step to building secure applications.",
+    sub:"**The web is built on trust — and attackers exploit that trust.** Understanding common threats is the first step to building secure applications.",
     code:[
       [["cmt","// Common web security threats"]],
       [["cmt","// XSS, CSRF, SQL Injection,"]],
@@ -169,7 +169,7 @@ const SCENES = [
   {
     id:1, act:"02",
     title:"XSS — Cross-Site Scripting",
-    sub:"XSS lets attackers inject malicious scripts into pages viewed by other users. Three types: Stored (persisted in DB), Reflected (in URL params), and DOM-based (client-side only).",
+    sub:"**XSS lets attackers inject malicious scripts into pages viewed by other users.** Three types: Stored (persisted in DB), Reflected (in URL params), and DOM-based (client-side only).",
     code:[
       [["cmt","// Stored XSS: attacker saves script in DB"]],
       [["cmt","// Reflected XSS: script in URL params"]],
@@ -189,7 +189,7 @@ const SCENES = [
   {
     id:2, act:"03",
     title:"XSS Example — Script Injection",
-    sub:"An attacker posts a comment containing a script tag. When other users view the page, the script runs in their browser — stealing cookies, session tokens, or redirecting them.",
+    sub:"**An attacker posts a comment containing a script tag.** When other users view the page, the script runs in their browser — stealing cookies, session tokens, or redirecting them.",
     code:[
       [["cmt","// Attacker submits this as a comment:"]],
       [["tag","<script>"]],
@@ -234,7 +234,7 @@ const SCENES = [
   {
     id:4, act:"05",
     title:"CSRF — Cross-Site Request Forgery",
-    sub:"CSRF tricks an authenticated user's browser into making unintended requests. The browser automatically attaches cookies, so the server can't tell the difference.",
+    sub:"**CSRF tricks an authenticated user's browser into making unintended requests.** The browser automatically attaches cookies, so the server can't tell the difference.",
     code:[
       [["cmt","// User is logged into bank.com"]],
       [["cmt","// Attacker hosts a malicious page"]],
@@ -254,7 +254,7 @@ const SCENES = [
   {
     id:5, act:"06",
     title:"CSRF Example — Malicious Form",
-    sub:"A hidden form on evil.com auto-submits a money transfer to bank.com. The victim's browser includes their auth cookies — the bank processes it as legitimate.",
+    sub:"**A hidden form on evil.com auto-submits a money transfer to bank.com.** The victim's browser includes their auth cookies — the bank processes it as legitimate.",
     code:[
       [["cmt","// On evil.com:"]],
       [["tag","<form"],["attr"," action"],["punc","="],["val","\"bank.com/transfer\""]],
@@ -275,7 +275,7 @@ const SCENES = [
   {
     id:6, act:"07",
     title:"CSRF Prevention",
-    sub:"Use anti-CSRF tokens (unique per session/request), SameSite cookie attribute, and check Origin/Referer headers. Tokens ensure requests come from your own forms.",
+    sub:"**Use anti-CSRF tokens (unique per session/request), SameSite cookie attribute, and check Origin/Referer headers.** Tokens ensure requests come from your own forms.",
     code:[
       [["cmt","// 1. Anti-CSRF token in form"]],
       [["tag","<input"],["attr"," type"],["punc","="],["val","\"hidden\""],["attr"," name"],["punc","="],["val","\"_csrf\""]],
@@ -298,7 +298,7 @@ const SCENES = [
   {
     id:7, act:"08",
     title:"SQL Injection",
-    sub:"Attackers insert SQL code through user inputs to manipulate database queries. Can read, modify, or delete data — even drop entire tables.",
+    sub:"**Attackers insert SQL code through user inputs to manipulate database queries.** Can read, modify, or delete data — even drop entire tables.",
     code:[
       [["cmt","// Vulnerable query:"]],
       [["str","\"SELECT * FROM users"]],
@@ -321,7 +321,7 @@ const SCENES = [
   {
     id:8, act:"09",
     title:"Clickjacking",
-    sub:"An invisible iframe overlays a legitimate site on top of an attacker's page. Users think they're clicking one thing but are actually clicking on the hidden site.",
+    sub:"**An invisible iframe overlays a legitimate site on top of an attacker's page.** Users think they're clicking one thing but are actually clicking on the hidden site.",
     code:[
       [["cmt","// Attacker's page:"]],
       [["tag","<style>"]],
@@ -344,7 +344,7 @@ const SCENES = [
   {
     id:9, act:"10",
     title:"HTTPS and TLS",
-    sub:"HTTPS encrypts data between browser and server using TLS. Without it, attackers on the network can read passwords, cookies, and personal data in transit (man-in-the-middle).",
+    sub:"**HTTPS encrypts data between browser and server using TLS.** Without it, attackers on the network can read passwords, cookies, and personal data in transit (man-in-the-middle).",
     code:[
       [["cmt","// Without HTTPS (HTTP):"]],
       [["bad","GET /login?pass=secret123"]],
@@ -366,7 +366,7 @@ const SCENES = [
   {
     id:10, act:"11",
     title:"Content Security Policy (CSP)",
-    sub:"CSP is an HTTP header that restricts where resources (scripts, styles, images) can load from. Blocks inline scripts by default — a powerful XSS mitigation.",
+    sub:"**CSP is an HTTP header that restricts where resources (scripts, styles, images) can load from.** Blocks inline scripts by default — a powerful XSS mitigation.",
     code:[
       [["cmt","// CSP header example:"]],
       [["http","Content-Security-Policy"],["punc",":"]],
@@ -389,7 +389,7 @@ const SCENES = [
   {
     id:11, act:"12",
     title:"Authentication Security",
-    sub:"Cookies vs tokens, and the flags that protect them. httpOnly prevents JS access (stops XSS cookie theft). Secure ensures HTTPS-only. SameSite stops CSRF.",
+    sub:"**Cookies vs tokens, and the flags that protect them.** httpOnly prevents JS access (stops XSS cookie theft). Secure ensures HTTPS-only. SameSite stops CSRF.",
     code:[
       [["cmt","// Secure cookie configuration:"]],
       [["http","Set-Cookie"],["punc",": "],["str","session=abc123"]],
@@ -413,7 +413,7 @@ const SCENES = [
   {
     id:12, act:"13",
     title:"OWASP Top 10 Overview",
-    sub:"The OWASP Top 10 is the industry standard for web application security risks. These are the most critical threats every developer should know.",
+    sub:"**The OWASP Top 10 is the industry standard for web application security risks.** These are the most critical threats every developer should know.",
     code:[
       [["cmt","// OWASP Top 10 (2021):"]],
       [["num","A01"],["plain"," Broken Access Control"]],
@@ -434,7 +434,7 @@ const SCENES = [
   {
     id:13, act:"DONE",
     title:"Web Security Summary",
-    sub:"Defense in depth: layer multiple protections. No single measure is enough — combine CSP, input validation, secure cookies, HTTPS, and CSRF tokens.",
+    sub:"**Defense in depth: layer multiple protections.** No single measure is enough — combine CSP, input validation, secure cookies, HTTPS, and CSRF tokens.",
     code:[
       [["cmt","// Security checklist:"]],
       [["good","[x]"],["plain"," Escape & sanitize all user input"]],
@@ -689,14 +689,14 @@ const StatusBadge = ({ attack, defense, onClick }) => {
 
 const Finale = () => {
   const rows = [
-    { n:1, label:"Input Validation & Output Encoding", sub:"Escape user data for the correct context (HTML, JS, SQL, URL). Never trust client input.", c:T.red },
-    { n:2, label:"Content Security Policy", sub:"Restrict script sources. Block inline scripts and eval(). Report violations.", c:T.coral },
-    { n:3, label:"CSRF Tokens + SameSite Cookies", sub:"Ensure requests originate from your own forms. Use SameSite=Strict or Lax.", c:T.amber },
-    { n:4, label:"Parameterized Queries", sub:"Never concatenate user input into SQL. Use prepared statements or ORM methods.", c:T.pink },
-    { n:5, label:"HTTPS Everywhere", sub:"Encrypt all traffic with TLS. Use HSTS to prevent downgrade attacks.", c:T.green },
+    { n:1, label:"Input Validation & Output Encoding", sub:"**Escape user data for the correct context (HTML, JS, SQL, URL).** Never trust client input.", c:T.red },
+    { n:2, label:"Content Security Policy", sub:"**Restrict script sources.** Block inline scripts and eval(). Report violations.", c:T.coral },
+    { n:3, label:"CSRF Tokens + SameSite Cookies", sub:"**Ensure requests originate from your own forms.** Use SameSite=Strict or Lax.", c:T.amber },
+    { n:4, label:"Parameterized Queries", sub:"**Never concatenate user input into SQL.** Use prepared statements or ORM methods.", c:T.pink },
+    { n:5, label:"HTTPS Everywhere", sub:"**Encrypt all traffic with TLS.** Use HSTS to prevent downgrade attacks.", c:T.green },
     { n:6, label:"Secure Cookie Flags", sub:"HttpOnly (no JS access), Secure (HTTPS only), SameSite (cross-site protection).", c:T.blue },
     { n:7, label:"X-Frame-Options", sub:"Prevent clickjacking with frame-ancestors 'none' or X-Frame-Options: DENY.", c:T.teal },
-    { n:"\u21B3", label:"Defense in Depth", sub:"No single measure is enough. Layer protections across every boundary.", c:T.purple },
+    { n:"\u21B3", label:"Defense in Depth", sub:"**No single measure is enough.** Layer protections across every boundary.", c:T.purple },
   ];
   return e("div", { style:{ padding:"8px 0" } },
     rows.map((r,i) => e(M.div, { key:i, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.1,...ez},
@@ -791,7 +791,7 @@ function App() {
       e(AP, { mode:"wait" },
         e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
           style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
-        }, sc.sub)
+        }, renderBody(sc.sub))
       )
     ),
 

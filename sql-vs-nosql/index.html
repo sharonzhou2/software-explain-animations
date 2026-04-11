@@ -147,7 +147,7 @@ const SCENES = [
   {
     id:0, act:"01",
     title:"SQL vs NoSQL & the CAP theorem",
-    sub:"Two fundamentally different approaches to storing data — and a theorem that governs what any distributed database can (and cannot) promise. Let's walk through both.",
+    sub:"**Two fundamentally different approaches to storing data — and a theorem that governs what any distributed database can (and cannot) promise.** Let's walk through both.",
     code:[
       [["cmt","// The question:"]],
       [["cmt","// How do you store data for"]],
@@ -158,7 +158,7 @@ const SCENES = [
   {
     id:1, act:"02",
     title:"SQL — the relational model",
-    sub:"SQL databases store data in tables — rows and columns with a fixed schema. Relationships between tables are expressed via foreign keys. Every row in a table has exactly the same shape.",
+    sub:"**SQL databases store data in tables — rows and columns with a fixed schema.** Relationships between tables are expressed via foreign keys. Every row in a table has exactly the same shape.",
     code:[
       [["kw","CREATE TABLE"],["plain"," users "],["punc","("]],
       [["plain","  id "],["kw","INT PRIMARY KEY"],["punc",","]],
@@ -171,7 +171,7 @@ const SCENES = [
   {
     id:2, act:"03",
     title:"SQL query — the JOIN",
-    sub:"SQL's superpower is the JOIN. You can stitch together data from many tables in a single declarative query. The database engine figures out the most efficient way to execute it.",
+    sub:"**SQL's superpower is the JOIN.** You can stitch together data from many tables in a single declarative query. The database engine figures out the most efficient way to execute it.",
     code:[
       [["kw","SELECT"],["plain"," u.name"],["punc",", "],["plain","o.total"]],
       [["kw","FROM"],["plain"," users u"]],
@@ -184,7 +184,7 @@ const SCENES = [
   {
     id:3, act:"04",
     title:"ACID — what SQL guarantees",
-    sub:"Traditional SQL databases give you ACID transactions. Multiple writes succeed together or fail together, data stays consistent, and concurrent transactions don't step on each other.",
+    sub:"**Traditional SQL databases give you ACID transactions.** Multiple writes succeed together or fail together, data stays consistent, and concurrent transactions don't step on each other.",
     code:[
       [["kw","BEGIN"],["punc",";"]],
       [["kw","UPDATE"],["plain"," accounts "],["kw","SET"],["plain"," bal "],["punc","="],["plain"," bal "],["punc","-"],["plain"," "],["num","100"],["plain"," "],["kw","WHERE"],["plain"," id "],["punc","="],["plain"," "],["num","1"],["punc",";"]],
@@ -196,7 +196,7 @@ const SCENES = [
   {
     id:4, act:"05",
     title:"NoSQL — four major categories",
-    sub:"NoSQL is an umbrella term for everything that isn't a traditional relational database. There are four main categories, each optimized for different access patterns.",
+    sub:"**NoSQL is an umbrella term for everything that isn't a traditional relational database.** There are four main categories, each optimized for different access patterns.",
     code:[
       [["cmt","// Document   → MongoDB, Couchbase"]],
       [["cmt","// Key-Value  → Redis, DynamoDB"]],
@@ -208,7 +208,7 @@ const SCENES = [
   {
     id:5, act:"06",
     title:"Document stores — MongoDB",
-    sub:"Documents are self-contained JSON-like objects. Each document can have a different shape, nested fields, and arrays. No joins — you embed related data instead.",
+    sub:"**Documents are self-contained JSON-like objects.** Each document can have a different shape, nested fields, and arrays. No joins — you embed related data instead.",
     code:[
       [["punc","{"]],
       [["plain","  "],["key","\"_id\""],["punc",": "],["str","\"u_42\""],["punc",","]],
@@ -224,7 +224,7 @@ const SCENES = [
   {
     id:6, act:"07",
     title:"Key-value stores — Redis, DynamoDB",
-    sub:"The simplest model: give me a key, get back a value. Blazingly fast lookups, used for caches, sessions, feature flags, and counters. No query language, no joins.",
+    sub:"**The simplest model: give me a key, get back a value.** Blazingly fast lookups, used for caches, sessions, feature flags, and counters. No query language, no joins.",
     code:[
       [["fn","SET"],["plain"," "],["str","\"session:u42\""],["plain"," "],["str","\"{user:42}\""]],
       [["fn","GET"],["plain"," "],["str","\"session:u42\""]],
@@ -236,7 +236,7 @@ const SCENES = [
   {
     id:7, act:"08",
     title:"Wide-column — Cassandra, BigTable",
-    sub:"Rows have a partition key, and each row can have billions of columns grouped into column families. Designed for massive write throughput across many machines.",
+    sub:"**Rows have a partition key, and each row can have billions of columns grouped into column families.** Designed for massive write throughput across many machines.",
     code:[
       [["kw","CREATE TABLE"],["plain"," events "],["punc","("]],
       [["plain","  user_id "],["kw","UUID"],["punc",","]],
@@ -250,7 +250,7 @@ const SCENES = [
   {
     id:8, act:"09",
     title:"Graph databases — Neo4j",
-    sub:"Data is stored as nodes and edges. Queries traverse relationships directly — perfect for social networks, fraud detection, and recommendation engines where the connections matter more than the rows.",
+    sub:"**Data is stored as nodes and edges.** Queries traverse relationships directly — perfect for social networks, fraud detection, and recommendation engines where the connections matter more than the rows.",
     code:[
       [["kw","MATCH"],["plain"," (a:User)"],["punc","-["],["plain","f:FRIEND"],["punc","]-"],["plain","(b:User)"]],
       [["kw","WHERE"],["plain"," a.name "],["punc","="],["plain"," "],["str","\"Ada\""]],
@@ -276,7 +276,7 @@ const SCENES = [
   {
     id:10, act:"11",
     title:"CP vs AP databases",
-    sub:"When a partition happens, a CP system refuses requests to stay consistent. An AP system answers anyway, accepting that different nodes may disagree until they sync. Different databases pick different trade-offs.",
+    sub:"**When a partition happens, a CP system refuses requests to stay consistent.** An AP system answers anyway, accepting that different nodes may disagree until they sync. Different databases pick different trade-offs.",
     code:[
       [["cmt","// CP — consistent, may be unavailable"]],
       [["cmt","//   MongoDB, HBase, Redis (cluster)"]],
@@ -289,7 +289,7 @@ const SCENES = [
   {
     id:11, act:"12",
     title:"BASE — eventual consistency",
-    sub:"The NoSQL alternative to ACID. Basically Available, Soft state, Eventual consistency. You give up immediate correctness for always-on availability — writes propagate, and all nodes converge… eventually.",
+    sub:"**The NoSQL alternative to ACID.** Basically Available, Soft state, Eventual consistency. You give up immediate correctness for always-on availability — writes propagate, and all nodes converge… eventually.",
     code:[
       [["cmt","// write to node A"]],
       [["fn","put"],["punc","("],["str","\"counter\""],["punc",", "],["num","42"],["punc",")"]],
@@ -304,7 +304,7 @@ const SCENES = [
   {
     id:12, act:"13",
     title:"When to use which",
-    sub:"They're not competitors — they're tools for different situations. Many production systems use both: SQL for the core transactional data, NoSQL for caching, analytics, or specialized workloads.",
+    sub:"**They're not competitors — they're tools for different situations.** Many production systems use both: SQL for the core transactional data, NoSQL for caching, analytics, or specialized workloads.",
     code:[
       [["cmt","// Use SQL when:"]],
       [["cmt","//   Complex relationships & JOINs"]],
@@ -321,7 +321,7 @@ const SCENES = [
   {
     id:13, act:"DONE",
     title:"SQL vs NoSQL — summary",
-    sub:"SQL gives you structure, joins, and ACID transactions. NoSQL gives you scale, flexibility, and availability. CAP says any distributed system must trade consistency for availability when the network splits. Pick the tool that fits your access pattern.",
+    sub:"**SQL gives you structure, joins, and ACID transactions.** NoSQL gives you scale, flexibility, and availability. CAP says any distributed system must trade consistency for availability when the network splits. Pick the tool that fits your access pattern.",
     code:[], view:null, finale:true,
   },
 ];
@@ -1018,7 +1018,7 @@ function App() {
       e(AP, { mode:"wait" },
         e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
           style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
-        }, sc.sub)
+        }, renderBody(sc.sub))
       )
     ),
 

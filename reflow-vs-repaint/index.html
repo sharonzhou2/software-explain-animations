@@ -153,7 +153,7 @@ const SCENES = [
   {
     id:0, act:"01",
     title:"The rendering pipeline",
-    sub:"Browsers render pages through a pipeline: DOM + CSSOM -> Layout -> Paint -> Composite. Changes at different stages have very different performance costs.",
+    sub:"**Browsers render pages through a pipeline: DOM + CSSOM -> Layout -> Paint -> Composite.** Changes at different stages have very different performance costs.",
     code:[
       [["cmt","// Browser rendering pipeline"]],
       [["cmt","// DOM + CSSOM"]],
@@ -167,7 +167,7 @@ const SCENES = [
   {
     id:1, act:"02",
     title:"What triggers repaint",
-    sub:"Visual-only changes skip Layout and go straight to Paint. These are cheaper because they don't change geometry or affect other elements.",
+    sub:"**Visual-only changes skip Layout and go straight to Paint.** These are cheaper because they don't change geometry or affect other elements.",
     code:[
       [["cmt","// Repaint-only properties"]],
       [["plain","el"],["punc",".style."],["css","color"],["plain"," = "],["str","'red'"]],
@@ -181,7 +181,7 @@ const SCENES = [
   {
     id:2, act:"03",
     title:"What triggers reflow",
-    sub:"Geometry changes trigger Layout recalculation (reflow). Since layout affects neighbors and descendants, reflow is always followed by repaint.",
+    sub:"**Geometry changes trigger Layout recalculation (reflow).** Since layout affects neighbors and descendants, reflow is always followed by repaint.",
     code:[
       [["cmt","// Reflow-triggering properties"]],
       [["plain","el"],["punc",".style."],["css","width"],["plain"," = "],["str","'200px'"]],
@@ -195,7 +195,7 @@ const SCENES = [
   {
     id:3, act:"04",
     title:"Reflow is expensive",
-    sub:"Reflow recalculates layout for the affected element, its children, and sometimes siblings and ancestors. The cost grows with DOM complexity.",
+    sub:"**Reflow recalculates layout for the affected element, its children, and sometimes siblings and ancestors.** The cost grows with DOM complexity.",
     code:[
       [["cmt","// Changing one element..."]],
       [["plain","parent"],["punc",".style."],["css","width"],["plain"," = "],["str","'50%'"]],
@@ -224,7 +224,7 @@ const SCENES = [
   {
     id:5, act:"06",
     title:"Layout thrashing",
-    sub:"Interleaving reads and writes forces the browser to reflow on every read. This is the most common performance killer in DOM manipulation.",
+    sub:"**Interleaving reads and writes forces the browser to reflow on every read.** This is the most common performance killer in DOM manipulation.",
     code:[
       [["cmt","// Layout thrashing - DON'T do this!"]],
       [["kw","for"],["punc"," ("],["kw","const"],["plain"," el "],["kw","of"],["plain"," els"],["punc",") {"]],
@@ -238,7 +238,7 @@ const SCENES = [
   {
     id:6, act:"07",
     title:"Batching DOM writes",
-    sub:"Read all values first, then write all changes. Use requestAnimationFrame or DocumentFragment to batch DOM mutations into a single reflow.",
+    sub:"**Read all values first, then write all changes.** Use requestAnimationFrame or DocumentFragment to batch DOM mutations into a single reflow.",
     code:[
       [["cmt","// Batch reads, then writes"]],
       [["kw","const"],["plain"," heights = els"],["punc","."],["meth","map"],["punc","("],["plain","el"],["punc"," => "],["plain","el"],["punc","."],["prop","offsetHeight"],["punc",")"]],
@@ -255,7 +255,7 @@ const SCENES = [
   {
     id:7, act:"08",
     title:"CSS containment",
-    sub:"The contain property tells the browser that an element's internals are independent. This limits reflow scope and can dramatically improve performance.",
+    sub:"**The contain property tells the browser that an element's internals are independent.** This limits reflow scope and can dramatically improve performance.",
     code:[
       [["cmt","/* Isolate reflow scope */"]],
       [["punc","."],["css","widget"],["plain"," {"]],
@@ -273,7 +273,7 @@ const SCENES = [
   {
     id:8, act:"09",
     title:"will-change and GPU layers",
-    sub:"will-change promotes an element to its own compositor layer. The GPU handles it independently, avoiding main-thread layout and paint entirely.",
+    sub:"**will-change promotes an element to its own compositor layer.** The GPU handles it independently, avoiding main-thread layout and paint entirely.",
     code:[
       [["cmt","/* Promote to GPU layer */"]],
       [["punc","."],["css","animated"],["plain"," {"]],
@@ -289,7 +289,7 @@ const SCENES = [
   {
     id:9, act:"10",
     title:"transform/opacity vs top/left",
-    sub:"transform and opacity are compositor-only properties. They skip Layout and Paint entirely. top/left trigger reflow every frame -- terrible for animations.",
+    sub:"**transform and opacity are compositor-only properties.** They skip Layout and Paint entirely. top/left trigger reflow every frame -- terrible for animations.",
     code:[
       [["cmt","// SLOW: triggers reflow every frame"]],
       [["plain","el"],["punc",".style."],["css","left"],["plain"," = x + "],["str","'px'"]],
@@ -305,7 +305,7 @@ const SCENES = [
   {
     id:10, act:"11",
     title:"Virtual DOM and frameworks",
-    sub:"Frameworks like React batch DOM updates automatically. The Virtual DOM diffs changes, then applies them in a single pass -- avoiding layout thrashing by design.",
+    sub:"**Frameworks like React batch DOM updates automatically.** The Virtual DOM diffs changes, then applies them in a single pass -- avoiding layout thrashing by design.",
     code:[
       [["cmt","// React batches updates automatically"]],
       [["kw","function"],["plain"," "],["fn","Component"],["punc","() {"]],
@@ -321,7 +321,7 @@ const SCENES = [
   {
     id:11, act:"12",
     title:"Measuring with DevTools",
-    sub:"The Performance panel in Chrome DevTools shows exactly when Layout, Paint, and Composite happen. Purple = layout, green = paint, yellow = composite.",
+    sub:"**The Performance panel in Chrome DevTools shows exactly when Layout, Paint, and Composite happen.** Purple = layout, green = paint, yellow = composite.",
     code:[
       [["cmt","// Chrome DevTools Performance panel"]],
       [["cmt","// 1. Open DevTools -> Performance"]],
@@ -338,7 +338,7 @@ const SCENES = [
   {
     id:12, act:"DONE",
     title:"Reflow vs Repaint summary",
-    sub:"Minimize reflows by batching DOM changes, using compositor-only properties, and leveraging CSS containment. Measure with DevTools.",
+    sub:"**Minimize reflows by batching DOM changes, using compositor-only properties, and leveraging CSS containment.** Measure with DevTools.",
     code:[
       [["cmt","// Performance hierarchy:"]],
       [["num","1."],["plain"," Composite-only "],["cmt","// transform, opacity"]],
@@ -920,7 +920,7 @@ function App() {
       e(AP, { mode:"wait" },
         e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
           style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
-        }, sc.sub)
+        }, renderBody(sc.sub))
       )
     ),
 

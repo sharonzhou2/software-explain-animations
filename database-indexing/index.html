@@ -179,7 +179,7 @@ const SCENES = [
   {
     id:0, act:"01",
     title:"Why do we need indexes?",
-    sub:"Databases store millions of rows. Without help, finding a single row means scanning every one. An index is a side-structure that lets the database skip almost all of them.",
+    sub:"**Databases store millions of rows.** Without help, finding a single row means scanning every one. An index is a side-structure that lets the database skip almost all of them.",
     code:[
       [["cmt","// The problem:"]],
       [["kw","SELECT"],["plain"," * "],["kw","FROM"],["plain"," users"]],
@@ -192,7 +192,7 @@ const SCENES = [
   {
     id:1, act:"02",
     title:"Without an index — full table scan",
-    sub:"The database reads every row in order, comparing each name to 'Grace'. On a huge table this is O(n) — slow, and it gets worse as data grows.",
+    sub:"**The database reads every row in order, comparing each name to 'Grace'.** On a huge table this is O(n) — slow, and it gets worse as data grows.",
     code:[
       [["cmt","// No index on 'name'"]],
       [["cmt","// DB reads row 1, then 2, then 3…"]],
@@ -205,7 +205,7 @@ const SCENES = [
   {
     id:2, act:"03",
     title:"What is an index?",
-    sub:"An index is a sorted, auxiliary data structure keyed by one (or more) columns. Each entry holds the key value and a pointer to the full row. Think: book index at the back, not flipping every page.",
+    sub:"**An index is a sorted, auxiliary data structure keyed by one (or more) columns.** Each entry holds the key value and a pointer to the full row. Think: book index at the back, not flipping every page.",
     code:[
       [["cmt","// Index on name →"]],
       [["plain","  Alice → row 1"]],
@@ -219,7 +219,7 @@ const SCENES = [
   {
     id:3, act:"04",
     title:"B-trees — the usual backbone",
-    sub:"Most relational databases store indexes as B-trees (really B+ trees). A B-tree is a balanced tree where each node holds many keys and branches to many children — wide and shallow, perfect for disk.",
+    sub:"**Most relational databases store indexes as B-trees (really B+ trees).** A B-tree is a balanced tree where each node holds many keys and branches to many children — wide and shallow, perfect for disk.",
     code:[
       [["cmt","// B-tree properties:"]],
       [["cmt","//   • Sorted keys per node"]],
@@ -232,7 +232,7 @@ const SCENES = [
   {
     id:4, act:"05",
     title:"B-tree traversal — O(log n) hops",
-    sub:"To find 'Grace', the database compares against root keys, picks the matching child, then walks one level at a time. A tree of 10M rows is only ~4 levels deep — that's 4 hops instead of 10 million.",
+    sub:"**To find 'Grace', the database compares against root keys, picks the matching child, then walks one level at a time.** A tree of 10M rows is only ~4 levels deep — that's 4 hops instead of 10 million.",
     code:[
       [["cmt","// Searching for 'Grace':"]],
       [["plain","  root"],["punc"," → "],["cmt","Grace < Eve? no"]],
@@ -245,7 +245,7 @@ const SCENES = [
   {
     id:5, act:"06",
     title:"Primary vs secondary indexes",
-    sub:"The primary index is on the table's primary key — it defines the row's identity. A secondary index is any additional index on other columns. A table has one primary and can have many secondaries.",
+    sub:"**The primary index is on the table's primary key — it defines the row's identity.** A secondary index is any additional index on other columns. A table has one primary and can have many secondaries.",
     code:[
       [["cmt","// Primary (automatic):"]],
       [["kw","PRIMARY KEY"],["plain"," (id)"]],
@@ -259,7 +259,7 @@ const SCENES = [
   {
     id:6, act:"07",
     title:"Clustered vs non-clustered",
-    sub:"A clustered index stores the row data physically in key order — the index IS the table (InnoDB, SQL Server). A non-clustered index stores only pointers to rows stored elsewhere.",
+    sub:"**A clustered index stores the row data physically in key order — the index IS the table (InnoDB, SQL Server).** A non-clustered index stores only pointers to rows stored elsewhere.",
     code:[
       [["cmt","// Clustered:"]],
       [["cmt","//   leaf = actual row data"]],
@@ -274,7 +274,7 @@ const SCENES = [
   {
     id:7, act:"08",
     title:"Composite indexes — leftmost prefix rule",
-    sub:"An index on (a, b, c) is sorted first by a, then by b, then by c. The database can use it for queries on a, on (a,b), or on (a,b,c) — but not on b alone or c alone. Left-to-right only.",
+    sub:"**An index on (a, b, c) is sorted first by a, then by b, then by c.** The database can use it for queries on a, on (a,b), or on (a,b,c) — but not on b alone or c alone. Left-to-right only.",
     code:[
       [["kw","CREATE INDEX"],["plain"," idx "],["kw","ON"],["plain"," users(country, city, age)"],["punc",";"]],
       [["cmt",""]],
@@ -288,7 +288,7 @@ const SCENES = [
   {
     id:8, act:"09",
     title:"Covering indexes",
-    sub:"If an index contains every column the query needs, the database can answer the query from the index alone — no trip back to the table. This is called an index-only scan.",
+    sub:"**If an index contains every column the query needs, the database can answer the query from the index alone — no trip back to the table.** This is called an index-only scan.",
     code:[
       [["kw","CREATE INDEX"],["plain"," idx "],["kw","ON"],["plain"," users(name, email)"],["punc",";"]],
       [["cmt",""]],
@@ -301,7 +301,7 @@ const SCENES = [
   {
     id:9, act:"10",
     title:"Indexes aren't free",
-    sub:"Every INSERT, UPDATE, or DELETE must also update every relevant index. Indexes cost disk space and write speed. A table with 10 indexes pays for 10 extra updates on every row change.",
+    sub:"**Every INSERT, UPDATE, or DELETE must also update every relevant index.** Indexes cost disk space and write speed. A table with 10 indexes pays for 10 extra updates on every row change.",
     code:[
       [["kw","INSERT INTO"],["plain"," users(name, email) "],["kw","VALUES"],["plain"," (…)"],["punc",";"]],
       [["cmt",""]],
@@ -316,7 +316,7 @@ const SCENES = [
   {
     id:10, act:"11",
     title:"When NOT to index",
-    sub:"Indexes aren't always a win. Small tables, write-heavy columns, and low-cardinality columns (few distinct values) often perform worse with an index than without.",
+    sub:"**Indexes aren't always a win.** Small tables, write-heavy columns, and low-cardinality columns (few distinct values) often perform worse with an index than without.",
     code:[
       [["cmt","// Skip indexes when:"]],
       [["cmt","//   • Table fits in memory (< ~1000 rows)"]],
@@ -330,7 +330,7 @@ const SCENES = [
   {
     id:11, act:"12",
     title:"EXPLAIN — reading the query plan",
-    sub:"EXPLAIN shows how the database will run a query. Look for 'index' or 'index scan' (good) versus 'seq scan' or 'ALL' (bad). It's the fastest way to confirm an index is actually being used.",
+    sub:"**EXPLAIN shows how the database will run a query.** Look for 'index' or 'index scan' (good) versus 'seq scan' or 'ALL' (bad). It's the fastest way to confirm an index is actually being used.",
     code:[
       [["kw","EXPLAIN"],["plain"," "],["kw","SELECT"],["plain"," * "],["kw","FROM"],["plain"," users "],["kw","WHERE"],["plain"," name="],["str","'Grace'"],["punc",";"]],
       [["cmt",""]],
@@ -344,7 +344,7 @@ const SCENES = [
   {
     id:12, act:"13",
     title:"Common pitfalls",
-    sub:"Indexes quietly stop working if you wrap the column in a function, use leading wildcards, or combine conditions with OR. The index exists, but the planner can't use it.",
+    sub:"**Indexes quietly stop working if you wrap the column in a function, use leading wildcards, or combine conditions with OR.** The index exists, but the planner can't use it.",
     code:[
       [["cmt","// [no] Function on indexed column:"]],
       [["kw","WHERE"],["plain"," "],["fn","LOWER"],["punc","("],["plain","name"],["punc",") = "],["str","'grace'"]],
@@ -358,7 +358,7 @@ const SCENES = [
   {
     id:13, act:"DONE",
     title:"Database indexing — summary",
-    sub:"Indexes trade write cost + storage for dramatically faster reads. B-trees give O(log n) lookups. Choose columns thoughtfully, mind the leftmost prefix, and always verify with EXPLAIN.",
+    sub:"**Indexes trade write cost + storage for dramatically faster reads.** B-trees give O(log n) lookups. Choose columns thoughtfully, mind the leftmost prefix, and always verify with EXPLAIN.",
     code:[], show:null, highlight:null, finale:true,
   },
 ];
@@ -942,7 +942,7 @@ function App() {
       e(AP, { mode:"wait" },
         e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
           style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
-        }, sc.sub)
+        }, renderBody(sc.sub))
       )
     ),
 

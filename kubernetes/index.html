@@ -149,7 +149,7 @@ const SCENES = [
   {
     id:0, act:"01",
     title:"What is Kubernetes?",
-    sub:"Kubernetes (K8s) is an open-source container orchestration platform. It automates deploying, scaling, and managing containerized applications across clusters of machines.",
+    sub:"**Kubernetes (K8s) is an open-source container orchestration platform.** It automates deploying, scaling, and managing containerized applications across clusters of machines.",
     code:[
       [["cmt","// The problem K8s solves:"]],
       [["cmt","// You have hundreds of Docker containers."]],
@@ -162,7 +162,7 @@ const SCENES = [
   {
     id:1, act:"02",
     title:"The problem: containers at scale",
-    sub:"Docker is great for running one container on one machine. But in production you have dozens of services across many servers. Manual management doesn't scale \u2014 you need an orchestrator.",
+    sub:"**Docker is great for running one container on one machine.** But in production you have dozens of services across many servers. Manual management doesn't scale \u2014 you need an orchestrator.",
     code:[
       [["cmt","// Manual container management:"]],
       [["fn","ssh"],["plain"," server-1 && "],["fn","docker"],["plain"," run app-a"]],
@@ -175,7 +175,7 @@ const SCENES = [
   {
     id:2, act:"03",
     title:"K8s architecture overview",
-    sub:"A Kubernetes cluster has two parts: the Control Plane (the brain) that makes decisions, and Worker Nodes (the muscle) that run your containers. The control plane watches and directs; nodes execute.",
+    sub:"**A Kubernetes cluster has two parts: the Control Plane (the brain) that makes decisions, and Worker Nodes (the muscle) that run your containers.** The control plane watches and directs; nodes execute.",
     code:[
       [["cmt","// Cluster = Control Plane + Worker Nodes"]],
       [["cmt","//"]],
@@ -190,7 +190,7 @@ const SCENES = [
   {
     id:3, act:"04",
     title:"Control Plane components",
-    sub:"The control plane has four key components: the API Server (front door), etcd (memory), the Scheduler (matchmaker), and the Controller Manager (enforcer). Together they manage the entire cluster.",
+    sub:"**The control plane has four key components: the API Server (front door), etcd (memory), the Scheduler (matchmaker), and the Controller Manager (enforcer).** Together they manage the entire cluster.",
     code:[
       [["fn","kube-apiserver"],["plain","   "],["cmt","// REST API, all communication"]],
       [["fn","etcd"],["plain","             "],["cmt","// key-value store, cluster state"]],
@@ -213,7 +213,7 @@ const SCENES = [
   {
     id:5, act:"06",
     title:"Pods \u2014 the smallest unit",
-    sub:"A Pod is the smallest deployable unit in K8s \u2014 not a container, but a wrapper around one or more containers that share networking and storage. Most pods run a single container, but sidecar patterns use multiple.",
+    sub:"**A Pod is the smallest deployable unit in K8s \u2014 not a container, but a wrapper around one or more containers that share networking and storage.** Most pods run a single container, but sidecar patterns use multiple.",
     code:[
       [["kw","apiVersion"],["punc",": "],["str","v1"]],
       [["kw","kind"],["punc",": "],["str","Pod"]],
@@ -229,7 +229,7 @@ const SCENES = [
   {
     id:6, act:"07",
     title:"Deployments \u2014 declarative desired state",
-    sub:"A Deployment tells K8s: \"I want 3 replicas of this pod, always running.\" K8s handles rolling updates, rollbacks, and self-healing. You declare the desired state; K8s makes it happen.",
+    sub:"**A Deployment tells K8s: \"I want 3 replicas of this pod, always running.\" K8s handles rolling updates, rollbacks, and self-healing.** You declare the desired state; K8s makes it happen.",
     code:[
       [["kw","apiVersion"],["punc",": "],["str","apps/v1"]],
       [["kw","kind"],["punc",": "],["str","Deployment"]],
@@ -245,7 +245,7 @@ const SCENES = [
   {
     id:7, act:"08",
     title:"Services \u2014 stable networking",
-    sub:"Pods get random IPs and come and go. A Service provides a stable IP and DNS name that routes traffic to healthy pods. ClusterIP (internal), NodePort (external port), LoadBalancer (cloud LB).",
+    sub:"**Pods get random IPs and come and go.** A Service provides a stable IP and DNS name that routes traffic to healthy pods. ClusterIP (internal), NodePort (external port), LoadBalancer (cloud LB).",
     code:[
       [["kw","kind"],["punc",": "],["str","Service"]],
       [["kw","spec"],["punc",":"]],
@@ -261,7 +261,7 @@ const SCENES = [
   {
     id:8, act:"09",
     title:"Ingress \u2014 HTTP routing",
-    sub:"Ingress exposes HTTP/HTTPS routes from outside the cluster to Services inside. It handles host-based and path-based routing, TLS termination, and load balancing \u2014 like a smart reverse proxy for your cluster.",
+    sub:"**Ingress exposes HTTP/HTTPS routes from outside the cluster to Services inside.** It handles host-based and path-based routing, TLS termination, and load balancing \u2014 like a smart reverse proxy for your cluster.",
     code:[
       [["kw","kind"],["punc",": "],["str","Ingress"]],
       [["kw","spec"],["punc",":"]],
@@ -277,7 +277,7 @@ const SCENES = [
   {
     id:9, act:"10",
     title:"ConfigMaps & Secrets",
-    sub:"ConfigMaps store non-sensitive configuration (env vars, config files). Secrets store sensitive data (passwords, tokens) with base64 encoding. Both decouple config from container images.",
+    sub:"**ConfigMaps store non-sensitive configuration (env vars, config files).** Secrets store sensitive data (passwords, tokens) with base64 encoding. Both decouple config from container images.",
     code:[
       [["kw","kind"],["punc",": "],["str","ConfigMap"]],
       [["kw","data"],["punc",":"]],
@@ -293,7 +293,7 @@ const SCENES = [
   {
     id:10, act:"11",
     title:"Persistent Volumes",
-    sub:"Containers are ephemeral \u2014 when a pod dies, its data is gone. PersistentVolumes (PV) and PersistentVolumeClaims (PVC) provide storage that outlives pods. The cluster admin provisions PVs; apps claim them with PVCs.",
+    sub:"**Containers are ephemeral \u2014 when a pod dies, its data is gone.** PersistentVolumes (PV) and PersistentVolumeClaims (PVC) provide storage that outlives pods. The cluster admin provisions PVs; apps claim them with PVCs.",
     code:[
       [["kw","kind"],["punc",": "],["str","PersistentVolumeClaim"]],
       [["kw","spec"],["punc",":"]],
@@ -308,7 +308,7 @@ const SCENES = [
   {
     id:11, act:"12",
     title:"Horizontal Pod Autoscaler",
-    sub:"HPA automatically scales the number of pod replicas based on CPU, memory, or custom metrics. When load increases, HPA adds pods. When it drops, HPA removes them. No manual intervention needed.",
+    sub:"**HPA automatically scales the number of pod replicas based on CPU, memory, or custom metrics.** When load increases, HPA adds pods. When it drops, HPA removes them. No manual intervention needed.",
     code:[
       [["kw","kind"],["punc",": "],["str","HorizontalPodAutoscaler"]],
       [["kw","spec"],["punc",":"]],
@@ -324,7 +324,7 @@ const SCENES = [
   {
     id:12, act:"13",
     title:"kubectl \u2014 the CLI",
-    sub:"kubectl is the command-line tool for interacting with K8s. You apply manifests, inspect resources, read logs, and exec into containers. It talks to the API server, which does the actual work.",
+    sub:"**kubectl is the command-line tool for interacting with K8s.** You apply manifests, inspect resources, read logs, and exec into containers. It talks to the API server, which does the actual work.",
     code:[
       [["fn","kubectl"],["plain"," apply -f "],["str","deploy.yaml"]],
       [["fn","kubectl"],["plain"," get pods"]],
@@ -340,7 +340,7 @@ const SCENES = [
   {
     id:13, act:"14",
     title:"The reconciliation loop",
-    sub:"This is the heart of K8s: controllers continuously compare desired state (what you declared) with actual state (what's running). If they differ, the controller takes action to converge. This loop runs forever.",
+    sub:"**This is the heart of K8s: controllers continuously compare desired state (what you declared) with actual state (what's running).** If they differ, the controller takes action to converge. This loop runs forever.",
     code:[
       [["cmt","// The core K8s pattern:"]],
       [["kw","while"],["plain"," ("],["num","true"],["plain",") {"]],
@@ -356,7 +356,7 @@ const SCENES = [
   {
     id:14, act:"DONE",
     title:"Kubernetes \u2014 summary",
-    sub:"Kubernetes orchestrates containers at scale. You declare what you want (desired state), and K8s continuously works to make it real. It handles scheduling, scaling, networking, storage, and self-healing.",
+    sub:"**Kubernetes orchestrates containers at scale.** You declare what you want (desired state), and K8s continuously works to make it real. It handles scheduling, scaling, networking, storage, and self-healing.",
     code:[], diagram:null, highlight:null,
     finale:true,
   },
@@ -1052,7 +1052,7 @@ function App() {
       e(AP, { mode:"wait" },
         e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
           style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
-        }, sc.sub)
+        }, renderBody(sc.sub))
       )
     ),
 

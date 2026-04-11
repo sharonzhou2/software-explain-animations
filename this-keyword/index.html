@@ -149,7 +149,7 @@ const SCENES = [
   {
     id:0, act:"01",
     title:"The this keyword",
-    sub:"In JavaScript, this is determined by how a function is called — not where it's defined. This single rule explains every behavior.",
+    sub:"**In JavaScript, this is determined by how a function is called — not where it's defined.** This single rule explains every behavior.",
     code:[
       [["cmt","// this changes based on context"]],
       [["cmt","// let's explore each one"]],
@@ -161,7 +161,7 @@ const SCENES = [
   {
     id:1, act:"02",
     title:"Global scope",
-    sub:"At the top level — outside any function — this refers to the global object. In browsers, that's window.",
+    sub:"**At the top level — outside any function — this refers to the global object.** In browsers, that's window.",
     code:[
       [["fn","console"],["punc","."],["meth","log"],["punc","("],["this","this"],["punc",")"]],
       [["cmt","// → Window {…}"]],
@@ -173,7 +173,7 @@ const SCENES = [
   {
     id:2, act:"03",
     title:"Regular function call",
-    sub:"When you call a plain function (not a method), this defaults to the global object. In strict mode, it would be undefined.",
+    sub:"**When you call a plain function (not a method), this defaults to the global object.** In strict mode, it would be undefined.",
     code:[
       [["kw","function"],["plain"," "],["fn","greet"],["punc","() {"]],
       [["plain","  "],["fn","console"],["punc","."],["meth","log"],["punc","("],["this","this"],["punc",")"]],
@@ -204,7 +204,7 @@ const SCENES = [
   {
     id:4, act:"05",
     title:"Lost binding — method extraction",
-    sub:"If you extract a method and call it standalone, the object context is lost. this falls back to the default.",
+    sub:"**If you extract a method and call it standalone, the object context is lost.** this falls back to the default.",
     code:[
       [["kw","const"],["plain"," user "],["punc","= {"]],
       [["plain","  name"],["punc",": "],["str","'Alice'"],["punc",","]],
@@ -220,7 +220,7 @@ const SCENES = [
   {
     id:5, act:"06",
     title:"Arrow function",
-    sub:"Arrow functions don't have their own this. They inherit this from the enclosing lexical scope — where they were defined.",
+    sub:"**Arrow functions don't have their own this.** They inherit this from the enclosing lexical scope — where they were defined.",
     code:[
       [["kw","const"],["plain"," user "],["punc","= {"]],
       [["plain","  name"],["punc",": "],["str","'Alice'"],["punc",","]],
@@ -272,7 +272,7 @@ const SCENES = [
   {
     id:8, act:"09",
     title:"Explicit binding — call & apply",
-    sub:"call() and apply() let you explicitly set this to any object you want. The function runs immediately with that binding.",
+    sub:"**call() and apply() let you explicitly set this to any object you want.** The function runs immediately with that binding.",
     code:[
       [["kw","function"],["plain"," "],["fn","greet"],["punc","() {"]],
       [["plain","  "],["fn","console"],["punc","."],["meth","log"],["punc","("],["this","this"],["punc",".name)"]],
@@ -287,7 +287,7 @@ const SCENES = [
   {
     id:9, act:"10",
     title:"Explicit binding — bind",
-    sub:"bind() creates a new function with this permanently set. Unlike call/apply, it doesn't execute immediately — it returns a new function.",
+    sub:"**bind() creates a new function with this permanently set.** Unlike call/apply, it doesn't execute immediately — it returns a new function.",
     code:[
       [["kw","function"],["plain"," "],["fn","greet"],["punc","() {"]],
       [["plain","  "],["fn","console"],["punc","."],["meth","log"],["punc","("],["this","this"],["punc",".name)"]],
@@ -303,7 +303,7 @@ const SCENES = [
   {
     id:10, act:"11",
     title:"Class method",
-    sub:"In a class, this inside a method refers to the instance — just like implicit binding. But watch out for extraction.",
+    sub:"**In a class, this inside a method refers to the instance — just like implicit binding.** But watch out for extraction.",
     code:[
       [["kw","class"],["plain"," "],["fn","User"],["punc"," {"]],
       [["plain","  "],["fn","constructor"],["punc","(name) { "],["this","this"],["punc",".name = name }"]],
@@ -321,7 +321,7 @@ const SCENES = [
   {
     id:11, act:"12",
     title:"Event handler",
-    sub:"In a DOM event handler, this refers to the element that the listener is attached to. Arrow functions break this — they use lexical this instead.",
+    sub:"**In a DOM event handler, this refers to the element that the listener is attached to.** Arrow functions break this — they use lexical this instead.",
     code:[
       [["plain","button"],["punc","."],["fn","addEventListener"],["punc","("],["str","'click'"],["punc",","]],
       [["plain","  "],["kw","function"],["punc","() {"]],
@@ -337,7 +337,7 @@ const SCENES = [
   {
     id:12, act:"DONE",
     title:"The this binding rules",
-    sub:"Four rules, in priority order. When in doubt, ask: \"How was this function called?\"",
+    sub:"**Four rules, in priority order.** When in doubt, ask: \"How was this function called?\"",
     code:[
       [["cmt","// Priority order:"]],
       [["num","1."],["plain"," "],["kw","new"],["plain","       → new object"]],
@@ -612,7 +612,7 @@ function App() {
       e(AP, { mode:"wait" },
         e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
           style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
-        }, sc.sub)
+        }, renderBody(sc.sub))
       )
     ),
 

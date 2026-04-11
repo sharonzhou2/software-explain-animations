@@ -150,7 +150,7 @@ const SCENES = [
   {
     id:0, act:"01",
     title:"JavaScript is single-threaded",
-    sub:"JS runs on one thread with one call stack. But what if you need real parallelism — heavy computation without freezing the UI?",
+    sub:"**JS runs on one thread with one call stack.** But what if you need real parallelism — heavy computation without freezing the UI?",
     viz:"intro",
     detail_hint:"concept",
     noCode:true,
@@ -158,7 +158,7 @@ const SCENES = [
   {
     id:1, act:"02",
     title:"The problem: blocking the main thread",
-    sub:"Heavy computation — like processing millions of records — blocks the event loop. The UI freezes, clicks go unhandled, animations stutter.",
+    sub:"**Heavy computation — like processing millions of records — blocks the event loop.** The UI freezes, clicks go unhandled, animations stutter.",
     code:[
       [["cmt","// This blocks the entire UI"]],
       [["kw","function"],["plain"," "],["fn","heavyWork"],["punc","() {"]],
@@ -174,7 +174,7 @@ const SCENES = [
   {
     id:2, act:"03",
     title:"Web Workers: a separate thread",
-    sub:"A Web Worker runs JavaScript in a background thread with its own event loop. The main thread stays free to handle UI, events, and rendering.",
+    sub:"**A Web Worker runs JavaScript in a background thread with its own event loop.** The main thread stays free to handle UI, events, and rendering.",
     viz:"two-threads",
     detail_hint:"concept",
     noCode:true,
@@ -182,7 +182,7 @@ const SCENES = [
   {
     id:3, act:"04",
     title:"Creating a worker",
-    sub:"Use the Worker constructor with a path to a separate JS file. The browser spins up a new thread and executes that file.",
+    sub:"**Use the Worker constructor with a path to a separate JS file.** The browser spins up a new thread and executes that file.",
     code:[
       [["cmt","// main.js"]],
       [["kw","const"],["plain"," "],["plain","worker"],["plain"," "],["punc","= "],["kw","new"],["plain"," "],["cls","Worker"],["punc","("],["str","'worker.js'"],["punc",")"]],
@@ -196,7 +196,7 @@ const SCENES = [
   {
     id:4, act:"05",
     title:"postMessage / onmessage",
-    sub:"Main thread and worker communicate by sending messages. postMessage sends data, onmessage receives it. Neither can access the other's variables.",
+    sub:"**Main thread and worker communicate by sending messages.** postMessage sends data, onmessage receives it. Neither can access the other's variables.",
     code:[
       [["cmt","// main.js"]],
       [["plain","worker"],["punc","."],["meth","postMessage"],["punc","("],["str","'start'"],["punc",")"]],
@@ -215,7 +215,7 @@ const SCENES = [
   {
     id:5, act:"06",
     title:"Message passing: structured clone",
-    sub:"Data sent via postMessage is copied using the structured clone algorithm. It's a deep copy — changes on one side don't affect the other.",
+    sub:"**Data sent via postMessage is copied using the structured clone algorithm.** It's a deep copy — changes on one side don't affect the other.",
     code:[
       [["cmt","// Data is deep-copied, not shared"]],
       [["kw","const"],["plain"," data "],["punc","= { "],["plain","items"],["punc",": ["],["num","1"],["punc",","],["num","2"],["punc",","],["num","3"],["punc","] }"]],
@@ -231,7 +231,7 @@ const SCENES = [
   {
     id:6, act:"07",
     title:"No shared memory (by default)",
-    sub:"Workers cannot access the DOM, window, document, or parent scope. This isolation is what makes them thread-safe — no race conditions.",
+    sub:"**Workers cannot access the DOM, window, document, or parent scope.** This isolation is what makes them thread-safe — no race conditions.",
     code:[
       [["cmt","// Inside a worker — these all fail:"]],
       [["plain","document"],["punc","."],["fn","getElementById"],["punc","()"],["plain"," "],["cmt","// error"]],
@@ -247,7 +247,7 @@ const SCENES = [
   {
     id:7, act:"08",
     title:"What workers CAN access",
-    sub:"Workers have access to many APIs: fetch, WebSocket, IndexedDB, timers, crypto, and more. They just can't touch the DOM.",
+    sub:"**Workers have access to many APIs: fetch, WebSocket, IndexedDB, timers, crypto, and more.** They just can't touch the DOM.",
     code:[
       [["cmt","// Workers CAN use:"]],
       [["meth","fetch"],["punc","("],["str","'/api/data'"],["punc",")"],["plain","      "],["cmt","// network"]],
@@ -263,7 +263,7 @@ const SCENES = [
   {
     id:8, act:"09",
     title:"Transferable objects",
-    sub:"For large binary data, you can transfer ownership instead of copying. The ArrayBuffer becomes empty in the sender — zero-copy, instant transfer.",
+    sub:"**For large binary data, you can transfer ownership instead of copying.** The ArrayBuffer becomes empty in the sender — zero-copy, instant transfer.",
     code:[
       [["kw","const"],["plain"," buf "],["punc","= "],["kw","new"],["plain"," "],["cls","ArrayBuffer"],["punc","("],["num","1024"],["punc",")"]],
       [],
@@ -279,7 +279,7 @@ const SCENES = [
   {
     id:9, act:"10",
     title:"SharedArrayBuffer + Atomics",
-    sub:"For true shared memory, use SharedArrayBuffer. Both threads see the same memory. Atomics provides thread-safe operations to prevent races.",
+    sub:"**For true shared memory, use SharedArrayBuffer.** Both threads see the same memory. Atomics provides thread-safe operations to prevent races.",
     code:[
       [["kw","const"],["plain"," sab "],["punc","= "],["kw","new"],["plain"," "],["cls","SharedArrayBuffer"],["punc","("],["num","1024"],["punc",")"]],
       [["kw","const"],["plain"," view "],["punc","= "],["kw","new"],["plain"," "],["cls","Int32Array"],["punc","("],["plain","sab"],["punc",")"]],
@@ -295,7 +295,7 @@ const SCENES = [
   {
     id:10, act:"11",
     title:"Types of workers",
-    sub:"Dedicated Workers serve one page. Shared Workers serve multiple pages. Service Workers act as a network proxy for caching and offline support.",
+    sub:"**Dedicated Workers serve one page.** Shared Workers serve multiple pages. Service Workers act as a network proxy for caching and offline support.",
     code:[
       [["cmt","// Dedicated — one page, one worker"]],
       [["kw","new"],["plain"," "],["cls","Worker"],["punc","("],["str","'w.js'"],["punc",")"]],
@@ -313,7 +313,7 @@ const SCENES = [
   {
     id:11, act:"12",
     title:"Service Workers",
-    sub:"Service Workers sit between your app and the network. They intercept fetch requests, enabling caching strategies, offline support, and push notifications.",
+    sub:"**Service Workers sit between your app and the network.** They intercept fetch requests, enabling caching strategies, offline support, and push notifications.",
     code:[
       [["cmt","// service-worker.js"]],
       [["kw","self"],["punc","."],["fn","addEventListener"],["punc","("],["str","'fetch'"],["punc",","]],
@@ -347,7 +347,7 @@ const SCENES = [
   {
     id:13, act:"14",
     title:"Web Workers summary",
-    sub:"True parallelism in the browser. Workers run on separate threads, communicate via messages, and keep your UI fast and responsive.",
+    sub:"**True parallelism in the browser.** Workers run on separate threads, communicate via messages, and keep your UI fast and responsive.",
     code:[
       [["cmt","// Web Workers in a nutshell:"]],
       [["num","1."],["plain"," Separate thread — real parallelism"]],
@@ -981,7 +981,7 @@ function App() {
       e(AP, { mode:"wait" },
         e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
           style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
-        }, sc.sub)
+        }, renderBody(sc.sub))
       )
     ),
 

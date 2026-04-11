@@ -138,14 +138,14 @@ const SCENES = [
   {
     id:0, act:"01",
     title:"The Same-Origin Policy",
-    sub:"Browsers enforce a security rule: scripts on one origin cannot freely read resources from a different origin. This protects users from malicious sites stealing data.",
+    sub:"**Browsers enforce a security rule: scripts on one origin cannot freely read resources from a different origin.** This protects users from malicious sites stealing data.",
     flow:{ type:"blocked", from:{ label:"evil.com", color:T.coral }, to:{ label:"bank.com/api", color:T.teal }, method:"GET", blocked:true, headers:[] },
     detail:"sameOrigin",
   },
   {
     id:1, act:"02",
     title:'What is an "origin"?',
-    sub:"An origin is defined by three parts: scheme (http/https), host (domain name), and port. If any one differs, the origins are different.",
+    sub:"**An origin is defined by three parts: scheme (http/https), host (domain name), and port.** If any one differs, the origins are different.",
     flow:{ type:"origin", parts:[
       { label:"https://", desc:"Scheme", color:T.purple },
       { label:"api.example.com", desc:"Host", color:T.blue },
@@ -156,7 +156,7 @@ const SCENES = [
   {
     id:2, act:"03",
     title:"Why the browser blocks cross-origin requests",
-    sub:"Without restrictions, any page could fetch your bank data, read your emails, or exfiltrate cookies. The browser acts as a gatekeeper, blocking responses from different origins by default.",
+    sub:"**Without restrictions, any page could fetch your bank data, read your emails, or exfiltrate cookies.** The browser acts as a gatekeeper, blocking responses from different origins by default.",
     flow:{ type:"blocked", from:{ label:"malicious.com", color:T.coral }, to:{ label:"your-bank.com", color:T.teal }, method:"fetch('/account')", blocked:true,
       headers:[{ k:"Cookie", v:"session=abc123", color:T.red }] },
     detail:"whyBlock",
@@ -164,7 +164,7 @@ const SCENES = [
   {
     id:3, act:"04",
     title:"Simple requests",
-    sub:"Some requests are 'simple' and skip the preflight check. GET, HEAD, or POST with only safe headers (Accept, Content-Type with form values) go directly to the server.",
+    sub:"**Some requests are 'simple' and skip the preflight check.** GET, HEAD, or POST with only safe headers (Accept, Content-Type with form values) go directly to the server.",
     flow:{ type:"simple", from:{ label:"app.com", color:T.blue }, to:{ label:"api.com", color:T.teal }, method:"GET",
       reqHeaders:[{ k:"Origin", v:"https://app.com", color:T.blue }],
       resHeaders:[{ k:"Access-Control-Allow-Origin", v:"https://app.com", color:T.green }],
@@ -183,7 +183,7 @@ const SCENES = [
   {
     id:5, act:"06",
     title:"Preflight step by step",
-    sub:"Step 1: Browser sends OPTIONS with the intended method and headers. Step 2: Server responds with what it allows. Step 3: If allowed, the actual request proceeds.",
+    sub:"**Step 1: Browser sends OPTIONS with the intended method and headers.** Step 2: Server responds with what it allows. Step 3: If allowed, the actual request proceeds.",
     flow:{ type:"preflight-steps", from:{ label:"app.com", color:T.blue }, to:{ label:"api.com", color:T.teal },
       optionsReq:[
         { k:"Origin", v:"https://app.com", color:T.blue },
@@ -201,7 +201,7 @@ const SCENES = [
   {
     id:6, act:"07",
     title:"Access-Control-Allow-Origin",
-    sub:"This is the key response header. The server tells the browser which origins are allowed. It can be a specific origin or * (wildcard for any origin, but not with credentials).",
+    sub:"**This is the key response header.** The server tells the browser which origins are allowed. It can be a specific origin or * (wildcard for any origin, but not with credentials).",
     flow:{ type:"header-focus", header:"Access-Control-Allow-Origin",
       examples:[
         { v:"https://app.com", desc:"Only this origin", color:T.green },
@@ -214,7 +214,7 @@ const SCENES = [
   {
     id:7, act:"08",
     title:"Credentials across origins",
-    sub:"By default, cross-origin requests don't send cookies. To include credentials, both sides must opt in: fetch uses credentials:'include', and the server must set Access-Control-Allow-Credentials: true.",
+    sub:"**By default, cross-origin requests don't send cookies.** To include credentials, both sides must opt in: fetch uses credentials:'include', and the server must set Access-Control-Allow-Credentials: true.",
     flow:{ type:"credentials", from:{ label:"app.com", color:T.blue }, to:{ label:"api.com", color:T.teal },
       clientSide:"fetch(url, { credentials: 'include' })",
       serverHeaders:[
@@ -239,7 +239,7 @@ const SCENES = [
   {
     id:9, act:"10",
     title:"Preflight caching",
-    sub:"Preflight requests add latency. Access-Control-Max-Age tells the browser how many seconds to cache the preflight response, avoiding repeated OPTIONS requests for the same endpoint.",
+    sub:"**Preflight requests add latency.** Access-Control-Max-Age tells the browser how many seconds to cache the preflight response, avoiding repeated OPTIONS requests for the same endpoint.",
     flow:{ type:"caching",
       timeline:[
         { label:"1st request", preflight:true, time:"OPTIONS + PUT" },
@@ -253,7 +253,7 @@ const SCENES = [
   {
     id:10, act:"11",
     title:"Common CORS errors",
-    sub:"CORS errors are always enforced by the browser, never the server. The server may respond fine, but if headers are missing, the browser blocks JavaScript from reading the response.",
+    sub:"**CORS errors are always enforced by the browser, never the server.** The server may respond fine, but if headers are missing, the browser blocks JavaScript from reading the response.",
     flow:{ type:"errors",
       errors:[
         { msg:"No 'Access-Control-Allow-Origin' header", fix:"Add the header on the server response", color:T.red },
@@ -267,7 +267,7 @@ const SCENES = [
   {
     id:11, act:"12",
     title:"CORS vs server-side proxy",
-    sub:"CORS only applies to browsers. A server-side proxy makes the request from your backend, bypassing CORS entirely. The browser sees a same-origin request to your own server.",
+    sub:"**CORS only applies to browsers.** A server-side proxy makes the request from your backend, bypassing CORS entirely. The browser sees a same-origin request to your own server.",
     flow:{ type:"proxy",
       direct:{ from:"Browser", mid:null, to:"api.com", blocked:true },
       proxy:{ from:"Browser", mid:"Your server", to:"api.com", blocked:false },
@@ -277,7 +277,7 @@ const SCENES = [
   {
     id:12, act:"DONE",
     title:"CORS summary",
-    sub:"Cross-Origin Resource Sharing is a browser security mechanism. The server opts in via headers, telling the browser which origins, methods, and headers are allowed.",
+    sub:"**Cross-Origin Resource Sharing is a browser security mechanism.** The server opts in via headers, telling the browser which origins, methods, and headers are allowed.",
     flow:{ type:"finale" },
     detail:"summary",
     finale:true,
@@ -938,7 +938,7 @@ function App() {
       e(AP, { mode:"wait" },
         e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
           style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
-        }, sc.sub)
+        }, renderBody(sc.sub))
       )
     ),
 
