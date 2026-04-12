@@ -52,6 +52,11 @@
   .sidenav details[open] summary::after { transform: rotate(45deg); }
   .sidenav details + details summary { padding-top: 12px; }
   .sidenav details:first-of-type summary { padding-top: 4px; }
+  .sidenav::-webkit-scrollbar { width: 6px; }
+  .sidenav::-webkit-scrollbar-track { background: transparent; }
+  .sidenav::-webkit-scrollbar-thumb { background: #2a2a38; border-radius: 3px; }
+  .sidenav::-webkit-scrollbar-thumb:hover { background: #38384a; }
+  .sidenav { scrollbar-width: thin; scrollbar-color: #2a2a38 transparent; }
 </style>
 </head>
 <body>
@@ -76,6 +81,7 @@
         <a href="../error-propagation/">Error Propagation</a>
         <a href="../web-workers/">Web Workers</a>
         <a href="../prototypal-inheritance/">Prototypal Inheritance</a>
+        <a href="../promises/">Promises</a>
   </details>
   <details>
     <summary>Browser</summary>
@@ -199,78 +205,94 @@ const SCENES = [
   {
     id:3, act:"04",
     title:"Closure in action — counter",
-    sub:"**The classic closure example: a counter factory.** Each call to makeCounter() creates a fresh count variable, and the returned functions close over it.",
+    sub:"**The classic interview question: a counter factory.** makeCounter() returns a function that closes over its own count variable. Each call increments and logs it.",
     code:[
       [["kw","function"],["plain"," "],["fn","makeCounter"],["punc","() {"]],
       [["plain","  "],["kw","let"],["plain"," count "],["punc","= "],["num","0"]],
-      [["plain","  "],["kw","return"],["plain"," "],["punc","() => {"]],
+      [["plain","  "],["kw","return"],["plain"," "],["kw","function"],["punc","() {"]],
       [["plain","    count"],["punc","++"]],
-      [["plain","    "],["kw","return"],["plain"," count"]],
+      [["plain","    "],["fn","console"],["punc","."],["meth","log"],["punc","("],["plain","count"],["punc",")"]],
       [["plain","  "],["punc","}"]],
       [["punc","}"]],
-      [["kw","const"],["plain"," inc "],["punc","= "],["fn","makeCounter"],["punc","()"]],
-      [["fn","inc"],["punc","()"],["plain","  "],["cmt","// 1"]],
-      [["fn","inc"],["punc","()"],["plain","  "],["cmt","// 2"]],
     ],
-    scope:{ outer:"makeCounter()", inner:"() =>", captured:["count"], alive:true },
-    concept:{ label:"Persistent State", color:T.amber },
-    out:[{id:"o1",t:"1",c:T.amberL},{id:"o2",t:"2",c:T.amberL}],
+    scope:{ outer:"makeCounter()", inner:"function()", captured:["count"], alive:true },
+    concept:{ label:"Counter Factory", color:T.amber },
+    out:[],
   },
   {
     id:4, act:"05",
-    title:"Each closure gets its own copy",
-    sub:"**Every invocation of the outer function creates a new lexical environment.** Two counters are completely independent — they don't share state.",
+    title:"Two counters — shared or separate?",
+    sub:"**Each call to makeCounter() creates a brand new execution context with its own fresh count.** counter1 and counter2 are completely independent closures — they don't share anything.",
     code:[
-      [["kw","const"],["plain"," a "],["punc","= "],["fn","makeCounter"],["punc","()"]],
-      [["kw","const"],["plain"," b "],["punc","= "],["fn","makeCounter"],["punc","()"]],
-      [["fn","a"],["punc","()"],["plain","  "],["cmt","// 1"]],
-      [["fn","a"],["punc","()"],["plain","  "],["cmt","// 2"]],
-      [["fn","b"],["punc","()"],["plain","  "],["cmt","// 1  (independent!)"]],
-      [["fn","a"],["punc","()"],["plain","  "],["cmt","// 3"]],
+      [["kw","const"],["plain"," counter1 "],["punc","= "],["fn","makeCounter"],["punc","()"]],
+      [["kw","const"],["plain"," counter2 "],["punc","= "],["fn","makeCounter"],["punc","()"]],
+      [],
+      [["fn","counter1"],["punc","()"],["plain","  "],["cmt","// count_1: 0 -> 1"]],
+      [["fn","counter1"],["punc","()"],["plain","  "],["cmt","// count_1: 1 -> 2"]],
+      [["fn","counter2"],["punc","()"],["plain","  "],["cmt","// count_2: 0 -> 1"]],
+      [["fn","counter1"],["punc","()"],["plain","  "],["cmt","// count_1: 2 -> 3"]],
     ],
-    scope:{ outer:"makeCounter()", inner:"a & b", captured:["count_a","count_b"], alive:true },
+    scope:{ outer:"makeCounter() x2", inner:"counter1 & counter2", captured:["count_1","count_2"], alive:true },
     concept:{ label:"Separate Environments", color:T.teal },
-    out:[{id:"o1",t:"a() → 1",c:T.tealL},{id:"o2",t:"a() → 2",c:T.tealL},{id:"o3",t:"b() → 1",c:T.amberL},{id:"o4",t:"a() → 3",c:T.tealL}],
+    out:[{id:"o1",t:"counter1() → 1",c:T.tealL},{id:"o2",t:"counter1() → 2",c:T.tealL},{id:"o3",t:"counter2() → 1",c:T.amberL},{id:"o4",t:"counter1() → 3",c:T.tealL}],
   },
   {
     id:5, act:"06",
-    title:"The loop problem",
-    sub:"**Using var in a for loop: all callbacks share the same i variable.** By the time they run, the loop has finished and i is 3.",
+    title:"The loop trap — why 3, not 2?",
+    sub:"**var is function-scoped, not block-scoped.** All three setTimeout callbacks share the same i. The loop exits when i < 3 fails — that's when i hits 3. So all callbacks log 3, three times.",
     code:[
       [["kw","for"],["punc"," ("],["kw","var"],["plain"," i "],["punc","= "],["num","0"],["punc","; i < "],["num","3"],["punc","; i++) {"]],
-      [["plain","  "],["fn","setTimeout"],["punc","(() => {"]],
+      [["plain","  "],["fn","setTimeout"],["punc","("],["kw","function"],["punc","() {"]],
       [["plain","    "],["fn","console"],["punc","."],["meth","log"],["punc","("],["plain","i"],["punc",")"]],
-      [["plain","  "],["punc","}, "],["num","100"],["punc",")"]],
+      [["plain","  "],["punc","}, "],["num","0"],["punc",")"]],
       [["punc","}"]],
-      [["cmt","// Expected: 0, 1, 2"]],
-      [["cmt","// Actual:   3, 3, 3  (bug)"]],
+      [["cmt","// Loop: i=0 [ok] i=1 [ok] i=2 [ok] i=3 [stop!]"]],
+      [["cmt","// Callbacks fire AFTER loop ends"]],
+      [["cmt","// All 3 see i = 3  (not 2!)"]],
     ],
-    scope:{ outer:"for loop", inner:"setTimeout cb", captured:["i (shared!)"], alive:true },
+    scope:{ outer:"function scope", inner:"3 x setTimeout cb", captured:["i (shared!)"], alive:true },
     concept:{ label:"Shared Variable Bug", color:T.coral },
     out:[{id:"o1",t:"3",c:T.coralL},{id:"o2",t:"3",c:T.coralL},{id:"o3",t:"3",c:T.coralL}],
   },
   {
     id:6, act:"07",
-    title:"Fixing the loop",
-    sub:"**Use let (block-scoped), an IIFE, or a closure factory.** Each creates a separate scope per iteration, giving each callback its own copy of i.",
+    title:"Fix 1: let — one word change",
+    sub:"**let is block-scoped: each loop iteration gets its own fresh i.** This is the modern, clean fix — and the answer interviewers want to hear first.",
     code:[
-      [["cmt","// Fix 1: let (block scope)"]],
+      [["cmt","// Just change var to let:"]],
       [["kw","for"],["punc"," ("],["kw","let"],["plain"," i "],["punc","= "],["num","0"],["punc","; i < "],["num","3"],["punc","; i++) {"]],
-      [["plain","  "],["fn","setTimeout"],["punc","(() => "],["fn","console"],["punc","."],["meth","log"],["punc","(i), "],["num","100"],["punc",")"]],
+      [["plain","  "],["fn","setTimeout"],["punc","("],["kw","function"],["punc","() {"]],
+      [["plain","    "],["fn","console"],["punc","."],["meth","log"],["punc","("],["plain","i"],["punc",")"]],
+      [["plain","  "],["punc","}, "],["num","0"],["punc",")"]],
       [["punc","}"]],
-      [["cmt","// Fix 2: IIFE"]],
-      [["kw","for"],["punc"," ("],["kw","var"],["plain"," i "],["punc","= "],["num","0"],["punc","; i < "],["num","3"],["punc","; i++) {"]],
-      [["plain","  "],["punc","("],["kw","function"],["punc","("],["plain","j"],["punc",") {"]],
-      [["plain","    "],["fn","setTimeout"],["punc","(() => "],["fn","console"],["punc","."],["meth","log"],["punc","(j), "],["num","100"],["punc",")"]],
-      [["plain","  "],["punc","})(i)"]],
-      [["punc","}"]],
+      [["cmt","// Each iteration: own i"]],
+      [["cmt","// Prints: 0, 1, 2"]],
     ],
-    scope:{ outer:"each iteration", inner:"setTimeout cb", captured:["i (own copy)"], alive:true },
-    concept:{ label:"Separate Scopes", color:T.teal },
+    scope:{ outer:"block scope (per iteration)", inner:"setTimeout cb", captured:["i (own copy)"], alive:true },
+    concept:{ label:"Block Scope Fix", color:T.teal },
     out:[{id:"o1",t:"0",c:T.tealL},{id:"o2",t:"1",c:T.tealL},{id:"o3",t:"2",c:T.tealL}],
   },
   {
     id:7, act:"08",
+    title:"Fix 2: IIFE — closure to the rescue",
+    sub:"**An Immediately Invoked Function Expression creates a new scope per iteration.** The IIFE captures the current i as j, so each callback gets its own copy. Older pattern, but shows deeper closure understanding.",
+    code:[
+      [["kw","for"],["punc"," ("],["kw","var"],["plain"," i "],["punc","= "],["num","0"],["punc","; i < "],["num","3"],["punc","; i++) {"]],
+      [["plain","  "],["punc","("],["kw","function"],["punc","("],["plain","j"],["punc",") {"]],
+      [["plain","    "],["fn","setTimeout"],["punc","("],["kw","function"],["punc","() {"]],
+      [["plain","      "],["fn","console"],["punc","."],["meth","log"],["punc","("],["plain","j"],["punc",")"]],
+      [["plain","    "],["punc","}, "],["num","0"],["punc",")"]],
+      [["plain","  "],["punc","})("],["plain","i"],["punc",")"]],
+      [["punc","}"]],
+      [["cmt","// IIFE(0), IIFE(1), IIFE(2)"]],
+      [["cmt","// Each j is a fresh copy"]],
+    ],
+    scope:{ outer:"IIFE scope (per iteration)", inner:"setTimeout cb", captured:["j (own copy)"], alive:true },
+    concept:{ label:"IIFE Scope Fix", color:T.amber },
+    out:[{id:"o1",t:"0",c:T.amberL},{id:"o2",t:"1",c:T.amberL},{id:"o3",t:"2",c:T.amberL}],
+  },
+  {
+    id:8, act:"09",
     title:"Closures and memory",
     sub:"**Captured variables can't be garbage collected as long as the closure exists.** This is by design — but can cause memory leaks if closures hold references to large objects unintentionally.",
     code:[
@@ -287,7 +309,7 @@ const SCENES = [
     out:[{id:"o1",t:"1000000",c:T.coralL}],
   },
   {
-    id:8, act:"09",
+    id:9, act:"10",
     title:"Private state pattern",
     sub:"**Closures can hide data that no outside code can access directly.** The only way to interact with secret is through the returned methods.",
     code:[
@@ -307,7 +329,7 @@ const SCENES = [
     out:[{id:"o1",t:"150",c:T.purpleL}],
   },
   {
-    id:9, act:"10",
+    id:10, act:"11",
     title:"Module pattern",
     sub:"**Before ES modules, closures powered the Module pattern — an IIFE that returns a public API while keeping internals private.** This is closures at scale.",
     code:[
@@ -327,7 +349,7 @@ const SCENES = [
     out:[{id:"o1",t:"1",c:T.blueL}],
   },
   {
-    id:10, act:"11",
+    id:11, act:"12",
     title:"Closures in event handlers",
     sub:"**Event handlers are one of the most common places closures appear.** The handler closes over variables from its surrounding scope, keeping them available when the event fires later.",
     code:[
@@ -347,7 +369,7 @@ const SCENES = [
     out:[{id:"o1",t:'"Save: 1"',c:T.amberL},{id:"o2",t:'"Save: 2"',c:T.amberL}],
   },
   {
-    id:11, act:"12",
+    id:12, act:"13",
     title:"Common gotchas",
     sub:"Accidental captures of large objects, stale closures in React (useEffect with missing deps), and the var-in-loop trap are the most frequent closure pitfalls.",
     code:[
@@ -367,7 +389,7 @@ const SCENES = [
     out:[{id:"o1",t:"0  (always, never updates!)",c:T.coralL}],
   },
   {
-    id:12, act:"DONE",
+    id:13, act:"DONE",
     title:"Closures — the full picture",
     sub:"**A closure is a function that remembers its lexical scope.** They power private state, modules, callbacks, and much of modern JavaScript.",
     code:[
@@ -556,10 +578,10 @@ const Finale = () => {
   const rows = [
     { n:1, label:"Lexical scope", sub:"Functions execute in the scope where they were defined, not called", c:T.blue },
     { n:2, label:"Captured variables", sub:"Inner functions keep references to outer variables — they survive returns", c:T.teal },
-    { n:3, label:"Separate environments", sub:"Each function call creates a new scope — closures don't share state", c:T.amber },
-    { n:4, label:"Private state", sub:"Closures hide data — only exposed methods can access internal variables", c:T.purple },
-    { n:5, label:"Module pattern", sub:"IIFEs + closures = encapsulation before ES modules existed", c:T.blue },
-    { n:6, label:"Memory awareness", sub:"Captured variables can't be GC'd — set references to null when done", c:T.coral },
+    { n:3, label:"Separate environments", sub:"Each function call creates a new scope — counter1 and counter2 are independent", c:T.amber },
+    { n:4, label:"The var loop trap", sub:"var is function-scoped — loop ends at i=3 (not 2!), all callbacks share it", c:T.coral },
+    { n:5, label:"Fix: let or IIFE", sub:"let gives each iteration its own scope; IIFE captures via a new function call", c:T.teal },
+    { n:6, label:"Private state", sub:"Closures hide data — only exposed methods can access internal variables", c:T.purple },
     { n:"!", label:"Watch for stale closures", sub:"In React, async code, and loops — always check what you're closing over", c:T.pink },
   ];
   return e("div", { style:{ padding:"8px 0" } },
@@ -705,6 +727,10 @@ function App() {
       e("button", { onClick:()=>go(1), disabled:si===SCENES.length-1,
         style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
       }, e("span", { style:{ display:"inline-flex", alignItems:"center", gap:5 } }, "Next", e("i", { className:"lni lni-arrow-right" }))),
+            e("button", { onClick:()=>{ jump(0); setPlaying(false); },
+        style:{ padding:"6px 10px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:T.text3,cursor:"pointer",fontSize:11,transition:"color 0.2s",marginLeft:4 },
+        title:"Restart"
+      }, e("i", { className:"lni lni-refresh-circle-1-clockwise", style:{fontSize:12} })),
       e("div", { style:{ flex:1 } }),
       e("div", { style:{ display:"flex", gap:4, alignItems:"center" } },
         SCENES.map((_,i) =>

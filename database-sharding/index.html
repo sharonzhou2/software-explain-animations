@@ -53,6 +53,11 @@
   .sidenav details[open] summary::after { transform: rotate(45deg); }
   .sidenav details + details summary { padding-top: 12px; }
   .sidenav details:first-of-type summary { padding-top: 4px; }
+  .sidenav::-webkit-scrollbar { width: 6px; }
+  .sidenav::-webkit-scrollbar-track { background: transparent; }
+  .sidenav::-webkit-scrollbar-thumb { background: #2a2a38; border-radius: 3px; }
+  .sidenav::-webkit-scrollbar-thumb:hover { background: #38384a; }
+  .sidenav { scrollbar-width: thin; scrollbar-color: #2a2a38 transparent; }
 </style>
 </head>
 <body>
@@ -77,6 +82,7 @@
         <a href="../error-propagation/">Error Propagation</a>
         <a href="../web-workers/">Web Workers</a>
         <a href="../prototypal-inheritance/">Prototypal Inheritance</a>
+        <a href="../promises/">Promises</a>
   </details>
   <details>
     <summary>Browser</summary>
@@ -713,7 +719,11 @@ const ViewRange = () => {
         e("div", { style:{ padding:"8px 10px", borderBottom:`1px solid ${b.color}44`, display:"flex", alignItems:"center", gap:6, color:b.color } },
           e("iconify-icon", { icon:"tabler:database", width:13, height:13 }),
           e("div", { style:{ fontSize:10, fontWeight:700, color:b.color, fontFamily:"'JetBrains Mono', 'SF Mono', monospace" } }, `shard_${bi+1}`),
-          e("div", { style:{ flex:1 } }),
+                e("button", { onClick:()=>{ jump(0); setPlaying(false); },
+        style:{ padding:"6px 10px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:T.text3,cursor:"pointer",fontSize:11,transition:"color 0.2s",marginLeft:4 },
+        title:"Restart"
+      }, e("i", { className:"lni lni-refresh-circle-1-clockwise", style:{fontSize:12} })),
+      e("div", { style:{ flex:1 } }),
           e("div", { style:{ fontSize:9, color:b.color+"cc", fontFamily:"'JetBrains Mono', 'SF Mono', monospace", fontWeight:700 } }, b.label)
         ),
         e("div", { style:{ padding:8, display:"flex", flexDirection:"column", gap:4 } },

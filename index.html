@@ -50,8 +50,11 @@
   .sidenav details[open] summary::after { transform: rotate(45deg); }
   .sidenav details + details summary { padding-top: 12px; }
   .sidenav details:first-of-type summary { padding-top: 4px; }
-
-  .container { max-width: 760px; margin: 52px auto 0; }
+  .sidenav::-webkit-scrollbar { width: 6px; }
+  .sidenav::-webkit-scrollbar-track { background: transparent; }
+  .sidenav::-webkit-scrollbar-thumb { background: #2a2a38; border-radius: 3px; }
+  .sidenav::-webkit-scrollbar-thumb:hover { background: #38384a; }
+  .sidenav { scrollbar-width: thin; scrollbar-color: #2a2a38 transparent; }  .container { max-width: 760px; margin: 52px auto 0; }
   h1 { font-size: 32px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; color: #f0f0f7; }
   .subtitle { color: #8888aa; font-size: 15px; margin-bottom: 32px; line-height: 1.6; }
 
@@ -125,6 +128,7 @@
     <a href="error-propagation/">Error Propagation</a>
     <a href="web-workers/">Web Workers</a>
     <a href="prototypal-inheritance/">Prototypal Inheritance</a>
+    <a href="promises/">Promises</a>
   </details>
   <details>
     <summary>Browser</summary>
@@ -180,6 +184,7 @@ const ARTICLES = [
   { cat: "JavaScript", tag: "js", title: "Error Propagation", href: "error-propagation/", desc: "Trace how errors travel up the call stack, through try/catch/finally, callbacks, promises, and async/await." },
   { cat: "JavaScript", tag: "js", title: "Web Workers", href: "web-workers/", desc: "See how Web Workers bring real parallelism to JavaScript — postMessage, structured clone, transferables, and SharedArrayBuffer." },
   { cat: "JavaScript", tag: "js", title: "Prototypal Inheritance", href: "prototypal-inheritance/", desc: "Walk the prototype chain — Object.create, constructor functions, ES6 class sugar, extends/super, and mixins." },
+  { cat: "JavaScript", tag: "js", title: "Promises", href: "promises/", desc: "Step through four promise puzzles — executor timing, chaining with return values, error propagation through .catch(), and Promise.all ordering." },
   { cat: "Browser", tag: "browser", title: "Critical Rendering Path", href: "critical-rendering-path/", desc: "Follow a page from HTML to pixels — DOM, CSSOM, render tree, layout, paint, composite, and how to optimize each step." },
   { cat: "Browser", tag: "browser", title: "Reflow vs Repaint", href: "reflow-vs-repaint/", desc: "Understand which CSS changes trigger reflow, repaint, or composite-only — and how to avoid layout thrashing." },
   { cat: "Browser", tag: "browser", title: "CSS Box Model & Layout", href: "css-box-model/", desc: "Visualize content, padding, border, and margin — box-sizing, margin collapse, flexbox, grid, and positioning." },

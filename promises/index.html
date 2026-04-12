@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JS Promises</title>
+<link href="https://cdn.lineicons.com/5.0/lineicons.css" rel="stylesheet">
+<link rel="preconnect" href="https://api.fontshare.com">
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111118;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px 16px 24px 196px;
+    font-family: 'Satoshi', system-ui, -apple-system, sans-serif;
+    font-size: 15px;
+  }
+  #root { width: 100%; max-width: 1320px; }
+
+  code, .code-pill {
+    font-family: 'JetBrains Mono', 'SF Mono', monospace;
+    font-size: 0.88em;
+    padding: 2px 7px;
+    background: #23232e;
+    border: 1px solid #2f2f3c;
+    border-radius: 5px;
+    color: #e8e8f0;
+    white-space: nowrap;
+  }
+  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: 'Satoshi', system-ui, sans-serif; }
+  .topnav a { text-decoration: none; color: #8888aa; font-size: 13px; transition: color 0.2s; }
+  .topnav a:hover { color: #e8e8f0; }
+  .topnav .name { font-weight: 600; color: #e8e8f0; font-size: 13px; }
+  .topnav .sep { color: #38384a; font-size: 12px; }
+  .topnav .current { color: #7c6fcd; font-size: 13px; font-weight: 500; }
+  .sidenav { position: fixed; top: 38px; left: 0; width: 180px; height: calc(100vh - 38px); background: #111118; border-right: 1px solid #2a2a38; padding: 14px 0; overflow-y: auto; z-index: 200; font-family: 'Satoshi', system-ui, sans-serif; }
+  .sidenav a { display: block; padding: 6px 16px; font-size: 11px; color: #8888aa; text-decoration: none; transition: color 0.2s, background 0.2s; border-left: 2px solid transparent; }
+  .sidenav a:hover { color: #e8e8f0; background: rgba(124,111,205,0.06); }
+  .sidenav a.active { color: #a99cf0; border-left-color: #7c6fcd; background: rgba(124,111,205,0.1); font-weight: 600; }
+  .sidenav .nav-section { padding: 8px 16px 4px; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #44445a; }
+  .sidenav .nav-section:first-child { padding-top: 4px; }
+  .sidenav details { margin: 0; }
+  .sidenav summary { padding: 8px 16px 4px; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #44445a; cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; user-select: none; transition: color 0.2s; }
+  .sidenav summary::-webkit-details-marker { display: none; }
+  .sidenav summary:hover { color: #8888aa; }
+  .sidenav summary::after { content: ""; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(-45deg); transition: transform 0.2s; margin-right: 2px; }
+  .sidenav details[open] summary::after { transform: rotate(45deg); }
+  .sidenav details + details summary { padding-top: 12px; }
+  .sidenav details:first-of-type summary { padding-top: 4px; }
+  .sidenav::-webkit-scrollbar { width: 6px; }
+  .sidenav::-webkit-scrollbar-track { background: transparent; }
+  .sidenav::-webkit-scrollbar-thumb { background: #2a2a38; border-radius: 3px; }
+  .sidenav::-webkit-scrollbar-thumb:hover { background: #38384a; }
+  .sidenav { scrollbar-width: thin; scrollbar-color: #2a2a38 transparent; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="../" class="name">Sharon Zhou</a>
+  <span class="sep">/</span>
+  <a href="../">Animations</a>
+  <span class="sep">/</span>
+  <span class="current">Promises</span>
+</nav>
+<nav class="sidenav">
+  <details open>
+    <summary>JavaScript</summary>
+    <a href="../event-loop/">Event Loop</a>
+        <a href="../this-keyword/">this Keyword</a>
+        <a href="../hoisting/">Hoisting</a>
+        <a href="../closures/">Closures</a>
+        <a href="../garbage-collection/">Garbage Collection</a>
+        <a href="../event-delegation/">Event Delegation</a>
+        <a href="../iterators-generators/">Iterators & Generators</a>
+        <a href="../xhr-vs-fetch/">XHR vs fetch()</a>
+        <a href="../error-propagation/">Error Propagation</a>
+        <a href="../web-workers/">Web Workers</a>
+        <a href="../prototypal-inheritance/">Prototypal Inheritance</a>
+        <a href="../promises/" class="active">Promises</a>
+  </details>
+  <details>
+    <summary>Browser</summary>
+    <a href="../critical-rendering-path/">Critical Rendering Path</a>
+        <a href="../reflow-vs-repaint/">Reflow vs Repaint</a>
+        <a href="../css-box-model/">CSS Box Model & Layout</a>
+        <a href="../web-security/">Web Security</a>
+        <a href="../request-animation-frame/">requestAnimationFrame</a>
+        <a href="../cors/">CORS</a>
+        <a href="../websocket-vs-sse/">WebSocket vs SSE</a>
+        <a href="../debounce-vs-throttle/">Debounce vs Throttle</a>
+  </details>
+  <details>
+    <summary>Infrastructure</summary>
+    <a href="../vms-vs-docker/">VMs vs Docker</a>
+        <a href="../opentelemetry/">OpenTelemetry</a>
+        <a href="../kubernetes/">Kubernetes</a>
+        <a href="../kafka/">Kafka</a>
+        <a href="../database-indexing/">Database Indexing</a>
+        <a href="../sql-vs-nosql/">SQL vs NoSQL</a>
+        <a href="../load-balancing/">Load Balancing</a>
+        <a href="../caching-strategies/">Caching Strategies</a>
+        <a href="../authentication/">Authentication</a>
+        <a href="../http-versions/">HTTP Versions</a>
+        <a href="../rate-limiting/">Rate Limiting</a>
+        <a href="../database-sharding/">Database Sharding</a>
+        <a href="../microservices-vs-monolith/">Microservices vs Monolith</a>
+  </details>
+</nav>
+<div id="root" style="margin-top: 36px;"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/framer-motion@11/dist/framer-motion.js"></script>
+<script>
+const { useState, useEffect, useRef } = React;
+const { motion, AnimatePresence } = window.Motion;
+const e = React.createElement;
+const M = motion;
+const AP = AnimatePresence;
+const sp = (s=380,d=28) => ({ type:"spring", stiffness:s, damping:d });
+const ez = { duration:0.32, ease:[0.22,1,0.36,1] };
+
+const T = {
+  bg:"#111118", surface:"#18181f", surface2:"#1e1e28",
+  border:"#2a2a38", border2:"#38384a",
+  text1:"#e8e8f0", text2:"#8888aa", text3:"#44445a",
+  purple:"#7c6fcd", purpleL:"#a99cf0",
+  teal:"#3db89a", tealL:"#6dd4b8",
+  coral:"#c4694a", coralL:"#e08a6a",
+  blue:"#4a8fd4", codeBase:"#141428",
+  amber:"#c4a14a", amberL:"#e0c46a",
+};
+
+const TS = {
+  fn:    { color:"#82aaff" },
+  meth:  { color:"#89ddff" },
+  str:   { color:"#c3e88d" },
+  kw:    { color:"#c792ea" },
+  num:   { color:"#f78c6c" },
+  punc:  { color:"#89ddff" },
+  plain: { color:"#a6accd" },
+};
+
+/* ── Code tokens for 4 puzzles ── */
+const CODES = [
+  [ // Puzzle 0: Executor timing
+    [["kw","const"],["plain"," p "],["punc","= "],["kw","new"],["plain"," "],["fn","Promise"],["punc","(("],["plain","resolve"],["punc",", "],["plain","reject"],["punc",") => {"]],
+    [["plain","  "],["fn","console"],["punc","."],["meth","log"],["punc","("],["str","'1'"],["punc",")"]],
+    [["plain","  "],["fn","resolve"],["punc","("],["str","'2'"],["punc",")"]],
+    [["plain","  "],["fn","console"],["punc","."],["meth","log"],["punc","("],["str","'3'"],["punc",")"]],
+    [["punc","})"]],
+    [],
+    [["plain","p"],["punc","."],["meth","then"],["punc","("],["plain","value"],["punc"," => {"]],
+    [["plain","  "],["fn","console"],["punc","."],["meth","log"],["punc","("],["plain","value"],["punc",")"]],
+    [["punc","})"]],
+    [],
+    [["fn","console"],["punc","."],["meth","log"],["punc","("],["str","'4'"],["punc",")"]],
+  ],
+  [ // Puzzle 1: Chaining
+    [["fn","Promise"],["punc","."],["meth","resolve"],["punc","("],["num","1"],["punc",")"]],
+    [["plain","  "],["punc","."],["meth","then"],["punc","("],["plain","val"],["punc"," => {"]],
+    [["plain","    "],["fn","console"],["punc","."],["meth","log"],["punc","("],["plain","val"],["punc",")"]],
+    [["plain","    "],["kw","return"],["plain"," val "],["punc","+ "],["num","1"]],
+    [["plain","  "],["punc","})"]],
+    [["plain","  "],["punc","."],["meth","then"],["punc","("],["plain","val"],["punc"," => {"]],
+    [["plain","    "],["fn","console"],["punc","."],["meth","log"],["punc","("],["plain","val"],["punc",")"]],
+    [["plain","    "],["kw","return"],["plain"," val "],["punc","+ "],["num","1"]],
+    [["plain","  "],["punc","})"]],
+    [["plain","  "],["punc","."],["meth","then"],["punc","("],["plain","val"],["punc"," => {"]],
+    [["plain","    "],["fn","console"],["punc","."],["meth","log"],["punc","("],["plain","val"],["punc",")"]],
+    [["plain","  "],["punc","})"]],
+  ],
+  [ // Puzzle 2: Error handling
+    [["fn","Promise"],["punc","."],["meth","resolve"],["punc","("],["str","'start'"],["punc",")"]],
+    [["plain","  "],["punc","."],["meth","then"],["punc","("],["plain","val"],["punc"," => {"]],
+    [["plain","    "],["fn","console"],["punc","."],["meth","log"],["punc","("],["plain","val"],["punc",")"]],
+    [["plain","    "],["kw","throw"],["plain"," "],["kw","new"],["plain"," "],["fn","Error"],["punc","("],["str","'oops'"],["punc",")"]],
+    [["plain","  "],["punc","})"]],
+    [["plain","  "],["punc","."],["meth","then"],["punc","("],["plain","val"],["punc"," => {"]],
+    [["plain","    "],["fn","console"],["punc","."],["meth","log"],["punc","("],["str","'this runs?'"],["punc",")"]],
+    [["plain","  "],["punc","})"]],
+    [["plain","  "],["punc","."],["meth","catch"],["punc","("],["plain","err"],["punc"," => {"]],
+    [["plain","    "],["fn","console"],["punc","."],["meth","log"],["punc","("],["plain","err"],["punc","."],["plain","message"],["punc",")"]],
+    [["plain","  "],["punc","})"]],
+    [["plain","  "],["punc","."],["meth","then"],["punc","("],["plain","val"],["punc"," => {"]],
+    [["plain","    "],["fn","console"],["punc","."],["meth","log"],["punc","("],["str","'after catch'"],["punc",")"]],
+    [["plain","  "],["punc","})"]],
+  ],
+  [ // Puzzle 3: Promise.all
+    [["kw","const"],["plain"," p1 "],["punc","= "],["fn","Promise"],["punc","."],["meth","resolve"],["punc","("],["str","'a'"],["punc",")"]],
+    [["kw","const"],["plain"," p2 "],["punc","= "],["kw","new"],["plain"," "],["fn","Promise"],["punc","("],["plain","resolve"],["punc"," =>"]],
+    [["plain","  "],["fn","setTimeout"],["punc","(() => "],["fn","resolve"],["punc","("],["str","'b'"],["punc","), "],["num","100"],["punc","})"]],
+    [["kw","const"],["plain"," p3 "],["punc","= "],["fn","Promise"],["punc","."],["meth","resolve"],["punc","("],["str","'c'"],["punc",")"]],
+    [],
+    [["fn","Promise"],["punc","."],["meth","all"],["punc","(["],["plain","p1"],["punc",", "],["plain","p2"],["punc",", "],["plain","p3"],["punc","])."],["meth","then"],["punc","("],["plain","vals"],["punc"," => {"]],
+    [["plain","  "],["fn","console"],["punc","."],["meth","log"],["punc","("],["plain","vals"],["punc",")"]],
+    [["punc","})"]],
+    [],
+    [["fn","console"],["punc","."],["meth","log"],["punc","("],["str","'sync'"],["punc",")"]],
+  ],
+];
+
+/* ── Chain node styles ── */
+const CS = {
+  wait: { bg:"#1a1a28", bd:"#38384a", tx:"#8888aa", dot:"#38384a" },
+  run:  { bg:"#1e1a2e", bd:T.purple,  tx:T.purpleL, dot:T.purple },
+  done: { bg:"#0e1e18", bd:T.teal,    tx:T.tealL,   dot:T.teal },
+  skip: { bg:"#1a1a1e", bd:"#2a2a38", tx:"#555568",  dot:"#2a2a38" },
+  err:  { bg:"#221814", bd:T.coral,   tx:T.coralL,   dot:T.coral },
+};
+
+/* ── Console output items ── */
+const O={
+  p0_1:{id:"p0_1",t:'"1"',c:T.tealL}, p0_3:{id:"p0_3",t:'"3"',c:T.tealL},
+  p0_4:{id:"p0_4",t:'"4"',c:T.tealL}, p0_2:{id:"p0_2",t:'"2"',c:T.coralL},
+  p1_1:{id:"p1_1",t:"1",c:T.tealL},   p1_2:{id:"p1_2",t:"2",c:T.tealL},
+  p1_3:{id:"p1_3",t:"3",c:T.tealL},
+  p2_s:{id:"p2_s",t:'"start"',c:T.tealL},  p2_o:{id:"p2_o",t:'"oops"',c:T.coralL},
+  p2_a:{id:"p2_a",t:'"after catch"',c:T.tealL},
+  p3_s:{id:"p3_s",t:'"sync"',c:T.tealL},   p3_r:{id:"p3_r",t:"['a','b','c']",c:T.coralL},
+};
+
+const G={id:"g",label:"global()",tier:"base"};
+const TIER = {
+  base:    { bg:"#1a1a28", bd:T.border2, tx:T.text2 },
+  sync:    { bg:"#141e2e", bd:T.blue,    tx:"#82b4e8" },
+  promise: { bg:"#221814", bd:T.coral,   tx:T.coralL },
+};
+
+const SCENES = [
+  { id:0, act:"01", title:"Promises", sub:"**The building block of async JavaScript.** A Promise represents a value that may not exist yet — pending, fulfilled, or rejected. Four puzzles show exactly how they work.", puzzle:0, stack:[], micro:[], chain:[], hl:[], out:[], loop:false, focus:[] },
+
+  { id:1, act:"02", title:"The executor runs synchronously", sub:"**new Promise() calls its executor function immediately — not asynchronously.** The function body runs on the current call stack, just like any other code. console.log('1') fires right away.", puzzle:0,
+    stack:[{id:"exec",label:"executor()",tier:"sync"},G], micro:[], hl:[0,1], out:[O.p0_1],
+    chain:[{id:"p",label:"new Promise()",state:"run"}], loop:false, focus:["stack","chain"] },
+
+  { id:2, act:"03", title:"resolve() schedules, doesn't pause", sub:"**resolve('2') marks the promise as fulfilled and schedules the .then() callback as a microtask.** But the executor keeps running — console.log('3') fires next, not the .then().", puzzle:0,
+    stack:[{id:"exec",label:"executor()",tier:"sync"},G],
+    micro:[{id:"m1",label:".then(value) cb"}], hl:[2,3], out:[O.p0_1,O.p0_3],
+    chain:[{id:"p",label:"p",state:"done",value:"fulfilled: '2'"},{id:"then",label:".then(value)",state:"wait"}],
+    loop:false, focus:["chain","micro"] },
+
+  { id:3, act:"04", title:"Synchronous code finishes first", sub:"**console.log('4') runs before any .then() callback.** The .then() is a microtask sitting in the queue. All synchronous code completes before microtasks drain.", puzzle:0,
+    stack:[{id:"cl4",label:'console.log("4")',tier:"sync"},G],
+    micro:[{id:"m1",label:".then(value) cb"}], hl:[10], out:[O.p0_1,O.p0_3,O.p0_4],
+    chain:[{id:"p",label:"p",state:"done",value:"fulfilled: '2'"},{id:"then",label:".then(value)",state:"wait"}],
+    loop:false, focus:["stack","console"] },
+
+  { id:4, act:"05", title:"Microtask drains — '2' prints last", sub:"**Stack empties. Microtask queue drains. .then(value) fires, logging '2'.** Output: 1, 3, 4, 2. The executor is synchronous. Only the .then() callback is async.", puzzle:0,
+    stack:[{id:"thencb",label:".then(value => ...)",tier:"promise"}],
+    micro:[], hl:[6,7,8], out:[O.p0_1,O.p0_3,O.p0_4,O.p0_2],
+    chain:[{id:"p",label:"p",state:"done",value:"fulfilled: '2'"},{id:"then",label:".then(value)",state:"run"}],
+    loop:true, focus:["stack","console","chain"] },
+
+  { id:5, act:"06", title:"Promise chaining", sub:"**Each .then() returns a new promise, fulfilled with the callback's return value.** The next .then() in the chain receives whatever the previous one returned. Promise.resolve(1) starts the chain with value 1.", puzzle:1,
+    stack:[], micro:[{id:"m_t1",label:".then(1) cb"}], hl:[0], out:[],
+    chain:[{id:"c0",label:"Promise.resolve(1)",state:"done",value:"1"},
+           {id:"c1",label:".then(val)",state:"wait"},
+           {id:"c2",label:".then(val)",state:"wait"},
+           {id:"c3",label:".then(val)",state:"wait"}],
+    loop:false, focus:["chain"] },
+
+  { id:6, act:"07", title:"Values flow through the chain", sub:"**val=1 enters the first .then(), logs 1, returns val+1=2.** That return value fulfills the promise returned by this .then(), queueing the next callback. val=2 enters the second .then(), logs 2, returns 3.", puzzle:1,
+    stack:[{id:"t2cb",label:".then(val => ...)",tier:"promise"}],
+    micro:[], hl:[1,2,3,4,5,6,7,8], out:[O.p1_1,O.p1_2],
+    chain:[{id:"c0",label:"Promise.resolve(1)",state:"done",value:"1"},
+           {id:"c1",label:".then(val)",state:"done",value:"returns 2"},
+           {id:"c2",label:".then(val)",state:"done",value:"returns 3"},
+           {id:"c3",label:".then(val)",state:"run"}],
+    loop:true, focus:["chain","console"] },
+
+  { id:7, act:"08", title:"Chain complete", sub:"**val=3 enters the last .then(), logs 3.** Output: 1, 2, 3. If a .then() doesn't return anything, the next one receives undefined — a common source of bugs in real code.", puzzle:1,
+    stack:[], micro:[], hl:[], out:[O.p1_1,O.p1_2,O.p1_3],
+    chain:[{id:"c0",label:"Promise.resolve(1)",state:"done",value:"1"},
+           {id:"c1",label:".then(val)",state:"done",value:"returns 2"},
+           {id:"c2",label:".then(val)",state:"done",value:"returns 3"},
+           {id:"c3",label:".then(val)",state:"done"}],
+    loop:false, focus:["console","chain"] },
+
+  { id:8, act:"09", title:"Error propagation", sub:"**When a .then() throws, the returned promise rejects.** The error skips all subsequent .then() handlers until it finds a .catch() — like try/catch, but for async chains.", puzzle:2,
+    stack:[], micro:[{id:"m_e1",label:".then(val) cb"}], hl:[0], out:[],
+    chain:[{id:"e0",label:"Promise.resolve('start')",state:"done",value:"'start'"},
+           {id:"e1",label:".then(val)",state:"wait"},
+           {id:"e2",label:".then(val)",state:"wait"},
+           {id:"e3",label:".catch(err)",type:"catch",state:"wait"},
+           {id:"e4",label:".then(val)",state:"wait"}],
+    loop:false, focus:["chain"] },
+
+  { id:9, act:"10", title:"throw rejects the promise", sub:"**console.log(val) runs, printing 'start'. Then throw new Error('oops') rejects the promise returned by this .then().** The error needs somewhere to land.", puzzle:2,
+    stack:[{id:"t1cb",label:".then(val => ...)",tier:"promise"}],
+    micro:[], hl:[1,2,3,4], out:[O.p2_s],
+    chain:[{id:"e0",label:"Promise.resolve('start')",state:"done",value:"'start'"},
+           {id:"e1",label:".then(val)",state:"err",value:"throws!"},
+           {id:"e2",label:".then(val)",state:"wait"},
+           {id:"e3",label:".catch(err)",type:"catch",state:"wait"},
+           {id:"e4",label:".then(val)",state:"wait"}],
+    loop:true, focus:["chain","console"] },
+
+  { id:10, act:"11", title:".then() skipped, .catch() catches", sub:"**The second .then() is bypassed entirely — errors only stop at .catch() handlers.** The .catch() receives the Error object and logs err.message, printing 'oops'.", puzzle:2,
+    stack:[{id:"ccb",label:".catch(err => ...)",tier:"promise"}],
+    micro:[], hl:[8,9,10], out:[O.p2_s,O.p2_o],
+    chain:[{id:"e0",label:"Promise.resolve('start')",state:"done",value:"'start'"},
+           {id:"e1",label:".then(val)",state:"err",value:"throws!"},
+           {id:"e2",label:".then(val)",state:"skip"},
+           {id:"e3",label:".catch(err)",type:"catch",state:"run",value:"catches error"},
+           {id:"e4",label:".then(val)",state:"wait"}],
+    loop:true, focus:["chain","console"] },
+
+  { id:11, act:"12", title:"Chain recovers after .catch()", sub:"**After .catch() handles the error, the chain continues normally.** .catch() returns a fulfilled promise (with undefined), so the final .then() runs and logs 'after catch'. Output: start, oops, after catch.", puzzle:2,
+    stack:[], micro:[], hl:[], out:[O.p2_s,O.p2_o,O.p2_a],
+    chain:[{id:"e0",label:"Promise.resolve('start')",state:"done",value:"'start'"},
+           {id:"e1",label:".then(val)",state:"err",value:"throws!"},
+           {id:"e2",label:".then(val)",state:"skip"},
+           {id:"e3",label:".catch(err)",type:"catch",state:"done",value:"catches error"},
+           {id:"e4",label:".then(val)",state:"done"}],
+    loop:false, focus:["chain","console"] },
+
+  { id:12, act:"13", title:"Promise.all — all or nothing", sub:"**console.log('sync') runs first — it's synchronous.** p1 and p3 resolve instantly. p2 has a 100ms setTimeout, so it's still pending. Promise.all waits for every promise to settle.", puzzle:3,
+    stack:[{id:"cls",label:'console.log("sync")',tier:"sync"},G],
+    micro:[], hl:[0,1,2,3,9], out:[O.p3_s],
+    chain:[{id:"a1",label:"p1",state:"done",value:"'a'"},
+           {id:"a2",label:"p2",state:"wait",value:"pending..."},
+           {id:"a3",label:"p3",state:"done",value:"'c'"},
+           {id:"aAll",label:"Promise.all()",type:"all",state:"wait"}],
+    loop:false, focus:["chain","console"], parallel:true },
+
+  { id:13, act:"14", title:"Results in insertion order", sub:"**p2 resolves with 'b'. Promise.all fires with ['a', 'b', 'c'] — always in the order promises were passed, not the order they settled.** If any single promise rejects, Promise.all rejects immediately. Use Promise.allSettled() to get all results regardless.", puzzle:3,
+    stack:[{id:"allcb",label:".then(vals => ...)",tier:"promise"}],
+    micro:[], hl:[5,6,7], out:[O.p3_s,O.p3_r],
+    chain:[{id:"a1",label:"p1",state:"done",value:"'a'"},
+           {id:"a2",label:"p2",state:"done",value:"'b'"},
+           {id:"a3",label:"p3",state:"done",value:"'c'"},
+           {id:"aAll",label:"Promise.all()",type:"all",state:"done",value:"['a','b','c']"}],
+    loop:true, focus:["chain","console"], parallel:true },
+
+  { id:14, act:"DONE", title:"Four patterns of promises", sub:"**Executor = sync. .then() = microtask. Errors skip to .catch(). Promise.all preserves order.** These four patterns cover the vast majority of real-world promise behavior.", puzzle:0, stack:[], micro:[], chain:[], hl:[], out:[], loop:false, focus:[], finale:true },
+];
+
+/* ── Detail panels ── */
+const renderBody = (text) => {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((p, i) => {
+    if (p.startsWith("**") && p.endsWith("**")) return e("strong", { key:i, style:{ color:T.text1, fontWeight:600 } }, p.slice(2,-2));
+    return p;
+  });
+};
+
+const DETAILS = {
+  stack: { title:"Call Stack", color:T.blue, sections:[
+    { heading:"What is it?", body:"**A LIFO data structure tracking which function is currently executing.** JavaScript has exactly one call stack — single-threaded." },
+    { heading:"Promise executor", body:"**The callback passed to new Promise() goes on the stack immediately — it's synchronous.** This is the most common misconception about promises." },
+    { heading:"Key insight", body:"**The call stack must be empty before any .then() callback can execute.** Microtasks wait until all synchronous code finishes." },
+  ]},
+  chain: { title:"Promise Chain", color:T.purple, sections:[
+    { heading:"What is it?", body:"**A sequence of .then() and .catch() handlers attached to a promise.** Each handler returns a new promise, enabling chaining." },
+    { heading:"Value flow", body:"**Whatever a .then() callback returns becomes the fulfilled value of the next promise in the chain.** If it returns nothing, the next .then() receives undefined." },
+    { heading:"Error flow", body:"**If a .then() throws or returns a rejected promise, subsequent .then() handlers are skipped until a .catch() is found.** After .catch() handles the error, the chain recovers and continues normally." },
+    { heading:"Promise.all", body:"**Promise.all() takes an array of promises and returns a single promise.** It resolves with an array of results in insertion order — not settlement order. If any promise rejects, the entire Promise.all rejects." },
+  ]},
+  micro: { title:"Microtask Queue", color:T.coral, sections:[
+    { heading:"What is it?", body:"**A high-priority FIFO queue for .then(), .catch(), .finally() callbacks, queueMicrotask(), and MutationObserver.**" },
+    { heading:"How it works", body:"**When a promise settles (fulfills or rejects), its .then()/.catch() callbacks are placed in the microtask queue.** The event loop drains this queue completely before any macrotask (setTimeout, etc.)." },
+    { heading:"Key insight", body:"**Promise.resolve().then(cb) always runs before setTimeout(cb, 0).** Microtasks have strictly higher priority than macrotasks. The spec guarantees this ordering." },
+  ]},
+  console: { title:"Console Output", color:T.tealL, sections:[
+    { heading:"Puzzle 1", body:"1, 3, 4, 2 — Executor is sync (1, 3), outside code runs (4), then microtask drains (2)." },
+    { heading:"Puzzle 2", body:"1, 2, 3 — Each .then() passes its return value to the next." },
+    { heading:"Puzzle 3", body:"'start', 'oops', 'after catch' — Error skips .then(), hits .catch(), chain recovers." },
+    { heading:"Puzzle 4", body:"'sync', ['a','b','c'] — Sync first, then Promise.all in insertion order." },
+  ]},
+  code: { title:"Source Code", color:T.purpleL, sections:[
+    { heading:"Four puzzles", body:"Each puzzle isolates one core promise concept: executor timing, chaining with return values, error propagation through .catch(), and Promise.all composition." },
+    { heading:"Common mistakes", body:"1) Thinking the executor is async — it's synchronous.\n2) Forgetting to return in .then() — the next handler gets undefined.\n3) Not knowing .catch() recovers the chain.\n4) Assuming Promise.all results follow settlement order — they follow insertion order." },
+  ]},
+};
+
+/* ── Components ── */
+const CodePanel = ({ tokens, highlighted }) =>
+  e(M.div, { animate:{ borderColor:highlighted.length>0?T.purple:T.border, boxShadow:highlighted.length>0?"0 0 16px "+T.purple+"30":"0 0 0px transparent" }, transition:{duration:0.4}, style:{ background:T.codeBase, borderRadius:12, overflow:"hidden", border:"1px solid" } },
+    e("div", { style:{ padding:"10px 14px 8px", borderBottom:"1px solid "+T.border, display:"flex", gap:7 } },
+      ...["#ff5f57","#febc2e","#28c840"].map((c,i) => e("div", { key:i, style:{ width:11, height:11, borderRadius:"50%", background:c } }))
+    ),
+    e("div", { style:{ padding:"18px 22px 22px", fontFamily:"'JetBrains Mono','SF Mono','Consolas',monospace", fontSize:12, lineHeight:1.95 } },
+      tokens.map((toks, li) => {
+        const hot = highlighted.includes(li);
+        return e(M.div, { key:li, animate:{ background:hot?"rgba(124,111,205,0.13)":"transparent" }, transition:{duration:0.22},
+          style:{ borderLeft:hot?"2px solid "+T.purple:"2px solid transparent", paddingLeft:8, borderRadius:3, display:"block", minHeight:20 }
+        }, toks.map(([cls,txt],ti) => e("span", { key:ti, style:{ ...TS[cls], whiteSpace:"pre" } }, txt)));
+      })
+    )
+  );
+
+const Frame = ({ item }) => {
+  const s = TIER[item.tier] || TIER.sync;
+  return e(M.div, { key:item.id, layout:true,
+    initial:{opacity:0,y:22,scale:0.84}, animate:{opacity:1,y:0,scale:1}, exit:{opacity:0,y:-18,scale:0.82}, transition:sp(360,24),
+    style:{ padding:"8px 13px", borderRadius:8, border:"1px solid "+s.bd, background:s.bg, color:s.tx, fontSize:11, fontWeight:500, fontFamily:"'JetBrains Mono','SF Mono',monospace", marginBottom:5 }
+  }, item.label);
+};
+
+const Chip = ({ item, color }) => {
+  const bd = color==="coral"?T.coral:T.teal;
+  const bg = color==="coral"?"#1e120e":"#0e1e18";
+  const tx = color==="coral"?T.coralL:T.tealL;
+  return e(M.div, { key:item.id, layout:true,
+    initial:{opacity:0,scale:0.72,x:14}, animate:{opacity:1,scale:1,x:0}, exit:{opacity:0,scale:0.72,x:-14}, transition:sp(400,26),
+    style:{ padding:"5px 12px", borderRadius:20, border:"1px solid "+bd, background:bg, color:tx, fontSize:10, fontWeight:600, fontFamily:"'JetBrains Mono','SF Mono',monospace", flexShrink:0 }
+  }, item.label);
+};
+
+const ChainNode = ({ node }) => {
+  const s = CS[node.state] || CS.wait;
+  const isSkip = node.state === "skip";
+  return e(M.div, { layout:true,
+    initial:{opacity:0,x:14}, animate:{opacity:1,x:0}, exit:{opacity:0,x:-14}, transition:sp(360,24),
+    style:{ display:"flex", alignItems:"center", gap:8, padding:"5px 10px", borderRadius:8, border:"1px solid "+s.bd, background:s.bg }
+  },
+    e("div", { style:{ width:6, height:6, borderRadius:"50%", background:s.dot, flexShrink:0 } }),
+    e("div", { style:{ fontSize:10, fontFamily:"'JetBrains Mono',monospace", color:s.tx, fontWeight:500, flex:1, textDecoration:isSkip?"line-through":"none" } }, node.label),
+    node.value && e("div", { style:{ fontSize:9, fontFamily:"monospace", color:s.tx, opacity:0.8, flexShrink:0 } }, node.value)
+  );
+};
+
+const ChainViz = ({ chain, parallel }) => {
+  if (!chain || chain.length === 0) return e("div", { style:{ fontSize:11, color:T.text3, padding:12, textAlign:"center" } }, "—");
+  if (parallel) {
+    const promises = chain.filter(n => n.type !== "all");
+    const all = chain.find(n => n.type === "all");
+    return e("div", { style:{ display:"flex", flexDirection:"column", gap:0 } },
+      e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:5 } },
+        promises.map(n => e(ChainNode, { key:n.id, node:n }))
+      ),
+      all && e("div", null,
+        e("div", { style:{ display:"flex", justifyContent:"center", padding:"3px 0" } },
+          e("div", { style:{ width:"70%", height:10, borderBottom:"1px solid "+T.border2, borderLeft:"1px solid "+T.border2, borderRight:"1px solid "+T.border2, borderRadius:"0 0 6px 6px" } })
+        ),
+        e(ChainNode, { key:all.id, node:all })
+      )
+    );
+  }
+  return e("div", { style:{ display:"flex", flexDirection:"column", gap:0 } },
+    chain.map((n, i) => e(React.Fragment, { key:n.id },
+      e(ChainNode, { node:n }),
+      i < chain.length-1 && e("div", { style:{ display:"flex", justifyContent:"center", padding:"1px 0" } },
+        e("div", { style:{ width:1, height:8, background: n.state==="err"&&chain[i+1]&&chain[i+1].state==="skip" ? T.coral+"88" : T.border2 } })
+      )
+    ))
+  );
+};
+
+const Panel = ({ label, children, style={}, focused=false, onClick }) =>
+  e(M.div, { onClick,
+    animate:{ borderColor:focused?T.purple:T.border2, boxShadow:focused?"0 0 16px "+T.purple+"30, inset 0 0 12px "+T.purple+"08":"0 0 0px transparent" },
+    transition:{duration:0.4},
+    style:{ borderRadius:12, border:"1.5px solid", background:T.surface, overflow:"hidden", cursor:onClick?"pointer":"default", ...style }
+  },
+    label && e("div", { style:{ padding:"8px 13px", borderBottom:"1px solid "+T.border } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, label)
+    ),
+    e("div", { style:{ padding:12 } }, children)
+  );
+
+const DetailPanel = ({ detailKey, onClose }) => {
+  const d = DETAILS[detailKey];
+  if (!d) return null;
+  return e("div", { style:{ width:340, flexShrink:0, background:T.surface, borderRadius:14, border:"1.5px solid "+d.color+"44", overflow:"hidden", alignSelf:"flex-start", position:"sticky", top:56 } },
+    e("div", { style:{ padding:"14px 18px 12px", borderBottom:"1px solid "+T.border, display:"flex", alignItems:"center", justifyContent:"space-between" } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:8 } },
+        e("div", { style:{ width:8, height:8, borderRadius:"50%", background:d.color } }),
+        e("span", { style:{ fontSize:14, fontWeight:600, color:T.text1 } }, d.title)
+      ),
+      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6, transition:"color 0.2s" }, onMouseEnter:ev=>ev.target.style.color=T.text1, onMouseLeave:ev=>ev.target.style.color=T.text3 }, e("i", { className:"lni lni-xmark" }))
+    ),
+    e("div", { style:{ padding:"16px 18px 20px", maxHeight:"calc(100vh - 140px)", overflowY:"auto" } },
+      d.sections.map((s,i) =>
+        e("div", { key:i, style:{ marginBottom:i<d.sections.length-1?18:0 } },
+          e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, renderBody(s.body))
+        )
+      )
+    )
+  );
+};
+
+/* ── Finale ── */
+const FinaleCard = ({ title, body, color }) =>
+  e(M.div, { initial:{opacity:0,y:16}, animate:{opacity:1,y:0}, transition:ez,
+    style:{ padding:"14px 16px", borderRadius:10, border:"1px solid "+color+"44", background:color+"0a" }
+  },
+    e("div", { style:{ fontSize:12, fontWeight:700, color:color, marginBottom:6, letterSpacing:"-0.01em" } }, title),
+    e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.6 } }, renderBody(body))
+  );
+
+const Finale = () =>
+  e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 } },
+    e(FinaleCard, { title:"Executor = Synchronous", body:"The callback passed to **new Promise()** runs immediately on the call stack. Only **.then()** callbacks are async.", color:T.blue }),
+    e(FinaleCard, { title:".then() = Microtask", body:"**.then()** callbacks are microtasks — they run after all synchronous code finishes, before any setTimeout.", color:T.coral }),
+    e(FinaleCard, { title:"Errors Skip to .catch()", body:"A rejected promise **bypasses .then() handlers** until it finds a **.catch()**. After the catch, the chain recovers.", color:T.coral }),
+    e(FinaleCard, { title:"Promise.all = Insertion Order", body:"Results always match the **order promises were passed**, not the order they settled. One rejection fails the whole thing.", color:T.teal }),
+  );
+
+/* ── App ── */
+function App() {
+  const [si, setSi] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [detail, setDetail] = useState(null);
+  const timer = useRef(null);
+  const sc = SCENES[si];
+
+  useEffect(() => { setPlaying(true); }, []);
+
+  useEffect(() => {
+    if (!playing) return;
+    const d = si===0 ? 3000 : si===SCENES.length-1 ? 99999 : 2600;
+    timer.current = setTimeout(() => { si < SCENES.length-1 ? setSi(i=>i+1) : setPlaying(false); }, d);
+    return () => clearTimeout(timer.current);
+  }, [playing, si]);
+
+  const go = d => { clearTimeout(timer.current); setPlaying(false); setSi(i=>Math.max(0,Math.min(SCENES.length-1,i+d))); };
+  const jump = i => { clearTimeout(timer.current); setPlaying(false); setSi(i); };
+  const togglePlay = () => { if(si===SCENES.length-1){setSi(0);setPlaying(true);}else setPlaying(p=>!p); };
+  const toggleDetail = key => { setDetail(d => d===key ? null : key); clearTimeout(timer.current); setPlaying(false); };
+
+  return e("div", { style:{ display:"flex", gap:16, alignItems:"flex-start", justifyContent:detail?"flex-start":"center" } },
+  e("div", { style:{ width:760, flexShrink:0, background:T.bg, fontFamily:"'Satoshi',system-ui,sans-serif", padding:20, borderRadius:16 } },
+
+    /* Header */
+    e("div", { style:{ marginBottom:18 } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:10, marginBottom:11 } },
+        e(AP, { mode:"wait" },
+          e(M.div, { key:sc.act, initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, exit:{opacity:0}, transition:sp(400,28),
+            style:{ fontSize:9,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:T.purple,background:T.purple+"14",padding:"3px 10px",borderRadius:20,border:"1px solid "+T.purple+"30",flexShrink:0 }
+          }, sc.act)
+        ),
+        e("div", { style:{ flex:1, height:1, background:T.border, borderRadius:99, overflow:"hidden" } },
+          e(M.div, { animate:{width:si/(SCENES.length-1)*100+"%"}, transition:{duration:0.5}, style:{height:"100%",background:T.purple,borderRadius:99} })
+        ),
+        e("span", { style:{ fontSize:10, color:T.text3 } }, (si+1)+" / "+SCENES.length)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.title, initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, exit:{opacity:0,y:-8}, transition:ez,
+          style:{ fontSize:20,fontWeight:600,color:T.text1,marginBottom:4,letterSpacing:"-0.02em" }
+        }, sc.title)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
+          style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
+        }, renderBody(sc.sub))
+      )
+    ),
+
+    /* Main visualization */
+    e("div", { style:{ minHeight:480 } },
+
+    sc.finale ? e(Finale) : e(React.Fragment, null,
+
+    e("div", { style:{ fontSize:9,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:T.text3,textAlign:"center",marginBottom:8,paddingBottom:8,borderBottom:"1px solid "+T.border } }, "promise runtime"),
+
+    /* Row 1: Call Stack | Promise Chain */
+    e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1.45fr", gap:10, marginBottom:10 } },
+      e(Panel, { label:"Call Stack", focused:(sc.focus||[]).includes("stack"), onClick:()=>toggleDetail("stack") },
+        e("div", { style:{ minHeight:100, display:"flex", flexDirection:"column", justifyContent:"flex-end", position:"relative" } },
+          sc.stack.length===0 && e("div", { style:{ position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:T.text3 } }, "empty"),
+          e(AP, null, [...sc.stack].reverse().map(item => e(Frame, { key:item.id, item })))
+        )
+      ),
+      e(Panel, { label:"Promise Chain", focused:(sc.focus||[]).includes("chain"), onClick:()=>toggleDetail("chain") },
+        e(ChainViz, { chain:sc.chain, parallel:sc.parallel })
+      )
+    ),
+
+    /* Row 2: Microtask Queue */
+    e("div", { style:{ marginBottom:10 } },
+      e(Panel, { label:"Microtask Queue", focused:(sc.focus||[]).includes("micro"), onClick:()=>toggleDetail("micro") },
+        e("div", { style:{ display:"flex", flexWrap:"wrap", gap:6, minHeight:28, alignItems:"flex-start", position:"relative" } },
+          sc.micro.length===0 && e("div", { style:{ fontSize:10,color:T.text3 } }, "empty"),
+          e(AP, null, sc.micro.map(item => e(Chip, { key:item.id, item, color:"coral" })))
+        )
+      )
+    ),
+
+    /* Row 3: Code Panel | Console */
+    e("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 } },
+      e("div", { onClick:()=>toggleDetail("code"), style:{cursor:"pointer"} }, e(CodePanel, { tokens:CODES[sc.puzzle], highlighted:sc.hl||[] })),
+      e(Panel, { label:"Console output", focused:(sc.focus||[]).includes("console"), onClick:()=>toggleDetail("console") },
+        e("div", { style:{ fontFamily:"'JetBrains Mono','SF Mono',monospace", minHeight:60 } },
+          sc.out.length===0
+            ? e("div", { style:{ fontSize:11,color:T.text3 } }, "—")
+            : e(AP, null, sc.out.map(item =>
+                e(M.div, { key:item.id, initial:{opacity:0,x:-10}, animate:{opacity:1,x:0}, transition:ez,
+                  style:{ fontSize:12,color:item.c,padding:"2px 0",borderBottom:"1px solid "+T.border }
+                },
+                  e("span", { style:{ color:T.text3,marginRight:7,fontSize:10 } }, "\u203A"), item.t
+                )
+              ))
+        )
+      )
+    )
+
+    )), /* close minHeight wrapper + finale ternary */
+
+    /* Controls */
+    e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginTop:16 } },
+      e("button", { onClick:()=>go(-1), disabled:si===0,
+        style:{ padding:"6px 14px",borderRadius:8,border:"1px solid "+T.border,background:"transparent",color:si===0?T.text3:T.text2,cursor:si===0?"not-allowed":"pointer",fontSize:11,transition:"color 0.2s" }
+      }, "\u2190 Back"),
+      e("button", { onClick:togglePlay,
+        style:{ padding:"6px 18px",borderRadius:8,border:"1px solid "+(playing?T.coral:T.purple)+"44",background:(playing?T.coral:T.purple)+"14",color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all 0.2s" }
+      }, playing ? e("span", { style:{ display:"inline-flex", alignItems:"center", gap:6 } }, e("i", { className:"lni lni-pause" }), "Pause") : si===SCENES.length-1 ? e("span", { style:{ display:"inline-flex", alignItems:"center", gap:6 } }, e("i", { className:"lni lni-refresh-circle-1-clockwise" }), "Replay") : e("span", { style:{ display:"inline-flex", alignItems:"center", gap:6 } }, e("i", { className:"lni lni-play" }), "Play")),
+      e("button", { onClick:()=>go(1), disabled:si===SCENES.length-1,
+        style:{ padding:"6px 14px",borderRadius:8,border:"1px solid "+T.border,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
+      }, "Next \u2192"),
+            e("button", { onClick:()=>{ jump(0); setPlaying(false); },
+        style:{ padding:"6px 10px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:T.text3,cursor:"pointer",fontSize:11,transition:"color 0.2s",marginLeft:4 },
+        title:"Restart"
+      }, e("i", { className:"lni lni-refresh-circle-1-clockwise", style:{fontSize:12} })),
+      e("div", { style:{ flex:1 } }),
+      e("div", { style:{ display:"flex", gap:4, alignItems:"center" } },
+        SCENES.map((_,i) =>
+          e("button", { key:i, onClick:()=>jump(i),
+            style:{ width:i===si?16:5,height:5,borderRadius:99,border:"none",padding:0,background:i===si?T.purple:i<si?T.purple+"55":T.border,cursor:"pointer",transition:"all 0.25s" }
+          })
+        )
+      )
+    )
+  ),
+  detail && e(DetailPanel, { detailKey:detail, onClose:()=>setDetail(null) })
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(e(App));
+</script>
+<script>
+/* sidenav: persist which groups are open across pages */
+(function(){
+  var KEY = "sidenavGroupsOpen";
+  var nav = document.querySelector(".sidenav");
+  if (!nav) return;
+  var stored = null;
+  try { stored = JSON.parse(localStorage.getItem(KEY) || "null"); } catch(e){}
+  var groups = nav.querySelectorAll("details");
+  groups.forEach(function(d){
+    var sum = d.querySelector("summary");
+    if (!sum) return;
+    var name = sum.textContent.trim();
+    if (stored && Object.prototype.hasOwnProperty.call(stored, name)) {
+      d.open = !!stored[name];
+    }
+    d.addEventListener("toggle", function(){
+      var state = {};
+      groups.forEach(function(d2){
+        var s2 = d2.querySelector("summary");
+        if (s2) state[s2.textContent.trim()] = d2.open;
+      });
+      try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){}
+    });
+  });
+})();
+</script>
+</body>
+</html>

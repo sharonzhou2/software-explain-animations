@@ -53,6 +53,11 @@
   .sidenav details[open] summary::after { transform: rotate(45deg); }
   .sidenav details + details summary { padding-top: 12px; }
   .sidenav details:first-of-type summary { padding-top: 4px; }
+  .sidenav::-webkit-scrollbar { width: 6px; }
+  .sidenav::-webkit-scrollbar-track { background: transparent; }
+  .sidenav::-webkit-scrollbar-thumb { background: #2a2a38; border-radius: 3px; }
+  .sidenav::-webkit-scrollbar-thumb:hover { background: #38384a; }
+  .sidenav { scrollbar-width: thin; scrollbar-color: #2a2a38 transparent; }
 </style>
 </head>
 <body>
@@ -77,6 +82,7 @@
         <a href="../error-propagation/">Error Propagation</a>
         <a href="../web-workers/">Web Workers</a>
         <a href="../prototypal-inheritance/">Prototypal Inheritance</a>
+        <a href="../promises/">Promises</a>
   </details>
   <details>
     <summary>Browser</summary>
@@ -1016,6 +1022,10 @@ function App() {
       e("button", { onClick:()=>go(1), disabled:si===SCENES.length-1,
         style:{ padding:"6px 14px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
       }, "Next →"),
+            e("button", { onClick:()=>{ jump(0); setPlaying(false); },
+        style:{ padding:"6px 10px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:T.text3,cursor:"pointer",fontSize:11,transition:"color 0.2s",marginLeft:4 },
+        title:"Restart"
+      }, e("i", { className:"lni lni-refresh-circle-1-clockwise", style:{fontSize:12} })),
       e("div", { style:{ flex:1 } }),
       e("div", { style:{ display:"flex", gap:4, alignItems:"center" } },
         SCENES.map((_,i) =>
