@@ -52,8 +52,11 @@
   .sidenav details[open] summary::after { transform: rotate(45deg); }
   .sidenav details + details summary { padding-top: 12px; }
   .sidenav details:first-of-type summary { padding-top: 4px; }
-</style>
-</head>
+  .sidenav::-webkit-scrollbar { width: 6px; }
+  .sidenav::-webkit-scrollbar-track { background: transparent; }
+  .sidenav::-webkit-scrollbar-thumb { background: #2a2a38; border-radius: 3px; }
+  .sidenav::-webkit-scrollbar-thumb:hover { background: #38384a; }
+  .sidenav { scrollbar-width: thin; scrollbar-color: #2a2a38 transparent; }</head>
 <body>
 <nav class="topnav">
   <a href="../" class="name">Sharon Zhou</a>
@@ -76,6 +79,7 @@
         <a href="../error-propagation/">Error Propagation</a>
         <a href="../web-workers/">Web Workers</a>
         <a href="../prototypal-inheritance/">Prototypal Inheritance</a>
+        <a href="../promises/">Promises</a>
   </details>
   <details open>
     <summary>Browser</summary>
@@ -448,15 +452,15 @@ const BoxModelViz = ({ highlight, onClick }) => {
     e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
       e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, "Box Model")
     ),
-    e("div", { style:{ padding:16, display:"flex", justifyContent:"center", alignItems:"center" } },
-      e("div", { style:{ position:"relative", width:240, height:180 } },
+    e("div", { style:{ padding:20, display:"flex", justifyContent:"center", alignItems:"center" } },
+      e("div", { style:{ position:"relative", width:290, height:220 } },
         /* margin layer */
         e(M.div, {
           animate:{ opacity: active("margin") ? 1 : 0.15, scale: active("margin") ? 1 : 0.98 },
           transition:{ duration:0.5 },
           style:{ position:"absolute", inset:0, borderRadius:8, border:`2px dashed ${BM.margin.fill}`, background:BM.margin.bg, display:"flex", alignItems:"center", justifyContent:"center" }
         },
-          e("span", { style:{ position:"absolute", top:4, left:10, fontSize:9, fontWeight:600, color:BM.margin.fill, opacity:active("margin")?1:0.3 } }, "margin")
+          e("span", { style:{ position:"absolute", top:6, left:12, fontSize:10, fontWeight:600, color:BM.margin.fill, opacity:active("margin")?1:0.3 } }, "margin")
         ),
         /* border layer */
         e(M.div, {
@@ -464,7 +468,7 @@ const BoxModelViz = ({ highlight, onClick }) => {
           transition:{ duration:0.5, delay:0.05 },
           style:{ position:"absolute", top:sizes.margin, left:sizes.margin, right:sizes.margin, bottom:sizes.margin, borderRadius:6, border:`3px solid ${BM.border.fill}`, background:BM.border.bg }
         },
-          e("span", { style:{ position:"absolute", top:3, right:8, fontSize:9, fontWeight:600, color:BM.border.fill, opacity:active("border")?1:0.3 } }, "border")
+          e("span", { style:{ position:"absolute", top:5, right:10, fontSize:10, fontWeight:600, color:BM.border.fill, opacity:active("border")?1:0.3 } }, "border")
         ),
         /* padding layer */
         e(M.div, {
@@ -472,7 +476,7 @@ const BoxModelViz = ({ highlight, onClick }) => {
           transition:{ duration:0.5, delay:0.1 },
           style:{ position:"absolute", top:sizes.margin+sizes.border, left:sizes.margin+sizes.border, right:sizes.margin+sizes.border, bottom:sizes.margin+sizes.border, borderRadius:4, border:`2px solid ${BM.padding.fill}`, background:BM.padding.bg }
         },
-          e("span", { style:{ position:"absolute", bottom:3, left:6, fontSize:9, fontWeight:600, color:BM.padding.fill, opacity:active("padding")?1:0.3 } }, "padding")
+          e("span", { style:{ position:"absolute", bottom:5, left:8, fontSize:10, fontWeight:600, color:BM.padding.fill, opacity:active("padding")?1:0.3 } }, "padding")
         ),
         /* content layer */
         e(M.div, {
@@ -480,7 +484,7 @@ const BoxModelViz = ({ highlight, onClick }) => {
           transition:{ duration:0.5, delay:0.15 },
           style:{ position:"absolute", top:sizes.margin+sizes.border+sizes.padding, left:sizes.margin+sizes.border+sizes.padding, right:sizes.margin+sizes.border+sizes.padding, bottom:sizes.margin+sizes.border+sizes.padding, borderRadius:3, background:`${BM.content.fill}30`, border:`2px solid ${BM.content.fill}`, display:"flex", alignItems:"center", justifyContent:"center" }
         },
-          e("span", { style:{ fontSize:11, fontWeight:700, color:BM.content.fill } }, "content")
+          e("span", { style:{ fontSize:12, fontWeight:700, color:BM.content.fill } }, "content")
         )
       )
     )
