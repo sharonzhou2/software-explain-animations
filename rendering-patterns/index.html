@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rendering Patterns — SSR, CSR, SSG</title>
+<link href="https://cdn.lineicons.com/5.0/lineicons.css" rel="stylesheet">
+<link rel="preconnect" href="https://api.fontshare.com">
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111118;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px 16px 24px 196px;
+    font-family: 'Satoshi', system-ui, -apple-system, sans-serif;
+    font-size: 15px;
+  }
+  #root { width: 100%; max-width: 1320px; }
+  code, .code-pill {
+    font-family: 'JetBrains Mono', 'SF Mono', monospace;
+    font-size: 0.88em; padding: 2px 7px;
+    background: #23232e; border: 1px solid #2f2f3c; border-radius: 5px;
+    color: #e8e8f0; white-space: nowrap;
+  }
+  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: 'Satoshi', system-ui, sans-serif; }
+  .topnav a { text-decoration: none; color: #8888aa; font-size: 13px; transition: color 0.2s; }
+  .topnav a:hover { color: #e8e8f0; }
+  .topnav .name { font-weight: 600; color: #e8e8f0; font-size: 13px; }
+  .topnav .sep { color: #38384a; font-size: 12px; }
+  .topnav .current { color: #7c6fcd; font-size: 13px; font-weight: 500; }
+  .sidenav { position: fixed; top: 38px; left: 0; width: 180px; height: calc(100vh - 38px); background: #111118; border-right: 1px solid #2a2a38; padding: 14px 0; overflow-y: auto; z-index: 200; font-family: 'Satoshi', system-ui, sans-serif; }
+  .sidenav a { display: block; padding: 6px 16px; font-size: 11px; color: #8888aa; text-decoration: none; transition: color 0.2s, background 0.2s; border-left: 2px solid transparent; }
+  .sidenav a:hover { color: #e8e8f0; background: rgba(124,111,205,0.06); }
+  .sidenav a.active { color: #a99cf0; border-left-color: #7c6fcd; background: rgba(124,111,205,0.1); font-weight: 600; }
+  .sidenav details { margin: 0; }
+  .sidenav summary { padding: 8px 16px 4px; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #44445a; cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; user-select: none; transition: color 0.2s; }
+  .sidenav summary::-webkit-details-marker { display: none; }
+  .sidenav summary:hover { color: #8888aa; }
+  .sidenav summary::after { content: ""; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(-45deg); transition: transform 0.2s; margin-right: 2px; }
+  .sidenav details[open] summary::after { transform: rotate(45deg); }
+  .sidenav details + details summary { padding-top: 12px; }
+  .sidenav details:first-of-type summary { padding-top: 4px; }
+  .sidenav::-webkit-scrollbar { width: 6px; }
+  .sidenav::-webkit-scrollbar-track { background: transparent; }
+  .sidenav::-webkit-scrollbar-thumb { background: #2a2a38; border-radius: 3px; }
+  .sidenav::-webkit-scrollbar-thumb:hover { background: #38384a; }
+  .sidenav { scrollbar-width: thin; scrollbar-color: #2a2a38 transparent; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="../" class="name">Sharon Zhou</a>
+  <span class="sep">/</span>
+  <a href="../">Animations</a>
+  <span class="sep">/</span>
+  <span class="current">Rendering Patterns</span>
+</nav>
+<nav class="sidenav">
+  <details open>
+    <summary>JavaScript</summary>
+    <a href="../event-loop/">Event Loop</a>
+    <a href="../this-keyword/">this Keyword</a>
+    <a href="../hoisting/">Hoisting</a>
+    <a href="../closures/">Closures</a>
+    <a href="../garbage-collection/">Garbage Collection</a>
+    <a href="../event-delegation/">Event Delegation</a>
+    <a href="../iterators-generators/">Iterators & Generators</a>
+    <a href="../xhr-vs-fetch/">XHR vs fetch()</a>
+    <a href="../error-propagation/">Error Propagation</a>
+    <a href="../web-workers/">Web Workers</a>
+    <a href="../prototypal-inheritance/">Prototypal Inheritance</a>
+    <a href="../promises/">Promises</a>
+  </details>
+  <details open>
+    <summary>Browser</summary>
+    <a href="../critical-rendering-path/">Critical Rendering Path</a>
+    <a href="../reflow-vs-repaint/">Reflow vs Repaint</a>
+    <a href="../css-box-model/">CSS Box Model & Layout</a>
+    <a href="../web-security/">Web Security</a>
+    <a href="../request-animation-frame/">requestAnimationFrame</a>
+    <a href="../cors/">CORS</a>
+    <a href="../websocket-vs-sse/">WebSocket vs SSE</a>
+    <a href="../debounce-vs-throttle/">Debounce vs Throttle</a>
+    <a href="../rendering-patterns/" class="active">Rendering Patterns</a>
+  </details>
+  <details>
+    <summary>Infrastructure</summary>
+    <a href="../vms-vs-docker/">VMs vs Docker</a>
+    <a href="../opentelemetry/">OpenTelemetry</a>
+    <a href="../kubernetes/">Kubernetes</a>
+    <a href="../kafka/">Kafka</a>
+    <a href="../database-indexing/">Database Indexing</a>
+    <a href="../sql-vs-nosql/">SQL vs NoSQL</a>
+    <a href="../load-balancing/">Load Balancing</a>
+    <a href="../caching-strategies/">Caching Strategies</a>
+    <a href="../authentication/">Authentication</a>
+    <a href="../http-versions/">HTTP Versions</a>
+    <a href="../rate-limiting/">Rate Limiting</a>
+    <a href="../database-sharding/">Database Sharding</a>
+    <a href="../microservices-vs-monolith/">Microservices vs Monolith</a>
+  </details>
+</nav>
+<div id="root" style="margin-top: 36px;"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/framer-motion@11/dist/framer-motion.js"></script>
+<script>
+var useState=React.useState, useEffect=React.useEffect, useRef=React.useRef;
+var motion=window.Motion.motion, AnimatePresence=window.Motion.AnimatePresence;
+var e=React.createElement, M=motion, AP=AnimatePresence;
+var sp=function(s,d){return{type:"spring",stiffness:s||380,damping:d||28};};
+var ez={duration:0.32,ease:[0.22,1,0.36,1]};
+
+var T={
+  bg:"#111118",surface:"#18181f",surface2:"#1e1e28",
+  border:"#2a2a38",border2:"#38384a",
+  text1:"#e8e8f0",text2:"#8888aa",text3:"#44445a",
+  purple:"#7c6fcd",purpleL:"#a99cf0",
+  teal:"#3db89a",tealL:"#6dd4b8",
+  coral:"#c4694a",coralL:"#e08a6a",
+  blue:"#4a8fd4",blueL:"#82b4e8",
+  amber:"#d4a84a",amberL:"#e8c86a",
+  codeBase:"#141428",
+};
+
+var TS={
+  tag:{color:"#f07178"},attr:{color:"#ffcb6b"},str:{color:"#c3e88d"},
+  punc:{color:"#89ddff"},plain:{color:"#a6accd"},cmt:{color:"#546e7a",fontStyle:"italic"},
+  kw:{color:"#c792ea"},
+};
+
+/* ── HTML response tokens for each pattern ── */
+var CODES=[
+  [ /* 0: SSR */
+    [["punc","<"],["kw","!DOCTYPE html"],["punc",">"]],
+    [["punc","<"],["tag","html"],["punc",">"]],
+    [["punc","<"],["tag","body"],["punc",">"]],
+    [["plain","  "],["punc","<"],["tag","nav"],["punc",">"],["plain","Home | About | Blog"],["punc","</"],["tag","nav"],["punc",">"]],
+    [["plain","  "],["punc","<"],["tag","h1"],["punc",">"],["plain","Welcome, Sarah"],["punc","</"],["tag","h1"],["punc",">"]],
+    [["plain","  "],["punc","<"],["tag","p"],["punc",">"],["plain","Your dashboard is ready"],["punc","</"],["tag","p"],["punc",">"]],
+    [["plain","  "],["punc","<"],["tag","div"],["plain"," "],["attr","class"],["punc","="],["str",'"cards"'],["punc",">"]],
+    [["plain","    "],["punc","<"],["tag","div"],["punc",">"],["plain","Recent orders..."],["punc","</"],["tag","div"],["punc",">"]],
+    [["plain","  "],["punc","</"],["tag","div"],["punc",">"]],
+    [["plain","  "],["punc","<"],["tag","script"],["plain"," "],["attr","src"],["punc","="],["str",'"/hydrate.js"'],["punc","></"],["tag","script"],["punc",">"]],
+    [["punc","</"],["tag","body"],["punc",">"]],
+    [["punc","</"],["tag","html"],["punc",">"]],
+  ],
+  [ /* 1: CSR / SPA */
+    [["punc","<"],["kw","!DOCTYPE html"],["punc",">"]],
+    [["punc","<"],["tag","html"],["punc",">"]],
+    [["punc","<"],["tag","body"],["punc",">"]],
+    [["plain","  "],["punc","<"],["tag","div"],["plain"," "],["attr","id"],["punc","="],["str",'"root"'],["punc","></"],["tag","div"],["punc",">"]],
+    [],
+    [["plain","  "],["cmt","<!-- entire UI built by JavaScript -->"]],
+    [["plain","  "],["punc","<"],["tag","script"],["plain"," "],["attr","src"],["punc","="],["str",'"/bundle.js"'],["punc","></"],["tag","script"],["punc",">"]],
+    [["plain","  "],["cmt","<!-- 350 KB download, then API calls -->"]],
+    [["punc","</"],["tag","body"],["punc",">"]],
+    [["punc","</"],["tag","html"],["punc",">"]],
+  ],
+  [ /* 2: SSG */
+    [["cmt","<!-- Built at deploy: 2026-04-14 09:00 -->"]],
+    [["punc","<"],["kw","!DOCTYPE html"],["punc",">"]],
+    [["punc","<"],["tag","html"],["punc",">"]],
+    [["punc","<"],["tag","body"],["punc",">"]],
+    [["plain","  "],["punc","<"],["tag","nav"],["punc",">"],["plain","Home | About | Blog"],["punc","</"],["tag","nav"],["punc",">"]],
+    [["plain","  "],["punc","<"],["tag","h1"],["punc",">"],["plain","10 Tips for Better Code"],["punc","</"],["tag","h1"],["punc",">"]],
+    [["plain","  "],["punc","<"],["tag","article"],["punc",">"]],
+    [["plain","    "],["punc","<"],["tag","p"],["punc",">"],["plain","Here are the best tips..."],["punc","</"],["tag","p"],["punc",">"]],
+    [["plain","  "],["punc","</"],["tag","article"],["punc",">"]],
+    [["plain","  "],["punc","<"],["tag","script"],["plain"," "],["attr","src"],["punc","="],["str",'"/hydrate.js"'],["punc","></"],["tag","script"],["punc",">"]],
+    [["punc","</"],["tag","body"],["punc",">"]],
+    [["punc","</"],["tag","html"],["punc",">"]],
+  ],
+];
+
+/* ── SCENES ── */
+var SCENES=[
+  {id:0,act:"01",title:"Rendering patterns",sub:"**How your app delivers HTML to the browser determines performance, SEO, and user experience.** Three main approaches — SSR, CSR, and SSG — each with different trade-offs.",
+    html:0,hl:[],server:{label:"Idle",state:"idle"},browser:{visible:[],loading:false,interactive:false},timeline:null,seo:null,focus:[]},
+
+  {id:1,act:"02",title:"Server-Side Rendering (SSR)",sub:"**The server builds the full HTML page for every request.** It runs your React/Next.js code, queries the database, and sends back a complete document with all the content already in the HTML.",
+    html:0,hl:[3,4,5,6,7,8],server:{label:"Rendering HTML...",state:"working"},browser:{visible:[],loading:true,interactive:false},timeline:null,seo:null,focus:["server"]},
+
+  {id:2,act:"03",title:"SSR — Full HTML arrives",sub:"**The browser receives a complete page and paints it immediately.** Fast First Contentful Paint (FCP) because meaningful content is in the HTML — no JavaScript needed to see the page.",
+    html:0,hl:[3,4,5,6,7,8],server:{label:"HTML sent",state:"done"},browser:{visible:["nav","h1","p1","cards"],loading:false,interactive:false},timeline:{ttfb:0.3,fcp:0.35,tti:null},seo:null,focus:["browser","timeline"]},
+
+  {id:3,act:"04",title:"SSR — Hydration makes it interactive",sub:"**After painting, JavaScript downloads and 'hydrates' the page** — attaching event listeners to the server-rendered HTML. Only then can buttons click and forms submit. The gap between FCP and TTI is the hydration cost.",
+    html:0,hl:[9],server:{label:"Done",state:"done"},browser:{visible:["nav","h1","p1","cards"],loading:false,interactive:true},timeline:{ttfb:0.3,fcp:0.35,tti:0.75},seo:{score:"good",note:"Full content in initial HTML"},focus:["browser","timeline","seo"]},
+
+  {id:4,act:"05",title:"Client-Side Rendering (CSR / SPA)",sub:"**The server sends a near-empty HTML shell — just a div and a script tag.** JavaScript does all the work: downloading, executing, fetching data from APIs, and building the entire DOM in the browser.",
+    html:1,hl:[3],server:{label:"Serving index.html",state:"done"},browser:{visible:[],loading:false,interactive:false},timeline:null,seo:null,focus:["server","code"]},
+
+  {id:5,act:"06",title:"CSR — The blank screen problem",sub:"**The user stares at a blank (or loading) screen while the browser downloads 350KB+ of JavaScript.** Then JS executes, makes API calls to fetch data, and finally renders the page. This can take several seconds on slow connections.",
+    html:1,hl:[6,7],server:{label:"Done",state:"done"},browser:{visible:[],loading:true,interactive:false},timeline:{ttfb:0.08,fcp:null,tti:null},seo:null,focus:["browser","timeline"]},
+
+  {id:6,act:"07",title:"CSR — JavaScript builds everything",sub:"**Once JS finishes, the page appears fully interactive in one shot.** No hydration gap — JS built the DOM from scratch. After the initial load, page navigation is instant (no server round-trips). This is why SPAs feel fast once loaded.",
+    html:1,hl:[3,5,6],server:{label:"Done",state:"done"},browser:{visible:["nav","h1","p1","cards"],loading:false,interactive:true},timeline:{ttfb:0.08,fcp:0.65,tti:0.7},seo:null,focus:["browser","timeline"]},
+
+  {id:7,act:"08",title:"CSR — Poor SEO",sub:"**Search crawlers see an empty div.** Googlebot can execute some JavaScript, but it's unreliable, slow, and uses a separate rendering queue. Content-heavy sites that depend on organic search traffic cannot rely on pure CSR.",
+    html:1,hl:[3,5],server:{label:"Done",state:"done"},browser:{visible:["nav","h1","p1","cards"],loading:false,interactive:true},timeline:{ttfb:0.08,fcp:0.65,tti:0.7},seo:{score:"bad",note:"Crawler sees empty <div id=\"root\">"},focus:["seo","code"]},
+
+  {id:8,act:"09",title:"Static Site Generation (SSG)",sub:"**Pages are pre-rendered to HTML at build/deploy time — not per request.** The build step runs your code once and outputs static .html files. These are deployed to a CDN and served directly, with zero server computation.",
+    html:2,hl:[0],server:{label:"Pre-built at deploy",state:"cdn"},browser:{visible:[],loading:true,interactive:false},timeline:null,seo:null,focus:["server","code"]},
+
+  {id:9,act:"10",title:"SSG — Fastest possible delivery",sub:"**Pre-built HTML served from CDN edge nodes.** No server rendering delay — the response is a static file cached at the network edge closest to the user. The fastest possible TTFB and FCP of any rendering pattern.",
+    html:2,hl:[4,5,6,7,8],server:{label:"CDN edge served",state:"cdn"},browser:{visible:["nav","h1","p1","cards"],loading:false,interactive:false},timeline:{ttfb:0.06,fcp:0.1,tti:null},seo:null,focus:["browser","timeline"]},
+
+  {id:10,act:"11",title:"SSG — Great SEO, fast TTI",sub:"**Full content in the HTML, just like SSR.** Search crawlers see everything. After the static HTML paints, a small hydration script makes it interactive. SSG combines SSR's SEO with CDN-level speed.",
+    html:2,hl:[9],server:{label:"CDN edge served",state:"cdn"},browser:{visible:["nav","h1","p1","cards"],loading:false,interactive:true},timeline:{ttfb:0.06,fcp:0.1,tti:0.45},seo:{score:"good",note:"Full content in initial HTML"},focus:["seo","timeline"]},
+
+  {id:11,act:"12",title:"SSG — The staleness trade-off",sub:"**Content is frozen at build time.** If data changes (new post, updated price), you must rebuild and redeploy. For highly dynamic or personalized content, SSG alone isn't enough. Consider ISR (Incremental Static Regeneration) or hybrid SSR+SSG.",
+    html:2,hl:[0],server:{label:"Built 3 hours ago",state:"cdn"},browser:{visible:["nav","h1","p1","cards"],loading:false,interactive:true},timeline:{ttfb:0.06,fcp:0.1,tti:0.45},seo:{score:"good",note:"Content may be stale"},focus:["server"]},
+
+  {id:12,act:"13",title:"The SEO difference",sub:"**SEO comes down to one question: is the content in the initial HTML response?** SSR and SSG deliver full content that crawlers can index. CSR delivers an empty shell that most crawlers cannot process.",
+    html:1,hl:[3],server:null,browser:null,timeline:null,seo:null,focus:[],compare:true},
+
+  {id:13,act:"DONE",title:"When to use each",sub:"**No single pattern wins everywhere.** The best choice depends on your content, audience, and performance requirements.",
+    html:0,hl:[],server:null,browser:null,timeline:null,seo:null,focus:[],finale:true},
+];
+
+/* ── Detail panels ── */
+var DETAILS={
+  server:{title:"Server Processing",color:T.blue,sections:[
+    {heading:"SSR servers",body:"**Every request triggers server-side code execution.** The server runs your React/Vue/Svelte components, queries databases, and assembles a complete HTML string. This adds latency (TTFB) but ensures the HTML is always fresh."},
+    {heading:"CSR servers",body:"**The server just serves a static index.html file.** No computation per request. The same empty shell goes to every user. All dynamic work happens in the browser."},
+    {heading:"SSG + CDN",body:"**Pages are pre-built once, then cached at CDN edge nodes worldwide.** The server that originally built the page is no longer in the request path — the CDN handles everything."},
+  ]},
+  browser:{title:"Browser Rendering",color:T.teal,sections:[
+    {heading:"With HTML content (SSR/SSG)",body:"**The browser can paint immediately.** HTML is parsed into the DOM, CSS is applied, and the user sees content before JavaScript even starts downloading."},
+    {heading:"Without HTML content (CSR)",body:"**The browser sees an empty div.** It must download, parse, and execute the JS bundle. Then JS makes API calls to fetch data. Only after data returns does the browser have anything to show."},
+    {heading:"Hydration",body:"**The process of making server-rendered HTML interactive.** React (or similar) attaches event listeners to existing DOM nodes instead of creating new ones. The user sees content immediately but can't interact until hydration completes."},
+  ]},
+  timeline:{title:"Performance Metrics",color:T.coral,sections:[
+    {heading:"TTFB (Time to First Byte)",body:"**How long until the browser receives the first byte of the response.** SSR has higher TTFB (server must render). CSR has low TTFB (static file). SSG has the lowest (CDN edge cache)."},
+    {heading:"FCP (First Contentful Paint)",body:"**When the user first sees meaningful content.** SSR/SSG: right after HTML arrives. CSR: after JS downloads, executes, AND fetches data. This is often the biggest difference users notice."},
+    {heading:"TTI (Time to Interactive)",body:"**When the page becomes fully interactive** (buttons work, forms submit). All patterns need JS for this. SSR/SSG have an FCP-to-TTI gap (hydration). CSR's FCP and TTI are nearly simultaneous."},
+  ]},
+  seo:{title:"SEO & Crawlers",color:T.amberL,sections:[
+    {heading:"How crawlers work",body:"**Googlebot fetches your URL and reads the HTML response.** It can execute some JavaScript (in a separate, delayed rendering queue), but this is slow, unreliable, and many other crawlers (Bing, social media previews) skip JS entirely."},
+    {heading:"SSR/SSG advantage",body:"**All content is in the initial HTML.** Crawlers see headings, paragraphs, links, structured data — everything needed for indexing. No JavaScript execution required."},
+    {heading:"CSR disadvantage",body:"**Crawlers see an empty shell.** Even if Googlebot eventually renders the JS, it may take days or weeks. Social media link previews (Twitter, Slack, Discord) never execute JS — they show nothing."},
+  ]},
+  code:{title:"HTML Response",color:T.purpleL,sections:[
+    {heading:"SSR response",body:"Complete HTML document with all content — nav, headings, paragraphs, data — plus a hydration script. Every request generates a fresh page."},
+    {heading:"CSR response",body:"Minimal HTML with an empty <div id=\"root\"> and a large <script> bundle. The same response for every URL. JavaScript builds the entire page client-side."},
+    {heading:"SSG response",body:"Complete HTML document (like SSR) but pre-built at deploy time. Includes a hydration script. Served as a static file from CDN."},
+  ]},
+};
+
+var renderBody=function(text){
+  var parts=text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map(function(p,i){
+    if(p.startsWith("**")&&p.endsWith("**"))return e("strong",{key:i,style:{color:T.text1,fontWeight:600}},p.slice(2,-2));
+    return p;
+  });
+};
+
+/* ── Components ── */
+var CodePanel=function(props){
+  var tokens=props.tokens,highlighted=props.highlighted||[];
+  return e(M.div,{animate:{borderColor:highlighted.length>0?T.purple:T.border,boxShadow:highlighted.length>0?"0 0 16px "+T.purple+"30":"0 0 0px transparent"},transition:{duration:0.4},style:{background:T.codeBase,borderRadius:12,overflow:"hidden",border:"1px solid"}},
+    e("div",{style:{padding:"10px 14px 8px",borderBottom:"1px solid "+T.border,display:"flex",gap:7}},
+      ["#ff5f57","#febc2e","#28c840"].map(function(c,i){return e("div",{key:i,style:{width:11,height:11,borderRadius:"50%",background:c}});})
+    ),
+    e("div",{style:{padding:"14px 18px 16px",fontFamily:"'JetBrains Mono','SF Mono','Consolas',monospace",fontSize:11.5,lineHeight:1.85}},
+      tokens.map(function(toks,li){
+        var hot=highlighted.indexOf(li)!==-1;
+        return e(M.div,{key:li,animate:{background:hot?"rgba(124,111,205,0.13)":"transparent"},transition:{duration:0.22},
+          style:{borderLeft:hot?"2px solid "+T.purple:"2px solid transparent",paddingLeft:8,borderRadius:3,display:"block",minHeight:18}
+        },toks.map(function(t,ti){return e("span",{key:ti,style:Object.assign({},TS[t[0]],{whiteSpace:"pre"})},t[1]);}));
+      })
+    )
+  );
+};
+
+var Panel=function(props){
+  var label=props.label,children=props.children,style=props.style||{},focused=props.focused,onClick=props.onClick;
+  return e(M.div,{onClick:onClick,
+    animate:{borderColor:focused?T.purple:T.border2,boxShadow:focused?"0 0 16px "+T.purple+"30, inset 0 0 12px "+T.purple+"08":"0 0 0px transparent"},
+    transition:{duration:0.4},
+    style:Object.assign({borderRadius:12,border:"1.5px solid",background:T.surface,overflow:"hidden",cursor:onClick?"pointer":"default"},style)
+  },
+    label&&e("div",{style:{padding:"8px 13px",borderBottom:"1px solid "+T.border}},
+      e("span",{style:{fontSize:10,fontWeight:600,letterSpacing:"0.06em",color:T.text2}},label)
+    ),
+    e("div",{style:{padding:12}},children)
+  );
+};
+
+/* Server activity panel */
+var ServerViz=function(props){
+  var s=props.server; if(!s)return null;
+  var colors={idle:{bg:T.surface2,bd:T.border2,tx:T.text3,dot:T.text3},working:{bg:"#141e2e",bd:T.blue,tx:T.blueL,dot:T.blue},done:{bg:"#0e1e18",bd:T.teal,tx:T.tealL,dot:T.teal},cdn:{bg:"#1e1a2e",bd:T.purple,tx:T.purpleL,dot:T.purple}};
+  var c=colors[s.state]||colors.idle;
+  return e(Panel,{label:"Server",focused:(props.focus||[]).indexOf("server")!==-1,onClick:props.onClick},
+    e("div",{style:{display:"flex",alignItems:"center",gap:10,minHeight:36}},
+      e(M.div,{animate:{background:c.dot,boxShadow:s.state==="working"?"0 0 10px "+c.dot:"none"},transition:{duration:0.6,repeat:s.state==="working"?Infinity:0,repeatType:"reverse"},
+        style:{width:10,height:10,borderRadius:"50%",flexShrink:0}}),
+      e(AP,{mode:"wait"},
+        e(M.div,{key:s.label,initial:{opacity:0,y:6},animate:{opacity:1,y:0},exit:{opacity:0,y:-6},transition:ez},
+          e("div",{style:{fontSize:12,fontWeight:600,color:c.tx}},s.label)
+        )
+      )
+    )
+  );
+};
+
+/* Browser preview */
+var ContentBlock=function(props){
+  return e(M.div,{initial:{opacity:0,scaleX:0.3},animate:{opacity:1,scaleX:1},transition:{delay:props.delay||0,duration:0.3,ease:[0.22,1,0.36,1]},
+    style:{width:props.w,height:props.h,background:props.color,borderRadius:3,marginBottom:3,transformOrigin:"left"}});
+};
+
+var BrowserViz=function(props){
+  var b=props.browser; if(!b)return null;
+  var v=b.visible||[],loading=b.loading,interactive=b.interactive;
+  return e(Panel,{label:"Browser",focused:(props.focus||[]).indexOf("browser")!==-1,onClick:props.onClick},
+    e("div",{style:{display:"flex",gap:4,marginBottom:8,padding:"4px 8px",background:T.surface2,borderRadius:6,alignItems:"center"}},
+      e("div",{style:{width:6,height:6,borderRadius:"50%",background:T.coral}}),
+      e("div",{style:{width:6,height:6,borderRadius:"50%",background:T.amber}}),
+      e("div",{style:{width:6,height:6,borderRadius:"50%",background:T.teal}}),
+      e("div",{style:{flex:1,marginLeft:8,padding:"2px 6px",background:T.bg,borderRadius:4,fontSize:8,color:T.text3,fontFamily:"monospace"}},"myapp.com/dashboard")
+    ),
+    e("div",{style:{minHeight:80,background:T.bg,borderRadius:8,padding:8,position:"relative"}},
+      v.length===0&&!loading&&e("div",{style:{display:"flex",alignItems:"center",justifyContent:"center",height:80,fontSize:10,color:T.text3}},"blank page"),
+      v.length===0&&loading&&e("div",{style:{display:"flex",alignItems:"center",justifyContent:"center",height:80,gap:6}},
+        e(M.div,{animate:{rotate:360},transition:{duration:1,repeat:Infinity,ease:"linear"},style:{width:14,height:14,borderRadius:"50%",border:"2px solid "+T.border,borderTopColor:T.purple}}),
+        e("span",{style:{fontSize:9,color:T.text3}},"loading...")
+      ),
+      v.indexOf("nav")!==-1&&e(ContentBlock,{w:"100%",h:5,color:T.purple+"50",delay:0}),
+      v.indexOf("h1")!==-1&&e(ContentBlock,{w:"55%",h:8,color:T.text1+"35",delay:0.08}),
+      v.indexOf("p1")!==-1&&e(ContentBlock,{w:"75%",h:5,color:T.text3+"35",delay:0.16}),
+      v.indexOf("cards")!==-1&&e("div",{style:{display:"flex",gap:5,marginTop:4}},
+        e(ContentBlock,{w:"48%",h:20,color:T.teal+"25",delay:0.24}),
+        e(ContentBlock,{w:"48%",h:20,color:T.blue+"25",delay:0.32})
+      ),
+      interactive&&e(M.div,{initial:{opacity:0},animate:{opacity:1},transition:{duration:0.5},
+        style:{position:"absolute",top:4,right:6,fontSize:8,color:T.purpleL,fontWeight:600,background:T.purple+"22",padding:"2px 6px",borderRadius:4}},"interactive")
+    )
+  );
+};
+
+/* Timeline bar */
+var TimelineViz=function(props){
+  var t=props.timeline;
+  if(!t)return e(Panel,{label:"Loading Timeline",focused:false},e("div",{style:{fontSize:10,color:T.text3,minHeight:30}},"\u2014"));
+  return e(Panel,{label:"Loading Timeline",focused:(props.focus||[]).indexOf("timeline")!==-1,onClick:props.onClick},
+    e("div",{style:{height:16,background:T.bg,borderRadius:8,overflow:"hidden",position:"relative",border:"1px solid "+T.border,marginBottom:8}},
+      t.tti!=null&&e(M.div,{initial:{width:0},animate:{width:t.tti*100+"%"},transition:{duration:0.8,delay:0.2},
+        style:{position:"absolute",left:0,top:0,bottom:0,background:T.purple+"25",borderRight:"2px solid "+T.purple}}),
+      t.fcp!=null&&e(M.div,{initial:{width:0},animate:{width:t.fcp*100+"%"},transition:{duration:0.6,delay:0.1},
+        style:{position:"absolute",left:0,top:0,bottom:0,background:T.teal+"35",borderRight:"2px solid "+T.teal}}),
+      t.ttfb!=null&&e(M.div,{initial:{width:0},animate:{width:t.ttfb*100+"%"},transition:{duration:0.4},
+        style:{position:"absolute",left:0,top:0,bottom:0,background:T.coral+"40",borderRight:"2px solid "+T.coral}})
+    ),
+    e("div",{style:{display:"flex",gap:14,fontSize:9,fontFamily:"'JetBrains Mono',monospace"}},
+      t.ttfb!=null&&e("div",{style:{display:"flex",alignItems:"center",gap:4}},e("div",{style:{width:6,height:6,borderRadius:2,background:T.coral}}),e("span",{style:{color:T.coralL}},"TTFB")),
+      t.fcp!=null&&e("div",{style:{display:"flex",alignItems:"center",gap:4}},e("div",{style:{width:6,height:6,borderRadius:2,background:T.teal}}),e("span",{style:{color:T.tealL}},"FCP")),
+      t.tti!=null&&e("div",{style:{display:"flex",alignItems:"center",gap:4}},e("div",{style:{width:6,height:6,borderRadius:2,background:T.purple}}),e("span",{style:{color:T.purpleL}},"TTI"))
+    )
+  );
+};
+
+/* SEO badge */
+var SEOViz=function(props){
+  var s=props.seo;
+  if(!s)return e(Panel,{label:"SEO / Crawlers",focused:false},e("div",{style:{fontSize:10,color:T.text3,minHeight:24}},"\u2014"));
+  var good=s.score==="good";
+  return e(Panel,{label:"SEO / Crawlers",focused:(props.focus||[]).indexOf("seo")!==-1,onClick:props.onClick},
+    e(M.div,{initial:{opacity:0,y:8},animate:{opacity:1,y:0},transition:ez,style:{display:"flex",alignItems:"center",gap:10,minHeight:24}},
+      e("div",{style:{padding:"3px 10px",borderRadius:6,fontSize:10,fontWeight:700,letterSpacing:"0.04em",
+        background:good?T.teal+"20":T.coral+"20",color:good?T.tealL:T.coralL,border:"1px solid "+(good?T.teal:T.coral)+"44"}},
+        good?"GOOD":"POOR"),
+      e("div",{style:{fontSize:11,color:T.text2,lineHeight:1.4}},s.note)
+    )
+  );
+};
+
+/* Comparison view for scene 12 */
+var CompareView=function(){
+  return e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}},
+    e(M.div,{initial:{opacity:0,x:-16},animate:{opacity:1,x:0},transition:ez,
+      style:{padding:14,borderRadius:10,border:"1px solid "+T.teal+"44",background:T.teal+"08"}},
+      e("div",{style:{fontSize:13,fontWeight:700,color:T.tealL,marginBottom:8}},"SSR / SSG Response"),
+      e("div",{style:{fontSize:10,fontFamily:"'JetBrains Mono',monospace",color:T.text2,lineHeight:1.7,whiteSpace:"pre",background:T.codeBase,padding:10,borderRadius:6}},
+        '<body>\n  <nav>Home | Blog</nav>\n  <h1>Welcome, Sarah</h1>\n  <p>Full content here</p>\n  <div class="cards">...</div>\n</body>'),
+      e("div",{style:{marginTop:8,fontSize:10,color:T.tealL,fontWeight:600}},"Crawler sees: full content")
+    ),
+    e(M.div,{initial:{opacity:0,x:16},animate:{opacity:1,x:0},transition:{delay:0.15,...ez},
+      style:{padding:14,borderRadius:10,border:"1px solid "+T.coral+"44",background:T.coral+"08"}},
+      e("div",{style:{fontSize:13,fontWeight:700,color:T.coralL,marginBottom:8}},"CSR / SPA Response"),
+      e("div",{style:{fontSize:10,fontFamily:"'JetBrains Mono',monospace",color:T.text2,lineHeight:1.7,whiteSpace:"pre",background:T.codeBase,padding:10,borderRadius:6}},
+        '<body>\n  <div id="root"><\/div>\n  <scr'+'ipt src="/bundle.js">\n  <\/scr'+'ipt>\n\n\n<\/body>'),
+      e("div",{style:{marginTop:8,fontSize:10,color:T.coralL,fontWeight:600}},"Crawler sees: empty page")
+    )
+  );
+};
+
+/* Finale cards */
+var FinaleCard=function(props){
+  return e(M.div,{initial:{opacity:0,y:16},animate:{opacity:1,y:0},transition:{delay:props.delay||0,...ez},
+    style:{padding:"14px 16px",borderRadius:10,border:"1px solid "+props.color+"44",background:props.color+"0a"}},
+    e("div",{style:{fontSize:12,fontWeight:700,color:props.color,marginBottom:4}},props.title),
+    e("div",{style:{fontSize:11,color:T.text2,lineHeight:1.6}},renderBody(props.body))
+  );
+};
+
+var Finale=function(){
+  return e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}},
+    e(FinaleCard,{title:"SSR",color:T.teal,delay:0,body:"**Best for: dynamic, personalized pages.** Fresh content per request. Great SEO. Higher server cost and TTFB."}),
+    e(FinaleCard,{title:"CSR / SPA",color:T.coral,delay:0.1,body:"**Best for: apps behind login, dashboards.** Fast after initial load, instant navigation. Poor SEO for public content."}),
+    e(FinaleCard,{title:"SSG",color:T.purple,delay:0.2,body:"**Best for: blogs, docs, marketing pages.** Fastest delivery via CDN. Great SEO. Content fixed at build time."})
+  );
+};
+
+/* Detail panel */
+var DetailPanel=function(props){
+  var d=DETAILS[props.detailKey]; if(!d)return null;
+  return e("div",{style:{width:340,flexShrink:0,background:T.surface,borderRadius:14,border:"1.5px solid "+d.color+"44",overflow:"hidden",alignSelf:"flex-start",position:"sticky",top:56}},
+    e("div",{style:{padding:"14px 18px 12px",borderBottom:"1px solid "+T.border,display:"flex",alignItems:"center",justifyContent:"space-between"}},
+      e("div",{style:{display:"flex",alignItems:"center",gap:8}},
+        e("div",{style:{width:8,height:8,borderRadius:"50%",background:d.color}}),
+        e("span",{style:{fontSize:14,fontWeight:600,color:T.text1}},d.title)
+      ),
+      e("button",{onClick:props.onClose,style:{background:"none",border:"none",color:T.text3,cursor:"pointer",fontSize:16,padding:"2px 6px",borderRadius:6,transition:"color 0.2s"},onMouseEnter:function(ev){ev.target.style.color=T.text1;},onMouseLeave:function(ev){ev.target.style.color=T.text3;}},e("i",{className:"lni lni-xmark"}))
+    ),
+    e("div",{style:{padding:"16px 18px 20px",maxHeight:"calc(100vh - 140px)",overflowY:"auto"}},
+      d.sections.map(function(s,i){
+        return e("div",{key:i,style:{marginBottom:i<d.sections.length-1?18:0}},
+          e("div",{style:{fontSize:11,fontWeight:700,color:d.color,letterSpacing:"0.04em",marginBottom:5,textTransform:"uppercase"}},s.heading),
+          e("div",{style:{fontSize:12,color:T.text2,lineHeight:1.7,whiteSpace:"pre-wrap"}},renderBody(s.body))
+        );
+      })
+    )
+  );
+};
+
+/* ── App ── */
+function App(){
+  var _s=useState(0),si=_s[0],setSi=_s[1];
+  var _p=useState(false),playing=_p[0],setPlaying=_p[1];
+  var _d=useState(null),detail=_d[0],setDetail=_d[1];
+  var timer=useRef(null);
+  var sc=SCENES[si];
+
+  useEffect(function(){setPlaying(true);},[]);
+  useEffect(function(){
+    if(!playing)return;
+    var d=si===0?3000:sc.finale?99999:3200;
+    timer.current=setTimeout(function(){si<SCENES.length-1?setSi(function(i){return i+1;}):setPlaying(false);},d);
+    return function(){clearTimeout(timer.current);};
+  },[playing,si]);
+
+  var go=function(d){clearTimeout(timer.current);setPlaying(false);setSi(function(i){return Math.max(0,Math.min(SCENES.length-1,i+d));});};
+  var jump=function(i){clearTimeout(timer.current);setPlaying(false);setSi(i);};
+  var togglePlay=function(){if(si===SCENES.length-1){setSi(0);setPlaying(true);}else setPlaying(function(p){return !p;});};
+  var toggleDetail=function(key){if(!key)return;setDetail(function(d){return d===key?null:key;});clearTimeout(timer.current);setPlaying(false);};
+
+  return e("div",{style:{display:"flex",gap:16,alignItems:"flex-start",justifyContent:detail?"flex-start":"center"}},
+  e("div",{style:{width:760,flexShrink:0,background:T.bg,fontFamily:"'Satoshi',system-ui,sans-serif",padding:20,borderRadius:16}},
+
+    /* Header */
+    e("div",{style:{marginBottom:18}},
+      e("div",{style:{display:"flex",alignItems:"center",gap:10,marginBottom:11}},
+        e(AP,{mode:"wait"},
+          e(M.div,{key:sc.act,initial:{opacity:0,scale:0.8},animate:{opacity:1,scale:1},exit:{opacity:0},transition:sp(400,28),
+            style:{fontSize:9,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:T.purple,background:T.purple+"14",padding:"3px 10px",borderRadius:20,border:"1px solid "+T.purple+"30",flexShrink:0}
+          },sc.act)
+        ),
+        e("div",{style:{flex:1,height:1,background:T.border,borderRadius:99,overflow:"hidden"}},
+          e(M.div,{animate:{width:si/(SCENES.length-1)*100+"%"},transition:{duration:0.5},style:{height:"100%",background:T.purple,borderRadius:99}})
+        ),
+        e("span",{style:{fontSize:10,color:T.text3}},(si+1)+" / "+SCENES.length)
+      ),
+      e(AP,{mode:"wait"},
+        e(M.div,{key:sc.title,initial:{opacity:0,y:8},animate:{opacity:1,y:0},exit:{opacity:0,y:-8},transition:ez,
+          style:{fontSize:20,fontWeight:600,color:T.text1,marginBottom:4,letterSpacing:"-0.02em"}
+        },sc.title)
+      ),
+      e(AP,{mode:"wait"},
+        e(M.div,{key:sc.sub,initial:{opacity:0},animate:{opacity:1},exit:{opacity:0},transition:{duration:0.25},
+          style:{fontSize:12,color:T.text2,lineHeight:1.65}
+        },renderBody(sc.sub))
+      )
+    ),
+
+    /* Main content */
+    e("div",{style:{minHeight:460}},
+
+    sc.finale?e(Finale):sc.compare?e(CompareView):e(React.Fragment,null,
+
+    e("div",{style:{fontSize:9,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:T.text3,textAlign:"center",marginBottom:8,paddingBottom:8,borderBottom:"1px solid "+T.border}},
+      sc.server&&sc.server.state==="cdn"?"static delivery":"request lifecycle"),
+
+    /* Row 1: Server | Browser */
+    e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1.2fr",gap:10,marginBottom:10}},
+      e(ServerViz,{server:sc.server,focus:sc.focus,onClick:function(){toggleDetail("server");}}),
+      e(BrowserViz,{browser:sc.browser,focus:sc.focus,onClick:function(){toggleDetail("browser");}})
+    ),
+
+    /* Row 2: HTML Response */
+    e("div",{style:{marginBottom:10,cursor:"pointer"},onClick:function(){toggleDetail("code");}},
+      e(CodePanel,{tokens:CODES[sc.html],highlighted:sc.hl})
+    ),
+
+    /* Row 3: Timeline | SEO */
+    e("div",{style:{display:"grid",gridTemplateColumns:"1.5fr 1fr",gap:10}},
+      e(TimelineViz,{timeline:sc.timeline,focus:sc.focus,onClick:function(){toggleDetail("timeline");}}),
+      e(SEOViz,{seo:sc.seo,focus:sc.focus,onClick:function(){toggleDetail("seo");}})
+    )
+
+    )),/* close minHeight + ternary */
+
+    /* Controls */
+    e("div",{style:{display:"flex",alignItems:"center",gap:8,marginTop:16}},
+      e("button",{onClick:function(){go(-1);},disabled:si===0,
+        style:{padding:"6px 14px",borderRadius:8,border:"1px solid "+T.border,background:"transparent",color:si===0?T.text3:T.text2,cursor:si===0?"not-allowed":"pointer",fontSize:11,transition:"color 0.2s"}
+      },"\u2190 Back"),
+      e("button",{onClick:togglePlay,
+        style:{padding:"6px 18px",borderRadius:8,border:"1px solid "+(playing?T.coral:T.purple)+"44",background:(playing?T.coral:T.purple)+"14",color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all 0.2s"}
+      },playing
+        ?e("span",{style:{display:"inline-flex",alignItems:"center",gap:6}},e("i",{className:"lni lni-pause"}),"Pause")
+        :si===SCENES.length-1
+          ?e("span",{style:{display:"inline-flex",alignItems:"center",gap:6}},e("i",{className:"lni lni-refresh-circle-1-clockwise"}),"Replay")
+          :e("span",{style:{display:"inline-flex",alignItems:"center",gap:6}},e("i",{className:"lni lni-play"}),"Play")),
+      e("button",{onClick:function(){go(1);},disabled:si===SCENES.length-1,
+        style:{padding:"6px 14px",borderRadius:8,border:"1px solid "+T.border,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11}
+      },"Next \u2192"),
+      e("div",{style:{flex:1}}),
+      e("div",{style:{display:"flex",gap:4,alignItems:"center"}},
+        SCENES.map(function(_,i){
+          return e("button",{key:i,onClick:function(){jump(i);},
+            style:{width:i===si?16:5,height:5,borderRadius:99,border:"none",padding:0,background:i===si?T.purple:i<si?T.purple+"55":T.border,cursor:"pointer",transition:"all 0.25s"}
+          });
+        })
+      )
+    )
+  ),
+  detail&&e(DetailPanel,{detailKey:detail,onClose:function(){setDetail(null);}})
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(e(App));
+</script>
+<script>
+(function(){
+  var KEY="sidenavGroupsOpen";
+  var nav=document.querySelector(".sidenav");
+  if(!nav)return;
+  var stored=null;
+  try{stored=JSON.parse(localStorage.getItem(KEY)||"null");}catch(e){}
+  var groups=nav.querySelectorAll("details");
+  groups.forEach(function(d){
+    var sum=d.querySelector("summary");
+    if(!sum)return;
+    var name=sum.textContent.trim();
+    if(stored&&Object.prototype.hasOwnProperty.call(stored,name)){d.open=!!stored[name];}
+    d.addEventListener("toggle",function(){
+      var state={};
+      groups.forEach(function(d2){var s2=d2.querySelector("summary");if(s2)state[s2.textContent.trim()]=d2.open;});
+      try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}
+    });
+  });
+})();
+</script>
+</body>
+</html>

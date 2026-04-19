@@ -140,6 +140,7 @@
     <a href="cors/">CORS</a>
     <a href="websocket-vs-sse/">WebSocket vs SSE</a>
     <a href="debounce-vs-throttle/">Debounce vs Throttle</a>
+    <a href="rendering-patterns/">Rendering Patterns</a>
   </details>
   <details>
     <summary>Infrastructure</summary>
@@ -185,6 +186,7 @@ const ARTICLES = [
   { cat: "JavaScript", tag: "js", title: "Web Workers", href: "web-workers/", desc: "See how Web Workers bring real parallelism to JavaScript — postMessage, structured clone, transferables, and SharedArrayBuffer." },
   { cat: "JavaScript", tag: "js", title: "Prototypal Inheritance", href: "prototypal-inheritance/", desc: "Walk the prototype chain — Object.create, constructor functions, ES6 class sugar, extends/super, and mixins." },
   { cat: "JavaScript", tag: "js", title: "Promises", href: "promises/", desc: "Step through four promise puzzles — executor timing, chaining with return values, error propagation through .catch(), and Promise.all ordering." },
+  { cat: "JavaScript", tag: "js", title: "NaN", href: "nan/", desc: "typeof NaN is 'number', NaN !== NaN, isNaN coerces but Number.isNaN doesn't — step through every quirk of Not-a-Number." },
   { cat: "Browser", tag: "browser", title: "Critical Rendering Path", href: "critical-rendering-path/", desc: "Follow a page from HTML to pixels — DOM, CSSOM, render tree, layout, paint, composite, and how to optimize each step." },
   { cat: "Browser", tag: "browser", title: "Reflow vs Repaint", href: "reflow-vs-repaint/", desc: "Understand which CSS changes trigger reflow, repaint, or composite-only — and how to avoid layout thrashing." },
   { cat: "Browser", tag: "browser", title: "CSS Box Model & Layout", href: "css-box-model/", desc: "Visualize content, padding, border, and margin — box-sizing, margin collapse, flexbox, grid, and positioning." },
@@ -193,6 +195,7 @@ const ARTICLES = [
   { cat: "Browser", tag: "browser", title: "CORS", href: "cors/", desc: "Follow the preflight dance — same-origin policy, OPTIONS requests, Access-Control headers, credentials, and common errors." },
   { cat: "Browser", tag: "browser", title: "WebSocket vs SSE", href: "websocket-vs-sse/", desc: "Compare full-duplex WebSocket with server-push SSE — handshake, protocols, reconnection, and when to use each." },
   { cat: "Browser", tag: "browser", title: "Debounce vs Throttle", href: "debounce-vs-throttle/", desc: "Tame rapid events — how each pattern works on a timeline, leading vs trailing edge, and when to use which." },
+  { cat: "Browser", tag: "browser", title: "Rendering Patterns", href: "rendering-patterns/", desc: "SSR vs CSR vs SSG — how each delivers HTML, why SEO differs, and the performance trade-offs of server, client, and static rendering." },
   { cat: "Infrastructure", tag: "infra", title: "VMs vs Docker", href: "vms-vs-docker/", desc: "Build up both architectures layer by layer — hypervisors vs container engines, guest OSes vs shared kernels." },
   { cat: "Infrastructure", tag: "infra", title: "OpenTelemetry", href: "opentelemetry/", desc: "Follow telemetry from instrumentation to backend — traces, metrics, logs, context propagation, and the OTel Collector." },
   { cat: "Infrastructure", tag: "infra", title: "Kubernetes", href: "kubernetes/", desc: "Orchestrate containers at scale — control plane, pods, deployments, services, autoscaling, and the reconciliation loop." },

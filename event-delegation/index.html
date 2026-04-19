@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Event Delegation</title>
+<link href="https://cdn.lineicons.com/5.0/lineicons.css" rel="stylesheet">
 <link rel="preconnect" href="https://api.fontshare.com">
 <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -92,6 +93,7 @@
         <a href="../cors/">CORS</a>
         <a href="../websocket-vs-sse/">WebSocket vs SSE</a>
         <a href="../debounce-vs-throttle/">Debounce vs Throttle</a>
+        <a href="../rendering-patterns/">Rendering Patterns</a>
   </details>
   <details>
     <summary>Infrastructure</summary>
@@ -624,9 +626,9 @@ const DOMTreeViz = ({ tree, onClick }) => {
                          arrowPhase === "bubble"  ? T.amberL : T.amber;
           return e(M.circle, {
             key:"dot-"+i, r:5, fill:dotColor,
-            initial:{ cx:sx, cy:sy },
-            animate:{ cx:[sx,ex], cy:[sy,ey] },
-            transition:{ duration:0.6, delay:i*0.5, repeat:Infinity, repeatDelay:bubbleArrows.length*0.5-0.1, ease:"easeInOut" },
+            initial:{ cx:sx, cy:sy, opacity:0 },
+            animate:{ cx:[sx,ex], cy:[sy,ey], opacity:[0,1,1,0] },
+            transition:{ duration:0.8, delay:i*0.5, repeat:Infinity, repeatDelay:bubbleArrows.length*0.5, ease:"easeInOut" },
           });
         }),
 
@@ -652,7 +654,7 @@ const DOMTreeViz = ({ tree, onClick }) => {
               fill:fillColor, stroke:strokeColor,
               strokeWidth: (isHL||isListener||isNaive) ? 2 : 1,
               animate: isHL ? { opacity:[0.7,1,0.7] } : {},
-              transition: isHL ? { duration:1.5, repeat:Infinity } : {},
+              transition: isHL ? { duration:2, repeat:Infinity, ease:"easeInOut" } : {},
             }),
             e("text", {
               x:n.x, y:n.y+1, textAnchor:"middle", dominantBaseline:"middle",
@@ -692,8 +694,8 @@ const DOMTreeViz = ({ tree, onClick }) => {
 
             /* stopped badge */
             (stopped && n.id === "li2") && e("g", null,
-              e("rect", { x:n.x+nodeW/2+4, y:n.y-8, width:48, height:16, rx:4, fill:T.coral+"30", stroke:T.coral, strokeWidth:1 }),
-              e("text", { x:n.x+nodeW/2+28, y:n.y+1, textAnchor:"middle", dominantBaseline:"middle", fill:T.coralL, fontSize:8, fontWeight:700 }, "STOPPED")
+              e("rect", { x:n.x-24, y:n.y+nodeH/2+4, width:48, height:16, rx:4, fill:T.coral+"30", stroke:T.coral, strokeWidth:1 }),
+              e("text", { x:n.x, y:n.y+nodeH/2+13, textAnchor:"middle", dominantBaseline:"middle", fill:T.coralL, fontSize:8, fontWeight:700 }, "STOPPED")
             )
           );
         }),
@@ -910,7 +912,11 @@ function App() {
       }, e("span", { style:{ display:"inline-flex", alignItems:"center", gap:5 } }, e("i", { className:"lni lni-arrow-left" }), "Back")),
       e("button", { onClick:togglePlay,
         style:{ padding:"6px 18px",borderRadius:8,border:"1px solid "+(playing?T.coral:T.purple)+"44",background:(playing?T.coral:T.purple)+"14",color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all 0.2s" }
-      }, playing ? "\u23f8  Pause" : si===SCENES.length-1 ? "\u21ba  Replay" : "\u25b6  Play"),
+      }, playing
+        ? e("span", { style:{ display:"inline-flex", alignItems:"center", gap:6 } }, e("i", { className:"lni lni-pause" }), "Pause")
+        : si===SCENES.length-1
+          ? e("span", { style:{ display:"inline-flex", alignItems:"center", gap:6 } }, e("i", { className:"lni lni-refresh-circle-1-clockwise" }), "Replay")
+          : e("span", { style:{ display:"inline-flex", alignItems:"center", gap:6 } }, e("i", { className:"lni lni-play" }), "Play")),
       e("button", { onClick:function(){go(1);}, disabled:si===SCENES.length-1,
         style:{ padding:"6px 14px",borderRadius:8,border:"1px solid "+T.border,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
       }, e("span", { style:{ display:"inline-flex", alignItems:"center", gap:5 } }, "Next", e("i", { className:"lni lni-arrow-right" }))),

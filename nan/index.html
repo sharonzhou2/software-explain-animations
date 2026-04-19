@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NaN in JavaScript</title>
+<link href="https://cdn.lineicons.com/5.0/lineicons.css" rel="stylesheet">
+<link rel="preconnect" href="https://api.fontshare.com">
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111118;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px 16px 24px 196px;
+    font-family: 'Satoshi', system-ui, -apple-system, sans-serif;
+    font-size: 15px;
+  }
+  #root { width: 100%; max-width: 1320px; }
+
+  code, .code-pill {
+    font-family: 'JetBrains Mono', 'SF Mono', monospace;
+    font-size: 0.88em;
+    padding: 2px 7px;
+    background: #23232e;
+    border: 1px solid #2f2f3c;
+    border-radius: 5px;
+    color: #e8e8f0;
+    white-space: nowrap;
+  }
+  .topnav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 10px 20px; display: flex; align-items: center; gap: 8px; background: rgba(17,17,24,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a2a38; font-family: 'Satoshi', system-ui, sans-serif; }
+  .topnav a { text-decoration: none; color: #8888aa; font-size: 13px; transition: color 0.2s; }
+  .topnav a:hover { color: #e8e8f0; }
+  .topnav .name { font-weight: 600; color: #e8e8f0; font-size: 13px; }
+  .topnav .sep { color: #38384a; font-size: 12px; }
+  .topnav .current { color: #7c6fcd; font-size: 13px; font-weight: 500; }
+  .sidenav { position: fixed; top: 38px; left: 0; width: 180px; height: calc(100vh - 38px); background: #111118; border-right: 1px solid #2a2a38; padding: 14px 0; overflow-y: auto; z-index: 200; font-family: 'Satoshi', system-ui, sans-serif; }
+  .sidenav a { display: block; padding: 6px 16px; font-size: 11px; color: #8888aa; text-decoration: none; transition: color 0.2s, background 0.2s; border-left: 2px solid transparent; }
+  .sidenav a:hover { color: #e8e8f0; background: rgba(124,111,205,0.06); }
+  .sidenav a.active { color: #a99cf0; border-left-color: #7c6fcd; background: rgba(124,111,205,0.1); font-weight: 600; }
+  .sidenav .nav-section { padding: 8px 16px 4px; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #44445a; }
+  .sidenav .nav-section:first-child { padding-top: 4px; }
+  .sidenav details { margin: 0; }
+  .sidenav summary { padding: 8px 16px 4px; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #44445a; cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; user-select: none; transition: color 0.2s; }
+  .sidenav summary::-webkit-details-marker { display: none; }
+  .sidenav summary:hover { color: #8888aa; }
+  .sidenav summary::after { content: ""; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(-45deg); transition: transform 0.2s; margin-right: 2px; }
+  .sidenav details[open] summary::after { transform: rotate(45deg); }
+  .sidenav details + details summary { padding-top: 12px; }
+  .sidenav details:first-of-type summary { padding-top: 4px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="../" class="name">Sharon Zhou</a>
+  <span class="sep">/</span>
+  <a href="../">Animations</a>
+  <span class="sep">/</span>
+  <span class="current">NaN</span>
+</nav>
+<nav class="sidenav">
+  <details open>
+    <summary>JavaScript</summary>
+    <a href="../event-loop/">Event Loop</a>
+    <a href="../this-keyword/">this Keyword</a>
+    <a href="../hoisting/">Hoisting</a>
+    <a href="../closures/">Closures</a>
+    <a href="../garbage-collection/">Garbage Collection</a>
+    <a href="../event-delegation/">Event Delegation</a>
+    <a href="../iterators-generators/">Iterators & Generators</a>
+    <a href="../xhr-vs-fetch/">XHR vs fetch()</a>
+    <a href="../error-propagation/">Error Propagation</a>
+    <a href="../web-workers/">Web Workers</a>
+    <a href="../prototypal-inheritance/">Prototypal Inheritance</a>
+    <a href="../promises/">Promises</a>
+    <a href="../nan/" class="active">NaN</a>
+  </details>
+  <details>
+    <summary>Browser</summary>
+    <a href="../critical-rendering-path/">Critical Rendering Path</a>
+    <a href="../reflow-vs-repaint/">Reflow vs Repaint</a>
+    <a href="../css-box-model/">CSS Box Model & Layout</a>
+    <a href="../web-security/">Web Security</a>
+    <a href="../request-animation-frame/">requestAnimationFrame</a>
+    <a href="../cors/">CORS</a>
+    <a href="../websocket-vs-sse/">WebSocket vs SSE</a>
+    <a href="../debounce-vs-throttle/">Debounce vs Throttle</a>
+    <a href="../rendering-patterns/">Rendering Patterns</a>
+  </details>
+  <details>
+    <summary>Infrastructure</summary>
+    <a href="../vms-vs-docker/">VMs vs Docker</a>
+    <a href="../opentelemetry/">OpenTelemetry</a>
+    <a href="../kubernetes/">Kubernetes</a>
+    <a href="../kafka/">Kafka</a>
+    <a href="../database-indexing/">Database Indexing</a>
+    <a href="../sql-vs-nosql/">SQL vs NoSQL</a>
+    <a href="../load-balancing/">Load Balancing</a>
+    <a href="../caching-strategies/">Caching Strategies</a>
+    <a href="../authentication/">Authentication</a>
+    <a href="../http-versions/">HTTP Versions</a>
+    <a href="../rate-limiting/">Rate Limiting</a>
+    <a href="../database-sharding/">Database Sharding</a>
+    <a href="../microservices-vs-monolith/">Microservices vs Monolith</a>
+  </details>
+</nav>
+<div id="root" style="margin-top: 36px;"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/framer-motion@11/dist/framer-motion.js"></script>
+<script>
+const { useState, useEffect, useRef } = React;
+const { motion, AnimatePresence } = window.Motion;
+const e = React.createElement;
+const M = motion;
+const AP = AnimatePresence;
+const sp = (s=380,d=28) => ({ type:"spring", stiffness:s, damping:d });
+const ez = { duration:0.32, ease:[0.22,1,0.36,1] };
+
+const T = {
+  bg:"#111118", surface:"#18181f", surface2:"#1e1e28",
+  border:"#2a2a38", border2:"#38384a",
+  text1:"#e8e8f0", text2:"#8888aa", text3:"#44445a",
+  purple:"#7c6fcd", purpleL:"#a99cf0",
+  teal:"#3db89a", tealL:"#6dd4b8",
+  coral:"#c4694a", coralL:"#e08a6a",
+  blue:"#4a8fd4", blueL:"#82b4e8",
+  amber:"#d4a84a", amberL:"#e8c86a",
+  red:"#e05555", redL:"#ff7777",
+  green:"#4ac46a", greenL:"#6ae88a",
+  pink:"#c45a8a", pinkL:"#e87aaa",
+  codeBase:"#141428",
+};
+
+const TS = {
+  fn:{color:"#82aaff"}, meth:{color:"#89ddff"}, str:{color:"#c3e88d"},
+  kw:{color:"#c792ea"}, num:{color:"#f78c6c"}, punc:{color:"#89ddff"},
+  plain:{color:"#a6accd"}, cmt:{color:"#546e7a",fontStyle:"italic"},
+  bool:{color:"#ff5370"}, nan:{color:"#f78c6c",fontWeight:"bold"},
+};
+
+/* ─── SCENES ─── */
+const SCENES = [
+  {
+    id:0, act:"01",
+    title:"What is NaN?",
+    sub:"NaN stands for Not-a-Number. It's the result when a math operation can't produce a meaningful number. But JavaScript has a famous quirk about it...",
+    code:[
+      [["cmt","// NaN = Not-a-Number"]],
+      [["cmt","// It appears when math goes wrong:"]],
+      [["num","0"],["plain"," "],["punc","/"],["plain"," "],["num","0"],["plain","            "],["cmt","// NaN"]],
+      [["fn","parseInt"],["punc","("],["str","'abc'"],["punc",")"],["plain","     "],["cmt","// NaN"]],
+      [["fn","Math"],["punc","."],["meth","sqrt"],["punc","("],["num","-1"],["punc",")"],["plain","    "],["cmt","// NaN"]],
+      [["plain","undefined "],["punc","+"],["plain"," "],["num","1"],["plain","    "],["cmt","// NaN"]],
+    ],
+    viz:"intro",
+  },
+  {
+    id:1, act:"02",
+    title:'typeof NaN === "number"',
+    sub:'Per IEEE 754, NaN is a special floating-point value. JavaScript\'s typeof faithfully reports it as "number" \u2014 because technically, it IS one. Not-a-Number has type number.',
+    code:[
+      [["kw","typeof"],["plain"," "],["num","42"],["plain","          "],["cmt",'// "number"']],
+      [["kw","typeof"],["plain"," "],["str","'hello'"],["plain","     "],["cmt",'// "string"']],
+      [["kw","typeof"],["plain"," "],["bool","true"],["plain","        "],["cmt",'// "boolean"']],
+      [["kw","typeof"],["plain"," "],["bool","undefined"],["plain","   "],["cmt",'// "undefined"']],
+      [["kw","typeof"],["plain"," "],["nan","NaN"],["plain","         "],["cmt",'// "number" [!]']],
+    ],
+    viz:"typeof",
+  },
+  {
+    id:2, act:"03",
+    title:"NaN === NaN is false",
+    sub:"NaN is the only value in JavaScript not equal to itself. This is mandated by IEEE 754 \u2014 if you don't know what a value is, you can't claim two unknowns are the same.",
+    code:[
+      [["num","1"],["plain"," "],["punc","==="],["plain"," "],["num","1"],["plain","             "],["cmt","// true"]],
+      [["str","'a'"],["plain"," "],["punc","==="],["plain"," "],["str","'a'"],["plain","         "],["cmt","// true"]],
+      [["bool","null"],["plain"," "],["punc","==="],["plain"," "],["bool","null"],["plain","       "],["cmt","// true"]],
+      [["nan","NaN"],["plain"," "],["punc","==="],["plain"," "],["nan","NaN"],["plain","         "],["cmt","// false [!]"]],
+    ],
+    viz:"equality",
+  },
+  {
+    id:3, act:"04",
+    title:"Detecting NaN: the problem",
+    sub:'Since NaN !== NaN, you can\'t check for it with ===. So how do you detect it? JavaScript gives you two functions: the global isNaN() and the newer Number.isNaN().',
+    code:[
+      [["kw","const"],["plain"," x "],["punc","="],["plain"," "],["nan","NaN"]],
+      [["plain","x "],["punc","==="],["plain"," "],["nan","NaN"],["plain","   "],["cmt","// false -- broken!"]],
+      [],
+      [["cmt","// Two detection functions:"]],
+      [["fn","isNaN"],["punc","("],["plain","x"],["punc",")"],["plain","        "],["cmt","// global (ES1)"]],
+      [["fn","Number"],["punc","."],["meth","isNaN"],["punc","("],["plain","x"],["punc",")"],["plain"," "],["cmt","// strict (ES6)"]],
+    ],
+    viz:"detect",
+  },
+  {
+    id:4, act:"05",
+    title:"isNaN() coerces first",
+    sub:'The global isNaN() converts its argument to a number via Number() first, THEN checks. This means non-numeric strings like "hello" return true \u2014 even though "hello" is a string, not NaN.',
+    code:[
+      [["fn","isNaN"],["punc","("],["nan","NaN"],["punc",")"],["plain","         "],["cmt","// true"]],
+      [["fn","isNaN"],["punc","("],["str","'hello'"],["punc",")"],["plain","     "],["cmt","// true [!]"]],
+      [["fn","isNaN"],["punc","("],["str","'123'"],["punc",")"],["plain","       "],["cmt","// false"]],
+      [["fn","isNaN"],["punc","("],["bool","undefined"],["punc",")"],["plain"," "],["cmt","// true [!]"]],
+      [],
+      [["cmt","// Because: Number('hello') -> NaN"]],
+      [["cmt","// Then:    isNaN(NaN) -> true"]],
+    ],
+    viz:"isnan",
+  },
+  {
+    id:5, act:"06",
+    title:"Number.isNaN() \u2014 no coercion",
+    sub:"Number.isNaN() does NOT coerce. It returns true only if the value is already the actual NaN value. This is the reliable, modern check \u2014 added in ES6.",
+    code:[
+      [["fn","Number"],["punc","."],["meth","isNaN"],["punc","("],["nan","NaN"],["punc",")"],["plain","        "],["cmt","// true"]],
+      [["fn","Number"],["punc","."],["meth","isNaN"],["punc","("],["str","'hello'"],["punc",")"],["plain","    "],["cmt","// false"]],
+      [["fn","Number"],["punc","."],["meth","isNaN"],["punc","("],["str","'123'"],["punc",")"],["plain","      "],["cmt","// false"]],
+      [["fn","Number"],["punc","."],["meth","isNaN"],["punc","("],["bool","undefined"],["punc",")"],["cmt","// false"]],
+      [],
+      [["cmt","// No coercion step. Just:"]],
+      [["cmt","// Is the value literally NaN? Yes/No"]],
+    ],
+    viz:"numberisnan",
+  },
+  {
+    id:6, act:"07",
+    title:"Side by side comparison",
+    sub:'Same inputs, different answers. The global isNaN() is a footgun because coercion creates false positives. Number.isNaN() is strict and predictable.',
+    code:[
+      [["cmt","//                 isNaN  Number.isNaN"]],
+      [["nan","NaN"],["plain","              "],["bool","true"],["plain","   "],["bool","true"]],
+      [["str","'hello'"],["plain","          "],["bool","true"],["plain","   "],["bool","false"]],
+      [["bool","undefined"],["plain","       "],["bool","true"],["plain","   "],["bool","false"]],
+      [["num","42"],["plain","               "],["bool","false"],["plain","  "],["bool","false"]],
+      [["str","'123'"],["plain","            "],["bool","false"],["plain","  "],["bool","false"]],
+    ],
+    viz:"comparison",
+  },
+  {
+    id:7, act:"08",
+    title:"NaN producers to watch for",
+    sub:"Many operations silently produce NaN. In real codebases \u2014 coordinate math, canvas calculations, parsing user input \u2014 one NaN can propagate through an entire pipeline.",
+    code:[
+      [["num","0"],["plain"," "],["punc","/"],["plain"," "],["num","0"],["plain","                "],["cmt","// NaN"]],
+      [["fn","parseInt"],["punc","("],["str","'abc'"],["punc",")"],["plain","           "],["cmt","// NaN"]],
+      [["fn","Math"],["punc","."],["meth","sqrt"],["punc","("],["num","-1"],["punc",")"],["plain","          "],["cmt","// NaN"]],
+      [["plain","undefined "],["punc","+"],["plain"," "],["num","1"],["plain","          "],["cmt","// NaN"]],
+      [["fn","Number"],["punc","("],["str","'12px'"],["punc",")"],["plain","          "],["cmt","// NaN"]],
+      [["fn","Math"],["punc","."],["meth","log"],["punc","("],["num","-1"],["punc",")"],["plain","           "],["cmt","// NaN"]],
+    ],
+    viz:"producers",
+  },
+  {
+    id:8, act:"DONE",
+    title:"NaN \u2014 the full picture",
+    sub:"NaN is a number that isn't equal to itself. Always use Number.isNaN() to detect it.",
+    code:[], finale:true,
+  },
+];
+
+/* ─── DETAIL CONTENT ─── */
+const DETAILS = {
+  code: {
+    title:"Source Code", color:T.purpleL,
+    sections:[
+      {heading:"About this panel",body:"Each scene shows JavaScript code illustrating the NaN behavior being discussed. Comments show the expected output."},
+    ]
+  },
+  ieee: {
+    title:"IEEE 754", color:T.blue,
+    sections:[
+      {heading:"Why NaN is a number",body:"NaN is defined by the IEEE 754 floating-point standard as a special bit pattern within the number encoding. Since JavaScript's Number type IS IEEE 754 double-precision, NaN lives inside the number type by definition."},
+      {heading:"Why NaN !== NaN",body:"IEEE 754 mandates that NaN is not equal to itself. The rationale: NaN represents an undefined/unrepresentable result (0/0, sqrt(-1)). Since the actual intended value is unknown, you can't claim two unknowns are equal. Before Number.isNaN existed, `x !== x` was the idiomatic way to check for NaN."},
+      {heading:"Signaling vs Quiet NaN",body:"IEEE 754 actually defines two kinds: Signaling NaN (triggers an exception) and Quiet NaN (propagates silently). JavaScript only uses Quiet NaN -- operations with NaN produce NaN without throwing."},
+    ]
+  },
+  coercion: {
+    title:"Type Coercion", color:T.amber,
+    sections:[
+      {heading:"How isNaN coerces",body:"isNaN(value) internally calls Number(value) first. This is the same coercion as the + operator:\n\nNumber('hello') -> NaN\nNumber(undefined) -> NaN\nNumber('123') -> 123\nNumber(true) -> 1\nNumber(null) -> 0\nNumber('') -> 0"},
+      {heading:"Why this is a problem",body:"isNaN('hello') returns true, suggesting 'hello' IS NaN. But it's not NaN -- it's a string. The coercion step creates a false positive. This is why Number.isNaN() was added in ES6."},
+      {heading:"The fix: Number.isNaN",body:"Number.isNaN does no coercion. It checks: is the type 'number' AND is the value NaN? Only the actual NaN value passes both checks. Equivalent to: typeof x === 'number' && x !== x"},
+    ]
+  },
+};
+
+/* ─── SHARED COMPONENTS ─── */
+const CodePanel = ({ tokens }) =>
+  e(M.div, { style:{ background:T.codeBase, borderRadius:12, overflow:"hidden", border:"1px solid "+T.border } },
+    e("div", { style:{ padding:"10px 14px 8px", borderBottom:`1px solid ${T.border}`, display:"flex", gap:7 } },
+      ...["#ff5f57","#febc2e","#28c840"].map((c,i) =>
+        e("div", { key:i, style:{ width:11, height:11, borderRadius:"50%", background:c } })
+      )
+    ),
+    e("div", { style:{ padding:"14px 18px", minHeight:100 } },
+      tokens.map((line, li) =>
+        e("div", { key:li, style:{ lineHeight:1.7, minHeight:20 } },
+          line.map((tok, ti) =>
+            e("span", { key:ti, style:{ fontFamily:"'JetBrains Mono','SF Mono',monospace", fontSize:12, ...(TS[tok[0]]||TS.plain) } }, tok[1])
+          )
+        )
+      )
+    )
+  );
+
+const Panel = ({ label, children, onClick }) =>
+  e("div", {
+    onClick,
+    style:{ borderRadius:12, border:"1.5px solid "+T.border2, background:T.surface, overflow:"hidden", cursor:onClick?"pointer":"default" }
+  },
+    label && e("div", { style:{ padding:"8px 13px", borderBottom:`1px solid ${T.border}` } },
+      e("span", { style:{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:T.text2 } }, label)
+    ),
+    e("div", { style:{ padding:14 } }, children)
+  );
+
+/* ─── ROW: typeof checks ─── */
+const TypeofRow = ({ value, label, result, color, surprise, delay }) =>
+  e(M.div, {
+    initial:{opacity:0,x:-16}, animate:{opacity:1,x:0}, transition:{delay,...sp()},
+    style:{ display:"flex", alignItems:"center", gap:12, padding:"8px 14px", marginBottom:6, borderRadius:8,
+      border:`1px solid ${surprise ? T.coral+"55" : color+"33"}`,
+      background: surprise ? T.coral+"0c" : color+"08",
+    }
+  },
+    e("code", { style:{ color, minWidth:90 } }, value),
+    e("i", { className:"lni lni-arrow-right", style:{ color:T.text3, fontSize:11 } }),
+    e("code", { style:{ color: surprise ? T.coralL : T.text1 } }, '"'+result+'"'),
+    surprise && e(M.span, {
+      initial:{scale:0}, animate:{scale:1}, transition:{delay:delay+0.3,...sp()},
+      style:{ marginLeft:8, fontSize:9, fontWeight:700, color:T.coral, padding:"2px 8px", borderRadius:20, background:T.coral+"18", border:"1px solid "+T.coral+"44" }
+    }, "IEEE 754")
+  );
+
+/* ─── ROW: equality checks ─── */
+const EqualityRow = ({ left, right, result, color, surprise, delay }) =>
+  e(M.div, {
+    initial:{opacity:0,x:-16}, animate:{opacity:1,x:0}, transition:{delay,...sp()},
+    style:{ display:"flex", alignItems:"center", gap:10, padding:"8px 14px", marginBottom:6, borderRadius:8,
+      border:`1px solid ${surprise ? T.coral+"55" : color+"33"}`,
+      background: surprise ? T.coral+"0c" : color+"08",
+    }
+  },
+    e("code", { style:{ color } }, left),
+    e("span", { style:{ fontSize:12, color:T.text3, fontFamily:"'JetBrains Mono','SF Mono',monospace" } }, "==="),
+    e("code", { style:{ color } }, right),
+    e("i", { className:"lni lni-arrow-right", style:{ color:T.text3, fontSize:11 } }),
+    e("span", { style:{ display:"flex", alignItems:"center", gap:4, fontSize:12, fontWeight:700, color: result ? T.green : T.red } },
+      e("i", { className:"lni " + (result ? "lni-check" : "lni-xmark") }),
+      result ? "true" : "false"
+    ),
+    surprise && e(M.span, {
+      initial:{scale:0}, animate:{scale:1}, transition:{delay:delay+0.3,...sp()},
+      style:{ marginLeft:6, fontSize:9, fontWeight:700, color:T.coral, padding:"2px 8px", borderRadius:20, background:T.coral+"18", border:"1px solid "+T.coral+"44" }
+    }, "only value !== itself")
+  );
+
+/* ─── PIPELINE: coercion flow ─── */
+const PipelineRow = ({ input, inputColor, coerced, coerce, result, delay }) =>
+  e(M.div, {
+    initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, transition:{delay,...sp()},
+    style:{ display:"flex", alignItems:"center", gap:8, padding:"7px 0" }
+  },
+    /* input */
+    e("code", { style:{ color:inputColor, minWidth:80 } }, input),
+    /* coercion step (only for isNaN) */
+    coerce && e("i", { className:"lni lni-arrow-right", style:{ color:T.amber, fontSize:10 } }),
+    coerce && e(M.div, {
+      initial:{scaleX:0}, animate:{scaleX:1}, transition:{delay:delay+0.15,...ez},
+      style:{ padding:"3px 8px", borderRadius:5, background:T.amber+"18", border:"1px solid "+T.amber+"44", transformOrigin:"left" }
+    },
+      e("span", { style:{ fontSize:9, color:T.amberL, fontFamily:"'JetBrains Mono','SF Mono',monospace" } }, "Number() \u2192 "+coerced)
+    ),
+    /* arrow to check */
+    e("i", { className:"lni lni-arrow-right", style:{ color:T.text3, fontSize:10 } }),
+    /* NaN check */
+    e("div", { style:{ padding:"3px 8px", borderRadius:5, background:T.purple+"18", border:"1px solid "+T.purple+"44" } },
+      e("span", { style:{ fontSize:9, color:T.purpleL, fontFamily:"'JetBrains Mono','SF Mono',monospace" } }, "=== NaN?")
+    ),
+    /* arrow to result */
+    e("i", { className:"lni lni-arrow-right", style:{ color:T.text3, fontSize:10 } }),
+    /* result */
+    e(M.span, {
+      initial:{scale:0.5,opacity:0}, animate:{scale:1,opacity:1}, transition:{delay:delay+0.3,...sp()},
+      style:{ fontSize:12, fontWeight:700, color: result ? T.green : T.red, display:"flex", alignItems:"center", gap:4 }
+    },
+      e("i", { className:"lni " + (result ? "lni-check" : "lni-xmark") }),
+      result ? "true" : "false"
+    )
+  );
+
+/* ─── COMPARISON TABLE ─── */
+const CompRow = ({ input, isnanResult, numberIsnanResult, surprise, delay }) =>
+  e(M.div, {
+    initial:{opacity:0,x:-10}, animate:{opacity:1,x:0}, transition:{delay,...sp()},
+    style:{ display:"grid", gridTemplateColumns:"100px 80px 100px", gap:12, padding:"7px 10px", marginBottom:4, borderRadius:6, background:T.surface2 }
+  },
+    e("code", { style:{ color:T.text1 } }, input),
+    e("span", { style:{ fontWeight:700, color: isnanResult ? (surprise ? T.coral : T.green) : T.text2, display:"flex", alignItems:"center", gap:4, fontSize:12 } },
+      e("i", { className:"lni " + (isnanResult ? "lni-check" : "lni-xmark"), style:{ fontSize:11 } }),
+      isnanResult ? "true" : "false"
+    ),
+    e("span", { style:{ fontWeight:700, color: numberIsnanResult ? T.green : T.text2, display:"flex", alignItems:"center", gap:4, fontSize:12 } },
+      e("i", { className:"lni " + (numberIsnanResult ? "lni-check" : "lni-xmark"), style:{ fontSize:11 } }),
+      numberIsnanResult ? "true" : "false"
+    )
+  );
+
+/* ─── PRODUCER ROW ─── */
+const ProducerRow = ({ expr, delay }) =>
+  e(M.div, {
+    initial:{opacity:0,x:-10}, animate:{opacity:1,x:0}, transition:{delay,...sp()},
+    style:{ display:"flex", alignItems:"center", gap:10, padding:"6px 12px", marginBottom:5, borderRadius:7, border:"1px solid "+T.coral+"33", background:T.coral+"08" }
+  },
+    e("code", { style:{ color:T.text1, minWidth:160 } }, expr),
+    e("i", { className:"lni lni-arrow-right", style:{ color:T.coral, fontSize:11 } }),
+    e("code", { style:{ color:T.coralL, fontWeight:700 } }, "NaN")
+  );
+
+/* ─── VIZ ROUTER ─── */
+const SceneViz = ({ scene }) => {
+  const v = scene.viz;
+
+  if (v === "intro") {
+    return e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:240, gap:16 } },
+      e(M.div, {
+        animate:{ opacity:[0.5,1,0.5] },
+        transition:{ duration:2, repeat:Infinity },
+        style:{ fontSize:64, fontWeight:900, color:T.coralL, fontFamily:"'JetBrains Mono','SF Mono',monospace", letterSpacing:"-0.04em" }
+      }, "NaN"),
+      e("div", { style:{ fontSize:13, color:T.text2, textAlign:"center", lineHeight:1.6, maxWidth:420 } },
+        "Not a Number... but ", e("code", { style:{color:T.coralL} }, 'typeof NaN === "number"')
+      )
+    );
+  }
+
+  if (v === "typeof") {
+    return e(Panel, { label:"typeof checks" },
+      e(TypeofRow, { value:"42", label:"number", result:"number", color:T.blueL, delay:0 }),
+      e(TypeofRow, { value:'"hello"', label:"string", result:"string", color:T.greenL, delay:0.1 }),
+      e(TypeofRow, { value:"true", label:"boolean", result:"boolean", color:T.purpleL, delay:0.2 }),
+      e(TypeofRow, { value:"undefined", label:"undefined", result:"undefined", color:T.text2, delay:0.3 }),
+      e(TypeofRow, { value:"NaN", label:"nan", result:"number", color:T.coralL, surprise:true, delay:0.45 }),
+    );
+  }
+
+  if (v === "equality") {
+    return e(Panel, { label:"Strict equality (===)" },
+      e(EqualityRow, { left:"1", right:"1", result:true, color:T.blueL, delay:0 }),
+      e(EqualityRow, { left:'"a"', right:'"a"', result:true, color:T.greenL, delay:0.1 }),
+      e(EqualityRow, { left:"null", right:"null", result:true, color:T.text2, delay:0.2 }),
+      e(EqualityRow, { left:"NaN", right:"NaN", result:false, color:T.coralL, surprise:true, delay:0.35 }),
+    );
+  }
+
+  if (v === "detect") {
+    return e("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:20, padding:"20px 0" } },
+      e(M.div, {
+        initial:{scale:0.8,opacity:0}, animate:{scale:1,opacity:1}, transition:sp(),
+        style:{ padding:"14px 28px", borderRadius:12, border:"2px dashed "+T.coral+"66", background:T.coral+"0c", display:"flex", alignItems:"center", gap:14 }
+      },
+        e("code", { style:{ fontSize:22, color:T.coralL, fontWeight:700 } }, "NaN"),
+        e("span", { style:{ fontSize:16, color:T.text3 } }, "==="),
+        e("code", { style:{ fontSize:22, color:T.coralL, fontWeight:700 } }, "NaN"),
+        e("i", { className:"lni lni-arrow-right", style:{ color:T.text3, fontSize:14 } }),
+        e("span", { style:{ fontSize:18, fontWeight:700, color:T.red, display:"flex", alignItems:"center", gap:6 } },
+          e("i", { className:"lni lni-xmark" }), "false"
+        )
+      ),
+      e(M.div, {
+        initial:{opacity:0,y:10}, animate:{opacity:1,y:0}, transition:{delay:0.4,...ez},
+        style:{ fontSize:13, color:T.text2, textAlign:"center" }
+      }, "We need another way to detect NaN..."),
+      e(M.div, {
+        initial:{opacity:0,y:10}, animate:{opacity:1,y:0}, transition:{delay:0.7,...ez},
+        style:{ display:"flex", gap:16 }
+      },
+        e("div", { style:{ padding:"10px 20px", borderRadius:8, border:"1px solid "+T.amber+"55", background:T.amber+"0c" } },
+          e("code", { style:{ color:T.amberL } }, "isNaN()"),
+          e("div", { style:{ fontSize:9, color:T.text3, marginTop:3 } }, "ES1 \u2014 coerces")
+        ),
+        e("div", { style:{ padding:"10px 20px", borderRadius:8, border:"1px solid "+T.teal+"55", background:T.teal+"0c" } },
+          e("code", { style:{ color:T.tealL } }, "Number.isNaN()"),
+          e("div", { style:{ fontSize:9, color:T.text3, marginTop:3 } }, "ES6 \u2014 strict")
+        )
+      )
+    );
+  }
+
+  if (v === "isnan") {
+    return e(Panel, { label:"isNaN() \u2014 coerces, then checks" },
+      e("div", { style:{ padding:"6px 10px", marginBottom:10, borderRadius:6, border:"1px solid "+T.amber+"44", background:T.amber+"0c", fontSize:10, color:T.amberL, textAlign:"center" } },
+        "value \u2192 Number(value) \u2192 is it NaN?"
+      ),
+      e(PipelineRow, { input:"NaN", inputColor:T.coralL, coerced:"NaN", coerce:true, result:true, delay:0 }),
+      e(PipelineRow, { input:'"hello"', inputColor:T.greenL, coerced:"NaN", coerce:true, result:true, delay:0.15 }),
+      e(PipelineRow, { input:'"123"', inputColor:T.greenL, coerced:"123", coerce:true, result:false, delay:0.3 }),
+      e(PipelineRow, { input:"undefined", inputColor:T.text2, coerced:"NaN", coerce:true, result:true, delay:0.45 }),
+    );
+  }
+
+  if (v === "numberisnan") {
+    return e(Panel, { label:"Number.isNaN() \u2014 no coercion" },
+      e("div", { style:{ padding:"6px 10px", marginBottom:10, borderRadius:6, border:"1px solid "+T.teal+"44", background:T.teal+"0c", fontSize:10, color:T.tealL, textAlign:"center" } },
+        "value \u2192 is it literally NaN? (no conversion)"
+      ),
+      e(PipelineRow, { input:"NaN", inputColor:T.coralL, coerce:false, result:true, delay:0 }),
+      e(PipelineRow, { input:'"hello"', inputColor:T.greenL, coerce:false, result:false, delay:0.15 }),
+      e(PipelineRow, { input:'"123"', inputColor:T.greenL, coerce:false, result:false, delay:0.3 }),
+      e(PipelineRow, { input:"undefined", inputColor:T.text2, coerce:false, result:false, delay:0.45 }),
+    );
+  }
+
+  if (v === "comparison") {
+    return e(Panel, { label:"isNaN() vs Number.isNaN()" },
+      e("div", { style:{ display:"grid", gridTemplateColumns:"100px 80px 100px", gap:12, padding:"6px 10px", marginBottom:8, borderBottom:"1px solid "+T.border } },
+        e("span", { style:{ fontSize:10, fontWeight:700, color:T.text3, textTransform:"uppercase", letterSpacing:"0.06em" } }, "Input"),
+        e("span", { style:{ fontSize:10, fontWeight:700, color:T.amberL, textTransform:"uppercase", letterSpacing:"0.06em" } }, "isNaN"),
+        e("span", { style:{ fontSize:10, fontWeight:700, color:T.tealL, textTransform:"uppercase", letterSpacing:"0.06em" } }, "Number.isNaN"),
+      ),
+      e(CompRow, { input:"NaN", isnanResult:true, numberIsnanResult:true, delay:0 }),
+      e(CompRow, { input:'"hello"', isnanResult:true, numberIsnanResult:false, surprise:true, delay:0.1 }),
+      e(CompRow, { input:"undefined", isnanResult:true, numberIsnanResult:false, surprise:true, delay:0.2 }),
+      e(CompRow, { input:"42", isnanResult:false, numberIsnanResult:false, delay:0.3 }),
+      e(CompRow, { input:'"123"', isnanResult:false, numberIsnanResult:false, delay:0.4 }),
+      e(M.div, {
+        initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.6,...ez},
+        style:{ marginTop:10, padding:"8px 12px", borderRadius:6, border:"1px solid "+T.coral+"44", background:T.coral+"0c", fontSize:11, color:T.coralL, textAlign:"center" }
+      }, e("span",null,"Amber rows show where ", e("code",{style:{color:T.amberL}},"isNaN()"), " gives a misleading ", e("code",{style:{color:T.coralL}},"true")))
+    );
+  }
+
+  if (v === "producers") {
+    return e(Panel, { label:"Common NaN producers" },
+      e(ProducerRow, { expr:"0 / 0", delay:0 }),
+      e(ProducerRow, { expr:'parseInt("abc")', delay:0.08 }),
+      e(ProducerRow, { expr:"Math.sqrt(-1)", delay:0.16 }),
+      e(ProducerRow, { expr:"undefined + 1", delay:0.24 }),
+      e(ProducerRow, { expr:'Number("12px")', delay:0.32 }),
+      e(ProducerRow, { expr:"Math.log(-1)", delay:0.4 }),
+      e(M.div, {
+        initial:{opacity:0}, animate:{opacity:1}, transition:{delay:0.6,...ez},
+        style:{ marginTop:10, padding:"8px 12px", borderRadius:6, border:"1px solid "+T.amber+"44", background:T.amber+"0c", fontSize:11, color:T.amberL, textAlign:"center", lineHeight:1.5 }
+      }, "NaN is contagious \u2014 any math with NaN produces NaN. One bad parse can silently corrupt an entire calculation chain.")
+    );
+  }
+
+  return null;
+};
+
+/* ─── FINALE ─── */
+const Finale = () => {
+  const rows = [
+    { n:1, label:'typeof NaN === "number"', sub:"NaN is an IEEE 754 floating-point value \u2014 its type really is 'number'", c:T.blue },
+    { n:2, label:"NaN !== NaN", sub:"The only value in JavaScript not equal to itself \u2014 by spec design", c:T.coral },
+    { n:3, label:"isNaN() coerces", sub:"Calls Number() first, creating false positives for strings and undefined", c:T.amber },
+    { n:4, label:"Number.isNaN() is strict", sub:"No coercion \u2014 true only when the value is literally NaN", c:T.teal },
+    { n:5, label:"Know your NaN sources", sub:"0/0, parseInt('abc'), Math.sqrt(-1), undefined + 1", c:T.blue },
+    { n:"!", label:"Always use Number.isNaN()", sub:"The global isNaN() is a legacy footgun. Number.isNaN() is reliable", c:T.purple },
+  ];
+  return e("div", { style:{ padding:"8px 0" } },
+    rows.map((r,i) => e(M.div, { key:i, initial:{opacity:0,x:-20}, animate:{opacity:1,x:0}, transition:{delay:i*0.12,...ez},
+      style:{ display:"flex", alignItems:"flex-start", gap:12, padding:"11px 14px", marginBottom:8, borderRadius:10, border:`1px solid ${r.c}28`, background:`${r.c}08` }
+    },
+      e("div", { style:{ width:26, height:26, borderRadius:"50%", border:`1.5px solid ${r.c}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:12, fontWeight:700, color:r.c } }, r.n),
+      e("div", null,
+        e("div", { style:{ fontSize:13, fontWeight:600, color:r.c, marginBottom:2 } }, r.label),
+        e("div", { style:{ fontSize:11, color:T.text2, lineHeight:1.5 } }, r.sub)
+      )
+    ))
+  );
+};
+
+/* ─── DETAIL PANEL ─── */
+const DetailPanel = ({ detailKey, onClose }) => {
+  const d = DETAILS[detailKey];
+  if (!d) return null;
+  return e("div", {
+    style:{ width:340, flexShrink:0, background:T.surface, borderRadius:14, border:`1.5px solid ${d.color}44`, overflow:"hidden", alignSelf:"flex-start", position:"sticky", top:56 }
+  },
+    e("div", { style:{ padding:"14px 18px 12px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:8 } },
+        e("div", { style:{ width:8, height:8, borderRadius:"50%", background:d.color } }),
+        e("span", { style:{ fontSize:14, fontWeight:600, color:T.text1 } }, d.title)
+      ),
+      e("button", { onClick:onClose, style:{ background:"none", border:"none", color:T.text3, cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:6, transition:"color 0.2s" }, onMouseEnter:function(ev){ev.target.style.color=T.text1;}, onMouseLeave:function(ev){ev.target.style.color=T.text3;} }, e("i", { className:"lni lni-xmark" }))
+    ),
+    e("div", { style:{ padding:"16px 18px 20px", maxHeight:"calc(100vh - 140px)", overflowY:"auto" } },
+      d.sections.map(function(s, i) {
+        return e("div", { key:i, style:{ marginBottom: i < d.sections.length-1 ? 18 : 0 } },
+          e("div", { style:{ fontSize:11, fontWeight:700, color:d.color, letterSpacing:"0.04em", marginBottom:5, textTransform:"uppercase" } }, s.heading),
+          e("div", { style:{ fontSize:12, color:T.text2, lineHeight:1.7, whiteSpace:"pre-wrap" } }, s.body)
+        );
+      })
+    )
+  );
+};
+
+/* ─── APP ─── */
+function App() {
+  const [si, setSi] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [detail, setDetail] = useState(null);
+  const sc = SCENES[si];
+
+  useEffect(function() {
+    if (!playing) return;
+    var d = sc.finale ? 99999 : 3400;
+    var t = setTimeout(function() {
+      if (si < SCENES.length - 1) { setSi(si + 1); }
+      else { setPlaying(false); }
+    }, d);
+    return function() { clearTimeout(t); };
+  }, [si, playing]);
+
+  var togglePlay = function() {
+    if (si === SCENES.length - 1) { setSi(0); setPlaying(true); }
+    else setPlaying(!playing);
+  };
+  var go = function(dir) { var n = si+dir; if (n >= 0 && n < SCENES.length) { setSi(n); setPlaying(false); } };
+  var jump = function(i) { setSi(i); setPlaying(false); };
+  var toggleDetail = function(k) { setDetail(detail === k ? null : k); };
+
+  return e("div", { style:{ display:"flex", gap:14, fontFamily:"'Satoshi', system-ui, sans-serif" } },
+  e("div", { style:{ flex:1, minWidth:0 } },
+
+    /* title area */
+    e("div", { style:{ marginBottom:18 } },
+      e("div", { style:{ display:"flex", alignItems:"center", gap:10, marginBottom:11 } },
+        e(AP, { mode:"wait" },
+          e(M.div, { key:sc.act, initial:{opacity:0,scale:0.8}, animate:{opacity:1,scale:1}, exit:{opacity:0}, transition:sp(400,28),
+            style:{ fontSize:9,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:T.purple,background:T.purple+"14",padding:"3px 10px",borderRadius:20,border:`1px solid ${T.purple}30`,flexShrink:0 }
+          }, sc.act)
+        ),
+        e("div", { style:{ flex:1, height:1, background:T.border, borderRadius:99, overflow:"hidden" } },
+          e(M.div, { animate:{width:`${si/(SCENES.length-1)*100}%`}, transition:{duration:0.5}, style:{height:"100%",background:T.purple,borderRadius:99} })
+        ),
+        e("span", { style:{ fontSize:10, color:T.text3 } }, (si+1)+" / "+SCENES.length)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.title, initial:{opacity:0,y:8}, animate:{opacity:1,y:0}, exit:{opacity:0,y:-8}, transition:ez,
+          style:{ fontSize:20,fontWeight:600,color:T.text1,marginBottom:4,letterSpacing:"-0.02em" }
+        }, sc.title)
+      ),
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.sub, initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0}, transition:{duration:0.25},
+          style:{ fontSize:12, color:T.text2, lineHeight:1.65 }
+        }, sc.sub)
+      )
+    ),
+
+    e("div", { style:{ minHeight:400 } },
+    /* finale */
+    sc.finale && e(Finale),
+
+    /* visualization */
+    !sc.finale && e("div", { style:{ marginBottom:12 } },
+      e(AP, { mode:"wait" },
+        e(M.div, { key:sc.viz+si, initial:{opacity:0,y:12}, animate:{opacity:1,y:0}, exit:{opacity:0,y:-12}, transition:ez },
+          e(SceneViz, { scene:sc })
+        )
+      )
+    ),
+
+    /* code */
+    !sc.finale && sc.code && sc.code.length > 0 && e("div", { style:{ marginBottom:10 } },
+      e(CodePanel, { tokens:sc.code })
+    ),
+
+    ), /* close minHeight wrapper */
+
+    /* controls */
+    e("div", { style:{ display:"flex", alignItems:"center", gap:8, marginTop:16 } },
+      e("button", { onClick:function(){go(-1)}, disabled:si===0,
+        style:{ padding:"6px 14px",borderRadius:8,border:"1px solid "+T.border,background:"transparent",color:si===0?T.text3:T.text2,cursor:si===0?"not-allowed":"pointer",fontSize:11,transition:"color 0.2s" }
+      }, e("span", { style:{ display:"inline-flex", alignItems:"center", gap:5 } }, e("i", { className:"lni lni-arrow-left" }), "Back")),
+      e("button", { onClick:togglePlay,
+        style:{ padding:"6px 18px",borderRadius:8,border:"1px solid "+(playing?T.coral:T.purple)+"44",background:playing?T.coral+"14":T.purple+"14",color:playing?T.coralL:T.purpleL,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all 0.2s" }
+      }, playing ? e("span", { style:{ display:"inline-flex", alignItems:"center", gap:6 } }, e("i", { className:"lni lni-pause" }), "Pause") : si===SCENES.length-1 ? e("span", { style:{ display:"inline-flex", alignItems:"center", gap:6 } }, e("i", { className:"lni lni-refresh-circle-1-clockwise" }), "Replay") : e("span", { style:{ display:"inline-flex", alignItems:"center", gap:6 } }, e("i", { className:"lni lni-play" }), "Play")),
+      e("button", { onClick:function(){go(1)}, disabled:si===SCENES.length-1,
+        style:{ padding:"6px 14px",borderRadius:8,border:"1px solid "+T.border,background:"transparent",color:si===SCENES.length-1?T.text3:T.text2,cursor:si===SCENES.length-1?"not-allowed":"pointer",fontSize:11 }
+      }, e("span", { style:{ display:"inline-flex", alignItems:"center", gap:5 } }, "Next", e("i", { className:"lni lni-arrow-right" }))),
+      e("button", { onClick:function(){ jump(0); setPlaying(false); },
+        style:{ padding:"6px 10px",borderRadius:8,border:"1px solid "+T.border,background:"transparent",color:T.text3,cursor:"pointer",fontSize:11,transition:"color 0.2s",marginLeft:4 },
+        title:"Restart"
+      }, e("i", { className:"lni lni-refresh-circle-1-clockwise", style:{fontSize:12} })),
+      e("div", { style:{ flex:1 } }),
+      e("div", { style:{ display:"flex", gap:4, alignItems:"center" } },
+        SCENES.map(function(_,i) {
+          return e("button", { key:i, onClick:function(){jump(i)},
+            style:{ width:i===si?16:5,height:5,borderRadius:99,border:"none",padding:0,background:i===si?T.purple:i<si?T.purple+"55":T.border,cursor:"pointer",transition:"all 0.25s" }
+          });
+        })
+      )
+    )
+  ),
+  detail && e(DetailPanel, { detailKey:detail, onClose:function(){setDetail(null)} })
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(e(App));
+</script>
+<script>
+/* sidenav: persist which groups are open across pages */
+(function(){
+  var KEY = "sidenavGroupsOpen";
+  var nav = document.querySelector(".sidenav");
+  if (!nav) return;
+  var stored = null;
+  try { stored = JSON.parse(localStorage.getItem(KEY) || "null"); } catch(e){}
+  var groups = nav.querySelectorAll("details");
+  groups.forEach(function(d){
+    var sum = d.querySelector("summary");
+    if (!sum) return;
+    var name = sum.textContent.trim();
+    if (stored && Object.prototype.hasOwnProperty.call(stored, name)) {
+      d.open = !!stored[name];
+    }
+    d.addEventListener("toggle", function(){
+      var state = {};
+      groups.forEach(function(d2){
+        var s2 = d2.querySelector("summary");
+        if (s2) state[s2.textContent.trim()] = d2.open;
+      });
+      try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){}
+    });
+  });
+})();
+</script>
+</body>
+</html>
